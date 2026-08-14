@@ -12,6 +12,7 @@ use Atelier\Integrations;
 use Atelier\Leads;
 use Atelier\Paypal;
 use Atelier\Places;
+use Atelier\Preflight;
 use Atelier\Media;
 use Atelier\Security;
 use Atelier\Themes;
@@ -498,6 +499,18 @@ final class AdminController
             $id = $wanted . '-' . $n++;
         }
         return $id;
+    }
+
+    /* ------------------------------ Systemcheck ----------------------------- */
+
+    public function preflight(): void
+    {
+        $checks = Preflight::run($this->locale);
+
+        $this->render('admin/preflight', '/systemcheck', [
+            'checks' => $checks,
+            'tally'  => Preflight::tally($checks),
+        ]);
     }
 
     /* --------------------------------- Karte -------------------------------- */

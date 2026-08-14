@@ -36,6 +36,7 @@ sonra `php bin/import.php` (veya `--replace`).
 | Kısmi izin | Yalnız istatistik seçilince GA4 yükleniyor, Meta Pixel yüklenmiyor — test edildi |
 | Dönüşümler | İletişim formu (`generate_lead`), davetiye oluşturma (`purchase`, tutarıyla), `tel:` tıklaması (`phone_call`) — tek dinleyici, hiçbir bağlantının haberi olmadan. Ads etiketleri panelden. Sayfa `data-track-event` alanıyla bildiriyor, HTML'de script bloğu yok (CSP sıkı kalsın diye) |
 | Krumbach bölge içeriği | 10 şehir sıfırdan yazıldı, iki dilde ~3.300 kelime: Günzburg, Ulm, Neu-Ulm, Memmingen, Augsburg, München, Stuttgart, Friedrichshafen, Bregenz, St. Gallen. Her şehirde giriş + 2 paragraf + 3 çekim noktası + 2 SSS + komşular. `bin/cities.php` içe aktarırken **kontrol ediyor**: çakışan adres, boşa çıkan komşu, ve metinler birbirine %55'ten fazla benziyorsa **içe aktarmayı reddediyor** (doorway page kontrolü) |
+| Yayın kontrolü | Panelde yeni sekme (Ayarlar → Yayın kontrolü). Sunucuda 13 şeyi kontrol ediyor: PHP sürümü, eklentiler, GD+WebP, veritabanı, 12 tablo, içerik ve **eksik adres/telefon**, upload klasörü yazılabilirliği ve `.htaccess`'i, `config.php` (dev/site_url/parola), HTTPS, e-posta, entegrasyonlar (PayPal sandbox'ta mı). Her uyarının altında ne yapılacağı yazıyor. Altında da elle yapılacaklar listesi (form maili, WhatsApp önizlemesi, PayPal küçük tutar testi…) |
 | Panel düzeni | Sekmeler artık **gruplanmış yan menüde** (İçerik / İşler / Görünüm / Ayarlar) — 16 sekme tek sırada bir duvardı. Geniş ekranda yapışkan yan menü, dar ekranda açılır kapanır seçim (açık sekmenin adı üstte yazılı). Üst çubuk yapışkan, uzun formlarda **kaydet düğmesi altta sabit** duruyor. Genel bakış: kutucuklar tıklanır, „son yedi günde ne geldi“ satırı ve dört hızlı işlem düğmesi |
 | Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
 | **Tema motoru — modüler** | Renk/font/zarf/mühür/arka plan/süsleme/animasyon ayrı ayrı. `family` alanı varyasyonları (Ivory, Rose, Sage, Dark) bir arada tutuyor; „Varyasyon oluştur“ ailede kalarak kopyalıyor |
@@ -229,12 +230,17 @@ public/assets/invite-manage.js     link kopyalama
 
 ## Müşteriden bekleyenler
 
-- Google Maps/Places API anahtarı (mekân arama için; faturalandırma açık bir
-  Google Cloud projesi gerekiyor — kullanım ücretsiz kotada kalacak)
-- PayPal Client ID + Secret (hesap: `akyel.business@gmail.com`, Business olmalı)
-- Krumbach bölgesi mekân listesi
-- Gerçek fotoğraflar ve marka adı
-- Yasal metinlerin avukat kontrolü
-- ALL-INKL KAS erişimi (paylaşılan oturum linki değil — kendi girişiyle)
-- Misafir listesi biçimi artık sorun değil: elle, yapıştırarak, `.txt` ve Excel
-  `.csv` — dördü de çalışıyor. Yine de müşteriden gerçek bir liste görmek iyi olur
+Panelden kendisi girebilecekleri (bizden bir şey gerekmiyor):
+- **Adres ve telefon** → Metinler & iletişim. Şu an **boş** ve yayın kontrolü
+  bunu kırmızı gösteriyor; Impressum yasal olarak istiyor
+- **Gerçek fotoğraflar** → Portfolyo, Rehber, Müşteriler, Temalar sekmeleri
+- **PayPal Client ID + Secret** → Entegrasyonlar (bağlantı testi düğmesi var).
+  Hesap: `akyel.business@gmail.com`, Business olmalı
+- **Google Maps anahtarı** → Entegrasyonlar (mekân arama için, isteğe bağlı)
+
+Bizden metin gerektirenler:
+- **Krumbach bölgesi mekân listesi** — 7 mekân metni bunu bekliyor. Şehirler hazır
+- Portfolyo/rehber hâlâ Stuttgart demo verisi; gerçek çekimler gelince yazılır
+
+Yayın için:
+- **ALL-INKL KAS erişimi.** Parolayı sohbete yazmayın — aşağıdaki nota bakın

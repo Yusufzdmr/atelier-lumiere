@@ -103,6 +103,7 @@ $router->any('/{locale}/admin/kunden', $page_(static fn (array $p) => (new Custo
 $router->any('/{locale}/admin/kunden/{code}', $page_(static fn (array $p) => (new CustomerAdminController($p['locale']))->show($p)));
 $router->any('/{locale}/admin/einladungen', $page_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/themen', $page_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
+$router->any('/{locale}/admin/systemcheck', $page_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
 $router->any('/{locale}/admin/integrationen', $page_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));

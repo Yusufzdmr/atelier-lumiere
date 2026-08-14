@@ -51,6 +51,7 @@ final class Admin
 
         ['href' => '/seo', 'group' => 'technik', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
         ['href' => '/integrationen', 'group' => 'technik', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
+        ['href' => '/systemcheck', 'group' => 'technik', 'de' => 'Vor dem Livegang', 'tr' => 'Yayın kontrolü'],
     ];
 
     /**
