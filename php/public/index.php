@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use Atelier\Controllers\AdminController;
 use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
@@ -64,6 +65,10 @@ $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryCon
 $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
 $router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) => (new GalleryController())->saveSelection()));
 $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
+
+$router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
+$router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
+$router->any('/{locale}/admin/integrationen', $page_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
 $router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));

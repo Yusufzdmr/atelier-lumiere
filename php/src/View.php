@@ -29,8 +29,10 @@ final class View
     {
         $content = self::capture($template, $data);
         $meta = $data['meta'] ?? [];
+        // Der Adminbereich hat sein eigenes Grundgerüst.
+        $layout = (string) ($data['layout'] ?? 'layout');
 
-        echo self::capture('layout', array_merge($data, [
+        echo self::capture($layout, array_merge($data, [
             'content' => $content,
             'meta'    => $meta,
         ]));

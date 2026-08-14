@@ -65,6 +65,20 @@ return ${phpValue(dictionaries, 1)};
 
 /* ------------------------------- Daten ------------------------------- */
 
+async function exportThemes() {
+  const mod = await import(`file:///${ROOT}lib/themes.ts`);
+  const php = `<?php
+/**
+ * Erzeugt von scripts/export-to-php.mjs – Startbelegung der Einladungsthemen.
+ * Ab der ersten Änderung im Admin gilt der Stand aus der Datenbank.
+ */
+
+return ${phpValue(mod.themes, 1)};
+`;
+  writeFileSync(`${OUT}/themes.php`, php, "utf8");
+  console.log(`themes.php geschrieben – ${mod.themes.length} Themen`);
+}
+
 async function exportData() {
   const env = readFileSync(`${ROOT}.env.local`, "utf8");
   const url = env.match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "");
@@ -108,4 +122,5 @@ async function exportData() {
 }
 
 if (what === "all" || what === "dict") await exportDict();
+if (what === "all" || what === "dict") await exportThemes();
 if (what === "all" || what === "data") await exportData();
