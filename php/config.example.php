@@ -11,6 +11,14 @@ return [
     // Adresse ohne Schrägstrich am Ende. Leer = wird aus der Anfrage ermittelt.
     'site_url' => 'https://atelier-lumiere.de',
 
+    /*
+     * Solange die Seite unter einer Testadresse liegt (Subdomain, Vorschau):
+     * true. Dann sperrt robots.txt alles und jede Seite trägt noindex.
+     * Beim Umzug auf die richtige Domain auf false setzen – sonst findet
+     * Google die Seite nie.
+     */
+    'noindex' => false,
+
     // Fehler im Klartext anzeigen – nur auf dem Testsystem einschalten.
     'dev' => false,
 

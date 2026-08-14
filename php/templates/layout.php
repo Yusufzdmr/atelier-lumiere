@@ -17,7 +17,8 @@ $description = (string) ($meta['description'] ?? '');
 $canonical = (string) ($meta['canonical'] ?? Config::url() . $path);
 $image = (string) ($meta['image'] ?? '');
 $ogType = (string) ($meta['ogType'] ?? 'website');
-$noindex = (bool) ($meta['noindex'] ?? false);
+// Der Schalter in config.php gilt fuer alles, nicht nur fuer einzelne Seiten.
+$noindex = (bool) ($meta['noindex'] ?? false) || (bool) Config::get('noindex', false);
 $jsonLd = $meta['jsonLd'] ?? [];
 
 // hreflang: derselbe Pfad in der anderen Sprache

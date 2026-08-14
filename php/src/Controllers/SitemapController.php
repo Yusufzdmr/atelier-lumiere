@@ -93,6 +93,14 @@ final class SitemapController
     {
         header('Content-Type: text/plain; charset=UTF-8');
 
+        // Testadresse: alles sperren. Eine Vorschau unter einer anderen Adresse
+        // ist derselbe Inhalt zweimal – und wenn Google zuerst die Testadresse
+        // findet, rankt spaeter die falsche.
+        if (\Atelier\Config::get('noindex', false)) {
+            echo "User-agent: *\nDisallow: /\n";
+            return;
+        }
+
         // Kundenbereich, Einladungen und Verwaltung gehören nicht in den Index.
         echo implode("\n", [
             'User-agent: *',

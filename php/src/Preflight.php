@@ -206,6 +206,10 @@ final class Preflight
             $notes[] = $de ? 'dev steht auf true' : 'dev true';
             $state = self::FAIL;
         }
+        if (Config::get('noindex', false)) {
+            $notes[] = $de ? 'noindex steht an' : 'noindex açık';
+            $state = self::WARN;
+        }
         if (Config::str('site_url') === '') {
             $notes[] = $de ? 'site_url leer' : 'site_url boş';
             $state = self::FAIL;
@@ -220,8 +224,8 @@ final class Preflight
         return self::result('config', $state, 'config.php',
             $notes === [] ? ($de ? 'in Ordnung' : 'uygun') : implode(' · ', $notes),
             $notes === [] ? '' : ($de
-                ? 'dev auf false, site_url auf die echte Adresse, admin_key auf ein langes eigenes Passwort (am besten als password_hash).'
-                : 'dev false, site_url gerçek adres, admin_key uzun kendi parolanız (tercihen password_hash).'));
+                ? 'dev auf false, site_url auf die echte Adresse, admin_key auf ein langes eigenes Passwort (am besten als password_hash). noindex gehört an, solange die Seite unter einer Testadresse liegt – und beim Umzug wieder aus.'
+                : 'dev false, site_url gerçek adres, admin_key uzun kendi parolanız (tercihen password_hash). Site test adresindeyken noindex açık kalmalı – gerçek adrese taşıyınca kapatılmalı.'));
     }
 
     private static function https(bool $de): array
