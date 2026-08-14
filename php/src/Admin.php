@@ -17,6 +17,7 @@ final class Admin
     public const TABS = [
         ['href' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
         ['href' => '/inhalte', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
+        ['href' => '/texte', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
         ['href' => '/pakete', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
         ['href' => '/leistungen', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
         ['href' => '/staedte', 'de' => 'Städte', 'tr' => 'Şehirler'],

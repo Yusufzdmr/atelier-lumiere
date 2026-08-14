@@ -167,4 +167,53 @@ final class Content
     {
         self::save($fn(self::all()));
     }
+
+    /* ------------------------------ Original ----------------------------- */
+
+    /** @var array<string,mixed>|null */
+    private static ?array $original = null;
+
+    /**
+     * Der Stand, wie er eingespielt wurde (bin/import.php schreibt ihn mit).
+     *
+     * Damit lässt sich im Adminbereich neben jedem Feld zeigen, was
+     * ursprünglich dort stand – und mit einem Klick dorthin zurück. Fehlt der
+     * Datensatz (ältere Installation), gibt es eben keinen Vergleich.
+     *
+     * @return array<string,mixed>
+     */
+    public static function original(): array
+    {
+        if (self::$original === null) {
+            self::$original = Db::json('SELECT data FROM site_content WHERE id = 2') ?? [];
+        }
+        return self::$original;
+    }
+
+    /** @param array<string,mixed> $data */
+    public static function saveOriginal(array $data): void
+    {
+        Db::run(
+            'INSERT INTO site_content (id, data) VALUES (2, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)',
+            [Db::encode($data)]
+        );
+        self::$original = $data;
+    }
+
+    /**
+     * Ein einzelnes Feld auf den eingespielten Stand zurückholen.
+     *
+     * Gibt es das Feld im Original nicht (nachträglich angelegt), wird es
+     * geleert statt gelöscht – sonst fiele die Vorlage über einen fehlenden
+     * Schlüssel.
+     */
+    public static function resetField(string $path): void
+    {
+        $original = Form::get(self::original(), $path);
+
+        self::mutate(static function (array $content) use ($path, $original): array {
+            Form::set($content, $path, $original ?? '');
+            return $content;
+        });
+    }
 }

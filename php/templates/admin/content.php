@@ -11,6 +11,7 @@
  * @var string $intro
  * @var list<array{title:string,hint?:string,fields:list<array<string,mixed>>,grid?:string}> $sections
  * @var array<string,mixed> $data
+ * @var array<string,mixed> $originals  Stand beim Einspielen – für „zurücksetzen“
  * @var string $csrf
  * @var string $reset  optionaler Wert für „auf Standard zurücksetzen“
  */
@@ -39,7 +40,7 @@ $de = $locale === 'de';
       <?php endif; ?>
 
       <div class="mt-6">
-        <?= Form::fields($section['fields'], $data, $section['grid'] ?? 'md:grid-cols-2') ?>
+        <?= Form::fields($section['fields'], $data, $section['grid'] ?? 'md:grid-cols-2', $originals ?? []) ?>
       </div>
     </section>
   <?php endforeach; ?>

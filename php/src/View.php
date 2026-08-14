@@ -48,17 +48,26 @@ final class View
         return self::capture($template, $data);
     }
 
-    /** @param array<string,mixed> $data */
-    private static function capture(string $template, array $data): string
+    /**
+     * Die eigenen Variablen heißen hier absichtlich __so: extract() arbeitet
+     * mit EXTR_SKIP und überschreibt nichts, was es schon gibt. Hieße der
+     * Parameter $data, käme ein Wert namens „data“ nie im Template an – er
+     * würde stillschweigend übersprungen, und die Vorlage sähe stattdessen die
+     * ganze Übergabeliste. Genau das ist einmal passiert: die Felder im
+     * Adminbereich blieben leer, obwohl die Texte in der Datenbank standen.
+     *
+     * @param array<string,mixed> $__values
+     */
+    private static function capture(string $__template, array $__values): string
     {
-        $file = __DIR__ . '/../templates/' . $template . '.php';
-        if (!is_file($file)) {
-            throw new \RuntimeException('Template fehlt: ' . $template);
+        $__file = __DIR__ . '/../templates/' . $__template . '.php';
+        if (!is_file($__file)) {
+            throw new \RuntimeException('Template fehlt: ' . $__template);
         }
 
-        extract(array_merge(self::$shared, $data), EXTR_SKIP);
+        extract(array_merge(self::$shared, $__values), EXTR_SKIP);
         ob_start();
-        require $file;
+        require $__file;
         return (string) ob_get_clean();
     }
 }

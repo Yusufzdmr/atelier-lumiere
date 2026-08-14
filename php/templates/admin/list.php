@@ -15,6 +15,7 @@
  * @var string $intro
  * @var list<array<string,mixed>> $blocks
  * @var array<string,mixed> $data
+ * @var array<string,mixed> $originals
  * @var string $csrf
  */
 
@@ -129,7 +130,7 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
                     <p class="mt-1.5 max-w-3xl text-[0.72rem] leading-relaxed text-muted"><?= e((string) $section['hint']) ?></p>
                   <?php endif; ?>
                   <div class="mt-4">
-                    <?= Form::fields($section['fields'], $data, $section['grid'] ?? 'md:grid-cols-2') ?>
+                    <?= Form::fields($section['fields'], $data, $section['grid'] ?? 'md:grid-cols-2', $originals ?? []) ?>
                   </div>
                 </div>
               <?php endforeach; ?>

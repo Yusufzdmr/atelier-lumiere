@@ -73,7 +73,7 @@ final class Form
      * @param array{path:string,label:string,type?:string,rows?:int,hint?:string,options?:array<string,string>,max?:int} $field
      * @param array<string,mixed> $data
      */
-    public static function field(array $field, array $data): string
+    public static function field(array $field, array $data, array $originals = []): string
     {
         $type = $field['type'] ?? 'text';
         $name = self::key($field['path']);
@@ -97,7 +97,57 @@ final class Form
         };
 
         // Beim Kästchen steckt die Beschriftung schon im Steuerelement.
-        return '<div>' . ($type === 'check' ? '' : $label) . $control . $hint . '</div>';
+        return '<div>' . ($type === 'check' ? '' : $label) . $control . $hint
+            . self::originalNote($field, $value, $originals) . '</div>';
+    }
+
+    /**
+     * Was ursprünglich in diesem Feld stand – mit einem Knopf dorthin zurück.
+     *
+     * Erscheint nur, wenn es wirklich abweicht: bei dreihundert Feldern wäre
+     * ein Hinweis unter jedem einzelnen kein Hinweis mehr, sondern Grundrauschen.
+     *
+     * @param array<string,mixed> $field
+     * @param array<string,mixed> $originals
+     */
+    private static function originalNote(array $field, mixed $value, array $originals): string
+    {
+        if ($originals === [] || ($field['type'] ?? 'text') === 'check') {
+            return '';
+        }
+
+        $original = self::get($originals, (string) $field['path']);
+        if ($original === null) {
+            return '';
+        }
+
+        $before = self::display($original, $field);
+        if ($before === '' || $before === self::display($value, $field)) {
+            return '';
+        }
+
+        $de = I18n::isDe();
+        $short = mb_strlen($before) > 220 ? mb_substr($before, 0, 220) . ' …' : $before;
+
+        return '<div class="mt-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 border-l-2 border-sand-deep pl-3">'
+            . '<p class="min-w-0 flex-1 whitespace-pre-line text-[0.72rem] leading-relaxed text-muted">'
+            . '<span class="uppercase tracking-[0.14em]">' . ($de ? 'Vorher' : 'Öncesi') . ':</span> '
+            . e($short) . '</p>'
+            . '<button name="was" value="reset:' . e((string) $field['path']) . '"'
+            . ' class="shrink-0 text-[0.62rem] uppercase tracking-[0.14em] text-muted underline-offset-4 hover:text-gold hover:underline">'
+            . ($de ? 'zurücksetzen' : 'geri al') . '</button>'
+            . '</div>';
+    }
+
+    /** Einen gespeicherten Wert so darstellen, wie er im Feld stünde. @param array<string,mixed> $field */
+    private static function display(mixed $value, array $field): string
+    {
+        return match ($field['type'] ?? 'text') {
+            'paras' => is_array($value) ? implode("\n\n", array_map('strval', $value)) : (string) $value,
+            'lines' => is_array($value) ? implode("\n", array_map('strval', $value)) : (string) $value,
+            'pairs', 'rows' => self::rowsToText(is_array($value) ? $value : [], $field),
+            default => is_array($value) ? '' : (string) $value,
+        };
     }
 
     /**
@@ -106,12 +156,12 @@ final class Form
      * @param list<array<string,mixed>> $fields
      * @param array<string,mixed> $data
      */
-    public static function fields(array $fields, array $data, string $grid = 'md:grid-cols-2'): string
+    public static function fields(array $fields, array $data, string $grid = 'md:grid-cols-2', array $originals = []): string
     {
         $html = '<div class="grid gap-7 ' . e($grid) . '">';
         foreach ($fields as $field) {
             $span = !empty($field['wide']) ? ' class="md:col-span-2"' : '';
-            $html .= '<div' . $span . '>' . self::field($field, $data) . '</div>';
+            $html .= '<div' . $span . '>' . self::field($field, $data, $originals) . '</div>';
         }
         return $html . '</div>';
     }

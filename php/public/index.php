@@ -16,6 +16,7 @@ use Atelier\Controllers\InviteController;
 use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
+use Atelier\Controllers\TextAdminController;
 use Atelier\I18n;
 use Atelier\Router;
 
@@ -83,6 +84,7 @@ $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new Gal
 $router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
 $router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
 $router->any('/{locale}/admin/inhalte', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
+$router->any('/{locale}/admin/texte', $page_(static fn (array $p) => (new TextAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/pakete', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->packages()));
 $router->any('/{locale}/admin/ueber-mich', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));
 $router->any('/{locale}/admin/rechtliches', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->legal()));

@@ -23,10 +23,12 @@ sonra `php bin/import.php` (veya `--replace`).
 | Müşteri galerisi | Giriş, fotoğraf ızgarası, kalple seçim, lightbox, seçim gönderimi (veritabanı + e-posta) |
 | Görsel yükleme | `src/Media.php` — GD ile 1600 px JPEG, tür dosya içeriğinden, silme upload klasörüyle sınırlı. **GD yoksa** dosya küçültülmeden olduğu gibi saklanır (hata sayfası yerine) |
 | Video | YouTube/Vimeo, iki tıklamalı (izin öncesi sağlayıcıya istek yok) |
-| **Yönetim paneli — 15 sekmenin hepsi** | Giriş (deneme sınırlı), Genel bakış, Metinler & iletişim, Fiyatlar & paketler, **Hizmetler & süreç**, **Şehirler**, **Mekânlar**, **Portfolyo**, **Rehber**, **Müşteriler**, **Davetiyeler**, Temalar, Hakkımda & yorumlar, Yasal metinler, SEO & meta, Entegrasyonlar |
+| **Yönetim paneli — 16 sekmenin hepsi** | Giriş (deneme sınırlı), Genel bakış, Metinler & iletişim, **Sayfa metinleri**, Fiyatlar & paketler, **Hizmetler & süreç**, **Şehirler**, **Mekânlar**, **Portfolyo**, **Rehber**, **Müşteriler**, **Davetiyeler**, Temalar, Hakkımda & yorumlar, Yasal metinler, SEO & meta, Entegrasyonlar |
 | Liste düzenleyicisi | `src/Lists.php` + `templates/admin/list.php` + `src/Controllers/ListAdminController.php` — şehir/mekân/portfolyo/rehber/hizmet aynı kalıptan: aç, düzenle, kaydet, ekle, sırala (↑↓), sil. Her kayıt kendi formunda (10 şehir tek düğmeye gitmez) |
 | Müşteriler | `src/Customers.php` + `CustomerAdminController` — kayıt açınca galeri **otomatik** oluşur (parola ve kupon otomatik üretilir, galeri bitişi düğün + 2 yıl). Fotoğraf yükleme/silme, çiftin seçimi (kalpli kareler + notu), kupon yönetimi (kod/aktif/tek kullanım/son tarih/yeni kod/yeniden aç), arşivle, giriş adını yazdırarak kalıcı sil |
 | Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), **kişiye özel davetiye listesi + çiftin yönetim linki**, müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
+| **Sayfa metinleri** | Yeni sekme (`/admin/texte`). Sözlükteki 312 metin — bölüm başlıkları („Was wir für euch tun“), düğme yazıları, form etiketleri — 17 grup halinde, iki dilde düzenlenebilir. `src/Texts.php` bir **üst katman**: sözlük dosyası hiç değişmiyor, yalnızca farklı olan saklanıyor. Bir alanı boşaltmak = ilk metne dönmek |
+| Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
 | Entegrasyonlar | PayPal (ID/Secret/mod + bağlantı testi), GA4/GTM/Ads + 3 dönüşüm etiketi, Meta Pixel, Search Console/Bing, serbest anahtar listesi (`Integrations::value('AD')`) |
 | **Kişiye özel davetiye** | `src/Guests.php` + `invite_guests` tablosu. Davetiye **tek kayıt kalır**, üstünde ince bir katman: kişi/aile adı + kendi adresi (`/de/einladung/ayse-mehmet/familie-mueller`). Kartın üstünde „Liebe Familie Müller“ / „Sayın Müller Ailesi“, RSVP adı önceden dolu. Sihirbazda tek alan, sonrasında yönetim sayfası |
@@ -83,7 +85,10 @@ mantığı PHP + `assets/consent.js` olarak:
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
    (KAS'ta ayarlanamazsa bir üst dizine yönlendiren ikinci `.htaccess` gerekir)
-4. `node ../scripts/export-to-php.mjs` → `php bin/import.php` ile içerik + galeriler
+4. `node ../scripts/export-to-php.mjs` → `php bin/import.php` ile içerik + galeriler.
+   İçe aktarım artık `site_content` id=2'ye **dokunulmamış bir kopya** da yazıyor;
+   paneldeki „öncesi / geri al“ bunu kullanıyor. Zaten kurulu bir sistemde bir
+   kez elle: `php -r 'require "src/bootstrap.php"; Atelier\Content::saveOriginal(json_decode(file_get_contents("data/export.json"), true)["content"]);'`
 5. Let's Encrypt (KAS'ta tek tık), `uploads/` yazılabilir olmalı (755)
 6. **GD açık mı kontrol et** (`phpinfo()`), yoksa görseller küçültülmeden yüklenir
 7. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
@@ -125,6 +130,12 @@ Galeri demo: `elif-marco` / `solitude24`
 
 ## Tuzaklar (tekrar düşmemek için)
 
+- **`View::capture` içindeki değişken adları `__` ile başlar** — sebebi var:
+  `extract(..., EXTR_SKIP)` var olan değişkenin üstüne yazmaz. Parametre `$data`
+  olduğu için `data` anahtarı şablona hiç ulaşmıyordu; şablon onun yerine tüm
+  aktarım listesini görüyordu. Sonuç: **panelde bütün alanlar boş açılıyordu**
+  ve „Kaydet“ o sekmeyi silecekti. Buraya yeni bir parametre eklerken aynı
+  tuzağa dikkat
 - **Şablona sınıf eklediysen Tailwind'i yeniden derle**, yoksa stil yok.
   `assets/app.css` artık `../src` klasörünü de tarıyor: panel formları sınıfları
   PHP içinde üretiyor (`ListAdminController`'daki `md:grid-cols-4` gibi)
@@ -164,12 +175,14 @@ src/Lists.php                    içerik listelerinde ekle/sil/sırala/yükle
 src/Content.php                  içerik dokümanı (tek JSON kaydı)
 src/Customers.php                müşteri + kupon; galeriyle senkron
 src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
+src/Texts.php                    sözlük üstü metin katmanı (sayfa metinleri)
 src/OgImage.php                  WhatsApp önizleme görseli (1200×630, önbellekli)
 src/Controllers/
   AdminController.php            genel bakış, temalar, entegrasyonlar
   ContentAdminController.php     sabit alanlı sekmeler (metinler, paketler, SEO…)
   ListAdminController.php        liste sekmeleri (hizmet, şehir, mekân, portfolyo, rehber)
   CustomerAdminController.php    müşteri listesi ve müşteri kartı
+  TextAdminController.php        sayfa metinleri sekmesi
   InviteAdminController.php      davetiyeler, RSVP'ler, misafirler, taslaklar
   InviteController.php           sihirbaz, davetiye sayfası, ödeme,
                                  `manage()` = çiftin misafir listesi

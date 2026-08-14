@@ -626,8 +626,9 @@ final class ListAdminController
             'csrf'    => Security::csrf(),
             'title'   => $title,
             'intro'   => $intro,
-            'blocks'  => $blocks,
-            'data'    => Content::all(),
+            'blocks'    => $blocks,
+            'data'      => Content::all(),
+            'originals' => Content::original(),
         ]);
     }
 
@@ -652,7 +653,7 @@ final class ListAdminController
             Admin::back($this->locale, $tab);
         }
 
-        $was = Security::clean($_POST['was'] ?? '', 20);
+        $was = Security::clean($_POST['was'] ?? '', 200);
 
         if ($was === 'add') {
             $item = isset($spec['add']['make']) ? ($spec['add']['make'])() : null;
@@ -664,6 +665,14 @@ final class ListAdminController
 
         $index = Lists::index($key, $_POST['index'] ?? '');
         if ($index === null) {
+            Admin::back($this->locale, $tab);
+        }
+
+        // „zurücksetzen“ schickt das ganze Formular mit: erst alles Getippte
+        // übernehmen, dann das eine Feld zurückholen.
+        if (str_starts_with($was, 'reset:')) {
+            $this->save($spec, $index);
+            $this->reset($spec, $index, substr($was, 6));
             Admin::back($this->locale, $tab);
         }
 
@@ -696,6 +705,26 @@ final class ListAdminController
         }
 
         Content::mutate(static fn (array $content): array => Form::apply($content, $fields, $_POST));
+    }
+
+    /** Ein Feld dieses Eintrags auf den eingespielten Stand zurückholen. @param array<string,mixed> $spec */
+    private function reset(array $spec, int $index, string $path): void
+    {
+        $item = Lists::item($spec['key'], $index);
+        if ($item === null) {
+            return;
+        }
+
+        // Nur Felder, die auf dieser Seite auch stehen – der Pfad kommt aus
+        // einem Formular und ist damit nichts, worauf man bauen sollte.
+        foreach (($spec['sections'])($index, $item) as $section) {
+            foreach ($section['fields'] as $field) {
+                if ((string) $field['path'] === $path) {
+                    Content::resetField($path);
+                    return;
+                }
+            }
+        }
     }
 
     private function delete(string $key, int $index): void

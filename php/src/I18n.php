@@ -63,6 +63,14 @@ final class I18n
     public static function raw(string $path, ?string $locale = null): mixed
     {
         $locale = $locale ?? self::$locale;
+
+        // Im Adminbereich geänderte Seitentexte haben Vorrang. Das Wörterbuch
+        // bleibt unangetastet und ist damit weiter der Originalwortlaut.
+        $override = Texts::get($path, $locale);
+        if ($override !== null) {
+            return $override;
+        }
+
         if (self::$dict === []) {
             /** @var array<string,array<string,mixed>> $dict */
             $dict = require __DIR__ . '/../data/dict.php';

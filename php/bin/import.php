@@ -53,6 +53,13 @@ if (is_array($dump['content'] ?? null)) {
         sprintf('%s INTO site_content (id, data) VALUES (1, ?)', $verb),
         [Db::encode($dump['content'])]
     );
+
+    // Datensatz 2 ist der unberührte Stand. Er wird nie bearbeitet und dient
+    // im Adminbereich als Vergleich: „so stand es ursprünglich da“ – und als
+    // Ziel des Zurücksetzen-Knopfes. Deshalb immer überschreiben, auch ohne
+    // --replace: er soll zum gerade eingespielten Export passen.
+    Atelier\Content::saveOriginal($dump['content']);
+
     $counts['site_content'] = 1;
 }
 

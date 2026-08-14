@@ -287,7 +287,24 @@ final class ContentAdminController
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             Admin::checkCsrfOrFail();
+
+            // Erst alles Getippte übernehmen, dann erst zurücksetzen: sonst
+            // verlöre der „zurücksetzen“-Knopf die übrigen Änderungen im
+            // Formular, weil er es mit abschickt.
             Content::mutate(static fn (array $content): array => Form::apply($content, $fields, $_POST));
+
+            $was = Security::clean($_POST['was'] ?? '', 200);
+            if (str_starts_with($was, 'reset:')) {
+                $path = substr($was, 6);
+                // Nur Felder, die auf dieser Seite auch stehen.
+                foreach ($fields as $field) {
+                    if ((string) $field['path'] === $path) {
+                        Content::resetField($path);
+                        break;
+                    }
+                }
+            }
+
             Admin::back($this->locale, $tab);
         }
 
@@ -300,9 +317,10 @@ final class ContentAdminController
             'csrf'     => Security::csrf(),
             'title'    => $title,
             'intro'    => $intro,
-            'sections' => $sections,
-            'data'     => Content::all(),
-            'reset'    => '',
+            'sections'  => $sections,
+            'data'      => Content::all(),
+            'originals' => Content::original(),
+            'reset'     => '',
         ]);
     }
 }
