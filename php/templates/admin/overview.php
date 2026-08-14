@@ -18,27 +18,76 @@ use Atelier\I18n;
 $de = $locale === 'de';
 $p = static fn (string $to): string => I18n::path($to, $locale);
 
+// Jede Zahl fuehrt dorthin, wo man mit ihr etwas tun kann – eine Kachel, die
+// nur zaehlt, laesst einen danach suchen.
 $tiles = [
-    [$de ? 'Anfragen' : 'Talepler', count($leads)],
-    [$de ? 'Kunden' : 'Müşteriler', count($customers)],
-    [$de ? 'Galerien' : 'Galeriler', count($galleries)],
-    [$de ? 'Albumauswahlen' : 'Albüm seçimleri', count($selections)],
-    [$de ? 'Einladungen' : 'Davetiyeler', count($invitations)],
-    [$de ? 'Zusagen' : 'Katılım bildirimleri', count($rsvps)],
+    [$de ? 'Anfragen' : 'Talepler', count($leads), '#anfragen'],
+    [$de ? 'Kunden' : 'Müşteriler', count($customers), $p('/admin/kunden')],
+    [$de ? 'Galerien' : 'Galeriler', count($galleries), $p('/admin/kunden')],
+    [$de ? 'Albumauswahlen' : 'Albüm seçimleri', count($selections), '#auswahlen'],
+    [$de ? 'Einladungen' : 'Davetiyeler', count($invitations), $p('/admin/einladungen')],
+    [$de ? 'Zusagen' : 'Katılım bildirimleri', count($rsvps), $p('/admin/einladungen')],
 ];
+
+// Was gerade wirklich Arbeit ist: neue Anfragen und Auswahlen der letzten Woche.
+$fresh = static function (array $rows, string $field): int {
+    $limit = date('c', strtotime('-7 days'));
+    $count = 0;
+    foreach ($rows as $row) {
+        if ((string) ($row[$field] ?? '') >= $limit) {
+            $count++;
+        }
+    }
+    return $count;
+};
+$newLeads = $fresh($leads, 'at');
+$newPicks = $fresh($selections, 'at');
 ?>
 <div class="space-y-12">
-  <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-    <?php foreach ($tiles as [$caption, $value]) : ?>
-      <div class="border border-sand-deep p-5">
+  <div>
+    <h2 class="font-display text-xl text-ink"><?= $de ? 'Übersicht' : 'Genel bakış' ?></h2>
+    <p class="mt-2 text-sm text-muted">
+      <?php if ($newLeads > 0 || $newPicks > 0) : ?>
+        <?= $de ? 'Neu in den letzten sieben Tagen: ' : 'Son yedi günde yeni: ' ?>
+        <?php $parts = [];
+          if ($newLeads > 0) { $parts[] = $newLeads . ' ' . ($de ? 'Anfragen' : 'talep'); }
+          if ($newPicks > 0) { $parts[] = $newPicks . ' ' . ($de ? 'Albumauswahlen' : 'albüm seçimi'); }
+          echo '<span class="text-gold">' . e(implode(' · ', $parts)) . '</span>'; ?>
+      <?php else : ?>
+        <?= $de ? 'In den letzten sieben Tagen ist nichts Neues hereingekommen.' : 'Son yedi günde yeni bir şey gelmedi.' ?>
+      <?php endif; ?>
+    </p>
+  </div>
+
+  <div class="grid gap-px bg-sand-deep sm:grid-cols-3 lg:grid-cols-6">
+    <?php foreach ($tiles as [$caption, $value, $href]) : ?>
+      <a href="<?= e($href) ?>" class="group bg-cream p-5 transition-colors hover:bg-sand/40">
         <div class="font-display text-3xl font-light text-ink"><?= (int) $value ?></div>
-        <div class="mt-1 text-[0.62rem] uppercase tracking-[0.16em] text-muted"><?= e($caption) ?></div>
-      </div>
+        <div class="mt-1 text-[0.62rem] uppercase tracking-[0.16em] text-muted transition-colors group-hover:text-gold">
+          <?= e($caption) ?>
+        </div>
+      </a>
     <?php endforeach; ?>
   </div>
 
+  <?php /* ------------------------- Haeufige Handgriffe ------------------------ */ ?>
+  <div class="flex flex-wrap gap-3">
+    <a href="<?= e($p('/admin/kunden')) ?>" class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
+      <?= $de ? 'Kunde anlegen' : 'Müşteri oluştur' ?>
+    </a>
+    <a href="<?= e($p('/admin/portfolio')) ?>" class="border border-sand-deep px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:border-gold hover:text-gold">
+      <?= $de ? 'Reportage einstellen' : 'Çekim ekle' ?>
+    </a>
+    <a href="<?= e($p('/admin/ratgeber')) ?>" class="border border-sand-deep px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:border-gold hover:text-gold">
+      <?= $de ? 'Beitrag schreiben' : 'Yazı yaz' ?>
+    </a>
+    <a href="<?= e($p('/admin/texte')) ?>" class="border border-sand-deep px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:border-gold hover:text-gold">
+      <?= $de ? 'Seitentexte ändern' : 'Sayfa metinlerini değiştir' ?>
+    </a>
+  </div>
+
   <!-- ------------------------------ Anfragen ------------------------------ -->
-  <section>
+  <section id="anfragen" class="scroll-mt-24">
     <h2 class="font-display text-xl text-ink"><?= $de ? 'Anfragen' : 'Talepler' ?></h2>
 
     <?php if ($leads === []) : ?>
@@ -81,7 +130,7 @@ $tiles = [
   </section>
 
   <!-- --------------------------- Albumauswahlen --------------------------- -->
-  <section>
+  <section id="auswahlen" class="scroll-mt-24">
     <h2 class="font-display text-xl text-ink"><?= $de ? 'Albumauswahlen' : 'Albüm seçimleri' ?></h2>
 
     <?php if ($selections === []) : ?>

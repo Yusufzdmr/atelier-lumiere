@@ -45,7 +45,8 @@ $de = $locale === 'de';
     </section>
   <?php endforeach; ?>
 
-  <div class="flex flex-wrap items-center gap-4">
+  <?php /* Die Reiter sind lang; der Knopf soll nicht am Ende einer Reise stehen. */ ?>
+  <div class="sticky bottom-0 -mb-8 flex flex-wrap items-center gap-4 border-t border-sand-deep bg-cream/95 py-4 backdrop-blur lg:-mb-10">
     <button class="bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $de ? 'Speichern' : 'Kaydet' ?>
     </button>

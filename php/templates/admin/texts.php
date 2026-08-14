@@ -113,11 +113,11 @@ foreach ($entries as $entry) {
     <p class="border border-sand-deep p-5 text-sm text-muted"><?= $de ? 'Diese Gruppe ist leer.' : 'Bu grup boş.' ?></p>
   <?php endif; ?>
 
-  <div class="sticky bottom-0 -mx-5 border-t border-sand-deep bg-cream/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8">
+  <div class="sticky bottom-0 -mb-8 flex flex-wrap items-center gap-4 border-t border-sand-deep bg-cream/95 py-4 backdrop-blur lg:-mb-10">
     <button class="bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $de ? 'Speichern' : 'Kaydet' ?>
     </button>
-    <span class="ml-4 text-[0.72rem] text-muted">
+    <span class="text-[0.72rem] text-muted">
       <?= $de ? 'Gilt für: ' : 'Kapsam: ' ?><?= e($caption) ?>
     </span>
   </div>

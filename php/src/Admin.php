@@ -13,25 +13,81 @@ namespace Atelier;
  */
 final class Admin
 {
+    /**
+     * Die Abschnitte der Seitenleiste.
+     *
+     * Sechzehn Reiter in einer Reihe sind keine Navigation mehr, sondern eine
+     * Wand. Gruppiert wird danach, in welcher Rolle jemand hier sitzt: Texte
+     * pflegen, einen Auftrag bearbeiten, das Aussehen ändern, etwas einrichten.
+     *
+     * @var array<string,array{de:string,tr:string}>
+     */
+    public const GROUPS = [
+        'inhalt'  => ['de' => 'Inhalte', 'tr' => 'İçerik'],
+        'auftrag' => ['de' => 'Aufträge', 'tr' => 'İşler'],
+        'design'  => ['de' => 'Gestaltung', 'tr' => 'Görünüm'],
+        'technik' => ['de' => 'Einstellungen', 'tr' => 'Ayarlar'],
+    ];
+
     /** Die Reiter des Adminbereichs, in dieser Reihenfolge. */
     public const TABS = [
-        ['href' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
-        ['href' => '/inhalte', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
-        ['href' => '/texte', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
-        ['href' => '/pakete', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
-        ['href' => '/leistungen', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
-        ['href' => '/staedte', 'de' => 'Städte', 'tr' => 'Şehirler'],
-        ['href' => '/locations', 'de' => 'Locations', 'tr' => 'Mekânlar'],
-        ['href' => '/portfolio', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
-        ['href' => '/ratgeber', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
-        ['href' => '/kunden', 'de' => 'Kunden', 'tr' => 'Müşteriler'],
-        ['href' => '/einladungen', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
-        ['href' => '/themen', 'de' => 'Themen', 'tr' => 'Temalar'],
-        ['href' => '/ueber-mich', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
-        ['href' => '/rechtliches', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
-        ['href' => '/seo', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
-        ['href' => '/integrationen', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
+        ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
+
+        ['href' => '/inhalte', 'group' => 'inhalt', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
+        ['href' => '/texte', 'group' => 'inhalt', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
+        ['href' => '/leistungen', 'group' => 'inhalt', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
+        ['href' => '/pakete', 'group' => 'inhalt', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
+        ['href' => '/staedte', 'group' => 'inhalt', 'de' => 'Städte', 'tr' => 'Şehirler'],
+        ['href' => '/locations', 'group' => 'inhalt', 'de' => 'Locations', 'tr' => 'Mekânlar'],
+        ['href' => '/portfolio', 'group' => 'inhalt', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
+        ['href' => '/ratgeber', 'group' => 'inhalt', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
+        ['href' => '/ueber-mich', 'group' => 'inhalt', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
+        ['href' => '/rechtliches', 'group' => 'inhalt', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
+
+        ['href' => '/kunden', 'group' => 'auftrag', 'de' => 'Kunden', 'tr' => 'Müşteriler'],
+        ['href' => '/einladungen', 'group' => 'auftrag', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+
+        ['href' => '/themen', 'group' => 'design', 'de' => 'Themen', 'tr' => 'Temalar'],
+
+        ['href' => '/seo', 'group' => 'technik', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
+        ['href' => '/integrationen', 'group' => 'technik', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
     ];
+
+    /**
+     * Die Reiter nach Abschnitten, fertig für die Seitenleiste.
+     *
+     * @return list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
+     */
+    public static function sidebar(string $locale, string $current): array
+    {
+        $sections = [];
+
+        foreach (self::TABS as $tab) {
+            $group = (string) $tab['group'];
+            $sections[$group]['label'] = $group === ''
+                ? ''
+                : (self::GROUPS[$group][$locale] ?? self::GROUPS[$group]['de']);
+            $sections[$group]['key'] = $group;
+            $sections[$group]['tabs'][] = [
+                'href'   => I18n::path('/admin' . $tab['href'], $locale),
+                'label'  => (string) ($tab[$locale] ?? $tab['de']),
+                'active' => $current === $tab['href'],
+            ];
+        }
+
+        return array_values($sections);
+    }
+
+    /** Wie der gerade offene Reiter heißt – für die schmale Ansicht. */
+    public static function currentLabel(string $locale, string $current): string
+    {
+        foreach (self::TABS as $tab) {
+            if ($tab['href'] === $current) {
+                return (string) ($tab[$locale] ?? $tab['de']);
+            }
+        }
+        return (string) (self::TABS[0][$locale] ?? self::TABS[0]['de']);
+    }
 
     public static function isLoggedIn(): bool
     {
