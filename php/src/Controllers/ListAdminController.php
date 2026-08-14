@@ -11,6 +11,7 @@ use Atelier\Images;
 use Atelier\Invitations;
 use Atelier\Lists;
 use Atelier\Media;
+use Atelier\Places;
 use Atelier\Security;
 use Atelier\View;
 
@@ -270,6 +271,15 @@ final class ListAdminController
                 'label'   => $de ? 'Diese Location löschen' : 'Bu mekânı sil',
                 'confirm' => $de ? 'Location wirklich löschen?' : 'Mekân silinsin mi?',
             ],
+            'panel'   => fn (int $i, array $item, array $state): string => View::partial('admin/place-panel', [
+                'locale'     => $this->locale,
+                'index'      => $i,
+                'venue'      => $item,
+                'found'      => ($state['index'] ?? -1) === $i ? ($state['found'] ?? null) : null,
+                'reviews'    => ($state['index'] ?? -1) === $i ? ($state['reviews'] ?? []) : [],
+                'configured' => Places::configured(),
+                'csrf'       => Security::csrf(),
+            ]),
             'sections' => fn (int $i): array => [
                 [
                     'title'  => $de ? 'Kopf' : 'Üst bilgi',
@@ -279,6 +289,8 @@ final class ListAdminController
                         ['path' => "venues.$i.city", 'label' => $de ? 'Ort (Anzeige)' : 'Şehir (görünen)'],
                         ['path' => "venues.$i.citySlug", 'label' => $de ? 'Stadtseite' : 'Şehir sayfası', 'type' => 'select', 'options' => $cityOptions],
                         ['path' => "venues.$i.address", 'label' => $de ? 'Anschrift' : 'Adres', 'wide' => true],
+                        ['path' => "venues.$i.lat", 'label' => $de ? 'Breitengrad' : 'Enlem', 'hint' => $de ? 'Kommt aus der Ortssuche oben.' : 'Yukarıdaki yer aramasından gelir.'],
+                        ['path' => "venues.$i.lng", 'label' => $de ? 'Längengrad' : 'Boylam'],
                         ['path' => "venues.$i.type.de", 'label' => $de ? 'Art (DE)' : 'Tür (DE)'],
                         ['path' => "venues.$i.type.tr", 'label' => $de ? 'Art (TR)' : 'Tür (TR)'],
                         ['path' => "venues.$i.capacity.de", 'label' => $de ? 'Kapazität (DE)' : 'Kapasite (DE)'],
@@ -584,9 +596,12 @@ final class ListAdminController
      */
     private function handle(string $tab, string $title, string $intro, array $specs): void
     {
+        // Manche Schritte leiten nicht um, sondern zeigen ihr Ergebnis gleich
+        // daneben – eine Trefferliste hinter einer Umleitung waere weg.
+        $state = [];
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             Admin::checkCsrfOrFail();
-            $this->apply($tab, $specs);
+            $state = $this->apply($tab, $specs);
         }
 
         $blocks = [];
@@ -597,6 +612,8 @@ final class ListAdminController
             foreach ($items as $i => $item) {
                 $entries[] = [
                     'index'       => $i,
+                    'open'        => ($state['index'] ?? -1) === $i,
+                    'panel'       => isset($spec['panel']) ? ($spec['panel'])($i, $item, $state) : '',
                     'heading'     => ($spec['heading'])($item),
                     'note'        => ($spec['note'])($item),
                     'view'        => ($spec['view'])($item),
@@ -637,8 +654,9 @@ final class ListAdminController
      * sonst legt ein Neuladen denselben Eintrag zweimal an.
      *
      * @param list<array<string,mixed>> $specs
+     * @return array<string,mixed> Zustand fuer die Anzeige, falls nicht umgeleitet wurde
      */
-    private function apply(string $tab, array $specs): void
+    private function apply(string $tab, array $specs): array
     {
         $key = Security::clean($_POST['liste'] ?? '', 40);
         $spec = null;
@@ -676,6 +694,31 @@ final class ListAdminController
             Admin::back($this->locale, $tab);
         }
 
+        // Diese drei bleiben auf der Seite stehen, statt hinter einer Umleitung
+        // zu verschwinden.
+        if ($was === 'ort-suche') {
+            return [
+                'index' => $index,
+                'found' => Places::search(
+                    Security::clean($_POST['q'] ?? '', 160),
+                    (string) ((Lists::item($key, $index) ?? [])['city'] ?? '')
+                ),
+            ];
+        }
+        if ($was === 'ort-bewertungen') {
+            $item = Lists::item($key, $index) ?? [];
+            $place = Places::details((string) ($item['placeId'] ?? ''));
+            return ['index' => $index, 'reviews' => $place['reviews'] ?? []];
+        }
+        if ($was === 'ort-uebernehmen') {
+            $this->takePlace($key, $index, Security::clean($_POST['place'] ?? '', 300));
+            Admin::back($this->locale, $tab);
+        }
+        if ($was === 'ort-loesen') {
+            Lists::update($key, $index, ['placeId' => '', 'lat' => '', 'lng' => '']);
+            Admin::back($this->locale, $tab);
+        }
+
         match ($was) {
             'save' => $this->save($spec, $index),
             'up'   => Lists::move($key, $index, -1),
@@ -687,6 +730,38 @@ final class ListAdminController
         };
 
         Admin::back($this->locale, $tab);
+    }
+
+    /**
+     * Einen bei Google gefundenen Ort uebernehmen.
+     *
+     * Genommen werden nur die Sachangaben: Anschrift, Koordinaten und die
+     * Kennung des Ortes. Die redaktionellen Texte bleiben, wie sie sind – sie
+     * sind der Grund, warum die Seite ueberhaupt gefunden wird.
+     */
+    private function takePlace(string $key, int $index, string $placeId): void
+    {
+        $place = Places::details($placeId);
+        if ($place === null) {
+            return;
+        }
+
+        $patch = [
+            'placeId' => (string) $place['placeId'],
+            'address' => (string) $place['address'],
+            'lat'     => (string) $place['lat'],
+            'lng'     => (string) $place['lng'],
+        ];
+
+        // Den Namen nur setzen, wenn noch keiner dasteht: wer die Location
+        // kuerzer nennen will als Google, soll das nicht bei jeder Suche neu
+        // eintippen muessen.
+        $item = Lists::item($key, $index) ?? [];
+        if (trim((string) ($item['name'] ?? '')) === '') {
+            $patch['name'] = (string) $place['name'];
+        }
+
+        Lists::update($key, $index, $patch);
     }
 
     /** @param array<string,mixed> $spec */

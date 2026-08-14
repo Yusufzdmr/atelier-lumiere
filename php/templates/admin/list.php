@@ -57,7 +57,7 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
 
       <?php foreach ($block['items'] as $item) : ?>
         <?php $i = (int) $item['index']; ?>
-        <details class="group border border-sand-deep">
+        <details class="group border border-sand-deep"<?= !empty($item['open']) ? ' open' : '' ?>>
           <summary class="flex cursor-pointer items-center justify-between gap-4 p-5">
             <span class="min-w-0">
               <span class="font-display text-lg text-ink"><?= e((string) $item['heading']) ?></span>
@@ -71,6 +71,11 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
           </summary>
 
           <div class="space-y-8 border-t border-sand-deep p-6">
+            <?php /* Zusatzfeld eines Reiters – etwa die Ortssuche bei Locations. */ ?>
+            <?php if (($item['panel'] ?? '') !== '') : ?>
+              <?= $item['panel'] ?>
+            <?php endif; ?>
+
             <?php if (!empty($item['photos'])) : ?>
               <?php $photos = $item['photos']; ?>
               <div class="space-y-4">

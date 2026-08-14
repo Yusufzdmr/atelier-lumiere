@@ -82,6 +82,7 @@ $router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) =>
 $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
 
 $router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
+$router->get('/{locale}/admin/karte', $page_(static fn (array $p) => (new AdminController($p['locale']))->map()));
 $router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
 $router->any('/{locale}/admin/inhalte', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
 $router->any('/{locale}/admin/texte', $page_(static fn (array $p) => (new TextAdminController($p['locale']))->index()));

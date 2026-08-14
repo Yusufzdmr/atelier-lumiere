@@ -39,6 +39,9 @@ final class Integrations
                 'searchConsole' => '',
                 'bing'          => '',
                 'consentMode'   => true,
+                // Nur fuer den Adminbereich: Orte suchen und Karte zeigen.
+                // Geht nie an den Browser.
+                'mapsKey'       => '',
             ],
             'meta'      => ['pixelId' => ''],
             'extras'    => [],

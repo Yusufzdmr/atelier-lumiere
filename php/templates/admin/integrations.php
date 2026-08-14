@@ -53,6 +53,7 @@ $chip = static function (bool $on, string $name) : string {
       <?= $chip($google['adsId'] !== '', 'Google Ads') ?>
       <?= $chip($meta['pixelId'] !== '', 'Meta Pixel') ?>
       <?= $chip($google['searchConsole'] !== '', 'Search Console') ?>
+      <?= $chip(($google['mapsKey'] ?? '') !== '', 'Maps') ?>
     </div>
   </div>
 
@@ -174,6 +175,21 @@ $chip = static function (bool $on, string $name) : string {
             <label class="<?= $label ?>" for="bing">Bing Webmaster Tools</label>
             <input id="bing" name="bing" value="<?= e($google['bing']) ?>" class="<?= $input ?>" placeholder="msvalidate.01">
           </div>
+        </div>
+
+        <div class="mt-7">
+          <label class="<?= $label ?>" for="maps_key">
+            <?= $de ? 'Maps- und Places-Schlüssel' : 'Maps ve Places anahtarı' ?>
+          </label>
+          <input id="maps_key" name="maps_key" class="<?= $input ?>" autocomplete="off"
+                 placeholder="<?= ($google['mapsKey'] ?? '') !== ''
+                    ? ($de ? 'gespeichert – leer lassen, um ihn zu behalten' : 'kayıtlı – korumak için boş bırakın')
+                    : 'AIza…' ?>">
+          <p class="<?= $hint ?>">
+            <?= $de
+                ? 'Nur für den Adminbereich: damit lassen sich Locations bei Google suchen, auf der Karte prüfen und mit Anschrift und Koordinaten übernehmen. Der Schlüssel geht nie an Besucher. In der Google Cloud Console brauchen „Places API (New)“ und „Maps Static API“ eine Abrechnung – für ein paar Dutzend Locations bleibt es im Freikontingent.'
+                : 'Yalnızca yönetim paneli için: mekânları Google’da arayıp haritada doğrulamak ve adres ile koordinatlarıyla almak içindir. Anahtar hiçbir zaman ziyaretçiye gitmez. Google Cloud Console’da „Places API (New)“ ve „Maps Static API“ faturalandırma ister – birkaç düzine mekân için ücretsiz kotanın içinde kalır.' ?>
+          </p>
         </div>
 
         <label class="mt-6 flex cursor-pointer items-start gap-3 text-[0.82rem] leading-relaxed text-ink">

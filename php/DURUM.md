@@ -28,6 +28,8 @@ sonra `php bin/import.php` (veya `--replace`).
 | Müşteriler | `src/Customers.php` + `CustomerAdminController` — kayıt açınca galeri **otomatik** oluşur (parola ve kupon otomatik üretilir, galeri bitişi düğün + 2 yıl). Fotoğraf yükleme/silme, çiftin seçimi (kalpli kareler + notu), kupon yönetimi (kod/aktif/tek kullanım/son tarih/yeni kod/yeniden aç), arşivle, giriş adını yazdırarak kalıcı sil |
 | Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), **kişiye özel davetiye listesi + çiftin yönetim linki**, müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
 | **Sayfa metinleri** | Yeni sekme (`/admin/texte`). Sözlükteki 312 metin — bölüm başlıkları („Was wir für euch tun“), düğme yazıları, form etiketleri — 17 grup halinde, iki dilde düzenlenebilir. `src/Texts.php` bir **üst katman**: sözlük dosyası hiç değişmiyor, yalnızca farklı olan saklanıyor. Bir alanı boşaltmak = ilk metne dönmek |
+| Mekân → Google | `src/Places.php` — panelden yer adı yazılır, Google Places karşılıklarını listeler, **her adayın yanında haritası** çıkar, „Bunu al“ deyince ad/adres/koordinat/place-id mekâna yazılır. Metinler ellenmez. Anahtar sunucuda kalır; harita bile kendi adresimizden (`/admin/karte`) geçer. Anahtar yokken sekme çalışır, sadece „önce anahtarı gir“ der |
+| Mekân yorumları | Seçili yerin Google yorumları **canlı** gösterilir (4+ yıldız, 80+ karakter, uzun olan üstte), yazar adı ve bağlantısıyla. **Saklanmaz, siteye kopyalanmaz** — Google şartları izin vermiyor, metinler yazarlarına ait ve kopya içerik SEO'da zarar. Amacı: „avludaki ışık, gürültülü salon“ gibi gerçek ayrıntıları görüp kendi cümlelerinizle yazmak |
 | Panel düzeni | Sekmeler artık **gruplanmış yan menüde** (İçerik / İşler / Görünüm / Ayarlar) — 16 sekme tek sırada bir duvardı. Geniş ekranda yapışkan yan menü, dar ekranda açılır kapanır seçim (açık sekmenin adı üstte yazılı). Üst çubuk yapışkan, uzun formlarda **kaydet düğmesi altta sabit** duruyor. Genel bakış: kutucuklar tıklanır, „son yedi günde ne geldi“ satırı ve dört hızlı işlem düğmesi |
 | Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
@@ -91,8 +93,12 @@ mantığı PHP + `assets/consent.js` olarak:
    paneldeki „öncesi / geri al“ bunu kullanıyor. Zaten kurulu bir sistemde bir
    kez elle: `php -r 'require "src/bootstrap.php"; Atelier\Content::saveOriginal(json_decode(file_get_contents("data/export.json"), true)["content"]);'`
 5. Let's Encrypt (KAS'ta tek tık), `uploads/` yazılabilir olmalı (755)
-6. **GD açık mı kontrol et** (`phpinfo()`), yoksa görseller küçültülmeden yüklenir
-7. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
+6. İsteğe bağlı: Google Cloud Console'da **Places API (New)** + **Maps Static API**
+   açıp anahtarı Entegrasyonlar sekmesine gir (mekân arama için; birkaç düzine
+   mekân ücretsiz kotada kalır). Anahtarı **HTTP referrer ile değil, sunucu IP'si
+   ile** kısıtla — çağrılar sunucudan gidiyor
+7. **GD açık mı kontrol et** (`phpinfo()`), yoksa görseller küçültülmeden yüklenir
+8. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
    PayPal sandbox turu, sitemap, robots, 404
 
 ### 4. Krumbach bölge içeriği
@@ -177,6 +183,7 @@ src/Content.php                  içerik dokümanı (tek JSON kaydı)
 src/Customers.php                müşteri + kupon; galeriyle senkron
 src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
 src/Texts.php                    sözlük üstü metin katmanı (sayfa metinleri)
+src/Places.php                   Google Places: yer arama, detay, statik harita
 src/OgImage.php                  WhatsApp önizleme görseli (1200×630, önbellekli)
 src/Controllers/
   AdminController.php            genel bakış, temalar, entegrasyonlar
@@ -190,12 +197,15 @@ src/Controllers/
 templates/admin/                 layout, login, overview, content, list, customers,
                                  customer, customer-missing, invitations, themes,
                                  integrations
+templates/admin/place-panel.php   mekân sekmesindeki Google yer arama paneli
 templates/pages/invite-manage.php  çiftin misafir listesi (müşteriye görünen yüz)
 public/assets/invite-manage.js     link kopyalama
 ```
 
 ## Müşteriden bekleyenler
 
+- Google Maps/Places API anahtarı (mekân arama için; faturalandırma açık bir
+  Google Cloud projesi gerekiyor — kullanım ücretsiz kotada kalacak)
 - PayPal Client ID + Secret (hesap: `akyel.business@gmail.com`, Business olmalı)
 - Krumbach bölgesi mekân listesi
 - Gerçek fotoğraflar ve marka adı

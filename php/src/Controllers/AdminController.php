@@ -11,6 +11,7 @@ use Atelier\I18n;
 use Atelier\Integrations;
 use Atelier\Leads;
 use Atelier\Paypal;
+use Atelier\Places;
 use Atelier\Media;
 use Atelier\Security;
 use Atelier\Themes;
@@ -114,6 +115,8 @@ final class AdminController
             'searchConsole' => Security::clean($_POST['gsc'] ?? '', 200),
             'bing'          => Security::clean($_POST['bing'] ?? '', 200),
             'consentMode'   => isset($_POST['consent_mode']),
+            // Leeres Feld heisst auch hier: unveraendert lassen.
+            'mapsKey'       => $keep('maps_key', (string) ($settings['google']['mapsKey'] ?? '')),
         ];
 
         $settings['meta'] = ['pixelId' => Security::clean($_POST['meta_pixel'] ?? '', 40)];
@@ -352,6 +355,39 @@ final class AdminController
             $id = $wanted . '-' . $n++;
         }
         return $id;
+    }
+
+    /* --------------------------------- Karte -------------------------------- */
+
+    /**
+     * Kartenausschnitt fuer die Ortssuche.
+     *
+     * Laeuft ueber die eigene Adresse, damit der Google-Schluessel nicht im
+     * HTML des Adminbereichs steht. Ein Schluessel in einer Seite ist ein
+     * Schluessel, der ueber einen geteilten Bildschirm oder ein Bildschirmfoto
+     * abfliesst.
+     */
+    public function map(): void
+    {
+        $lat = (float) Security::clean($_GET['lat'] ?? '', 24);
+        $lng = (float) Security::clean($_GET['lng'] ?? '', 24);
+
+        // Ausserhalb der Erde gibt es nichts zu sehen.
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 || ($lat === 0.0 && $lng === 0.0)) {
+            http_response_code(404);
+            exit;
+        }
+
+        $image = Places::staticMap($lat, $lng, 480, 260);
+        if ($image === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: image/png');
+        header('Cache-Control: private, max-age=600');
+        echo $image;
+        exit;
     }
 
     /* -------------------------------- Abmelden ------------------------------ */
