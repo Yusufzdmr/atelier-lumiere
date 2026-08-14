@@ -61,6 +61,13 @@ final class Media
         [$width, $height] = $info;
         $mime = (string) ($info['mime'] ?? '');
 
+        // Nicht jeder Webspace hat GD. Dann wird nicht verkleinert, sondern die
+        // geprüfte Datei unverändert abgelegt – lieber ein großes Bild als eine
+        // Fehlerseite beim Hochladen.
+        if (!function_exists('imagecreatefromjpeg')) {
+            return self::keep($tmp, $mime, $folder);
+        }
+
         $image = match ($mime) {
             'image/jpeg' => @imagecreatefromjpeg($tmp),
             'image/png'  => @imagecreatefrompng($tmp),
@@ -92,6 +99,34 @@ final class Media
         imagedestroy($image);
 
         return $ok ? self::url($relative) : null;
+    }
+
+    /**
+     * Rückfall ohne GD: die geprüfte Datei unverändert übernehmen.
+     *
+     * Die Endung kommt aus dem erkannten Typ, nicht aus dem Dateinamen – so
+     * landet nichts Ausführbares im Upload-Ordner.
+     */
+    private static function keep(string $tmp, string $mime, string $folder): ?string
+    {
+        $extension = match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+            default      => null,
+        };
+
+        if ($extension === null) {
+            return null;
+        }
+
+        $name = bin2hex(random_bytes(8)) . '.' . $extension;
+        $target = self::dir($folder) . '/' . $name;
+
+        return move_uploaded_file($tmp, $target)
+            ? self::url(trim($folder, '/') . '/' . $name)
+            : null;
     }
 
     /**

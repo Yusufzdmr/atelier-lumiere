@@ -54,3 +54,5 @@ skills-lock.json
 # PHP-Fassung: lokale Konfiguration und Datenauszug
 php/config.php
 php/data/export.json
+# Hochgeladene Bilder gehoeren dem Betrieb, nicht dem Repo
+php/public/uploads/

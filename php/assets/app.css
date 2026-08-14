@@ -1,8 +1,11 @@
 @import "tailwindcss";
 @import "./fonts.css";
 
-/* Tailwind durchsucht die PHP-Vorlagen nach Klassen. */
+/* Tailwind durchsucht die PHP-Vorlagen nach Klassen. Der Adminbereich baut
+   seine Formulare aus Feldbeschreibungen, deshalb steht dort ein Teil der
+   Klassen im PHP-Quelltext statt in einer Vorlage – src gehört mit dazu. */
 @source "../templates";
+@source "../src";
 @source "../public/assets/app.js";
 
 @theme {

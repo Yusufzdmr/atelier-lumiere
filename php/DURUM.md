@@ -21,33 +21,64 @@ sonra `php bin/import.php` (veya `--replace`).
 | İskelet | Router, şablon motoru, PDO katmanı, iki dil (624 metin aktarıldı), oturum/CSRF, `.htaccess` |
 | Genel sayfalar | Ana sayfa, hizmetler, fiyatlar, portfolyo + hikâye, bölgeler, 10 şehir, mekân listesi + 7 mekân, rehber + yazılar, hakkımda, iletişim (form + e-posta + kayıt), Impressum/Datenschutz/AGB, sitemap.xml (74 kayıt), robots.txt |
 | Müşteri galerisi | Giriş, fotoğraf ızgarası, kalple seçim, lightbox, seçim gönderimi (veritabanı + e-posta) |
-| Görsel yükleme | `src/Media.php` — GD ile 1600 px JPEG, tür dosya içeriğinden, silme upload klasörüyle sınırlı |
+| Görsel yükleme | `src/Media.php` — GD ile 1600 px JPEG, tür dosya içeriğinden, silme upload klasörüyle sınırlı. **GD yoksa** dosya küçültülmeden olduğu gibi saklanır (hata sayfası yerine) |
 | Video | YouTube/Vimeo, iki tıklamalı (izin öncesi sağlayıcıya istek yok) |
-| Yönetim paneli | Giriş (deneme sınırlı), Genel bakış, **Metinler & iletişim**, **Fiyatlar & paketler**, **Hakkımda & yorumlar**, **Yasal metinler**, **SEO & meta**, **Temalar**, **Entegrasyonlar** |
+| **Yönetim paneli — 15 sekmenin hepsi** | Giriş (deneme sınırlı), Genel bakış, Metinler & iletişim, Fiyatlar & paketler, **Hizmetler & süreç**, **Şehirler**, **Mekânlar**, **Portfolyo**, **Rehber**, **Müşteriler**, **Davetiyeler**, Temalar, Hakkımda & yorumlar, Yasal metinler, SEO & meta, Entegrasyonlar |
+| Liste düzenleyicisi | `src/Lists.php` + `templates/admin/list.php` + `src/Controllers/ListAdminController.php` — şehir/mekân/portfolyo/rehber/hizmet aynı kalıptan: aç, düzenle, kaydet, ekle, sırala (↑↓), sil. Her kayıt kendi formunda (10 şehir tek düğmeye gitmez) |
+| Müşteriler | `src/Customers.php` + `CustomerAdminController` — kayıt açınca galeri **otomatik** oluşur (parola ve kupon otomatik üretilir, galeri bitişi düğün + 2 yıl). Fotoğraf yükleme/silme, çiftin seçimi (kalpli kareler + notu), kupon yönetimi (kod/aktif/tek kullanım/son tarih/yeni kod/yeniden aç), arşivle, giriş adını yazdırarak kalıcı sil |
+| Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
 | Entegrasyonlar | PayPal (ID/Secret/mod + bağlantı testi), GA4/GTM/Ads + 3 dönüşüm etiketi, Meta Pixel, Search Console/Bing, serbest anahtar listesi (`Integrations::value('AD')`) |
 | Davetiye | Sihirbaz (tek form, 5 adım, JS'siz de çalışır), tema seçimi, canlı önizleme, kupon (sunucuda), taslak + devam linki, fotoğraf yükleme, davetiye sayfası (zarf animasyonu, geri sayım, program, menü, harita, müzik), RSVP, PayPal turu |
 
-Hepsi yerelde MariaDB 10.4'e karşı test edildi.
+Hepsi yerelde MariaDB 10.4'e karşı test edildi: kaydetme, ekleme, sıralama, silme,
+çift dilli satır alanları (bir dili düzenlerken diğeri korunuyor), fotoğraf
+yükleme/silme (dosyalar dahil), müşteri + galeri + kupon döngüsü, davetiye ve
+taslak silme. 15 sekme × 2 dil = 30 sayfa uyarısız açılıyor.
 
 ## Kalan — bu sırayla
 
-### 1. Panelde 7 sekme
-`src/Controllers/` içine, mevcut kalıpla:
+### 1. Kişiye / aileye özel davetiye + WhatsApp önizlemesi
 
-- **Hizmetler & süreç** (`/leistungen`) — hizmet blokları + süreç adımları, ekle/sil
-- **Şehirler** (`/staedte`) — 10 şehir: metin, çekim noktaları, SSS, komşular, ekle/sil
-- **Mekânlar** (`/locations`) — ışık notu, kurallar, zaman planı, ekle/sil
-- **Portfolyo** (`/portfolio`) — çekimler + fotoğraf yükleme + düğün filmi
-- **Rehber** (`/ratgeber`) — yazılar + görsel
-- **Müşteriler** (`/kunden`) — müşteri kaydı açınca galeri + kupon birlikte oluşur; giriş bilgisi, fotoğraf yükleme, çiftin seçimi, kupon yönetimi (tek kullanım/aktif/süre), arşivle, onaylı kalıcı sil. **Next sürümünde bunun tamamı var**: `../lib/store.ts` (Customer, checkCoupon, redeemCoupon) ve `../app/[locale]/admin/kunden/` — mantığı oradan çevir
-- **Davetiyeler** (`/einladungen`) — davetiye listesi, RSVP'ler, taslaklar, silme
+Müşteriden gelen istek. Tasarım aynı kalır, hitap edilen kişi değişir:
 
-Sabit alanlı olanlar için `src/Form.php` (alan tanımından form üretir) yeter.
-Liste tipi olanlar (şehir, mekân, portfolyo, rehber, müşteri) ekle/sil gerektirdiği
-için ortak bir liste düzenleyicisi yazmak mantıklı — her biri için ayrı şablon yazma.
+- **Tek tek**: müşteri bir kişi/aile adı girer → o kişiye özel ayrı davetiye + ayrı link
+  (`/de/einladung/ayse-mehmet/familie-mueller` gibi)
+- **Toplu**: misafir listesi yüklenir ya da isimler girilir → sistem hepsi için
+  otomatik ayrı davetiye üretir
+- Ana davetiye tek kayıt kalmalı; kişiselleştirme onun üstünde ince bir katman olmalı
+  (`invite_guests` tablosu: slug + guest slug + hitap adı), yoksa 200 misafir
+  200 kopya davetiye demektir
+- Yönetim: Davetiyeler sekmesinde kişi listesi, link kopyalama, tek tek silme
 
-### 2. Çerez izni + ölçüm
+**WhatsApp / Open Graph**: davetiye linki paylaşılınca düz link değil, kart görünsün.
+Her davetiye için dinamik OG: „Ayşe & Mehmet – Hochzeitseinladung“, düğün tarihi,
+kapak görseli. Müşteri önizleme görselini panelden değiştirebilsin.
+Not: OG görselinin **mutlak URL** olması ve 1200×630 üretilmesi gerekir; şu an
+`Media` yalnızca 1600 px uzun kenar üretiyor.
+
+### 2. Modüler tema sistemi
+
+Şu anki tema tek parça (renkler + arka plan + animasyon + CSS). İstenen:
+
+- Renk, font, zarf, mühür, dekorasyon, arka plan ve animasyonlar **ayrı ayrı** yönetilsin
+- Aynı temanın varyasyonları: Ivory, Rose, Sage, Dark
+- Arka plan dışında şeffaf PNG/WebP/SVG öğeler (çiçek, çerçeve, monogram, yaprak)
+  tek tek eklenebilsin; **konum, boyut, opaklık, katman sırası** panelden ayarlansın
+- Animasyonda tür + hangi öğe önce/sonra + süre + gecikme
+- Kopyalama var; **import/export** (JSON) eklenecek
+- **Versiyonlama**: tema değişince eski davetiyeler bozulmamalı. Davetiye kaydı
+  temanın kimliğini değil, o anki **anlık görüntüsünü** (veya sürüm numarasını)
+  tutmalı. Bu, yapılacakların en kritik parçası — sonradan eklemek zor
+- Büyük Canva PNG/JPG otomatik optimize; WebP/AVIF (`imagewebp` GD'de var,
+  AVIF PHP 8.1+ ve libavif gerektirir — ALL-INKL'de kontrol edilmeli)
+- Custom CSS izolasyonu ve güvenlik kontrolleri **korunacak** (zaten var)
+- Canlı önizlemede telefon / tablet / masaüstü geçişi
+
+Müşteri tarafı basit kalmalı: **tema seç → bilgileri gir → isterse kişiye özel
+isimleri ekle → önizle → oluştur/paylaş.** Gelişmişlik panelde kalsın, sihirbazda değil.
+
+### 3. Çerez izni + ölçüm
 Next sürümündeki `../components/CookieConsent.tsx` ve `../components/Tracking.tsx`
 mantığı PHP + `assets/consent.js` olarak:
 - Ön işaretli kutu yok, "reddet" eşit görünürlükte, karar `localStorage` (`al-consent-v1`)
@@ -56,24 +87,25 @@ mantığı PHP + `assets/consent.js` olarak:
 - Dönüşümler: iletişim formu, davetiye oluşturma, `tel:` tıklaması (tek dinleyici)
 - Kimlikler zaten panelde: `Integrations::publicTracking()`
 
-### 3. ALL-INKL'e yayın
+### 4. ALL-INKL'e yayın
 1. KAS → veritabanı oluştur, `schema.sql` içe aktar (phpMyAdmin)
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
    (KAS'ta ayarlanamazsa bir üst dizine yönlendiren ikinci `.htaccess` gerekir)
 4. `node ../scripts/export-to-php.mjs` → `php bin/import.php` ile içerik + galeriler
 5. Let's Encrypt (KAS'ta tek tık), `uploads/` yazılabilir olmalı (755)
-6. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
+6. **GD açık mı kontrol et** (`phpinfo()`), yoksa görseller küçültülmeden yüklenir
+7. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
    PayPal sandbox turu, sitemap, robots, 404
 
-### 4. Krumbach bölge içeriği
+### 5. Krumbach bölge içeriği
 Şu an şehirler Stuttgart demo seti (Stuttgart, Ludwigsburg, Esslingen, Böblingen,
 Waiblingen, Heilbronn, Tübingen, Nürtingen, Pforzheim, Schwäbisch Gmünd).
 Hedef: Krumbach merkezli — Ulm, Neu-Ulm, Günzburg, Memmingen, Augsburg, München,
 sonra Stuttgart, Friedrichshafen, Bregenz, St. Gallen.
 **10 şehir + 7 mekân için sıfırdan benzersiz Almanca metin** yazılacak (doorway page
-riski taşımamalı). Mekân listesi müşteriden bekleniyor. Panelden girilebilir ama iş
-tıklamak değil, metin yazmak.
+riski taşımamalı). Mekân listesi müşteriden bekleniyor. Panelden girilebilir
+(Şehirler/Mekânlar sekmeleri hazır) ama iş tıklamak değil, metin yazmak.
 
 ## Yerelde çalıştırma
 
@@ -102,26 +134,44 @@ Galeri demo: `elif-marco` / `solitude24`
 
 ## Tuzaklar (tekrar düşmemek için)
 
-- **Şablona sınıf eklediysen Tailwind'i yeniden derle**, yoksa stil yok
+- **Şablona sınıf eklediysen Tailwind'i yeniden derle**, yoksa stil yok.
+  `assets/app.css` artık `../src` klasörünü de tarıyor: panel formları sınıfları
+  PHP içinde üretiyor (`ListAdminController`'daki `md:grid-cols-4` gibi)
 - `„…"` yazarken kapanış tırnağı düz `"` olursa PHP string'i erken kapanır → kapanış `"`;
   JSX/HTML metninde `&bdquo; &ldquo;`
 - Toplu dosya düzenlemesini **bash heredoc ile yapma**: `\1` gibi kaçışlar bozuluyor.
   Betiği dosyaya yaz, `PYTHONIOENCODING=utf-8 python betik.py` ile çalıştır
 - Form içindeki yükleme/yardımcı düğmeler `type="button"` olmalı
+- **İç içe form olmaz**: fotoğraf yükleme ve silme formları, düzenleme formunun
+  *dışında* durmalı (`templates/admin/list.php` böyle kurulu)
 - PHP'nin yerleşik sunucusu statik dosyaları `public/dev-router.php` olmadan vermez
 - Aynı porta ikinci sunucu açılırsa eskisi cevap vermeye devam eder — `netstat -ano | grep 8080`
+- **XAMPP'ta GD kapalı gelebilir**: `C:\xampp\php\php.ini` içinde `;extension=gd`
+  satırındaki noktalı virgülü kaldır, sunucuyu yeniden başlat. Kapalıyken görseller
+  küçültülmeden saklanır (artık hata vermez ama 6000 px dosyalar birikir)
+- **Windows'ta PHP `/tmp` yolunu bilmez** (Git Bash bilir). Test dosyalarını
+  `C:/Users/.../Temp/...` gibi tam yolla yaz, yoksa `file_put_contents` sessizce patlar
+- MySQL komut satırı `€` ve `ı`'yı `?` gösterir — bu ekran sorunu, veri doğru.
+  Kontrol için `php -r` ile oku
 - Neon (Next sürümü) boşta uyur; ilk sorgu yavaş olabilir
 
-## Son commit'ler
+## Nerede ne var (panel)
 
 ```
-27b4584  PHP port: invitation wizard, invitation page, RSVP and PayPal
-faf6129  PHP admin: content tabs via a field description
-59301c7  PHP admin: theme editor with uploads, animation and custom CSS
-d927fbc  PHP admin: login, overview and the integrations tab
-e7a92e6  PHP port: customer gallery, uploads, video embeds
-12a6e82  PHP port: all public pages, contact form, sitemap and robots
-1268203  Start the PHP port: foundation, data migration and home page
+src/Admin.php                    sekme listesi (TABS), giriş, CSRF, geri yönlendirme
+src/Form.php                     alan tanımından form üretir ve geri okur
+src/Lists.php                    içerik listelerinde ekle/sil/sırala/yükle
+src/Content.php                  içerik dokümanı (tek JSON kaydı)
+src/Customers.php                müşteri + kupon; galeriyle senkron
+src/Controllers/
+  AdminController.php            genel bakış, temalar, entegrasyonlar
+  ContentAdminController.php     sabit alanlı sekmeler (metinler, paketler, SEO…)
+  ListAdminController.php        liste sekmeleri (hizmet, şehir, mekân, portfolyo, rehber)
+  CustomerAdminController.php    müşteri listesi ve müşteri kartı
+  InviteAdminController.php      davetiyeler, RSVP'ler, taslaklar
+templates/admin/                 layout, login, overview, content, list, customers,
+                                 customer, customer-missing, invitations, themes,
+                                 integrations
 ```
 
 ## Müşteriden bekleyenler
@@ -131,3 +181,5 @@ e7a92e6  PHP port: customer gallery, uploads, video embeds
 - Gerçek fotoğraflar ve marka adı
 - Yasal metinlerin avukat kontrolü
 - ALL-INKL KAS erişimi (paylaşılan oturum linki değil — kendi girişiyle)
+- Kişiselleştirilmiş davetiye için: örnek misafir listesi (hangi biçimde geliyor —
+  Excel, WhatsApp'tan kopyala-yapıştır, elle?)

@@ -9,8 +9,11 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use Atelier\Controllers\AdminController;
 use Atelier\Controllers\ContentAdminController;
+use Atelier\Controllers\CustomerAdminController;
 use Atelier\Controllers\GalleryController;
+use Atelier\Controllers\InviteAdminController;
 use Atelier\Controllers\InviteController;
+use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
 use Atelier\I18n;
@@ -80,6 +83,14 @@ $router->any('/{locale}/admin/pakete', $page_(static fn (array $p) => (new Conte
 $router->any('/{locale}/admin/ueber-mich', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));
 $router->any('/{locale}/admin/rechtliches', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->legal()));
 $router->any('/{locale}/admin/seo', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->seo()));
+$router->any('/{locale}/admin/leistungen', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->services()));
+$router->any('/{locale}/admin/staedte', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->cities()));
+$router->any('/{locale}/admin/locations', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->venues()));
+$router->any('/{locale}/admin/portfolio', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->stories()));
+$router->any('/{locale}/admin/ratgeber', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->posts()));
+$router->any('/{locale}/admin/kunden', $page_(static fn (array $p) => (new CustomerAdminController($p['locale']))->index()));
+$router->any('/{locale}/admin/kunden/{code}', $page_(static fn (array $p) => (new CustomerAdminController($p['locale']))->show($p)));
+$router->any('/{locale}/admin/einladungen', $page_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/themen', $page_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
 $router->any('/{locale}/admin/integrationen', $page_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
