@@ -15,7 +15,7 @@ Almanya'daki bir düğün fotoğrafçısı için **çalışan demo**: iki dilli 
 |---|---|---|
 | Almanca site | `/de` | — |
 | Türkçe site | `/tr` | — |
-| **Yönetim paneli** | `/de/admin` | parola `demo` (`ADMIN_KEY` env veya panelden değişir) |
+| **Yönetim paneli** | `/de/admin` | parola `demo` (`ADMIN_KEY` env ile değişir) |
 | Müşteri galerisi | `/de/galerie` | kod `elif-marco` · parola `solitude24` |
 | " | | kod `sarah-daniel` · parola `kelter25` |
 | Davetiye sihirbazı | `/de/einladung` | ücretsiz için kupon `lumiere2026` |
