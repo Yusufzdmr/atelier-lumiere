@@ -11,7 +11,9 @@ use Atelier\I18n;
 use Atelier\Integrations;
 use Atelier\Leads;
 use Atelier\Paypal;
+use Atelier\Media;
 use Atelier\Security;
+use Atelier\Themes;
 use Atelier\View;
 
 /**
@@ -173,6 +175,183 @@ final class AdminController
             static fn (array $extra): bool => (string) $extra['id'] !== $id
         ));
         Integrations::save($settings);
+    }
+
+
+    /* -------------------------------- Themen -------------------------------- */
+
+    public function themes(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            Admin::checkCsrfOrFail();
+
+            match ((string) ($_POST['was'] ?? '')) {
+                'save'            => $this->saveTheme(),
+                'add'             => $this->addTheme(),
+                'duplicate'       => $this->duplicateTheme(),
+                'delete'          => $this->deleteTheme(),
+                'image-delete'    => $this->deleteThemeImage('image'),
+                'envelope-delete' => $this->deleteThemeImage('envelopeImage'),
+                default           => null,
+            };
+
+            Admin::back($this->locale, '/themen');
+        }
+
+        $this->render('admin/themes', '/themen', ['themes' => Themes::all()]);
+    }
+
+    private function saveTheme(): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $themes = Themes::all();
+
+        foreach ($themes as $index => $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+
+            $next = $theme;
+            $next['name'] = Security::clean($_POST['name'] ?? '', 60) ?: $theme['name'];
+            $next['sub'] = [
+                'de' => Security::clean($_POST['sub_de'] ?? '', 60),
+                'tr' => Security::clean($_POST['sub_tr'] ?? '', 60),
+            ];
+
+            foreach (array_keys(Themes::COLORS) as $key) {
+                $next[$key] = Security::clean($_POST[$key] ?? '', 120) ?: $theme[$key];
+            }
+
+            $next['imageMode'] = Security::clean($_POST['imageMode'] ?? '', 10) === 'repeat' ? 'repeat' : 'cover';
+            $next['imageOpacity'] = (string) max(0, min(100, (int) ($_POST['imageOpacity'] ?? 100)));
+            $next['animation'] = in_array((string) ($_POST['animation'] ?? ''), Themes::ANIMATIONS, true)
+                ? (string) $_POST['animation']
+                : 'seal';
+            $next['animationSpeed'] = (string) max(0, min(8000, (int) ($_POST['animationSpeed'] ?? 1200)));
+            $next['animationDelay'] = (string) max(0, min(8000, (int) ($_POST['animationDelay'] ?? 0)));
+            $next['css'] = Themes::safeCss((string) ($_POST['css'] ?? ''));
+
+            // Hochgeladene Hintergruende (Canva-Export) ersetzen das bisherige Bild.
+            foreach (['image', 'envelopeImage'] as $field) {
+                $file = $_FILES[$field] ?? null;
+                if (is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                    $url = Media::store($file, 'themen/' . $id);
+                    if ($url !== null) {
+                        if ((string) $theme[$field] !== '') {
+                            Media::delete((string) $theme[$field]);
+                        }
+                        $next[$field] = $url;
+                    }
+                }
+            }
+
+            $themes[$index] = $next;
+            Themes::save($themes);
+            return;
+        }
+    }
+
+    private function addTheme(): void
+    {
+        $name = Security::clean($_POST['name'] ?? '', 60);
+        if ($name === '') {
+            return;
+        }
+
+        $themes = Themes::all();
+        $id = $this->freeThemeId(Themes::slug($name), $themes);
+
+        // Als Ausgangspunkt das erste Thema - so ist ein neues Thema nie roh.
+        $base = Themes::complete($themes[0] ?? []);
+        $base['id'] = $id;
+        $base['name'] = $name;
+        $base['sub'] = ['de' => '', 'tr' => ''];
+        $base['image'] = '';
+        $base['envelopeImage'] = '';
+        $base['css'] = '';
+
+        $themes[] = $base;
+        Themes::save($themes);
+    }
+
+    private function duplicateTheme(): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $themes = Themes::all();
+        $source = null;
+
+        foreach ($themes as $theme) {
+            if ((string) $theme['id'] === $id) {
+                $source = $theme;
+                break;
+            }
+        }
+        if ($source === null) {
+            return;
+        }
+
+        $copy = $source;
+        $copy['id'] = $this->freeThemeId($id . '-kopie', $themes);
+        $copy['name'] = $source['name'] . ' (Kopie)';
+        $themes[] = $copy;
+        Themes::save($themes);
+    }
+
+    private function deleteTheme(): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $themes = Themes::all();
+
+        // Das letzte Thema bleibt stehen - ohne Thema gaebe es keine Einladung.
+        if (count($themes) <= 1) {
+            return;
+        }
+
+        foreach ($themes as $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+            foreach (['image', 'envelopeImage'] as $field) {
+                if ((string) $theme[$field] !== '') {
+                    Media::delete((string) $theme[$field]);
+                }
+            }
+        }
+
+        Themes::save(array_values(array_filter(
+            $themes,
+            static fn (array $theme): bool => (string) $theme['id'] !== $id
+        )));
+    }
+
+    private function deleteThemeImage(string $field): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $themes = Themes::all();
+
+        foreach ($themes as $index => $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+            if ((string) $theme[$field] !== '') {
+                Media::delete((string) $theme[$field]);
+            }
+            $themes[$index][$field] = '';
+            Themes::save($themes);
+            return;
+        }
+    }
+
+    /** @param list<array<string,mixed>> $themes */
+    private function freeThemeId(string $wanted, array $themes): string
+    {
+        $taken = array_map(static fn (array $theme): string => (string) $theme['id'], $themes);
+        $id = $wanted;
+        $n = 2;
+        while (in_array($id, $taken, true)) {
+            $id = $wanted . '-' . $n++;
+        }
+        return $id;
     }
 
     /* -------------------------------- Abmelden ------------------------------ */

@@ -25,6 +25,7 @@ final class Admin
         ['href' => '/ratgeber', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
         ['href' => '/kunden', 'de' => 'Kunden', 'tr' => 'Müşteriler'],
         ['href' => '/einladungen', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+        ['href' => '/themen', 'de' => 'Themen', 'tr' => 'Temalar'],
         ['href' => '/ueber-mich', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
         ['href' => '/rechtliches', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
         ['href' => '/seo', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
