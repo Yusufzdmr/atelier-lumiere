@@ -35,6 +35,7 @@ sonra `php bin/import.php` (veya `--replace`).
 | İzinsizken | Tarayıcıda doğrulandı: Google/Meta/Doubleclick'e **sıfır istek**, `gtag` ve `fbq` tanımsız, HTML'de hiç dış `<script>` yok. Reddedince de aynı |
 | Kısmi izin | Yalnız istatistik seçilince GA4 yükleniyor, Meta Pixel yüklenmiyor — test edildi |
 | Dönüşümler | İletişim formu (`generate_lead`), davetiye oluşturma (`purchase`, tutarıyla), `tel:` tıklaması (`phone_call`) — tek dinleyici, hiçbir bağlantının haberi olmadan. Ads etiketleri panelden. Sayfa `data-track-event` alanıyla bildiriyor, HTML'de script bloğu yok (CSP sıkı kalsın diye) |
+| Krumbach bölge içeriği | 10 şehir sıfırdan yazıldı, iki dilde ~3.300 kelime: Günzburg, Ulm, Neu-Ulm, Memmingen, Augsburg, München, Stuttgart, Friedrichshafen, Bregenz, St. Gallen. Her şehirde giriş + 2 paragraf + 3 çekim noktası + 2 SSS + komşular. `bin/cities.php` içe aktarırken **kontrol ediyor**: çakışan adres, boşa çıkan komşu, ve metinler birbirine %55'ten fazla benziyorsa **içe aktarmayı reddediyor** (doorway page kontrolü) |
 | Panel düzeni | Sekmeler artık **gruplanmış yan menüde** (İçerik / İşler / Görünüm / Ayarlar) — 16 sekme tek sırada bir duvardı. Geniş ekranda yapışkan yan menü, dar ekranda açılır kapanır seçim (açık sekmenin adı üstte yazılı). Üst çubuk yapışkan, uzun formlarda **kaydet düğmesi altta sabit** duruyor. Genel bakış: kutucuklar tıklanır, „son yedi günde ne geldi“ satırı ve dört hızlı işlem düğmesi |
 | Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
 | **Tema motoru — modüler** | Renk/font/zarf/mühür/arka plan/süsleme/animasyon ayrı ayrı. `family` alanı varyasyonları (Ivory, Rose, Sage, Dark) bir arada tutuyor; „Varyasyon oluştur“ ailede kalarak kopyalıyor |
@@ -105,14 +106,18 @@ Motor ve panel hazır. Yapılmayanlar:
 8. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
    PayPal sandbox turu, sitemap, robots, 404
 
-### 3. Krumbach bölge içeriği
-Şu an şehirler Stuttgart demo seti (Stuttgart, Ludwigsburg, Esslingen, Böblingen,
-Waiblingen, Heilbronn, Tübingen, Nürtingen, Pforzheim, Schwäbisch Gmünd).
-Hedef: Krumbach merkezli — Ulm, Neu-Ulm, Günzburg, Memmingen, Augsburg, München,
-sonra Stuttgart, Friedrichshafen, Bregenz, St. Gallen.
-**10 şehir + 7 mekân için sıfırdan benzersiz Almanca metin** yazılacak (doorway page
-riski taşımamalı). Mekân listesi müşteriden bekleniyor. Panelden girilebilir
-(Şehirler/Mekânlar sekmeleri hazır) ama iş tıklamak değil, metin yazmak.
+### 3. Krumbach — kalanlar
+
+- **7 mekân metni** — mekân listesi hâlâ müşteriden bekleniyor. Şehirler hazır,
+  mekânlar `venues` listesine eklenince şehir sayfalarındaki `venues` alanına
+  bağlanacak
+- **Mekânlar, portfolyo ve rehber hâlâ Stuttgart demo verisi.** Bunlar gerçek
+  fotoğraflara ve referanslara bağlı; uydurma çekim hikâyesi yazmak görünür
+  demo veriden kötü olurdu. Silinen şehirlere bakan 6 iç bağlantı `stuttgart`e
+  yönlendirildi, kırık link yok
+- **Adres ve telefon hâlâ eksik**: posta kodu ve şehir Krumbach (86381) yapıldı,
+  **sokak ve telefon boş** — uydurulmadı, müşteriden gelecek. Impressum yasal
+  olarak bunları gerektiriyor
 
 ## Yerelde çalıştırma
 
