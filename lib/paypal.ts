@@ -1,40 +1,65 @@
 import "server-only";
 
+import { paypalConfig } from "./integrations";
+
 /**
  * PayPal-Anbindung (Orders v2).
  *
- * Die Integration ist vollständig vorbereitet – es fehlen nur die Zugangsdaten.
- * Sobald in Vercel diese drei Variablen gesetzt sind, läuft die Zahlung live:
+ * Die Zugangsdaten kommen aus dem Admin-Bereich („Integrationen"). Ist dort
+ * nichts eingetragen, greifen die Umgebungsvariablen:
  *
  *   PAYPAL_CLIENT_ID
  *   PAYPAL_CLIENT_SECRET
  *   PAYPAL_MODE=sandbox | live        (Standard: sandbox)
- *   NEXT_PUBLIC_PAYPAL_CLIENT_ID      (derselbe Wert, für das Frontend-SDK)
  *
  * Ohne Zugangsdaten meldet `isConfigured()` false; die Oberfläche zeigt dann
  * den Hinweis „Zahlung wird nach Freischaltung aktiviert" statt eines Fehlers.
+ * Ein Frontend-SDK wird nicht geladen – bezahlt wird per Weiterleitung, damit
+ * ohne Einwilligung kein PayPal-Skript in die Seite kommt.
  */
 
-const API = () =>
-  (process.env.PAYPAL_MODE ?? "sandbox") === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
+const HOST = (mode: string) =>
+  mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
-export const isConfigured = () => Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+export const isConfigured = async () => (await paypalConfig()).configured;
 
 export type PayPalOrder = { id: string; status: string; approveUrl?: string };
 
-async function token(): Promise<string> {
-  const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
-  const res = await fetch(`${API()}/v1/oauth2/token`, {
+async function auth() {
+  const cfg = await paypalConfig();
+  if (!cfg.configured) throw new Error("paypal-not-configured");
+
+  const basic = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString("base64");
+  const res = await fetch(`${HOST(cfg.mode)}/v1/oauth2/token`, {
     method: "POST",
-    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+    headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: "grant_type=client_credentials",
     cache: "no-store",
   });
   if (!res.ok) throw new Error("paypal-auth-failed");
   const json = await res.json();
-  return json.access_token as string;
+  return { token: json.access_token as string, host: HOST(cfg.mode), mode: cfg.mode };
+}
+
+/**
+ * Zugangsdaten pruefen, ohne eine Bestellung anzulegen – fuer den Testknopf
+ * im Admin. Gibt eine sprechende Meldung zurueck, keinen Stacktrace.
+ */
+export async function testConnection(): Promise<{ ok: boolean; mode: string; message: string }> {
+  const cfg = await paypalConfig();
+  if (!cfg.configured) {
+    return { ok: false, mode: cfg.mode, message: "missing" };
+  }
+  try {
+    await auth();
+    return { ok: true, mode: cfg.mode, message: "ok" };
+  } catch (err) {
+    return {
+      ok: false,
+      mode: cfg.mode,
+      message: err instanceof Error && err.message === "paypal-auth-failed" ? "rejected" : "failed",
+    };
+  }
 }
 
 /** Bestellung anlegen – Betrag kommt immer vom Server, nie aus dem Browser. */
@@ -45,10 +70,10 @@ export async function createOrder(opts: {
   returnUrl: string;
   cancelUrl: string;
 }): Promise<PayPalOrder> {
-  const access = await token();
-  const res = await fetch(`${API()}/v2/checkout/orders`, {
+  const { token, host } = await auth();
+  const res = await fetch(`${host}/v2/checkout/orders`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     cache: "no-store",
     body: JSON.stringify({
       intent: "CAPTURE",
@@ -81,10 +106,10 @@ export async function createOrder(opts: {
 
 /** Zahlung einziehen, nachdem der Gast bei PayPal bestätigt hat. */
 export async function captureOrder(orderId: string): Promise<{ status: string; paid: boolean }> {
-  const access = await token();
-  const res = await fetch(`${API()}/v2/checkout/orders/${orderId}/capture`, {
+  const { token, host } = await auth();
+  const res = await fetch(`${host}/v2/checkout/orders/${orderId}/capture`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     cache: "no-store",
   });
   if (!res.ok) throw new Error("paypal-capture-failed");

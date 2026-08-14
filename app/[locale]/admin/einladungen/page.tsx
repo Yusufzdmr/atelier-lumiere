@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { listInvitations, listRsvps } from "@/lib/store";
-import { removeInvitation } from "@/lib/actions";
+import { listInvitations, listRsvps, listDrafts } from "@/lib/store";
+import { removeInvitation, removeDraft } from "@/lib/actions";
 import { themeById } from "@/lib/themes";
 import { isLocale, type Locale } from "@/lib/i18n";
 
@@ -10,7 +10,7 @@ export default async function AdminInvitations({ params }: { params: Promise<{ l
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
   const de = l === "de";
-  const [invitations, allRsvps] = await Promise.all([listInvitations(), listRsvps()]);
+  const [invitations, allRsvps, drafts] = await Promise.all([listInvitations(), listRsvps(), listDrafts()]);
 
   return (
     <div className="space-y-8">
@@ -91,6 +91,47 @@ export default async function AdminInvitations({ params }: { params: Promise<{ l
           <p className="text-sm text-muted">{de ? "Noch keine Einladungen." : "Henüz davetiye yok."}</p>
         )}
       </div>
+
+      {/* Angefangene, noch nicht abgeschickte Einladungen */}
+      {drafts.length > 0 && (
+        <div className="border-t border-sand-deep pt-8">
+          <h3 className="font-display text-lg text-ink">{de ? "Begonnene Entwürfe" : "Başlanmış taslaklar"}</h3>
+          <p className="mt-2 max-w-2xl text-[0.8rem] leading-relaxed text-muted">
+            {de
+              ? "Paare, die den Assistenten gespeichert, aber noch nicht abgeschlossen haben. Über den Fortsetzungslink geht es genau dort weiter."
+              : "Sihirbazı kaydedip henüz bitirmemiş çiftler. Devam linkiyle kaldıkları yerden sürdürürler."}
+          </p>
+          <ul className="mt-5 space-y-3">
+            {drafts.map((d) => (
+              <li
+                key={d.token}
+                className="flex flex-wrap items-center justify-between gap-4 border border-sand-deep px-5 py-4"
+              >
+                <div>
+                  <div className="text-[0.92rem] text-ink">{d.label || (de ? "ohne Namen" : "isimsiz")}</div>
+                  <div className="mt-1 text-[0.74rem] text-muted">
+                    {new Date(d.updatedAt).toLocaleString(de ? "de-DE" : "tr-TR")}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Link
+                    href={`/${l}/einladung?taslak=${d.token}`}
+                    className="text-[0.66rem] uppercase tracking-[0.16em] text-gold underline-offset-4 hover:underline"
+                  >
+                    {de ? "Fortsetzungslink" : "Devam linki"} ↗
+                  </Link>
+                  <form action={removeDraft}>
+                    <input type="hidden" name="token" value={d.token} />
+                    <button className="text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700">
+                      {de ? "Löschen" : "Sil"}
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

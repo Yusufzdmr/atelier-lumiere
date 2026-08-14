@@ -9,7 +9,7 @@ import { Section, Breadcrumbs } from "@/components/ui";
 import { getDict } from "@/lib/dict";
 import { site } from "@/lib/site";
 import { getContent } from "@/lib/cms";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -19,15 +19,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/kontakt",
-    title: l === "de" ? "Kontakt – Hochzeitsfotograf Stuttgart anfragen" : "İletişim – Stuttgart düğün fotoğrafçısı",
-    description:
-      l === "de"
-        ? "Fragt euer Hochzeitsdatum an. Antwort in der Regel innerhalb von 24 Stunden. Atelier in Stuttgart-Mitte."
-        : "Düğün tarihinizi sorun. Genelde 24 saat içinde yanıt. Atölye Stuttgart merkezde.",
-  });
+  return pageMeta({ locale: l, page: "kontakt" });
 }
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {

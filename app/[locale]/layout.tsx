@@ -6,7 +6,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import JsonLd from "@/components/JsonLd";
+import Tracking from "@/components/Tracking";
 import { localBusinessLd } from "@/lib/seo";
+import { publicTracking, verificationTags } from "@/lib/integrations";
 import { site } from "@/lib/site";
 import { locales, isLocale, localeMeta, type Locale } from "@/lib/i18n";
 
@@ -32,6 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       ? "Hochzeitsfotograf & Videograf in Stuttgart und Umgebung. Dokumentarische Reportagen, Hochzeitsfilm, private Kundengalerie und digitale Einladung."
       : "Stuttgart ve çevresinde düğün fotoğrafçısı ve videografı. Belgesel tarzda çekim, düğün filmi, özel müşteri galerisi ve dijital davetiye.";
 
+  // Bestaetigungscodes der Suchmaschinen kommen aus dem Admin-Bereich.
+  const v = await verificationTags();
+
   return {
     metadataBase: new URL(site.url),
     title: { default: title, template: `%s | ${site.name}` },
@@ -40,6 +45,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     authors: [{ name: site.owner }],
     creator: site.owner,
     formatDetection: { telephone: true, address: true, email: true },
+    verification: {
+      google: v.google || undefined,
+      other: v.bing ? { "msvalidate.01": v.bing } : undefined,
+    },
   };
 }
 
@@ -66,6 +75,7 @@ export default async function LocaleLayout({
         <main id="main">{children}</main>
         <Footer locale={locale} />
         <CookieConsent locale={locale} />
+        <Tracking config={await publicTracking()} />
         <JsonLd data={localBusinessLd(locale)} />
       </body>
     </html>

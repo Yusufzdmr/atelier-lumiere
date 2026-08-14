@@ -7,7 +7,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs } from "@/components/ui";
 import { getCities } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -17,15 +17,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/regionen",
-    title: l === "de" ? "Hochzeitsfotograf in Stuttgart & Umgebung – alle Regionen" : "Stuttgart ve çevresinde düğün fotoğrafçısı – tüm bölgeler",
-    description:
-      l === "de"
-        ? "Stuttgart, Ludwigsburg, Esslingen, Böblingen, Heilbronn, Tübingen und mehr: Hochzeitsfotograf und Videograf mit Ortskenntnis – Anfahrt bis 60 km inklusive."
-        : "Stuttgart, Ludwigsburg, Esslingen, Böblingen, Heilbronn, Tübingen ve daha fazlası: bölgeyi tanıyan düğün fotoğrafçısı ve videografı – 60 km'ye kadar ulaşım dahil.",
-  });
+  return pageMeta({ locale: l, page: "regionen" });
 }
 
 export default async function RegionsPage({ params }: { params: Promise<{ locale: string }> }) {

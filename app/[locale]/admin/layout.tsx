@@ -35,10 +35,13 @@ export default async function AdminLayout({
     { href: "/mekanlar", de: "Locations", tr: "Mekânlar" },
     { href: "/portfolyo", de: "Portfolio", tr: "Portfolyo" },
     { href: "/ratgeber", de: "Ratgeber", tr: "Rehber" },
+    { href: "/kunden", de: "Kunden", tr: "Müşteriler" },
     { href: "/galerien", de: "Kundengalerien", tr: "Müşteri galerileri" },
     { href: "/einladungen", de: "Einladungen", tr: "Davetiyeler" },
     { href: "/ueber-mich", de: "Über mich & Stimmen", tr: "Hakkımda & yorumlar" },
     { href: "/rechtliches", de: "Rechtstexte", tr: "Yasal metinler" },
+    { href: "/seo", de: "SEO & Meta", tr: "SEO & meta" },
+    { href: "/integrationen", de: "Integrationen", tr: "Entegrasyonlar" },
   ];
 
   return (

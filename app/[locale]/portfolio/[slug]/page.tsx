@@ -12,7 +12,7 @@ import { getVenue, getStory, getStories, getCity } from "@/lib/cms";
 
 import { getDict } from "@/lib/dict";
 import { img } from "@/lib/images";
-import { meta, breadcrumbLd, articleLd } from "@/lib/seo";
+import { breadcrumbLd, articleLd, templateMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -28,9 +28,11 @@ export async function generateMetadata({
   const l: Locale = isLocale(locale) ? locale : "de";
   const s = await getStory(slug);
   if (!s) return {};
-  return meta({
+  return templateMeta({
     locale: l,
+    kind: "story",
     path: `/portfolio/${s.slug}`,
+    vars: { couple: s.couple, venue: s.venue[l] },
     title: `${s.couple} – ${s.venue[l]}`,
     description: s.intro[l].slice(0, 158),
     image: img(s.seeds[0], 1200, 630),

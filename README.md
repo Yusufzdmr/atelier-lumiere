@@ -15,7 +15,7 @@ Almanya'daki bir düğün fotoğrafçısı için **çalışan demo**: iki dilli 
 |---|---|---|
 | Almanca site | `/de` | — |
 | Türkçe site | `/tr` | — |
-| **Yönetim paneli** | `/de/admin` | parola `demo` (`ADMIN_KEY` env ile değişir) |
+| **Yönetim paneli** | `/de/admin` | parola `demo` (`ADMIN_KEY` env veya panelden değişir) |
 | Müşteri galerisi | `/de/galerie` | kod `elif-marco` · parola `solitude24` |
 | " | | kod `sarah-daniel` · parola `kelter25` |
 | Davetiye sihirbazı | `/de/einladung` | ücretsiz için kupon `lumiere2026` |
@@ -53,7 +53,10 @@ Müşteri koda dokunmadan **ekleyebilir, düzenleyebilir, silebilir**. Tüm meti
 | **Mekânlar** | Düğün salonu sayfaları: ad, tür, şehir, adres, kapasite, giriş, uzun metin, ışık notları, çekim noktaları, kurallar · ekleme/silme |
 | **Ratgeber** | Blog yazıları: başlık, özet, uzun metin (`## ` = ara başlık), SSS (`Soru \| Cevap`), bağlı şehir/mekân, görsel yükleme · ekleme/silme |
 | **Portfolyo** | Referans çekimler: metinler, bağlı şehir/mekân, **fotoğraf yükleme**, **düğün filmi (YouTube/Vimeo linki)**, ekleme/silme |
+| **Müşteriler** | Müşteri dosyası: giriş adı + parola, düğün/mekân/paket/tutar, iç not, **kişisel davetiye kuponu**, fotoğraf yükleme, çiftin seçtiği kareler, arşivle · kalıcı sil |
 | **Müşteri galerileri** | Yeni galeri (kod + parola), toplu fotoğraf yükleme, **düğün filmi (YouTube/Vimeo linki)**, çiftin albüm seçimini görme, silme |
+| **SEO & meta** | Her sayfanın Google başlığı ve açıklaması (DE+TR), karakter sayacı ve canlı Google önizlemesi, paylaşım görseli, `noindex`, çoklu sayfalar için başlık şablonları |
+| **Entegrasyonlar** | PayPal Client ID/Secret + mod ve bağlantı testi, Google Analytics/Tag Manager/Ads + dönüşüm etiketleri, Meta Pixel, Search Console & Bing doğrulaması, sonradan eklenecek API'ler için serbest anahtar listesi |
 | **Davetiyeler** | Oluşturulan davetiyeler, RSVP listesi, fiyat, silme |
 | **Hakkımda & yorumlar** | "Hakkımda" sayfasının tamamı (giriş, uzun metin, çalışma şekli `Başlık \| Metin`, ekipman listesi) · müşteri yorumları · genel SSS · ekleme/silme |
 | **Yasal metinler** | Impressum · Datenschutz · AGB: sayfa başlığı, bölüm başlık/metinleri, sayfa sonu notu · bölüm ekleme/silme · şablona geri dönme |
@@ -61,6 +64,32 @@ Müşteri koda dokunmadan **ekleyebilir, düzenleyebilir, silebilir**. Tüm meti
 Değişiklikler `revalidatePath` ile anında yayına girer. Görseller tarayıcıda küçültülür (maks. 1600 px, JPEG q0.8).
 
 ---
+
+## Müşteri akışı (fotoğraf → seçim → albüm)
+
+Bir müşteri = bir iş. Panelden **Müşteriler → Yeni müşteri** dendiğinde tek kayıtta üç şey birden oluşur:
+galeri girişi (kullanıcı adı + parola), o müşteriye ait boş galeri ve **kişisel davetiye kuponu**.
+
+1. Fotoğrafçı çekimi yükler (çoklu seçim, tarayıcıda 1600 px'e küçültülür, Vercel Blob fra1)
+2. Müşteriye kullanıcı adı + parola verilir → müşteri `/galerie` üzerinden girer
+3. Müşteri beğendiği kareleri işaretler, isterse not yazar, gönderir
+4. Seçim panelde o müşterinin sayfasında görünür: kaç kare, hangi numaralar, notu ve tarihi
+5. Müşteri kalıcı olarak silinmez; **Arşivle** girişi ve kuponu kapatır, fotoğraflar durur.
+   Kalıcı silme ayrı bir kutuda ve giriş adının elle yazılmasını ister — galeri, seçim ve
+   yüklenen tüm görseller de gider.
+
+### Ücretsiz davetiye kuponu
+
+Fotoğraf/film hizmeti alan her müşteriye otomatik, okunabilir bir kod üretilir (`LUM-ELIF-4K27` gibi;
+karıştırılan 0/O, 1/I harfleri kullanılmaz). Müşteri bu kodu davetiye sihirbazının son adımına girer →
+fiyat 0 € olur, PayPal adımı hiç çıkmaz.
+
+- Doğrulama **sunucuda** (`/api/kupon` ve `/api/einladung`) — tarayıcıdan gelen "ücretsiz" bilgisine güvenilmez
+- Varsayılan **tek kullanım**; kod kullanıldığında hangi davetiyede kullanıldığı müşteri kaydına işlenir
+- Panelden: yeni kod üretme, aktif/pasif, son geçerlilik tarihi, kullanılmışsa yeniden açma
+- Arşivlenen müşterinin kodu çalışmaz
+- Kod denemesine karşı IP başına dakikada 12 sorgu sınırı
+- Bunlardan bağımsız bir **kampanya kodu** alanı var (fuar, tanıtım); istenirse kapatılır
 
 ## Dijital davetiye
 
@@ -87,19 +116,36 @@ Değişiklikler `revalidatePath` ile anında yayına girer. Görseller tarayıc�
 Toplam ve tasarruf canlı hesaplanır. Kupon kodu girildiğinde 0 €.
 Fiyat **sunucuda** `computeTotal()` ile yeniden hesaplanır — istemciden gelen tutar kullanılmaz.
 
-### PayPal (altyapı hazır, kimlik bilgisi bekliyor)
+### Taslak kaydetme
 
-- `lib/paypal.ts` — Orders v2: `createOrder()` + `captureOrder()`, sandbox/live anahtarı
-- `app/api/zahlung/route.ts` — `POST {slug}` sipariş açar, `POST {slug, orderId}` tahsil eder ve davetiyeyi açar
+Sihirbaz uzun; kimse tek oturuşta bitirmek zorunda değil.
+
+- Her adım tarayıcıya otomatik kaydedilir (fotoğraflar hariç — localStorage'ı doldururlar)
+- **Taslağı kaydet** düğmesi sunucuda saklar ve kişisel bir devam linki verir:
+  `/de/einladung?taslak=<kod>` — başka cihazda da kaldığı yerden devam eder
+- Davetiye oluşturulunca taslak kendiliğinden silinir; kimsenin dokunmadığı taslaklar 120 gün sonra düşer
+- Panelde **Davetiyeler → Başlanmış taslaklar**: kim başlamış, ne zaman, devam linki, silme
+
+### PayPal
+
+- `lib/paypal.ts` — Orders v2: `createOrder()` + `captureOrder()` + `testConnection()`
+- `app/api/zahlung/route.ts` — `POST {slug}` sipariş açar, `POST {slug, orderId}` tahsil eder,
+  başarılı tahsilat `updateInvitation` ile veritabanına yazılır
 - Sihirbazın son adımında PayPal butonu; kimlik bilgisi yoksa "ödeme aktifleşecek" notu gösterir
+- Ödeme **yönlendirmeyle** yapılır, sayfaya PayPal scripti gömülmez (izin gerekmez)
 
-Canlıya almak için Vercel'e **sadece şu değişkenler**:
+Kimlik bilgileri **panelden** giriliyor: Entegrasyonlar → PayPal → Client ID, Secret, mod.
+"Bağlantıyı test et" düğmesi ödeme başlatmadan anahtarları doğrular. Panelde boş bırakılırsa
+ortam değişkenleri geçerli kalır:
 
 ```
 PAYPAL_CLIENT_ID=...
 PAYPAL_CLIENT_SECRET=...
 PAYPAL_MODE=live          # veya sandbox
 ```
+
+PayPal tarafında gereken: **Business hesabı** → developer.paypal.com → Apps & Credentials →
+Live → Create App → Client ID + Secret. Hesap parolası hiçbir yerde kullanılmaz.
 
 ---
 
@@ -170,6 +216,31 @@ API: `/api/kontakt` · `/api/galerie/auth` · `/api/galerie/auswahl` · `/api/ei
   (saatlik yenilenir); sabit listeye bağlı değil
 - Fontlar self-hosted (`public/fonts`, `app/fonts.css`) → Google Fonts CDN bağlantısı yok
 - Görseller AVIF/WebP, `sizes` tanımlı, sabit oranlarla CLS = 0
+- **Başlık ve açıklamalar panelden** (`SEO & meta`): her sayfa iki dilde, karakter sayacı ve
+  Google önizlemesiyle. Alan boş bırakılırsa sayfanın kendi metni geçerli olur — hiçbir sayfa
+  başlıksız kalmaz. Şehir/mekân/blog gibi çoklu sayfalar için `{name}`, `{title}` yer tutuculu
+  başlık şablonları (`lib/marketing.ts`)
+- Panelde `noindex` işaretlenen sayfa hem `robots` etiketi alır hem sitemap'ten düşer
+- Search Console ve Bing doğrulama etiketleri panelden (`Entegrasyonlar`)
+
+## Ölçüm: Analytics, Google Ads, Meta Pixel
+
+Kimlikler panelden giriliyor (`Entegrasyonlar`), kod tarafında iş yok. Kural şu: **izin yoksa
+istek yok** — reddeden ziyaretçinin tarayıcısı Google veya Meta'ya tek bir bağlantı bile açmaz.
+
+| Ne zaman yüklenir | Ne yüklenir |
+|---|---|
+| İstatistik izni | Google Analytics 4 (`anonymize_ip`) |
+| Pazarlama izni | Google Ads, Meta Pixel |
+| İkisinden biri | Google Tag Manager (kullanılıyorsa) |
+
+- **Consent Mode v2** (`components/Tracking.tsx`): script yüklenmeden önce tüm izinler `denied`,
+  seçimden sonra `update` ile gerçek duruma çekilir; `ads_data_redaction` ve `url_passthrough` açık.
+  AB'de Google Ads bunu şart koşuyor
+- Dönüşümler: **form gönderimi**, **davetiye oluşturma** (tutarıyla), **telefon numarasına tıklama**
+  (tel: linkleri tek yerden dinleniyor, her butona kod eklenmiyor)
+- Ads dönüşüm etiketleri ve talep değeri panelde; boşsa o dönüşüm hiç gönderilmez
+- Uygulama kodu `track("contact")` diyor, gerisini `components/Tracking.tsx` çözüyor (`lib/track.ts`)
 
 ## DSGVO / GDPR
 
@@ -195,7 +266,11 @@ API: `/api/kontakt` · `/api/galerie/auth` · `/api/galerie/auswahl` · `/api/ei
 | Dosya | Görevi | Not |
 |---|---|---|
 | `lib/db.ts` | Neon bağlantısı, tablo şeması, soğuk başlangıç için tekrar denemesi | — |
-| `lib/store.ts` | Tüm veri (galeri, davetiye, RSVP, talep, ödeme, içerik) — async | — |
+| `lib/store.ts` | Tüm veri (müşteri, galeri, davetiye, taslak, RSVP, talep, ödeme, içerik) — async | — |
+| `lib/integrations.ts` | Dış servis anahtarları (PayPal, Google, Meta, serbest anahtarlar) | Ayrı tablo: sırlar içerik tablosuna karışmaz |
+| `lib/marketing.ts` | Sayfa başlıkları/açıklamaları ve başlık şablonları | Varsayılanlar; panelden değişir |
+| `lib/coupon.ts` | Okunabilir kupon kodu üretimi | `crypto` ile, tahmin edilemez |
+| `lib/track.ts` | Dönüşüm bildirimi (izin varsa) | — |
 | `lib/media.ts` | Görsel yükleme/silme (Vercel Blob) | — |
 | `lib/seed.ts` | Yalnızca ilk açılışta yazılan demo verisi | Müşterinin gerçek verisiyle değişir |
 | `lib/cms.ts` | Düzenlenebilir içerik katmanı (metin, paket, hizmet, şehir, mekân, portfolyo, hakkımda, yasal) | Postgres'ten okur/yazar |
@@ -246,6 +321,13 @@ Veritabanı erişilemezse site 500 vermez, varsayılan içerikle ayakta kalır (
 - [x] Ratgeber (blog) — 3 örnek yazı, panelden yönetim, şehir/mekân iç bağlantısı, BlogPosting+FAQ schema
 - [x] Sitemap artık panelden okuyor (yeni şehir/mekân/yazı otomatik girer)
       · **Müşteriye söylenmeli:** videolar YouTube/Vimeo hesabına yüklenir, siteye link yapıştırılır
+- [x] Müşteri modülü: kayıt açınca galeri + kişisel kupon birlikte oluşur, seçim panelde görünür
+- [x] Kişisel ücretsiz davetiye kuponu (tek kullanım, sunucuda doğrulama) — sabit kod listesi kaldırıldı
+- [x] Davetiye taslağı: otomatik kayıt + cihazlar arası devam linki, panelde taslak listesi
+- [x] SEO & meta paneli: başlık/açıklama (DE+TR), Google önizlemesi, paylaşım görseli, noindex, şablonlar
+- [x] Entegrasyonlar paneli: PayPal (test butonuyla), GA4/GTM/Ads + dönüşümler, Meta Pixel,
+      Search Console/Bing, sonradan eklenecek API'ler için serbest anahtar listesi
+- [x] PayPal tahsilat kaydı düzeltildi — capture sonrası `paid` artık veritabanına yazılıyor
 
 ### Teslimden önce kapatılması gerekenler
 
@@ -263,7 +345,10 @@ Sırasıyla yapılacak.
 
 ### Müşteriden / dışarıdan bekleyenler
 
-- [ ] PayPal kimlik bilgileri girilip sandbox'ta uçtan uca test
+- [ ] PayPal: Business hesabı `akyel.business@gmail.com`. Gereken **Client ID + Secret**
+      (developer.paypal.com → Apps & Credentials → Live). Panelden girilecek, önce sandbox'ta test
+- [ ] Hosting: müşteride **ALL-INKL (KAS paneli)** var. Orası PHP tabanlı, bu uygulamayı çalıştıramaz.
+      Yapılacak: alan adı ALL-INKL'de kalsın, **DNS Vercel'e yönlendirilsin**; e-posta ALL-INKL'de kalır
 - [ ] Google Search Console doğrulaması (GA hazır: `NEXT_PUBLIC_GA_ID`, GSC meta etiketi henüz yok)
 - [ ] Müşteriden gelecek gerçek fotoğraflar ve marka adı (`lib/site.ts`)
 - [ ] Yasal metinlerin avukat kontrolü
@@ -290,3 +375,9 @@ Sırasıyla yapılacak.
 - `next build` 11 worker'ı paralel çalıştırıyor; tohumlama bu yüzden `seed_marker` tablosuna
   atomik `INSERT ... ON CONFLICT DO NOTHING RETURNING` ile kilitlendi, yoksa demo verisi çoğalıyor
 - Neon sürücüsü yalnızca etiketli şablon kabul eder (``sql`SELECT ...` ``); `sql("...")` hata verir
+- `„…"` yazarken kapanış tırnağı düz `"` olursa JS string'i erken kapanır — kapanış `“` olmalı,
+  JSX metninde `&bdquo; &ldquo;` kullan
+- Toplu dosya düzenlemesini bash heredoc'la yapma: `\1` gibi kaçış dizileri bozuluyor.
+  Betiği dosyaya yaz, `python betik.py` diye çalıştır (UTF-8 açıkça belirtilerek)
+- `server-only` modüllerden (`store.ts`, `integrations.ts`) client bileşenler **sadece tip** alabilir
+- Formun içine konan yükleme düğmesi `type="button"` olmalı, yoksa tıklayınca formu gönderir

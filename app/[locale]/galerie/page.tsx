@@ -5,7 +5,7 @@ import Reveal from "@/components/Reveal";
 import GalleryLogin from "@/components/GalleryLogin";
 import { Section, Breadcrumbs } from "@/components/ui";
 import { getDict } from "@/lib/dict";
-import { meta } from "@/lib/seo";
+import { pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -15,13 +15,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/galerie",
-    title: l === "de" ? "Kundengalerie – Login" : "Müşteri galerisi – giriş",
-    description: getDict(l).gallery.lead,
-    noindex: true,
-  });
+  return pageMeta({ locale: l, page: "galerie", fallback: { description: getDict(l).gallery.lead } });
 }
 
 export default async function GalleryIndex({ params }: { params: Promise<{ locale: string }> }) {

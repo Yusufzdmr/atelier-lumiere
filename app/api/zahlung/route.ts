@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getInvitation, addPayment } from "@/lib/store";
+import { getInvitation, addPayment, updateInvitation } from "@/lib/store";
 import { computeTotal } from "@/lib/pricing";
 import { isConfigured, createOrder, captureOrder } from "@/lib/paypal";
 import { site } from "@/lib/site";
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, paid: true, free: true });
     }
 
-    if (!isConfigured()) {
+    if (!(await isConfigured())) {
       return NextResponse.json(
         { ok: false, configured: false, amount: inv.price },
         { status: 200 }
@@ -30,8 +30,9 @@ export async function POST(req: Request) {
     if (orderId) {
       const result = await captureOrder(String(orderId));
       if (result.paid) {
-        inv.paid = true;
-        inv.paymentRef = String(orderId);
+        // Muss in die Datenbank: sonst ist das Geld eingezogen, die Einladung
+        // aber weiter als unbezahlt gespeichert.
+        await updateInvitation(inv.slug, { paid: true, paymentRef: String(orderId) });
       }
       return NextResponse.json({ ok: result.paid, paid: result.paid, status: result.status });
     }

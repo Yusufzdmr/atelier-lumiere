@@ -9,25 +9,14 @@ import { getDict } from "@/lib/dict";
 import { img, blurData } from "@/lib/images";
 
 import { getVenues, getCities, getStories } from "@/lib/cms";
-import { meta, faqLd, breadcrumbLd } from "@/lib/seo";
+import { faqLd, breadcrumbLd, pageMeta } from "@/lib/seo";
 import { getContent, getServices, getProcess, getTestimonials, getFaq, getAbout } from "@/lib/cms";
 import { isLocale, type Locale } from "@/lib/i18n";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/",
-    title:
-      l === "de"
-        ? "Hochzeitsfotograf Stuttgart – Foto & Video | Atelier Lumière"
-        : "Stuttgart Düğün Fotoğrafçısı – Foto & Video | Atelier Lumière",
-    description:
-      l === "de"
-        ? "Dokumentarische Hochzeitsfotografie und Hochzeitsfilm in Stuttgart, Ludwigsburg, Esslingen und Umgebung. Private Kundengalerie mit Album-Auswahl und digitale Hochzeitseinladung inklusive."
-        : "Stuttgart, Ludwigsburg, Esslingen ve çevresinde belgesel tarzda düğün fotoğrafçılığı ve düğün filmi. Albüm seçimli özel müşteri galerisi ve dijital düğün davetiyesi dahil.",
-  });
+  return pageMeta({ locale: l, page: "home" });
 }
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { site } from "./site";
 import { img } from "./images";
-import { getContent, getCities } from "./cms";
+import { getContent, getCities, getMarketing, getSeoEntry } from "./cms";
+import { seoPageByKey, renderTemplate, type SeoTemplates } from "./marketing";
 import { locales, localeMeta, type Locale } from "./i18n";
 
 /** Kanonische URL + hreflang-Alternates für jede Seite. */
@@ -37,6 +38,60 @@ export function meta(opts: {
     twitter: { card: "summary_large_image", title, description },
     robots: noindex ? { index: false, follow: false } : undefined,
   };
+}
+
+/**
+ * Metadaten einer festen Seite: Was im Admin steht, gewinnt. Ist das Feld dort
+ * leer, gilt der Wert, den die Seite selbst mitbringt (z. B. der Vorspann eines
+ * Beitrags) – so bleibt jede Seite auch ohne Pflege vollstaendig.
+ */
+export async function pageMeta(opts: {
+  locale: Locale;
+  /** Schluessel aus lib/marketing.ts */
+  page: string;
+  fallback?: { title?: string; description?: string; image?: string };
+  noindex?: boolean;
+}): Promise<Metadata> {
+  const [entry, marketing] = await Promise.all([getSeoEntry(opts.page), getMarketing()]);
+  const def = seoPageByKey(opts.page);
+
+  return meta({
+    locale: opts.locale,
+    path: def?.path ?? "/",
+    title: entry.title[opts.locale]?.trim() || opts.fallback?.title || site.name,
+    description: entry.description[opts.locale]?.trim() || opts.fallback?.description || "",
+    image: entry.image || opts.fallback?.image || marketing.defaultImage || undefined,
+    noindex: entry.noindex || opts.noindex,
+  });
+}
+
+/**
+ * Metadaten der Seiten, die es viele Male gibt (Stadt, Location, Beitrag,
+ * Reportage). Der Titel kommt aus einer Vorlage im Admin; Platzhalter wie
+ * {name} werden ersetzt. Leere Vorlage = eingebauter Titel.
+ */
+export async function templateMeta(opts: {
+  locale: Locale;
+  kind: keyof SeoTemplates;
+  path: string;
+  vars: Record<string, string>;
+  /** Titel, falls keine Vorlage gepflegt ist */
+  title: string;
+  description: string;
+  image?: string;
+  noindex?: boolean;
+}): Promise<Metadata> {
+  const marketing = await getMarketing();
+  const template = marketing.templates?.[opts.kind]?.[opts.locale]?.trim();
+
+  return meta({
+    locale: opts.locale,
+    path: opts.path,
+    title: template ? renderTemplate(template, opts.vars) : opts.title,
+    description: opts.description,
+    image: opts.image || marketing.defaultImage || undefined,
+    noindex: opts.noindex,
+  });
 }
 
 /* --------------------------- JSON-LD Bausteine --------------------------- */

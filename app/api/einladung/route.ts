@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import {
   createInvitation,
   slugAvailable,
-  isCustomerCode,
+  checkCoupon,
+  redeemCoupon,
   defaultSections,
   type EventType,
   type InviteEvent,
@@ -15,6 +16,7 @@ import { themes } from "@/lib/themes";
 import { eventTypes } from "@/lib/events";
 import { computeTotal } from "@/lib/pricing";
 import { saveUploads } from "@/lib/media";
+import { getCampaign } from "@/lib/cms";
 import { site } from "@/lib/site";
 
 const THEME_IDS = themes.map((t) => t.id) as string[];
@@ -93,7 +95,11 @@ export async function POST(req: Request) {
     const theme = THEME_IDS.includes(body.theme) ? String(body.theme) : "elysee";
     const eventType = (TYPE_IDS.includes(body.eventType) ? body.eventType : "wedding") as EventType;
     const locale = body.locale === "tr" ? "tr" : "de";
-    const paid = isCustomerCode(clean(body.coupon, 40));
+    // Freischaltcode immer serverseitig pruefen: was der Browser meldet,
+    // entscheidet ueber keinen Preis.
+    const couponInput = clean(body.coupon, 60);
+    const coupon = await checkCoupon(couponInput, await getCampaign());
+    const paid = coupon.ok;
     const sections = cleanSections(body.sections);
 
     const families =
@@ -123,6 +129,9 @@ export async function POST(req: Request) {
       price: computeTotal(sections, events.length > 1, paid),
       createdAt: new Date().toISOString(),
     });
+
+    // Erst jetzt verbrauchen – ein Abbruch vorher kostet den Code nicht.
+    if (coupon.ok && coupon.kind === "customer") await redeemCoupon(couponInput, slug);
 
     const h = await headers();
     const host = h.get("host") ?? new URL(site.url).host;

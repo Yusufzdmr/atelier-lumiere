@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
-import { getCities, getVenues, getStories, getPosts } from "@/lib/cms";
+import { getCities, getVenues, getStories, getPosts, getMarketing } from "@/lib/cms";
+import { seoPages } from "@/lib/marketing";
 import { locales, localeMeta } from "@/lib/i18n";
 
 /**
@@ -29,12 +30,18 @@ const staticPaths: { path: string; priority: number; changeFrequency: "weekly" |
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const [cities, venues, stories, posts] = await Promise.all([
+  const [cities, venues, stories, posts, marketing] = await Promise.all([
     getCities(),
     getVenues(),
     getStories(),
     getPosts(),
+    getMarketing(),
   ]);
+
+  // Was im Admin auf „nicht indexieren" steht, gehoert auch nicht hier hinein.
+  const excluded = new Set(
+    seoPages.filter((p) => marketing.pages[p.key]?.noindex).map((p) => (p.path === "/" ? "" : p.path))
+  );
 
   const dynamicPaths = [
     ...cities.map((c) => ({ path: `/hochzeitsfotograf/${c.slug}`, priority: 0.95, changeFrequency: "monthly" as const })),
@@ -43,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...stories.map((s) => ({ path: `/portfolio/${s.slug}`, priority: 0.6, changeFrequency: "yearly" as const })),
   ];
 
-  const all = [...staticPaths, ...dynamicPaths];
+  const all = [...staticPaths.filter((p) => !excluded.has(p.path)), ...dynamicPaths];
 
   return all.flatMap((entry) =>
     locales.map((locale) => ({

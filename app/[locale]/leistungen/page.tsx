@@ -6,7 +6,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs, Btn } from "@/components/ui";
 import { getServices } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd, serviceLd } from "@/lib/seo";
+import { breadcrumbLd, serviceLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -16,15 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/leistungen",
-    title: l === "de" ? "Leistungen – Hochzeitsfotografie & Hochzeitsfilm" : "Hizmetler – düğün fotoğrafçılığı & düğün filmi",
-    description:
-      l === "de"
-        ? "Hochzeitsreportage, Hochzeitsfilm in 4K, Standesamt, Henna-Abend und After-Wedding-Shooting in Stuttgart und Umgebung."
-        : "Stuttgart ve çevresinde düğün çekimi, 4K düğün filmi, nikah, kına gecesi ve after-wedding çekimi.",
-  });
+  return pageMeta({ locale: l, page: "leistungen" });
 }
 
 export default async function ServicesPage({ params }: { params: Promise<{ locale: string }> }) {

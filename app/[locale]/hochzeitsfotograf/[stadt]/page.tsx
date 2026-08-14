@@ -10,7 +10,7 @@ import { Section, SectionHead, Photo, Accordion, Breadcrumbs, Btn } from "@/comp
 import { cities } from "@/lib/cities";
 import { getVenue, getContent, getCity, getPostsForCity } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, faqLd, breadcrumbLd, serviceLd } from "@/lib/seo";
+import { faqLd, breadcrumbLd, serviceLd, templateMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -27,9 +27,11 @@ export async function generateMetadata({
   const city = await getCity(stadt);
   if (!city) return {};
 
-  return meta({
+  return templateMeta({
     locale: l,
+    kind: "city",
     path: `/hochzeitsfotograf/${city.slug}`,
+    vars: { name: city.name },
     title:
       l === "de"
         ? `Hochzeitsfotograf ${city.name} – Foto & Video ab 690 €`

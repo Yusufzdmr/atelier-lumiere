@@ -12,7 +12,7 @@ import { getVenue, getStories } from "@/lib/cms";
 import { cityBySlug } from "@/lib/cities";
 
 import { getDict } from "@/lib/dict";
-import { meta, faqLd, breadcrumbLd, serviceLd } from "@/lib/seo";
+import { faqLd, breadcrumbLd, serviceLd, templateMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -28,10 +28,15 @@ export async function generateMetadata({
   const l: Locale = isLocale(locale) ? locale : "de";
   const v = await getVenue(slug);
   if (!v) return {};
-  return meta({
+  return templateMeta({
     locale: l,
+    kind: "venue",
     path: `/hochzeitslocations/${v.slug}`,
-    title: l === "de" ? `${v.name} Hochzeitsfotograf – Erfahrung vor Ort` : `${v.name} düğün fotoğrafçısı – mekân tecrübesi`,
+    vars: { name: v.name, city: v.city },
+    title:
+      l === "de"
+        ? `${v.name} Hochzeitsfotograf – Erfahrung vor Ort`
+        : `${v.name} düğün fotoğrafçısı – mekân tecrübesi`,
     description: v.lead[l].slice(0, 158),
   });
 }

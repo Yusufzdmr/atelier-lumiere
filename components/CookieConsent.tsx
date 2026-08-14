@@ -25,14 +25,13 @@ export default function CookieConsent({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) {
+      // Liegt schon eine Entscheidung vor, bleibt das Banner weg. Die Skripte
+      // lädt <Tracking> anhand derselben gespeicherten Auswahl.
+      if (!localStorage.getItem(KEY)) {
         // Banner leicht verzögert einblenden, damit der LCP nicht gestört wird
         const id = window.setTimeout(() => setShow(true), 900);
         return () => window.clearTimeout(id);
       }
-      const c: Consent = JSON.parse(raw);
-      if (c.stats) loadAnalytics();
     } catch {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Fallback, wenn localStorage nicht lesbar ist
       setShow(true);
@@ -51,8 +50,7 @@ export default function CookieConsent({ locale }: { locale: Locale }) {
   function persist(c: Omit<Consent, "at" | "necessary">) {
     const value: Consent = { necessary: true, ...c, at: new Date().toISOString() };
     localStorage.setItem(KEY, JSON.stringify(value));
-    if (value.stats) loadAnalytics();
-    // Eingebettete Inhalte (z. B. die Karte auf /kontakt) reagieren sofort
+    // Eingebettete Inhalte (Karte, Video) und <Tracking> reagieren sofort
     window.dispatchEvent(new Event("al:consent"));
     setShow(false);
   }
@@ -130,17 +128,4 @@ export default function CookieConsent({ locale }: { locale: Locale }) {
       </div>
     </div>
   );
-}
-
-function loadAnalytics() {
-  const id = process.env.NEXT_PUBLIC_GA_ID;
-  if (!id || document.getElementById("ga-script")) return;
-  const s = document.createElement("script");
-  s.id = "ga-script";
-  s.async = true;
-  s.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
-  document.head.appendChild(s);
-  const inline = document.createElement("script");
-  inline.innerHTML = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}',{anonymize_ip:true});`;
-  document.head.appendChild(inline);
 }

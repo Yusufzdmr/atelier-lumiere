@@ -8,8 +8,14 @@ import {
   createGallery,
   deleteGallery,
   deleteInvitation,
+  getGallery,
   removeGalleryPhoto,
   updateGallery,
+  getCustomer,
+  saveCustomer,
+  updateCustomer,
+  deleteCustomer,
+  deleteDraft,
 } from "./store";
 import {
   getContent, saveContent, resetContent, defaultContent,
@@ -22,7 +28,11 @@ import {
 import type { Service, ProcessStep, Testimonial, FaqItem } from "./content";
 import { legalPageOrder, type LegalKey, type LegalSection } from "./legal";
 import { slugify } from "./invite";
-import { saveUploads } from "./media";
+import { saveUploads, deleteUpload } from "./media";
+import { makeCouponCode } from "./coupon";
+import { defaultMarketing, seoPages } from "./marketing";
+import { getIntegrations, saveIntegrations } from "./integrations";
+import { testConnection } from "./paypal";
 
 const COOKIE = "al-admin";
 
@@ -729,5 +739,335 @@ export async function uploadPostPhotos(slug: string, photos: string[]) {
 export async function deletePostPhoto(formData: FormData) {
   await requireAdmin();
   await removePostPhoto(str(formData, "slug"), Number(formData.get("index")));
+  revalidatePath("/", "layout");
+}
+
+/* ------------------------------- Kunden ------------------------------- */
+
+/**
+ * Ein Kunde ist ein Auftrag: Zugang zur Galerie, Gutschein und Auftragsdaten
+ * in einem Datensatz. Beim Anlegen entsteht die Galerie gleich mit – sonst
+ * müsste man dieselben Angaben zweimal eintippen.
+ */
+export async function newCustomer(formData: FormData) {
+  await requireAdmin();
+  const locale = str(formData, "locale") || "de";
+  const couple = str(formData, "couple");
+  const wanted = str(formData, "code") || slugify(couple);
+  const code = wanted.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 40);
+  if (!code || !couple) return;
+
+  if (await getCustomer(code)) {
+    redirect(`/${locale}/admin/kunden?fehler=code`);
+  }
+
+  const password = str(formData, "password") || Math.random().toString(36).slice(2, 10);
+  const date = str(formData, "date");
+
+  await saveCustomer({
+    code,
+    password,
+    couple,
+    email: str(formData, "email"),
+    phone: str(formData, "phone"),
+    date,
+    venue: str(formData, "venue"),
+    packageName: str(formData, "packageName"),
+    amount: str(formData, "amount"),
+    notes: str(formData, "notes"),
+    status: "active",
+    coupon: {
+      code: str(formData, "coupon") || makeCouponCode(couple),
+      active: true,
+      once: formData.get("couponOnce") !== null,
+      expires: str(formData, "couponExpires"),
+      usedFor: [],
+    },
+    createdAt: new Date().toISOString(),
+  });
+
+  // Galerie mit demselben Zugang – der Kunde meldet sich damit unter /galerie an.
+  if (!(await getGallery(code))) {
+    await createGallery({
+      code,
+      password,
+      couple,
+      date,
+      venue: str(formData, "venue"),
+      cover: `gal-${code}-cover`,
+      expires: str(formData, "expires") || "",
+    });
+  }
+
+  revalidatePath("/", "layout");
+  redirect(`/${locale}/admin/kunden/${code}`);
+}
+
+export async function editCustomer(formData: FormData) {
+  await requireAdmin();
+  const code = str(formData, "code");
+  const password = str(formData, "password");
+
+  await updateCustomer(code, {
+    couple: str(formData, "couple"),
+    email: str(formData, "email"),
+    phone: str(formData, "phone"),
+    date: str(formData, "date"),
+    venue: str(formData, "venue"),
+    packageName: str(formData, "packageName"),
+    amount: str(formData, "amount"),
+    notes: str(formData, "notes"),
+    ...(password ? { password } : {}),
+  });
+
+  // Galerie-Angaben mitziehen, damit der Kunde dieselben Daten sieht.
+  await updateGallery(code, {
+    date: str(formData, "date"),
+    venue: str(formData, "venue"),
+    videoUrl: str(formData, "video") || undefined,
+    expires: str(formData, "expires"),
+  });
+
+  revalidatePath("/", "layout");
+}
+
+/** Gutschein: Code neu würfeln, sperren, freigeben, Frist setzen. */
+export async function saveCustomerCoupon(formData: FormData) {
+  await requireAdmin();
+  const code = str(formData, "code");
+  const customer = await getCustomer(code);
+  if (!customer) return;
+
+  const regenerate = formData.get("regenerate") !== null;
+
+  await updateCustomer(code, {
+    coupon: {
+      ...customer.coupon,
+      code: regenerate ? makeCouponCode(customer.couple) : str(formData, "coupon") || customer.coupon.code,
+      active: formData.get("couponActive") !== null,
+      once: formData.get("couponOnce") !== null,
+      expires: str(formData, "couponExpires"),
+    },
+  });
+  revalidatePath("/", "layout");
+}
+
+/** Verbrauchten Gutschein wieder freigeben – etwa nach einem Fehlversuch. */
+export async function resetCustomerCoupon(formData: FormData) {
+  await requireAdmin();
+  const code = str(formData, "code");
+  const customer = await getCustomer(code);
+  if (!customer) return;
+  await updateCustomer(code, { coupon: { ...customer.coupon, usedFor: [], active: true } });
+  revalidatePath("/", "layout");
+}
+
+export async function setCustomerStatus(status: "active" | "archived", formData: FormData) {
+  await requireAdmin();
+  await updateCustomer(str(formData, "code"), { status });
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Endgültig löschen. Ohne das Bestätigungsfeld passiert nichts – der Knopf
+ * liegt im Admin bewusst hinter einer Eingabe, weil auch die Bilder gehen.
+ */
+export async function removeCustomer(formData: FormData) {
+  await requireAdmin();
+  const code = str(formData, "code");
+  if (str(formData, "confirm").toLowerCase() !== code.toLowerCase()) return;
+
+  await deleteCustomer(code, { withGallery: true });
+  revalidatePath("/", "layout");
+  redirect(`/${str(formData, "locale") || "de"}/admin/kunden`);
+}
+
+/** Allgemeiner Aktionscode (gilt zusätzlich zu den Kundencodes). */
+export async function saveCampaign(formData: FormData) {
+  await requireAdmin();
+  const c: SiteContent = structuredClone(await getContent());
+  c.campaign = { code: str(formData, "campaignCode"), active: formData.get("campaignActive") !== null };
+  await saveContent(c);
+  revalidatePath("/", "layout");
+}
+
+/* ---------------------------- Integrationen ---------------------------- */
+
+/**
+ * Geheimnisse werden nur ersetzt, wenn etwas Neues eingetippt wurde – das
+ * Formular zeigt sie maskiert, ein leeres Feld heißt „unverändert lassen".
+ */
+export async function saveIntegrationSettings(formData: FormData) {
+  await requireAdmin();
+  const current = await getIntegrations();
+  const keep = (field: string, previous: string) => str(formData, field) || previous;
+
+  await saveIntegrations({
+    ...current,
+    paypal: {
+      clientId: keep("paypal_client_id", current.paypal.clientId),
+      clientSecret: keep("paypal_secret", current.paypal.clientSecret),
+      mode: str(formData, "paypal_mode") === "live" ? "live" : "sandbox",
+    },
+    google: {
+      gaId: str(formData, "ga_id"),
+      gtmId: str(formData, "gtm_id"),
+      adsId: str(formData, "ads_id"),
+      adsLabels: {
+        contact: str(formData, "ads_label_contact"),
+        invite: str(formData, "ads_label_invite"),
+        phone: str(formData, "ads_label_phone"),
+      },
+      leadValue: str(formData, "ads_lead_value"),
+      currency: str(formData, "ads_currency") || "EUR",
+      searchConsole: str(formData, "gsc"),
+      bing: str(formData, "bing"),
+      consentMode: formData.get("consent_mode") !== null,
+    },
+    meta: { pixelId: str(formData, "meta_pixel") },
+  });
+
+  revalidatePath("/", "layout");
+}
+
+export async function addIntegrationKey(formData: FormData) {
+  await requireAdmin();
+  const current = await getIntegrations();
+  const name = str(formData, "extra_name").toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  if (!name) return;
+
+  await saveIntegrations({
+    ...current,
+    extras: [
+      ...current.extras,
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        label: str(formData, "extra_label") || name,
+        name,
+        value: str(formData, "extra_value"),
+        secret: formData.get("extra_secret") !== null,
+        note: str(formData, "extra_note"),
+      },
+    ].slice(0, 40),
+  });
+  revalidatePath("/", "layout");
+}
+
+export async function saveIntegrationKey(id: string, formData: FormData) {
+  await requireAdmin();
+  const current = await getIntegrations();
+  await saveIntegrations({
+    ...current,
+    extras: current.extras.map((e) =>
+      e.id === id
+        ? {
+            ...e,
+            label: str(formData, `label_${id}`) || e.label,
+            note: str(formData, `note_${id}`),
+            // Leeres Feld: bestehenden Wert behalten.
+            value: str(formData, `value_${id}`) || e.value,
+          }
+        : e
+    ),
+  });
+  revalidatePath("/", "layout");
+}
+
+export async function deleteIntegrationKey(id: string) {
+  await requireAdmin();
+  const current = await getIntegrations();
+  await saveIntegrations({ ...current, extras: current.extras.filter((e) => e.id !== id) });
+  revalidatePath("/", "layout");
+}
+
+export type PaypalTestState = { state: "idle" | "ok" | "missing" | "rejected" | "failed"; mode?: string };
+
+/** Zugangsdaten gegen PayPal prüfen, ohne eine Zahlung auszulösen. */
+export async function checkPaypal(): Promise<PaypalTestState> {
+  await requireAdmin();
+  const result = await testConnection();
+  if (result.ok) return { state: "ok", mode: result.mode };
+  return { state: result.message as PaypalTestState["state"], mode: result.mode };
+}
+
+/* ------------------------------ SEO-Texte ------------------------------ */
+
+export async function saveSeo(formData: FormData) {
+  await requireAdmin();
+  const c: SiteContent = structuredClone(await getContent());
+
+  for (const page of seoPages) {
+    const entry = c.marketing.pages[page.key] ?? {
+      title: { de: "", tr: "" },
+      description: { de: "", tr: "" },
+      noindex: false,
+      image: "",
+    };
+    c.marketing.pages[page.key] = {
+      ...entry,
+      title: {
+        de: str(formData, `seo_${page.key}_title_de`),
+        tr: str(formData, `seo_${page.key}_title_tr`),
+      },
+      description: {
+        de: str(formData, `seo_${page.key}_desc_de`),
+        tr: str(formData, `seo_${page.key}_desc_tr`),
+      },
+      noindex: formData.get(`seo_${page.key}_noindex`) !== null,
+    };
+  }
+
+  c.marketing.templates = {
+    city: { de: str(formData, "tpl_city_de"), tr: str(formData, "tpl_city_tr") },
+    venue: { de: str(formData, "tpl_venue_de"), tr: str(formData, "tpl_venue_tr") },
+    post: { de: str(formData, "tpl_post_de"), tr: str(formData, "tpl_post_tr") },
+    story: { de: str(formData, "tpl_story_de"), tr: str(formData, "tpl_story_tr") },
+  };
+
+  await saveContent(c);
+  revalidatePath("/", "layout");
+}
+
+export async function resetSeo() {
+  await requireAdmin();
+  const c: SiteContent = structuredClone(await getContent());
+  c.marketing = defaultMarketing();
+  await saveContent(c);
+  revalidatePath("/", "layout");
+}
+
+/** Vorschaubild einer Seite (oder das Standardbild, Schlüssel "default"). */
+export async function uploadSeoImage(key: string, photos: string[]) {
+  await requireAdmin();
+  const safe = photos.filter((p) => typeof p === "string" && p.startsWith("data:image/") && p.length < 1_400_000);
+  if (!safe.length) return { ok: false, added: 0 };
+
+  const [url] = await saveUploads(safe.slice(0, 1), `seo/${key}`);
+  const c: SiteContent = structuredClone(await getContent());
+  if (key === "default") c.marketing.defaultImage = url;
+  else if (c.marketing.pages[key]) c.marketing.pages[key].image = url;
+
+  await saveContent(c);
+  revalidatePath("/", "layout");
+  return { ok: true, added: 1 };
+}
+
+export async function removeSeoImage(key: string) {
+  await requireAdmin();
+  const c: SiteContent = structuredClone(await getContent());
+  const url = key === "default" ? c.marketing.defaultImage : c.marketing.pages[key]?.image;
+
+  if (key === "default") c.marketing.defaultImage = "";
+  else if (c.marketing.pages[key]) c.marketing.pages[key].image = "";
+
+  await saveContent(c);
+  if (url) await deleteUpload(url);
+  revalidatePath("/", "layout");
+}
+
+/** Liegengelassenen Entwurf des Assistenten entfernen. */
+export async function removeDraft(formData: FormData) {
+  await requireAdmin();
+  await deleteDraft(str(formData, "token"));
   revalidatePath("/", "layout");
 }

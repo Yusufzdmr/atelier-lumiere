@@ -7,7 +7,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs } from "@/components/ui";
 import { getPosts } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, dateLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -18,15 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
   const t = getDict(l);
-  return meta({
-    locale: l,
-    path: "/ratgeber",
-    title:
-      l === "de"
-        ? "Ratgeber – Hochzeitsfotografie, Zeitplan & Locations"
-        : "Rehber – düğün fotoğrafçılığı, akış planı ve mekânlar",
-    description: t.blog.lead,
-  });
+  return pageMeta({ locale: l, page: "ratgeber", fallback: { description: t.blog.lead } });
 }
 
 export default async function BlogPage({ params }: { params: Promise<{ locale: string }> }) {

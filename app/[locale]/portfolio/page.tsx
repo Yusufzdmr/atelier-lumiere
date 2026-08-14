@@ -7,7 +7,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs } from "@/components/ui";
 import { getStories } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -17,15 +17,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/portfolio",
-    title: l === "de" ? "Portfolio – echte Hochzeiten aus Stuttgart & Region" : "Portfolyo – Stuttgart ve bölgeden gerçek düğünler",
-    description:
-      l === "de"
-        ? "Vier Hochzeitsreportagen aus Stuttgart, Ludwigsburg und Fellbach – Schloss, Kelter und große Eventhalle."
-        : "Stuttgart, Ludwigsburg ve Fellbach'tan dört düğün çekimi – saray, şaraphane ve büyük etkinlik salonu.",
-  });
+  return pageMeta({ locale: l, page: "portfolio" });
 }
 
 export default async function PortfolioPage({ params }: { params: Promise<{ locale: string }> }) {

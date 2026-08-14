@@ -248,6 +248,14 @@ export async function saveSelection(s: Selection) {
     ON CONFLICT (code) DO UPDATE SET data = EXCLUDED.data, at = now()`;
 }
 
+export async function getSelection(code: string): Promise<Selection | undefined> {
+  await ready();
+  const rows = (await sql()`SELECT data FROM selections WHERE code = ${code.trim().toLowerCase()}`) as {
+    data: Selection;
+  }[];
+  return rows[0]?.data;
+}
+
 export async function listSelections(): Promise<Selection[]> {
   await ready();
   const rows = (await sql()`SELECT data FROM selections ORDER BY at DESC`) as { data: Selection }[];
@@ -342,9 +350,222 @@ export async function listPayments(): Promise<Payment[]> {
   return rows.map((r) => r.data);
 }
 
+/* ---------------- Kundenakte ---------------- */
+
+/** Freischaltcode fuer die digitale Einladung – einer pro Kunde. */
+export type CouponInfo = {
+  code: string;
+  active: boolean;
+  /** true = eine Einladung, danach verbraucht */
+  once: boolean;
+  /** ISO-Datum (YYYY-MM-DD); leer = unbegrenzt gueltig */
+  expires: string;
+  /** Wofuer der Code eingelöst wurde */
+  usedFor: { slug: string; at: string }[];
+};
+
+/**
+ * Ein Kunde = ein Auftrag = eine Galerie. Der Code ist gleichzeitig der
+ * Anmeldename der Galerie; das Passwort wird in beiden Datensaetzen gehalten,
+ * damit die bestehende Galerie-Anmeldung unveraendert weiterläuft.
+ */
+export type Customer = {
+  code: string;
+  password: string;
+  /** Anzeigename, z. B. "Elif & Marco" */
+  couple: string;
+  email: string;
+  phone: string;
+  /** Hochzeitsdatum */
+  date: string;
+  venue: string;
+  /** gebuchtes Paket, freier Text */
+  packageName: string;
+  /** Auftragswert, freier Text ("1.890 €") */
+  amount: string;
+  /** interne Notiz – der Kunde sieht sie nie */
+  notes: string;
+  status: "active" | "archived";
+  coupon: CouponInfo;
+  createdAt: string;
+};
+
+const code = (v: string) => v.trim().toLowerCase();
+
+/** Aeltere Datensaetze robust machen (neue Felder, fehlender Gutschein). */
+function completeCustomer(c: Customer): Customer {
+  const coupon = c.coupon ?? { code: "", active: false, once: true, expires: "", usedFor: [] };
+  return {
+    ...c,
+    email: c.email ?? "",
+    phone: c.phone ?? "",
+    venue: c.venue ?? "",
+    packageName: c.packageName ?? "",
+    amount: c.amount ?? "",
+    notes: c.notes ?? "",
+    status: c.status === "archived" ? "archived" : "active",
+    coupon: { ...coupon, usedFor: Array.isArray(coupon.usedFor) ? coupon.usedFor : [] },
+  };
+}
+
+export async function listCustomers(): Promise<Customer[]> {
+  await ready();
+  const rows = (await sql()`SELECT data FROM customers ORDER BY created_at DESC`) as { data: Customer }[];
+  return rows.map((r) => completeCustomer(r.data));
+}
+
+export async function getCustomer(value: string): Promise<Customer | undefined> {
+  await ready();
+  const rows = (await sql()`SELECT data FROM customers WHERE code = ${code(value)}`) as { data: Customer }[];
+  return rows[0] ? completeCustomer(rows[0].data) : undefined;
+}
+
+export async function saveCustomer(c: Customer): Promise<Customer> {
+  await ready();
+  const next = completeCustomer({ ...c, code: code(c.code) });
+  await sql()`
+    INSERT INTO customers (code, data) VALUES (${next.code}, ${JSON.stringify(next)})
+    ON CONFLICT (code) DO UPDATE SET data = EXCLUDED.data`;
+  return next;
+}
+
+export async function updateCustomer(value: string, patch: Partial<Customer>): Promise<Customer | null> {
+  const current = await getCustomer(value);
+  if (!current) return null;
+  const next = completeCustomer({ ...current, ...patch, code: current.code });
+  await sql()`UPDATE customers SET data = ${JSON.stringify(next)} WHERE code = ${current.code}`;
+  // Das Passwort ist auch der Galerie-Zugang – beide Seiten muessen gleich sein.
+  if (patch.password && patch.password !== current.password) {
+    await updateGallery(current.code, { password: next.password });
+  }
+  if (patch.couple && patch.couple !== current.couple) {
+    await updateGallery(current.code, { couple: next.couple });
+  }
+  return next;
+}
+
+/**
+ * Endgueltig entfernen. `withGallery` loescht zusaetzlich Galerie, Auswahl und
+ * die hochgeladenen Bilder – im Admin bewusst ein eigener, zweiter Knopf.
+ */
+export async function deleteCustomer(value: string, opts: { withGallery?: boolean } = {}) {
+  await ready();
+  const c = code(value);
+  if (opts.withGallery) {
+    const gal = await getGallery(c);
+    for (const url of gal?.uploads ?? []) await deleteUpload(url);
+    await deleteGallery(c);
+  }
+  await sql()`DELETE FROM customers WHERE code = ${c}`;
+}
+
 /* ---------------- Gutscheincodes ---------------- */
 
-const CUSTOMER_CODES = new Set(["lumiere2026", "elif-marco", "sarah-daniel", "kunde2026"]);
-export const isCustomerCode = (code: string) => CUSTOMER_CODES.has(code.trim().toLowerCase());
+export type CouponReason = "empty" | "unknown" | "inactive" | "expired" | "used" | "archived";
+
+export type CouponCheck = {
+  ok: boolean;
+  reason?: CouponReason;
+  /** Welcher Kunde – nur fuer den Admin-Blick, nicht fuer den Browser */
+  customer?: string;
+  kind?: "customer" | "campaign";
+};
+
+/**
+ * Prueft einen eingegebenen Code. Die allgemeine Kampagne kommt als Parameter
+ * herein, damit dieses Modul nicht auf die Inhalte (lib/cms.ts) zugreifen muss.
+ */
+export async function checkCoupon(
+  input: string,
+  campaign?: { code: string; active: boolean }
+): Promise<CouponCheck> {
+  const value = code(input);
+  if (!value) return { ok: false, reason: "empty" };
+
+  if (campaign?.active && campaign.code && code(campaign.code) === value) {
+    return { ok: true, kind: "campaign" };
+  }
+
+  const customer = (await listCustomers()).find((c) => c.coupon.code && code(c.coupon.code) === value);
+  if (!customer) return { ok: false, reason: "unknown" };
+  if (customer.status === "archived") return { ok: false, reason: "archived", customer: customer.code };
+  if (!customer.coupon.active) return { ok: false, reason: "inactive", customer: customer.code };
+
+  if (customer.coupon.expires) {
+    // Am Ablauftag noch gueltig – verglichen wird nur das Datum.
+    const today = new Date().toISOString().slice(0, 10);
+    if (customer.coupon.expires < today) return { ok: false, reason: "expired", customer: customer.code };
+  }
+  if (customer.coupon.once && customer.coupon.usedFor.length > 0) {
+    return { ok: false, reason: "used", customer: customer.code };
+  }
+
+  return { ok: true, kind: "customer", customer: customer.code };
+}
+
+/**
+ * Code als eingelöst vermerken. Wird erst aufgerufen, wenn die Einladung
+ * wirklich angelegt ist – so verbraucht ein Abbruch den Code nicht.
+ */
+export async function redeemCoupon(input: string, slug: string) {
+  const value = code(input);
+  const customer = (await listCustomers()).find((c) => c.coupon.code && code(c.coupon.code) === value);
+  if (!customer) return;
+  await updateCustomer(customer.code, {
+    coupon: {
+      ...customer.coupon,
+      usedFor: [...customer.coupon.usedFor, { slug, at: new Date().toISOString() }].slice(-20),
+    },
+  });
+}
+
+/* ---------------- Entwuerfe des Assistenten ---------------- */
+
+/**
+ * Zwischenstand der Einladung. Der Token steht in der Fortsetzungs-URL, das
+ * Feld `data` ist der Formularstand des Assistenten – absichtlich unstrukturiert,
+ * damit ein neuer Schritt im Assistenten kein Datenbankschema aendert.
+ */
+export type InviteDraft = {
+  token: string;
+  /** Anzeigename fuer die Liste im Admin */
+  label: string;
+  data: unknown;
+  updatedAt: string;
+};
+
+/** Liegengelassene Entwuerfe raeumen – sonst waechst die Tabelle endlos. */
+async function purgeDrafts() {
+  await sql()`DELETE FROM invite_drafts WHERE updated_at < now() - interval '120 days'`;
+}
+
+export async function saveDraft(token: string, label: string, data: unknown): Promise<InviteDraft> {
+  await ready();
+  const draft: InviteDraft = { token, label, data, updatedAt: new Date().toISOString() };
+  await sql()`
+    INSERT INTO invite_drafts (token, data, updated_at) VALUES (${token}, ${JSON.stringify(draft)}, now())
+    ON CONFLICT (token) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`;
+  await purgeDrafts();
+  return draft;
+}
+
+export async function getDraft(token: string): Promise<InviteDraft | undefined> {
+  await ready();
+  const rows = (await sql()`SELECT data FROM invite_drafts WHERE token = ${token}`) as { data: InviteDraft }[];
+  return rows[0]?.data;
+}
+
+export async function listDrafts(): Promise<InviteDraft[]> {
+  await ready();
+  const rows = (await sql()`SELECT data FROM invite_drafts ORDER BY updated_at DESC LIMIT 200`) as {
+    data: InviteDraft;
+  }[];
+  return rows.map((r) => r.data);
+}
+
+export async function deleteDraft(token: string) {
+  await ready();
+  await sql()`DELETE FROM invite_drafts WHERE token = ${token}`;
+}
 
 export { hasDb };

@@ -6,7 +6,8 @@ import Reveal from "@/components/Reveal";
 import InviteBuilder from "@/components/InviteBuilder";
 import { Section, Breadcrumbs } from "@/components/ui";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd, offerLd } from "@/lib/seo";
+import { getCampaign } from "@/lib/cms";
+import { breadcrumbLd, offerLd, pageMeta } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
@@ -17,18 +18,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/einladung",
-    title:
-      l === "de"
-        ? "Digitale Hochzeitseinladung erstellen – mit RSVP & Countdown"
-        : "Dijital düğün davetiyesi oluştur – RSVP ve geri sayımlı",
-    description:
-      l === "de"
-        ? "Eigene Einladungsseite in drei Minuten: Countdown, Google-Maps-Route, WhatsApp-Versand und Zusagen. Für Hochzeitspaare von Atelier Lumière kostenlos."
-        : "Üç dakikada kendi davetiye sayfanız: geri sayım, Google Maps yol tarifi, WhatsApp paylaşımı ve katılım bildirimi. Atelier Lumière çiftlerine ücretsiz.",
-  });
+  return pageMeta({ locale: l, page: "einladung" });
 }
 
 export default async function InviteBuilderPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -36,6 +26,9 @@ export default async function InviteBuilderPage({ params }: { params: Promise<{ 
   const l: Locale = isLocale(locale) ? locale : "de";
   const t = getDict(l);
   const p = (path: string) => `/${l}${path}`;
+  // Der Aktionscode steht im Admin – ein fest verdrahteter Code hier wäre
+  // spätestens nach der ersten Kampagne falsch.
+  const campaign = await getCampaign();
 
   const features =
     l === "de"
@@ -65,10 +58,12 @@ export default async function InviteBuilderPage({ params }: { params: Promise<{ 
 
         <Reveal className="mb-14 border-l-2 border-gold bg-sand/40 p-6">
           <p className="text-[0.92rem] leading-relaxed text-ink">{t.invite.freeNote}</p>
-          <p className="mt-2 text-[0.82rem] text-muted">
-            {l === "de" ? "Demo-Code: " : "Demo kodu: "}
-            <code className="text-gold">lumiere2026</code>
-          </p>
+          {campaign.active && campaign.code && (
+            <p className="mt-2 text-[0.82rem] text-muted">
+              {l === "de" ? "Aktionscode: " : "Kampanya kodu: "}
+              <code className="text-gold">{campaign.code}</code>
+            </p>
+          )}
         </Reveal>
 
         <InviteBuilder locale={l} />

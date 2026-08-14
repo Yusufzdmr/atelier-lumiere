@@ -17,6 +17,7 @@ import {
 import { about as defaultAbout, type AboutContent } from "./about";
 import { legal as defaultLegal, type LegalContent } from "./legal";
 import { posts as defaultPosts, type Post } from "./posts";
+import { defaultMarketing, seoPages, type MarketingContent, type SeoEntry } from "./marketing";
 import { site } from "./site";
 import type { L } from "./i18n";
 
@@ -74,6 +75,10 @@ export type SiteContent = {
   legal: LegalContent;
   /** Ratgeber-Beiträge */
   posts: Post[];
+  /** Seitentitel und Beschreibungen für Google */
+  marketing: MarketingContent;
+  /** Allgemeiner Aktionscode für die digitale Einladung (neben den Kundencodes) */
+  campaign: { code: string; active: boolean };
 };
 
 export const defaultContent = (): SiteContent => ({
@@ -112,6 +117,8 @@ export const defaultContent = (): SiteContent => ({
   about: structuredClone(defaultAbout),
   legal: structuredClone(defaultLegal),
   posts: structuredClone(defaultPosts),
+  marketing: defaultMarketing(),
+  campaign: { code: "lumiere2026", active: true },
 });
 
 /**
@@ -144,9 +151,25 @@ export async function getContent(): Promise<SiteContent> {
       patched = true;
     }
   };
-  (["venues", "cities", "stories", "services", "process", "testimonials", "faq", "about", "legal", "posts"] as const).forEach(fill);
+  (["venues", "cities", "stories", "services", "process", "testimonials", "faq", "about", "legal", "posts", "marketing", "campaign"] as const).forEach(fill);
   if (stored.contact.mapsQuery === undefined) {
     stored.contact.mapsQuery = "";
+    patched = true;
+  }
+  // Eine neu hinzugekommene Seite braucht ihren SEO-Eintrag, sonst faellt das
+  // Admin-Formular auf undefined.
+  for (const page of seoPages) {
+    if (!stored.marketing.pages[page.key]) {
+      stored.marketing.pages[page.key] = d.marketing.pages[page.key];
+      patched = true;
+    }
+  }
+  if (!stored.marketing.templates) {
+    stored.marketing.templates = d.marketing.templates;
+    patched = true;
+  }
+  if (stored.marketing.defaultImage === undefined) {
+    stored.marketing.defaultImage = "";
     patched = true;
   }
   if (patched) await storeContent(stored);
@@ -319,6 +342,20 @@ export async function removePostPhoto(slug: string, index: number) {
   await storeContent(c);
   if (removed) await deleteUpload(removed);
 }
+
+/* ------------------------- SEO & Aktionscode ------------------------- */
+
+export const getMarketing = async (): Promise<MarketingContent> => (await getContent()).marketing;
+
+/** Eintrag einer Seite; unbekannter Schlüssel = leerer Eintrag statt Absturz. */
+export async function getSeoEntry(key: string): Promise<SeoEntry> {
+  const m = await getMarketing();
+  return (
+    m.pages[key] ?? { title: { de: "", tr: "" }, description: { de: "", tr: "" }, noindex: false, image: "" }
+  );
+}
+
+export const getCampaign = async () => (await getContent()).campaign;
 
 /* ---------------------------- Schreiben ----------------------------- */
 

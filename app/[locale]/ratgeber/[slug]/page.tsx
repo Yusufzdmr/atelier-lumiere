@@ -10,7 +10,7 @@ import { getPost, getPosts, getCity, getVenue } from "@/lib/cms";
 import { posts as defaultPosts } from "@/lib/posts";
 import { getDict } from "@/lib/dict";
 import { img } from "@/lib/images";
-import { meta, articleLd, faqLd, breadcrumbLd } from "@/lib/seo";
+import { articleLd, faqLd, breadcrumbLd, templateMeta } from "@/lib/seo";
 import { locales, isLocale, dateLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -27,9 +27,11 @@ export async function generateMetadata({
   const post = await getPost(slug);
   if (!post) return {};
 
-  return meta({
+  return templateMeta({
     locale: l,
+    kind: "post",
     path: `/ratgeber/${post.slug}`,
+    vars: { title: post.title[l] },
     title: post.title[l],
     description: post.excerpt[l],
     image: img(post.uploads?.[0] ?? post.seed, 1200, 630),

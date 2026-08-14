@@ -133,4 +133,32 @@ async function createTables() {
       data    jsonb NOT NULL,
       at      timestamptz NOT NULL DEFAULT now()
     )`;
+
+  // Kundenakte: Zugang zur Galerie, Gutscheincode, Auftragsdaten.
+  // Der Schluessel ist derselbe Code, mit dem sich der Kunde anmeldet.
+  await q`
+    CREATE TABLE IF NOT EXISTS customers (
+      code       text PRIMARY KEY,
+      data       jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`;
+
+  // Zwischenstand des Einladungs-Assistenten. Laeuft nach Ablaufdatum aus.
+  await q`
+    CREATE TABLE IF NOT EXISTS invite_drafts (
+      token      text PRIMARY KEY,
+      data       jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`;
+
+  // Zugangsdaten fremder Dienste (PayPal, Google, Meta, spaetere APIs).
+  // Bewusst eine eigene Tabelle: site_content wird von oeffentlichen Seiten
+  // gelesen, Geheimnisse haben dort nichts zu suchen.
+  await q`
+    CREATE TABLE IF NOT EXISTS integrations (
+      id         int PRIMARY KEY DEFAULT 1,
+      data       jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT integrations_single_row CHECK (id = 1)
+    )`;
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Sprig, Divider, WaxSeal } from "./invite/Ornaments";
 import { getDict } from "@/lib/dict";
+import { track } from "@/lib/track";
 import { slugify, resizeImage, dateBlocks, defaultSections } from "@/lib/invite";
 import { themes, themeById } from "@/lib/themes";
 import { eventTypes, eventTypeById, headline } from "@/lib/events";
@@ -15,9 +16,10 @@ const field =
   "w-full border-b border-sand-deep bg-transparent px-0 py-3 text-[0.95rem] text-ink outline-none transition-colors placeholder:text-muted/50 focus:border-gold";
 const label = "block text-[0.64rem] uppercase tracking-[0.2em] text-muted";
 
-const CUSTOMER_CODES = ["lumiere2026", "elif-marco", "sarah-daniel", "kunde2026"];
-
 const emptyEvent = (name = ""): InviteEvent => ({ name, date: "", time: "16:00", venue: "", address: "" });
+
+/** Zwischenstand im Browser – überlebt Neuladen, Zurück-Taste und Handywechsel des Tabs. */
+const DRAFT_KEY = "al-invite-draft-v1";
 
 export default function InviteBuilder({ locale }: { locale: Locale }) {
   const t = getDict(locale).invite;
@@ -58,6 +60,15 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
   const [menu, setMenu] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
 
+  /** Gutschein: geprüft wird auf dem Server, nie im Browser. */
+  const [coupon, setCoupon] = useState<{ checking: boolean; ok: boolean; reason?: string }>({
+    checking: false,
+    ok: false,
+  });
+  const [draft, setDraft] = useState<{ token: string; url: string } | null>(null);
+  const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [restored, setRestored] = useState(false);
+
   const set = (k: keyof typeof f, v: string) => {
     setF((prev) => ({ ...prev, [k]: v }));
     setError("");
@@ -65,6 +76,116 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
   const setEvent = (i: number, patch: Partial<InviteEvent>) =>
     setEvents((prev) => prev.map((e, k) => (k === i ? { ...e, ...patch } : e)));
   const toggle = (k: keyof InviteSections) => setSections((prev) => ({ ...prev, [k]: !prev[k] }));
+
+  /* ------------------------- Zwischenstand ------------------------- */
+
+  type Snapshot = {
+    f?: Partial<typeof f>;
+    events?: InviteEvent[];
+    sections?: Partial<InviteSections>;
+    program?: ProgramItem[];
+    menu?: string[];
+    photos?: string[];
+    step?: number;
+  };
+
+  function applySnapshot(data: Snapshot | null) {
+    if (!data) return;
+    if (data.f) setF((prev) => ({ ...prev, ...data.f }));
+    if (Array.isArray(data.events) && data.events.length) setEvents(data.events);
+    if (data.sections) setSections((prev) => ({ ...prev, ...data.sections }));
+    if (Array.isArray(data.program)) setProgram(data.program);
+    if (Array.isArray(data.menu)) setMenu(data.menu);
+    if (Array.isArray(data.photos)) setPhotos(data.photos);
+    if (typeof data.step === "number") setStep(Math.max(0, Math.min(data.step, LAST)));
+  }
+
+  // Beim Öffnen: Fortsetzungslink schlägt den Browser-Zwischenstand.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("taslak");
+    if (!token) {
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage gibt es erst im Browser, also nach dem ersten Rendern
+        if (raw) applySnapshot(JSON.parse(raw) as Snapshot);
+      } catch {
+        // Kein lesbarer Zwischenstand – dann eben von vorn.
+      }
+      setRestored(true);
+      return;
+    }
+
+    fetch(`/api/entwurf?token=${encodeURIComponent(token)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) {
+          applySnapshot(json.data as Snapshot);
+          setDraft({ token, url: `${window.location.origin}/${locale}/einladung?taslak=${token}` });
+        }
+      })
+      .finally(() => setRestored(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur beim ersten Rendern
+  }, []);
+
+  // Laufend sichern. Ohne Fotos: Data-URLs sprengen den localStorage –
+  // die liegen nur im serverseitigen Entwurf.
+  useEffect(() => {
+    if (!restored || done) return;
+    const id = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, events, sections, program, menu, step }));
+      } catch {
+        // Speicher voll oder gesperrt – der Assistent läuft trotzdem weiter.
+      }
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [restored, done, f, events, sections, program, menu, step]);
+
+  // Gutschein serverseitig prüfen, kurz verzögert nach der Eingabe.
+  useEffect(() => {
+    const value = f.coupon.trim();
+    const id = window.setTimeout(async () => {
+      if (!value) {
+        setCoupon({ checking: false, ok: false });
+        return;
+      }
+      setCoupon((c) => ({ ...c, checking: true }));
+      try {
+        const res = await fetch("/api/kupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: value }),
+        });
+        const json = await res.json();
+        setCoupon({ checking: false, ok: Boolean(json.ok), reason: json.reason });
+      } catch {
+        setCoupon({ checking: false, ok: false, reason: "failed" });
+      }
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [f.coupon]);
+
+  /** Entwurf auf dem Server ablegen und einen Fortsetzungslink zurückgeben. */
+  async function saveDraft() {
+    setDraftState("saving");
+    try {
+      const res = await fetch("/api/entwurf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: draft?.token,
+          label: `${f.bride} & ${f.groom}`.trim() === "&" ? "" : `${f.bride} & ${f.groom}`,
+          data: { f, events, sections, program, menu, photos, step },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.token) throw new Error("failed");
+      setDraft({ token: json.token, url: `${window.location.origin}/${locale}/einladung?taslak=${json.token}` });
+      setDraftState("saved");
+    } catch {
+      setDraftState("error");
+    }
+  }
 
   function chooseType(id: EventType) {
     const opt = eventTypeById(id);
@@ -75,7 +196,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
 
   const th = themeById(f.theme);
   const autoSlug = useMemo(() => f.slug || slugify(`${f.bride}-${f.groom}`) || "einladung", [f.slug, f.bride, f.groom]);
-  const isFree = CUSTOMER_CODES.includes(f.coupon.trim().toLowerCase());
+  const isFree = coupon.ok;
   const initials = `${f.bride.charAt(0) || "A"}${f.groom.charAt(0) || "M"}`.toUpperCase();
   const title = headline[f.eventType]?.[locale] ?? t.weMarry;
 
@@ -135,6 +256,17 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
       } catch {}
       setDone({ url: data.url, path: data.path, slug: data.slug, price: data.price ?? 0 });
       setStep(LAST + 1);
+      track("invite", data.price ?? 0);
+
+      // Der Entwurf hat seinen Zweck erfüllt.
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        // egal
+      }
+      if (draft?.token) {
+        fetch(`/api/entwurf?token=${encodeURIComponent(draft.token)}`, { method: "DELETE" }).catch(() => {});
+      }
     } catch {
       setError(de ? "Da ist etwas schiefgelaufen." : "Bir şeyler ters gitti.");
     } finally {
@@ -560,8 +692,50 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
               <label className={label}>{t.coupon}</label>
               <input className={field} value={f.coupon} onChange={(e) => set("coupon", e.target.value)} placeholder="lumiere2026" />
               <p className={`mt-2 text-[0.72rem] ${isFree ? "text-gold" : "text-muted"}`}>
-                {f.coupon ? (isFree ? t.couponOk : t.couponBad) : t.couponHint}
+                {!f.coupon
+                  ? t.couponHint
+                  : coupon.checking
+                    ? t.couponChecking
+                    : isFree
+                      ? t.couponOk
+                      : coupon.reason === "used"
+                        ? t.couponUsed
+                        : coupon.reason === "expired"
+                          ? t.couponExpired
+                          : t.couponBad}
               </p>
+            </div>
+
+            {/* Entwurf sichern */}
+            <div className="border border-sand-deep p-5">
+              <div className="text-[0.64rem] uppercase tracking-[0.2em] text-muted">{t.draftTitle}</div>
+              <p className="mt-2 text-[0.78rem] leading-relaxed text-muted">{t.draftHint}</p>
+              <button
+                type="button"
+                onClick={saveDraft}
+                disabled={draftState === "saving"}
+                className="mt-4 border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-50"
+              >
+                {draftState === "saving" ? t.draftSaving : t.draftSave}
+              </button>
+              {draftState === "saved" && draft && (
+                <div className="mt-4">
+                  <p className="text-[0.74rem] text-gold">{t.draftSaved}</p>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <code className="flex-1 overflow-x-auto border border-sand-deep bg-sand/40 px-3 py-2.5 text-[0.74rem] text-ink">
+                      {draft.url}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard?.writeText(draft.url)}
+                      className="border border-ink px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.2em] text-ink hover:bg-ink hover:text-cream"
+                    >
+                      {t.copy}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {draftState === "error" && <p className="mt-3 text-[0.74rem] text-red-700">{t.draftError}</p>}
             </div>
 
             {/* Zusammenfassung */}

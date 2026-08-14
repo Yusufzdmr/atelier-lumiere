@@ -7,7 +7,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs } from "@/components/ui";
 import { getVenues } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -17,18 +17,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/hochzeitslocations",
-    title:
-      l === "de"
-        ? "Hochzeitslocations Stuttgart & Region – Fotograf mit Ortskenntnis"
-        : "Stuttgart ve çevresi düğün mekânları – mekânı tanıyan fotoğrafçı",
-    description:
-      l === "de"
-        ? "Schloss, Festhalle, Eventlocation: Für die beliebtesten Hochzeitslocations der Region Stuttgart kennen wir Licht, Zeitplan und Hausregeln."
-        : "Saray, düğün salonu, etkinlik mekânı: Stuttgart bölgesinin en çok tercih edilen düğün mekânlarında ışığı, zaman planını ve kuralları biliyoruz.",
-  });
+  return pageMeta({ locale: l, page: "hochzeitslocations" });
 }
 
 export default async function VenuesIndex({ params }: { params: Promise<{ locale: string }> }) {

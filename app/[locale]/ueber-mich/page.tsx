@@ -7,7 +7,7 @@ import { Section, Photo, Breadcrumbs, Btn, Stat } from "@/components/ui";
 import { getAbout, getContent } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
 import { site } from "@/lib/site";
-import { meta, breadcrumbLd } from "@/lib/seo";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -18,15 +18,13 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
   const a = await getAbout();
-  return meta({
-    locale: l,
-    path: "/ueber-mich",
-    title:
-      l === "de"
-        ? `Über mich – ${a.name}, Hochzeitsfotograf Stuttgart`
-        : `Hakkımda – ${a.name}, Stuttgart düğün fotoğrafçısı`,
-    description: a.lead[l],
-  });
+  return pageMeta({ locale: l, page: "ueber-mich", fallback: {
+      title:
+        l === "de"
+          ? `Über mich – ${a.name}, Hochzeitsfotograf Stuttgart`
+          : `Hakkımda – ${a.name}, Stuttgart düğün fotoğrafçısı`,
+      description: a.lead[l],
+    } });
 }
 
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {

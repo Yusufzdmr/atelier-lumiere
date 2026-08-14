@@ -6,7 +6,7 @@ import JsonLd from "@/components/JsonLd";
 import { Section, SectionHead, Breadcrumbs, Btn, Accordion } from "@/components/ui";
 import { getContent, getFaq } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
-import { meta, breadcrumbLd, offerLd, faqLd } from "@/lib/seo";
+import { breadcrumbLd, offerLd, faqLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
 
 export function generateStaticParams() {
@@ -16,15 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const l: Locale = isLocale(locale) ? locale : "de";
-  return meta({
-    locale: l,
-    path: "/preise",
-    title: l === "de" ? "Preise Hochzeitsfotograf Stuttgart – ab 690 €" : "Stuttgart düğün fotoğrafçısı fiyatları – 690 €'dan",
-    description:
-      l === "de"
-        ? "Transparente Pakete: Standesamt ab 690 €, Ganztagesreportage ab 1.890 €, Foto & Film ab 3.490 €. Anfahrt bis 60 km inklusive."
-        : "Şeffaf paketler: nikah 690 €'dan, tam gün çekim 1.890 €'dan, foto & film 3.490 €'dan. 60 km'ye kadar ulaşım dahil.",
-  });
+  return pageMeta({ locale: l, page: "preise" });
 }
 
 export default async function PricesPage({ params }: { params: Promise<{ locale: string }> }) {

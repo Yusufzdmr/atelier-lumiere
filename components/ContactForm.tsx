@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getDict } from "@/lib/dict";
+import { track } from "@/lib/track";
 import type { Locale } from "@/lib/i18n";
 
 const field =
@@ -27,6 +28,8 @@ export default function ContactForm({ locale, preset }: { locale: Locale; preset
       if (!res.ok) throw new Error("failed");
       setState("ok");
       form.reset();
+      // Anfrage gilt als Conversion – meldet nur, wenn eingewilligt wurde.
+      track("contact");
     } catch {
       setState("error");
     }
