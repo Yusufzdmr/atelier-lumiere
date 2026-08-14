@@ -1,0 +1,195 @@
+<?php
+declare(strict_types=1);
+
+namespace Atelier;
+
+/**
+ * Digitale Einladungen: anlegen, lesen, Zusagen, Entwürfe und Gutscheine.
+ *
+ * Der Gutschein ist der Punkt, an dem Geld hängt: geprüft wird ausschließlich
+ * hier, und verbraucht wird er erst, wenn die Einladung wirklich angelegt ist.
+ */
+final class Invitations
+{
+    public const EVENT_TYPES = ['wedding', 'multi', 'henna', 'engagement', 'circumcision', 'birthday', 'corporate'];
+
+    /* ------------------------------ Einladungen ----------------------------- */
+
+    /** @return array<string,mixed>|null */
+    public static function find(string $slug): ?array
+    {
+        return Db::json('SELECT data FROM invitations WHERE slug = ?', [self::slug($slug)]);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public static function all(): array
+    {
+        return Db::jsonList('SELECT data FROM invitations ORDER BY created_at DESC');
+    }
+
+    /** @param array<string,mixed> $invitation */
+    public static function create(array $invitation): void
+    {
+        Db::run(
+            'INSERT INTO invitations (slug, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)',
+            [(string) $invitation['slug'], Db::encode($invitation)]
+        );
+    }
+
+    /** @param array<string,mixed> $patch */
+    public static function update(string $slug, array $patch): void
+    {
+        $invitation = self::find($slug);
+        if ($invitation === null) {
+            return;
+        }
+        Db::run('UPDATE invitations SET data = ? WHERE slug = ?', [Db::encode(array_merge($invitation, $patch)), self::slug($slug)]);
+    }
+
+    public static function delete(string $slug): void
+    {
+        $slug = self::slug($slug);
+        $invitation = self::find($slug);
+
+        foreach ((array) ($invitation['photos'] ?? []) as $url) {
+            Media::delete((string) $url);
+        }
+
+        Db::run('DELETE FROM invitations WHERE slug = ?', [$slug]);
+        Db::run('DELETE FROM rsvps WHERE slug = ?', [$slug]);
+    }
+
+    public static function slugAvailable(string $slug): bool
+    {
+        return self::find($slug) === null;
+    }
+
+    /** Adresstauglicher Name: Kleinbuchstaben, Ziffern, Bindestrich. */
+    public static function slug(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $map = ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss', 'ı' => 'i', 'İ' => 'i', 'ş' => 's', 'ğ' => 'g', 'ç' => 'c', 'é' => 'e', 'è' => 'e', 'â' => 'a'];
+        $value = strtr($value, $map);
+        $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
+        return trim($value, '-');
+    }
+
+    /* --------------------------------- RSVP --------------------------------- */
+
+    /** @param array<string,mixed> $rsvp */
+    public static function addRsvp(string $slug, array $rsvp): void
+    {
+        Db::run('INSERT INTO rsvps (slug, data) VALUES (?, ?)', [self::slug($slug), Db::encode($rsvp)]);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public static function rsvps(string $slug = ''): array
+    {
+        if ($slug === '') {
+            return Db::jsonList('SELECT data FROM rsvps ORDER BY at DESC');
+        }
+        return Db::jsonList('SELECT data FROM rsvps WHERE slug = ? ORDER BY at DESC', [self::slug($slug)]);
+    }
+
+    /* ------------------------------- Entwürfe ------------------------------- */
+
+    public static function saveDraft(string $token, string $label, mixed $data): void
+    {
+        $draft = ['token' => $token, 'label' => $label, 'data' => $data, 'updatedAt' => date('c')];
+        Db::run(
+            'INSERT INTO invite_drafts (token, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = CURRENT_TIMESTAMP',
+            [$token, Db::encode($draft)]
+        );
+        // Liegengelassene Entwürfe räumen, sonst wächst die Tabelle endlos.
+        Db::run('DELETE FROM invite_drafts WHERE updated_at < (NOW() - INTERVAL 120 DAY)');
+    }
+
+    /** @return array<string,mixed>|null */
+    public static function draft(string $token): ?array
+    {
+        return Db::json('SELECT data FROM invite_drafts WHERE token = ?', [$token]);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public static function drafts(): array
+    {
+        return Db::jsonList('SELECT data FROM invite_drafts ORDER BY updated_at DESC LIMIT 200');
+    }
+
+    public static function deleteDraft(string $token): void
+    {
+        Db::run('DELETE FROM invite_drafts WHERE token = ?', [$token]);
+    }
+
+    /* ------------------------------ Gutscheine ------------------------------ */
+
+    /**
+     * Code prüfen. Die allgemeine Aktion kommt aus den Inhalten, die
+     * persönlichen Codes aus der Kundenakte.
+     *
+     * @return array{ok:bool,reason?:string,kind?:string,customer?:string}
+     */
+    public static function checkCoupon(string $input): array
+    {
+        $value = mb_strtolower(trim($input));
+        if ($value === '') {
+            return ['ok' => false, 'reason' => 'empty'];
+        }
+
+        $campaign = Content::get('campaign');
+        if (!empty($campaign['active']) && mb_strtolower(trim((string) ($campaign['code'] ?? ''))) === $value) {
+            return ['ok' => true, 'kind' => 'campaign'];
+        }
+
+        $customer = self::customerByCoupon($value);
+        if ($customer === null) {
+            return ['ok' => false, 'reason' => 'unknown'];
+        }
+
+        $coupon = (array) ($customer['coupon'] ?? []);
+
+        if (($customer['status'] ?? 'active') === 'archived') {
+            return ['ok' => false, 'reason' => 'archived'];
+        }
+        if (empty($coupon['active'])) {
+            return ['ok' => false, 'reason' => 'inactive'];
+        }
+        if (($coupon['expires'] ?? '') !== '' && (string) $coupon['expires'] < date('Y-m-d')) {
+            return ['ok' => false, 'reason' => 'expired'];
+        }
+        if (!empty($coupon['once']) && ((array) ($coupon['usedFor'] ?? [])) !== []) {
+            return ['ok' => false, 'reason' => 'used'];
+        }
+
+        return ['ok' => true, 'kind' => 'customer', 'customer' => (string) $customer['code']];
+    }
+
+    /** Code als eingelöst vermerken – erst nach dem Anlegen der Einladung. */
+    public static function redeemCoupon(string $input, string $slug): void
+    {
+        $customer = self::customerByCoupon(mb_strtolower(trim($input)));
+        if ($customer === null) {
+            return;
+        }
+
+        $coupon = (array) ($customer['coupon'] ?? []);
+        $used = (array) ($coupon['usedFor'] ?? []);
+        $used[] = ['slug' => $slug, 'at' => date('c')];
+        $coupon['usedFor'] = array_slice($used, -20);
+        $customer['coupon'] = $coupon;
+
+        Db::run('UPDATE customers SET data = ? WHERE code = ?', [Db::encode($customer), (string) $customer['code']]);
+    }
+
+    /** @return array<string,mixed>|null */
+    private static function customerByCoupon(string $value): ?array
+    {
+        foreach (Db::jsonList('SELECT data FROM customers') as $customer) {
+            $code = mb_strtolower(trim((string) ($customer['coupon']['code'] ?? '')));
+            if ($code !== '' && $code === $value) {
+                return $customer;
+            }
+        }
+        return null;
+    }
+}

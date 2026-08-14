@@ -10,6 +10,7 @@ require __DIR__ . '/../src/bootstrap.php';
 use Atelier\Controllers\AdminController;
 use Atelier\Controllers\ContentAdminController;
 use Atelier\Controllers\GalleryController;
+use Atelier\Controllers\InviteController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
 use Atelier\I18n;
@@ -61,6 +62,11 @@ $router->get('/{locale}/ratgeber', $page_(static fn (array $p) => $page->blog())
 $router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->post($p)));
 $router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
 $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
+
+$router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
+$router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));
+$router->any('/{locale}/einladung/{slug}', $page_(static fn (array $p) => (new InviteController())->show($p)));
+$router->post('/api/kupon', static fn (array $p) => (new InviteController())->checkCoupon());
 
 $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryController())->index()));
 $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
