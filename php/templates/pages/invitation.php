@@ -7,6 +7,7 @@
  *
  * @var string $locale
  * @var array<string,mixed> $invitation
+ * @var array<string,mixed>|null $guest  persönlich adressierte Fassung
  * @var array<string,mixed> $theme
  * @var string $style
  * @var string $dateLong
@@ -28,6 +29,8 @@ $photos = (array) ($invitation['photos'] ?? []);
 $bride = (string) ($invitation['bride'] ?? '');
 $groom = (string) ($invitation['groom'] ?? '');
 $initials = mb_strtoupper(mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1));
+// Persönliche Fassung: „Liebe Familie Müller“ steht über allem anderen.
+$guestName = (string) (($guest ?? null)['name'] ?? '');
 $field = 'w-full border-b bg-transparent px-0 py-2.5 text-[0.95rem] outline-none';
 $coming = 0;
 foreach ($rsvps as $rsvp) {
@@ -59,6 +62,15 @@ foreach ($rsvps as $rsvp) {
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
 
       <div class="relative">
+        <?php if ($guestName !== '') : ?>
+          <div class="mb-9">
+            <div class="font-display text-xl font-light italic sm:text-2xl" style="color: <?= e((string) $theme['accent']) ?>">
+              <?= $de ? 'Liebe' : 'Sayın' ?> <?= e($guestName) ?>,
+            </div>
+            <div class="mx-auto mt-6 h-px w-16" style="background: <?= e((string) $theme['accentSoft']) ?>"></div>
+          </div>
+        <?php endif; ?>
+
         <div class="text-[0.58rem] uppercase tracking-[0.34em]" style="color: <?= e((string) $theme['soft']) ?>">
           <?= e(I18n::t('invite.weMarry')) ?>
         </div>
@@ -171,7 +183,8 @@ foreach ($rsvps as $rsvp) {
 
                 <div>
                   <label class="block text-[0.6rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>"><?= e(I18n::t('invite.rsvpName')) ?> *</label>
-                  <input name="name" required class="<?= $field ?>" style="border-color: <?= e((string) $theme['paperEdge']) ?>; color: <?= e((string) $theme['fg']) ?>">
+                  <?php /* Wer über seinen persönlichen Link kommt, muss den eigenen Namen nicht abtippen. */ ?>
+                  <input name="name" required value="<?= e($guestName) ?>" class="<?= $field ?>" style="border-color: <?= e((string) $theme['paperEdge']) ?>; color: <?= e((string) $theme['fg']) ?>">
                 </div>
 
                 <div class="flex gap-4">

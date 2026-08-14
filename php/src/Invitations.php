@@ -54,9 +54,14 @@ final class Invitations
         foreach ((array) ($invitation['photos'] ?? []) as $url) {
             Media::delete((string) $url);
         }
+        if (($invitation['ogImage'] ?? '') !== '') {
+            Media::delete((string) $invitation['ogImage']);
+        }
+        OgImage::forget($slug);
 
         Db::run('DELETE FROM invitations WHERE slug = ?', [$slug]);
         Db::run('DELETE FROM rsvps WHERE slug = ?', [$slug]);
+        Guests::deleteAll($slug);
     }
 
     public static function slugAvailable(string $slug): bool
@@ -72,6 +77,66 @@ final class Invitations
         $value = strtr($value, $map);
         $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
         return trim($value, '-');
+    }
+
+    /**
+     * Wie der Anlass heißt. Steht in der WhatsApp-Vorschau hinter den Namen –
+     * „Ayşe & Mehmet – Hochzeitseinladung“ liest sich anders als ein nackter
+     * Link.
+     */
+    public static function kindLabel(string $eventType, string $locale): string
+    {
+        $labels = [
+            'wedding'      => ['de' => 'Hochzeitseinladung', 'tr' => 'Düğün Davetiyesi'],
+            'multi'        => ['de' => 'Einladung', 'tr' => 'Davetiye'],
+            'henna'        => ['de' => 'Einladung zum Henna-Abend', 'tr' => 'Kına Gecesi Davetiyesi'],
+            'engagement'   => ['de' => 'Verlobungseinladung', 'tr' => 'Nişan Davetiyesi'],
+            'circumcision' => ['de' => 'Einladung zum Beschneidungsfest', 'tr' => 'Sünnet Davetiyesi'],
+            'birthday'     => ['de' => 'Geburtstagseinladung', 'tr' => 'Doğum Günü Davetiyesi'],
+            'corporate'    => ['de' => 'Einladung', 'tr' => 'Davetiye'],
+        ];
+
+        $label = $labels[$eventType] ?? $labels['wedding'];
+
+        return $label[$locale] ?? $label['de'];
+    }
+
+    /* ---------------------------- Verwaltungslink --------------------------- */
+
+    /**
+     * Das Paar hat kein Konto – es soll auch keins anlegen müssen. Statt einer
+     * Anmeldung bekommt es beim Erstellen einen geheimen Link, unter dem es
+     * später Gäste nachtragen kann. Ältere Einladungen bekommen den
+     * Schlüssel beim ersten Aufruf.
+     *
+     * @param array<string,mixed> $invitation
+     */
+    public static function manageKey(array $invitation): string
+    {
+        $key = (string) ($invitation['manageKey'] ?? '');
+        if ($key !== '') {
+            return $key;
+        }
+
+        $key = bin2hex(random_bytes(16));
+        self::update((string) ($invitation['slug'] ?? ''), ['manageKey' => $key]);
+
+        return $key;
+    }
+
+    /** @param array<string,mixed> $invitation */
+    public static function checkManageKey(array $invitation, string $key): bool
+    {
+        $expected = (string) ($invitation['manageKey'] ?? '');
+        return $expected !== '' && $key !== '' && hash_equals($expected, $key);
+    }
+
+    /** @param array<string,mixed> $invitation */
+    public static function manageUrl(array $invitation, ?string $locale = null): string
+    {
+        return Config::url()
+            . I18n::path('/einladung/' . (string) ($invitation['slug'] ?? '') . '/verwalten', $locale)
+            . '?schluessel=' . self::manageKey($invitation);
     }
 
     /* --------------------------------- RSVP --------------------------------- */

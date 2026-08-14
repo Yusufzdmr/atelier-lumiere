@@ -90,8 +90,33 @@ $steps = $de
         </div>
       <?php endif; ?>
 
+      <?php /* Ohne Konto ist dieser Link der einzige Weg zurueck zur Gaesteliste. */ ?>
+      <div class="mt-8 border border-sand-deep p-6 text-left">
+        <div class="text-[0.6rem] uppercase tracking-[0.24em] text-gold">
+          <?= $de ? 'Persönliche Einladungen' : 'Kişiye özel davetiyeler' ?>
+        </div>
+        <p class="mt-3 text-[0.85rem] leading-relaxed text-muted">
+          <?= $de
+            ? 'Ihr könnt jede Familie einzeln ansprechen – „Liebe Familie Müller“ – und jeder bekommt seinen eigenen Link. Das geht hier, jetzt oder später:'
+            : 'Her aileye ayrı ayrı hitap edebilirsiniz – „Sayın Müller Ailesi“ – ve her biri kendi bağlantısını alır. Şimdi ya da sonra, buradan:' ?>
+        </p>
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+          <code class="flex-1 overflow-x-auto border border-sand-deep bg-cream px-4 py-3 text-[0.76rem] text-ink"><?= e((string) $done['manage']) ?></code>
+          <button type="button" data-copy="<?= e((string) $done['manage']) ?>"
+                  class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink hover:bg-ink hover:text-cream">
+            <?= e(I18n::t('invite.copy')) ?>
+          </button>
+        </div>
+        <p class="mt-3 text-[0.74rem] leading-relaxed text-muted">
+          <?= $de
+            ? 'Diesen Link gut aufheben und nicht mit den Einladungen weitergeben – er gehört euch.'
+            : 'Bu bağlantıyı saklayın ve davetiyelerle paylaşmayın – o size ait.' ?>
+        </p>
+      </div>
+
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <?= Ui::btn((string) $done['path'], I18n::t('invite.openInvite'), 'solid') ?>
+        <?= Ui::btn((string) $done['manage'], $de ? 'Gästeliste öffnen' : 'Misafir listesini aç', 'solid') ?>
+        <?= Ui::btn((string) $done['path'], I18n::t('invite.openInvite'), 'outline') ?>
         <?= Ui::btn($p('/einladung'), I18n::t('invite.createAnother'), 'outline') ?>
       </div>
     </div>
@@ -308,6 +333,23 @@ $steps = $de
             <input type="file" name="photos[]" accept="image/*" multiple class="mt-2 w-full text-[0.85rem] text-muted">
             <p class="mt-2 text-[0.74rem] text-muted">
               <?= $de ? 'Werden beim Hochladen verkleinert. Hochkant wirkt auf der Karte am besten.' : 'Yüklenirken küçültülür. Kartta dikey kareler en iyi durur.' ?>
+            </p>
+          </div>
+
+          <?php /* Optional: schon hier Namen eintragen. Wer es ueberspringt,
+                    kann es nach dem Erstellen jederzeit nachholen. */ ?>
+          <div>
+            <label class="<?= $label ?>" for="guests">
+              <?= $de ? 'Persönliche Einladungen (optional)' : 'Kişiye özel davetiyeler (isteğe bağlı)' ?>
+            </label>
+            <textarea id="guests" name="guests" rows="4" class="<?= $field ?> resize-y"
+                      placeholder="<?= $de
+                        ? 'Familie Müller&#10;Anna &amp; Thomas&#10;Familie Yılmaz'
+                        : 'Müller Ailesi&#10;Anna &amp; Thomas&#10;Yılmaz Ailesi' ?>"><?= e($old('guests')) ?></textarea>
+            <p class="mt-2 text-[0.72rem] leading-relaxed text-muted">
+              <?= $de
+                ? 'Eine Zeile je Person oder Familie. Jeder bekommt dieselbe Karte mit seiner eigenen Anrede und einem eigenen Link. Lässt sich später ergänzen.'
+                : 'Her satıra bir kişi ya da aile. Herkes aynı kartı kendi hitabı ve kendi bağlantısıyla alır. Sonradan da eklenebilir.' ?>
             </p>
           </div>
 

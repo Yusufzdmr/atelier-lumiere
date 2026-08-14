@@ -68,7 +68,11 @@ $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact(
 
 $router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
 $router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));
+$router->any('/{locale}/einladung/{slug}/verwalten', $page_(static fn (array $p) => (new InviteController())->manage($p)));
 $router->any('/{locale}/einladung/{slug}', $page_(static fn (array $p) => (new InviteController())->show($p)));
+// Persoenlich adressierte Fassung. Steht bewusst NACH "zahlung" und
+// "verwalten": das Muster wuerde sie sonst schlucken.
+$router->any('/{locale}/einladung/{slug}/{gast}', $page_(static fn (array $p) => (new InviteController())->show($p)));
 $router->post('/api/kupon', static fn (array $p) => (new InviteController())->checkCoupon());
 
 $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryController())->index()));

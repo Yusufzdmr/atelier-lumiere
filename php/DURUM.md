@@ -26,38 +26,25 @@ sonra `php bin/import.php` (veya `--replace`).
 | **Yönetim paneli — 15 sekmenin hepsi** | Giriş (deneme sınırlı), Genel bakış, Metinler & iletişim, Fiyatlar & paketler, **Hizmetler & süreç**, **Şehirler**, **Mekânlar**, **Portfolyo**, **Rehber**, **Müşteriler**, **Davetiyeler**, Temalar, Hakkımda & yorumlar, Yasal metinler, SEO & meta, Entegrasyonlar |
 | Liste düzenleyicisi | `src/Lists.php` + `templates/admin/list.php` + `src/Controllers/ListAdminController.php` — şehir/mekân/portfolyo/rehber/hizmet aynı kalıptan: aç, düzenle, kaydet, ekle, sırala (↑↓), sil. Her kayıt kendi formunda (10 şehir tek düğmeye gitmez) |
 | Müşteriler | `src/Customers.php` + `CustomerAdminController` — kayıt açınca galeri **otomatik** oluşur (parola ve kupon otomatik üretilir, galeri bitişi düğün + 2 yıl). Fotoğraf yükleme/silme, çiftin seçimi (kalpli kareler + notu), kupon yönetimi (kod/aktif/tek kullanım/son tarih/yeni kod/yeniden aç), arşivle, giriş adını yazdırarak kalıcı sil |
-| Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
+| Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), **kişiye özel davetiye listesi + çiftin yönetim linki**, müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
 | Entegrasyonlar | PayPal (ID/Secret/mod + bağlantı testi), GA4/GTM/Ads + 3 dönüşüm etiketi, Meta Pixel, Search Console/Bing, serbest anahtar listesi (`Integrations::value('AD')`) |
+| **Kişiye özel davetiye** | `src/Guests.php` + `invite_guests` tablosu. Davetiye **tek kayıt kalır**, üstünde ince bir katman: kişi/aile adı + kendi adresi (`/de/einladung/ayse-mehmet/familie-mueller`). Kartın üstünde „Liebe Familie Müller“ / „Sayın Müller Ailesi“, RSVP adı önceden dolu. Sihirbazda tek alan, sonrasında yönetim sayfası |
+| Toplu misafir girişi | Satır satır yapıştırma, `.txt`/`.csv` yükleme. Excel başlığı (`Name`/`İsim`/`Misafir`…), `1.` `2)` `-` `•` numaraları, `"` tırnakları, `;`/tab sütunları ayıklanır; `Müller, Anna` tek isim sayılır (virgül sütun ayırıcı değil). Tekrarlar hem listede hem mevcut kayıtlara karşı elenir |
+| Çiftin yönetim sayfası | `/einladung/{slug}/verwalten?schluessel=…` — hesap yok, gizli link var. Genel link + her misafirin linki, kopyala düğmesi, hazır metinli **WhatsApp** düğmesi, isim ekleme/çıkarma, önizleme görseli değiştirme. Sihirbaz bitince link ekranda |
+| WhatsApp / OG önizlemesi | Her davetiye için `og:title` = „Ayşe & Mehmet – Hochzeitseinladung“, `og:description` = tarih · mekân, `og:image` = 1200×630 (ilk fotoğraftan kırpılıp hafif gölge + çerçeveyle üretilir, önbelleğe alınır), `og:image:width/height`, `twitter:card`. Müşteri kendi görselini yükleyebilir, istediğinde geri alabilir |
 | Davetiye | Sihirbaz (tek form, 5 adım, JS'siz de çalışır), tema seçimi, canlı önizleme, kupon (sunucuda), taslak + devam linki, fotoğraf yükleme, davetiye sayfası (zarf animasyonu, geri sayım, program, menü, harita, müzik), RSVP, PayPal turu |
 
 Hepsi yerelde MariaDB 10.4'e karşı test edildi: kaydetme, ekleme, sıralama, silme,
 çift dilli satır alanları (bir dili düzenlerken diğeri korunuyor), fotoğraf
 yükleme/silme (dosyalar dahil), müşteri + galeri + kupon döngüsü, davetiye ve
-taslak silme. 15 sekme × 2 dil = 30 sayfa uyarısız açılıyor.
+taslak silme, misafir listesi ayrıştırma (7 biçim), kişiye özel link + hitap,
+OG etiketleri ve 1200×630 görsel üretimi, gizli yönetim linki (yanlış anahtar 404,
+sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 
 ## Kalan — bu sırayla
 
-### 1. Kişiye / aileye özel davetiye + WhatsApp önizlemesi
-
-Müşteriden gelen istek. Tasarım aynı kalır, hitap edilen kişi değişir:
-
-- **Tek tek**: müşteri bir kişi/aile adı girer → o kişiye özel ayrı davetiye + ayrı link
-  (`/de/einladung/ayse-mehmet/familie-mueller` gibi)
-- **Toplu**: misafir listesi yüklenir ya da isimler girilir → sistem hepsi için
-  otomatik ayrı davetiye üretir
-- Ana davetiye tek kayıt kalmalı; kişiselleştirme onun üstünde ince bir katman olmalı
-  (`invite_guests` tablosu: slug + guest slug + hitap adı), yoksa 200 misafir
-  200 kopya davetiye demektir
-- Yönetim: Davetiyeler sekmesinde kişi listesi, link kopyalama, tek tek silme
-
-**WhatsApp / Open Graph**: davetiye linki paylaşılınca düz link değil, kart görünsün.
-Her davetiye için dinamik OG: „Ayşe & Mehmet – Hochzeitseinladung“, düğün tarihi,
-kapak görseli. Müşteri önizleme görselini panelden değiştirebilsin.
-Not: OG görselinin **mutlak URL** olması ve 1200×630 üretilmesi gerekir; şu an
-`Media` yalnızca 1600 px uzun kenar üretiyor.
-
-### 2. Modüler tema sistemi
+### 1. Modüler tema sistemi
 
 Şu anki tema tek parça (renkler + arka plan + animasyon + CSS). İstenen:
 
@@ -74,11 +61,15 @@ Not: OG görselinin **mutlak URL** olması ve 1200×630 üretilmesi gerekir; şu
   AVIF PHP 8.1+ ve libavif gerektirir — ALL-INKL'de kontrol edilmeli)
 - Custom CSS izolasyonu ve güvenlik kontrolleri **korunacak** (zaten var)
 - Canlı önizlemede telefon / tablet / masaüstü geçişi
+- **OG görseline yazı basmak** (isim + tarih) şu an yapılmıyor: GD için TTF/OTF
+  gerekiyor, repoda yalnızca WOFF2 var. İstenirse Cormorant'ın TTF'i eklenip
+  `OgImage::build()` içine `imagettftext` konabilir. Şimdilik isim ve tarih
+  WhatsApp'ın kendi metin alanında görünüyor (orada daha da net duruyor)
 
 Müşteri tarafı basit kalmalı: **tema seç → bilgileri gir → isterse kişiye özel
 isimleri ekle → önizle → oluştur/paylaş.** Gelişmişlik panelde kalsın, sihirbazda değil.
 
-### 3. Çerez izni + ölçüm
+### 2. Çerez izni + ölçüm
 Next sürümündeki `../components/CookieConsent.tsx` ve `../components/Tracking.tsx`
 mantığı PHP + `assets/consent.js` olarak:
 - Ön işaretli kutu yok, "reddet" eşit görünürlükte, karar `localStorage` (`al-consent-v1`)
@@ -87,7 +78,7 @@ mantığı PHP + `assets/consent.js` olarak:
 - Dönüşümler: iletişim formu, davetiye oluşturma, `tel:` tıklaması (tek dinleyici)
 - Kimlikler zaten panelde: `Integrations::publicTracking()`
 
-### 4. ALL-INKL'e yayın
+### 3. ALL-INKL'e yayın
 1. KAS → veritabanı oluştur, `schema.sql` içe aktar (phpMyAdmin)
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
@@ -98,7 +89,7 @@ mantığı PHP + `assets/consent.js` olarak:
 7. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
    PayPal sandbox turu, sitemap, robots, 404
 
-### 5. Krumbach bölge içeriği
+### 4. Krumbach bölge içeriği
 Şu an şehirler Stuttgart demo seti (Stuttgart, Ludwigsburg, Esslingen, Böblingen,
 Waiblingen, Heilbronn, Tübingen, Nürtingen, Pforzheim, Schwäbisch Gmünd).
 Hedef: Krumbach merkezli — Ulm, Neu-Ulm, Günzburg, Memmingen, Augsburg, München,
@@ -153,6 +144,15 @@ Galeri demo: `elif-marco` / `solitude24`
   `C:/Users/.../Temp/...` gibi tam yolla yaz, yoksa `file_put_contents` sessizce patlar
 - MySQL komut satırı `€` ve `ı`'yı `?` gösterir — bu ekran sorunu, veri doğru.
   Kontrol için `php -r` ile oku
+- **Türkçe büyük İ**: `mb_strtolower("İsim")` → `i` + ayrı nokta (U+0307), hiçbir
+  kelimeyle eşleşmez. Karşılaştırmadan önce `str_replace(['İ','I','ı'], 'i', …)`
+  ve U+0307 temizliği gerekir (`Guests::isHeading` böyle yapıyor)
+- Yeni rota eklerken **sıra önemli**: `/einladung/{slug}/{gast}` deseni
+  `/zahlung` ve `/verwalten`'i yutar, o yüzden onlardan **sonra** kayıtlı.
+  Ayrıca bu kelimeler misafir adresi olarak yasak (`Guests::RESERVED`)
+- Test ederken `curl -F "alan=çok
+  satırlı değer"` kabuk tarafından bozulabilir — çok satırlı gönderiler için
+  değeri bir dosyaya yazıp `-F "alan=<dosya"` ya da `--data-urlencode` kullan
 - Neon (Next sürümü) boşta uyur; ilk sorgu yavaş olabilir
 
 ## Nerede ne var (panel)
@@ -163,15 +163,21 @@ src/Form.php                     alan tanımından form üretir ve geri okur
 src/Lists.php                    içerik listelerinde ekle/sil/sırala/yükle
 src/Content.php                  içerik dokümanı (tek JSON kaydı)
 src/Customers.php                müşteri + kupon; galeriyle senkron
+src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
+src/OgImage.php                  WhatsApp önizleme görseli (1200×630, önbellekli)
 src/Controllers/
   AdminController.php            genel bakış, temalar, entegrasyonlar
   ContentAdminController.php     sabit alanlı sekmeler (metinler, paketler, SEO…)
   ListAdminController.php        liste sekmeleri (hizmet, şehir, mekân, portfolyo, rehber)
   CustomerAdminController.php    müşteri listesi ve müşteri kartı
-  InviteAdminController.php      davetiyeler, RSVP'ler, taslaklar
+  InviteAdminController.php      davetiyeler, RSVP'ler, misafirler, taslaklar
+  InviteController.php           sihirbaz, davetiye sayfası, ödeme,
+                                 `manage()` = çiftin misafir listesi
 templates/admin/                 layout, login, overview, content, list, customers,
                                  customer, customer-missing, invitations, themes,
                                  integrations
+templates/pages/invite-manage.php  çiftin misafir listesi (müşteriye görünen yüz)
+public/assets/invite-manage.js     link kopyalama
 ```
 
 ## Müşteriden bekleyenler
@@ -181,5 +187,5 @@ templates/admin/                 layout, login, overview, content, list, custome
 - Gerçek fotoğraflar ve marka adı
 - Yasal metinlerin avukat kontrolü
 - ALL-INKL KAS erişimi (paylaşılan oturum linki değil — kendi girişiyle)
-- Kişiselleştirilmiş davetiye için: örnek misafir listesi (hangi biçimde geliyor —
-  Excel, WhatsApp'tan kopyala-yapıştır, elle?)
+- Misafir listesi biçimi artık sorun değil: elle, yapıştırarak, `.txt` ve Excel
+  `.csv` — dördü de çalışıyor. Yine de müşteriden gerçek bir liste görmek iyi olur

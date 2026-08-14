@@ -110,6 +110,51 @@ $eventNames = [
             <?php endif; ?>
           </dl>
 
+          <?php /* --------------------- Persönliche Fassungen -------------------- */ ?>
+          <div class="border-t border-sand-deep pt-5">
+            <h4 class="text-[0.62rem] uppercase tracking-[0.18em] text-muted">
+              <?= $de ? 'Persönliche Einladungen' : 'Kişiye özel davetiyeler' ?> (<?= count($row['personal']) ?>)
+            </h4>
+            <p class="mt-2 text-[0.74rem] leading-relaxed text-muted">
+              <?= $de
+                ? 'Das Paar pflegt die Liste selbst über seinen Verwaltungslink. Hier steht sie nur mit, falls jemand anruft.'
+                : 'Listeyi çift kendi yönetim bağlantısından düzenler. Burada yalnızca biri aradığında bakmak için duruyor.' ?>
+            </p>
+
+            <?php if ($row['personal'] === []) : ?>
+              <p class="mt-3 text-sm text-muted"><?= $de ? 'Keine – die Einladung wird als ein Link geteilt.' : 'Yok – davetiye tek bağlantı olarak paylaşılıyor.' ?></p>
+            <?php else : ?>
+              <ul class="mt-3 space-y-2">
+                <?php foreach ($row['personal'] as $guest) : ?>
+                  <li class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-sand-deep/60 pb-2 text-[0.82rem]">
+                    <span class="text-ink"><?= e((string) $guest['name']) ?></span>
+                    <a href="<?= e((string) $guest['url']) ?>" target="_blank" rel="noopener"
+                       class="min-w-0 break-all text-[0.74rem] text-gold underline-offset-4 hover:underline">
+                      /<?= e((string) $guest['token']) ?>
+                    </a>
+                    <form method="post" class="ml-auto">
+                      <?= $hidden ?>
+                      <input type="hidden" name="was" value="gast-loeschen">
+                      <input type="hidden" name="slug" value="<?= e($row['slug']) ?>">
+                      <input type="hidden" name="token" value="<?= e((string) $guest['token']) ?>">
+                      <button data-confirm="<?= $de ? 'Diesen Namen entfernen?' : 'Bu isim kaldırılsın mı?' ?>"
+                              class="text-[0.62rem] uppercase tracking-[0.14em] text-muted transition-colors hover:text-red-800">
+                        <?= $de ? 'Entfernen' : 'Kaldır' ?>
+                      </button>
+                    </form>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+
+            <div class="mt-4 break-all text-[0.72rem] text-muted">
+              <?= $de ? 'Verwaltungslink des Paares' : 'Çiftin yönetim bağlantısı' ?>:
+              <a href="<?= e((string) $row['manage']) ?>" target="_blank" rel="noopener" class="text-gold underline-offset-4 hover:underline">
+                <?= e((string) $row['manage']) ?>
+              </a>
+            </div>
+          </div>
+
           <div class="border-t border-sand-deep pt-5">
             <h4 class="text-[0.62rem] uppercase tracking-[0.18em] text-muted">
               <?= $de ? 'Rückmeldungen' : 'Cevaplar' ?>

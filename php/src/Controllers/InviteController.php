@@ -6,10 +6,12 @@ namespace Atelier\Controllers;
 use Atelier\Config;
 use Atelier\Content;
 use Atelier\Db;
+use Atelier\Guests;
 use Atelier\Dates;
 use Atelier\I18n;
 use Atelier\Invitations;
 use Atelier\Media;
+use Atelier\OgImage;
 use Atelier\Paypal;
 use Atelier\Pricing;
 use Atelier\Security;
@@ -148,9 +150,16 @@ final class InviteController
             'paid'      => $free,
             'price'     => Pricing::total($sections, count($events) > 1, $free),
             'createdAt' => date('c'),
+            // Statt einer Anmeldung: ein geheimer Link, unter dem das Paar
+            // später Gäste nachtragen kann.
+            'manageKey' => bin2hex(random_bytes(16)),
+            'ogImage'   => '',
         ];
 
         Invitations::create($invitation);
+
+        // Im Assistenten schon eingetippte Namen gleich anlegen.
+        Guests::addMany($slug, array_slice(Guests::parse(Security::clean($_POST['guests'] ?? '', 8000)), 0, Guests::MAX));
 
         // Erst jetzt verbrauchen – ein Abbruch vorher kostet den Code nicht.
         if ($free && ($coupon['kind'] ?? '') === 'customer') {
@@ -163,11 +172,13 @@ final class InviteController
         }
 
         return [
-            'slug'  => $slug,
-            'path'  => I18n::path('/einladung/' . $slug),
-            'url'   => Config::url() . I18n::path('/einladung/' . $slug),
-            'price' => $invitation['price'],
-            'free'  => $free,
+            'slug'   => $slug,
+            'path'   => I18n::path('/einladung/' . $slug),
+            'url'    => Config::url() . I18n::path('/einladung/' . $slug),
+            'manage' => Invitations::manageUrl($invitation),
+            'guests' => Guests::all($slug),
+            'price'  => $invitation['price'],
+            'free'   => $free,
         ];
     }
 
@@ -279,35 +290,204 @@ final class InviteController
             return;
         }
 
+        $slug = (string) $invitation['slug'];
+
+        // Persönlich adressierte Fassung: gleiche Karte, andere Anrede.
+        // Ein unbekannter Name führt bewusst nicht auf 404 – lieber die
+        // Einladung ohne Anrede als eine Fehlerseite beim Gast.
+        $guest = ($params['gast'] ?? '') !== ''
+            ? Guests::find($slug, (string) $params['gast'])
+            : null;
+
         $theme = Themes::find((string) ($invitation['theme'] ?? '')) ?? Themes::all()[0];
         $sent = false;
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-            $sent = $this->saveRsvp((string) $invitation['slug']);
+            $sent = $this->saveRsvp($slug);
         }
 
         $events = (array) ($invitation['events'] ?? []);
         $first = (array) ($events[0] ?? []);
-        $names = (string) $invitation['bride'] . ' & ' . (string) $invitation['groom'];
+        $date = (string) ($first['date'] ?? '');
+        $names = trim((string) $invitation['bride'] . ' & ' . (string) $invitation['groom'], ' &');
+
+        $path = I18n::path('/einladung/' . $slug . ($guest !== null ? '/' . $guest['token'] : ''));
 
         View::page('pages/invitation', [
             'locale' => I18n::locale(),
-            'path'   => I18n::path('/einladung/' . $invitation['slug']),
+            'path'   => $path,
             'meta'   => [
-                'title'       => $names,
-                'description' => Security::clean((string) ($invitation['message'] ?? ''), 160),
+                // Das ist die Zeile, die in WhatsApp fett ueber der Karte steht.
+                'title'       => $names . ' – ' . Invitations::kindLabel((string) ($invitation['eventType'] ?? ''), I18n::locale()),
+                'description' => $this->previewText($invitation, $date),
+                'image'       => OgImage::url($invitation),
+                'canonical'   => Config::url() . $path,
+                'ogType'      => 'article',
                 'noindex'     => true,
                 'scripts'     => ['/assets/invitation.js'],
             ],
             'invitation' => $invitation,
+            'guest'      => $guest,
             'theme'      => Themes::complete($theme),
             'style'      => Themes::styleBlock($theme),
-            'dateLong'   => Dates::long((string) ($first['date'] ?? '')),
-            'weekday'    => Dates::weekday((string) ($first['date'] ?? '')),
-            'rsvps'      => Invitations::rsvps((string) $invitation['slug']),
+            'dateLong'   => Dates::long($date),
+            'weekday'    => Dates::weekday($date),
+            'rsvps'      => Invitations::rsvps($slug),
             'sent'       => $sent,
             'csrf'       => Security::csrf(),
         ]);
+    }
+
+    /**
+     * Der Text unter dem Vorschaubild. Datum und Ort sagen mehr als der
+     * Einladungstext, der oft mit „Wir heiraten!“ anfaengt.
+     *
+     * @param array<string,mixed> $invitation
+     */
+    private function previewText(array $invitation, string $date): string
+    {
+        $events = (array) ($invitation['events'] ?? []);
+        $first = (array) ($events[0] ?? []);
+
+        $parts = array_values(array_filter([
+            $date !== '' ? Dates::long($date) : '',
+            Security::clean((string) ($first['venue'] ?? ''), 80),
+        ], static fn (string $v): bool => $v !== ''));
+
+        if ($parts !== []) {
+            return implode(' · ', $parts);
+        }
+
+        return Security::clean((string) ($invitation['message'] ?? ''), 160);
+    }
+
+    /* ------------------------- Gästeliste des Paares ------------------------ */
+
+    /**
+     * Die Seite, auf der das Paar persönliche Einladungen anlegt.
+     *
+     * Kein Konto, keine Anmeldung: wer den geheimen Link hat, darf hier
+     * arbeiten. Das ist die Abwägung – ein Passwort mehr wäre ein Passwort,
+     * das im Hochzeitstrubel verloren geht, und zu holen gibt es hier nichts,
+     * was nicht ohnehin an alle Gäste geschickt wird.
+     *
+     * @param array<string,string> $params
+     */
+    public function manage(array $params): void
+    {
+        $invitation = Invitations::find($params['slug'] ?? '');
+        $key = Security::clean($_GET['schluessel'] ?? ($_POST['schluessel'] ?? ''), 64);
+
+        // Raten kosten lassen, und einen falschen Schlüssel nicht von einer
+        // nicht vorhandenen Einladung unterscheidbar machen.
+        if ($invitation === null || Security::throttle('verwalten', 60, 600) || !Invitations::checkManageKey($invitation, $key)) {
+            (new PageController())->notFound(I18n::locale());
+            return;
+        }
+
+        $slug = (string) $invitation['slug'];
+        $note = '';
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+                http_response_code(403);
+                exit('Sitzung abgelaufen. Bitte die Seite neu laden.');
+            }
+
+            $note = $this->applyGuests($slug, $invitation);
+
+            header('Location: ' . I18n::path('/einladung/' . $slug . '/verwalten')
+                . '?schluessel=' . rawurlencode($key) . ($note !== '' ? '&stand=' . $note : ''), true, 303);
+            exit;
+        }
+
+        $guests = [];
+        foreach (Guests::all($slug) as $guest) {
+            $guests[] = $guest + ['url' => Guests::url($slug, (string) $guest['token'])];
+        }
+
+        // Nach dem Speichern neu lesen: das Vorschaubild kann sich geändert haben.
+        $invitation = Invitations::find($slug) ?? $invitation;
+
+        View::page('pages/invite-manage', [
+            'locale'     => I18n::locale(),
+            'path'       => I18n::path('/einladung/' . $slug . '/verwalten'),
+            'meta'       => ['title' => 'Gästeliste', 'noindex' => true, 'scripts' => ['/assets/invite-manage.js']],
+            'invitation' => $invitation,
+            'guests'     => $guests,
+            'link'       => Config::url() . I18n::path('/einladung/' . $slug),
+            'manageUrl'  => Invitations::manageUrl($invitation),
+            'preview'    => OgImage::url($invitation),
+            'key'        => $key,
+            'stand'      => Security::clean($_GET['stand'] ?? '', 40),
+            'csrf'       => Security::csrf(),
+        ]);
+    }
+
+    /**
+     * Eine Änderung an der Gästeliste ausführen und melden, was passiert ist.
+     *
+     * @param array<string,mixed> $invitation
+     */
+    private function applyGuests(string $slug, array $invitation): string
+    {
+        return match (Security::clean($_POST['was'] ?? '', 20)) {
+            'namen' => $this->addGuests($slug),
+            'loeschen' => (static function () use ($slug): string {
+                Guests::delete($slug, Security::clean($_POST['token'] ?? '', 96));
+                return 'geloescht';
+            })(),
+            'vorschau' => $this->savePreview($slug, $invitation),
+            default => '',
+        };
+    }
+
+    /** Namen aus Textfeld und Datei zusammen einlesen. */
+    private function addGuests(string $slug): string
+    {
+        $names = array_merge(
+            Guests::parse(Security::clean($_POST['namen'] ?? '', 20000)),
+            Guests::parseUpload('liste')
+        );
+
+        if ($names === []) {
+            return 'leer';
+        }
+
+        $result = Guests::addMany($slug, $names);
+
+        return $result['added'] > 0 ? 'plus' . $result['added'] : 'doppelt';
+    }
+
+    /** Eigenes Vorschaubild für WhatsApp – oder zurück zum berechneten. */
+    private function savePreview(string $slug, array $invitation): string
+    {
+        $old = (string) ($invitation['ogImage'] ?? '');
+
+        if (isset($_POST['entfernen'])) {
+            if ($old !== '') {
+                Media::delete($old);
+            }
+            Invitations::update($slug, ['ogImage' => '']);
+            return 'vorschau';
+        }
+
+        $file = $_FILES['bild'] ?? null;
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return 'leer';
+        }
+
+        $url = Media::store($file, 'einladungen/' . $slug);
+        if ($url === null) {
+            return 'leer';
+        }
+
+        if ($old !== '') {
+            Media::delete($old);
+        }
+        Invitations::update($slug, ['ogImage' => $url]);
+
+        return 'vorschau';
     }
 
     private function saveRsvp(string $slug): bool

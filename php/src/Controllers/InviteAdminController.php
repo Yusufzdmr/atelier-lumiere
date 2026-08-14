@@ -7,6 +7,7 @@ use Atelier\Admin;
 use Atelier\Config;
 use Atelier\Customers;
 use Atelier\Db;
+use Atelier\Guests;
 use Atelier\I18n;
 use Atelier\Invitations;
 use Atelier\Security;
@@ -36,6 +37,10 @@ final class InviteAdminController
             match (Security::clean($_POST['was'] ?? '', 20)) {
                 'loeschen'         => Invitations::delete(Security::clean($_POST['slug'] ?? '', 96)),
                 'entwurf-loeschen' => Invitations::deleteDraft(Security::clean($_POST['token'] ?? '', 64)),
+                'gast-loeschen'    => Guests::delete(
+                    Security::clean($_POST['slug'] ?? '', 96),
+                    Security::clean($_POST['token'] ?? '', 96)
+                ),
                 default            => null,
             };
 
@@ -82,8 +87,17 @@ final class InviteAdminController
                 $guests += max(1, (int) ($rsvp['count'] ?? 1));
             }
 
+            // Persönlich adressierte Fassungen – nicht zu verwechseln mit den
+            // Personen aus den Zusagen oben.
+            $personal = [];
+            foreach (Guests::all($slug) as $guest) {
+                $personal[] = $guest + ['url' => Guests::url($slug, (string) $guest['token'], (string) ($invitation['locale'] ?? $this->locale))];
+            }
+
             $rows[] = [
                 'invitation' => $invitation,
+                'personal'   => $personal,
+                'manage'     => Invitations::manageUrl($invitation, (string) ($invitation['locale'] ?? $this->locale)),
                 'slug'       => $slug,
                 'url'        => Config::url() . I18n::path('/einladung/' . $slug, (string) ($invitation['locale'] ?? $this->locale)),
                 'theme'      => $themes[(string) ($invitation['theme'] ?? '')] ?? (string) ($invitation['theme'] ?? ''),

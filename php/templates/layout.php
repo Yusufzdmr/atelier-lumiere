@@ -16,6 +16,7 @@ $title = (string) ($meta['title'] ?? 'Atelier Lumière');
 $description = (string) ($meta['description'] ?? '');
 $canonical = (string) ($meta['canonical'] ?? Config::url() . $path);
 $image = (string) ($meta['image'] ?? '');
+$ogType = (string) ($meta['ogType'] ?? 'website');
 $noindex = (bool) ($meta['noindex'] ?? false);
 $jsonLd = $meta['jsonLd'] ?? [];
 
@@ -42,15 +43,21 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
   <link rel="alternate" hreflang="tr-TR" href="<?= e(Config::url() . '/tr' . $bare) ?>">
   <link rel="alternate" hreflang="x-default" href="<?= e(Config::url() . '/de' . $bare) ?>">
 
-  <meta property="og:type" content="website">
+  <meta property="og:type" content="<?= e($ogType) ?>">
   <meta property="og:site_name" content="Atelier Lumière">
   <meta property="og:locale" content="<?= e(I18n::ogLocale()) ?>">
   <meta property="og:title" content="<?= e($title) ?>">
   <meta property="og:description" content="<?= e($description) ?>">
   <meta property="og:url" content="<?= e($canonical) ?>">
   <?php if ($image !== '') : ?>
+    <?php /* WhatsApp braucht die Masse, sonst zeigt es das Bild klein neben dem Text. */ ?>
     <meta property="og:image" content="<?= e($image) ?>">
+    <meta property="og:image:secure_url" content="<?= e($image) ?>">
+    <meta property="og:image:width" content="<?= (int) ($meta['imageWidth'] ?? 1200) ?>">
+    <meta property="og:image:height" content="<?= (int) ($meta['imageHeight'] ?? 630) ?>">
+    <meta property="og:image:alt" content="<?= e($title) ?>">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="<?= e($image) ?>">
   <?php endif; ?>
 
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">

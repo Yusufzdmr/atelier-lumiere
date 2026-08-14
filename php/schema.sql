@@ -51,6 +51,17 @@ CREATE TABLE IF NOT EXISTS invitations (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Persönlich adressierte Fassungen einer Einladung.
+-- Die Einladung bleibt EIN Datensatz; hier steht nur, wer angesprochen wird und
+-- unter welcher Adresse. Sonst wären 200 Gäste 200 Kopien derselben Karte.
+CREATE TABLE IF NOT EXISTS invite_guests (
+  slug       VARCHAR(96) NOT NULL,
+  token      VARCHAR(96) NOT NULL,
+  data       LONGTEXT NOT NULL CHECK (JSON_VALID(data)),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (slug, token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Zwischenstand des Einladungs-Assistenten
 CREATE TABLE IF NOT EXISTS invite_drafts (
   token      VARCHAR(64) NOT NULL PRIMARY KEY,
