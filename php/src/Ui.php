@@ -100,6 +100,57 @@ final class Ui
             . '</div>';
     }
 
+
+    /** Kopfbild einer Unterseite. */
+    public static function pageHero(string $seed, string $title, string $eyebrow = '', string $text = '', string $height = 'md'): string
+    {
+        $box = $height === 'lg' ? 'h-[68vh] min-h-[520px]' : 'h-[52vh] min-h-[380px]';
+
+        $html = '<section class="relative ' . $box . ' w-full overflow-hidden">'
+            . '<img src="' . e(Images::img($seed, 1920, 1200)) . '" alt="' . e($title) . '"'
+            . ' class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" decoding="async">'
+            . '<div class="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/45 to-ink/70"></div>'
+            . '<div class="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-5 pb-14 sm:px-8 sm:pb-20">';
+
+        if ($eyebrow !== '') {
+            $html .= '<div class="eyebrow text-gold-soft">' . e($eyebrow) . '</div>';
+        }
+
+        $html .= '<h1 class="headline mt-4 max-w-4xl text-4xl text-cream sm:text-5xl md:text-6xl">' . e($title) . '</h1>';
+
+        if ($text !== '') {
+            $html .= '<p class="mt-5 max-w-2xl text-[0.98rem] leading-relaxed text-cream/75">' . e($text) . '</p>';
+        }
+
+        return $html . '</div></section>';
+    }
+
+    /** Absätze eines Fließtextes als <p>-Folge. @param list<string> $paragraphs */
+    public static function prose(array $paragraphs, string $class = 'prose-lux mt-6'): string
+    {
+        if ($paragraphs === []) {
+            return '';
+        }
+        $html = '<div class="' . e($class) . '">';
+        foreach ($paragraphs as $paragraph) {
+            $html .= '<p>' . e($paragraph) . '</p>';
+        }
+        return $html . '</div>';
+    }
+
+    /** Aufzählung. @param list<string> $items */
+    public static function bullets(array $items, string $class = 'prose-lux mt-4'): string
+    {
+        if ($items === []) {
+            return '';
+        }
+        $html = '<ul class="' . e($class) . '">';
+        foreach ($items as $item) {
+            $html .= '<li>' . e($item) . '</li>';
+        }
+        return $html . '</ul>';
+    }
+
     /** Kennzahl mit Beschriftung. */
     public static function stat(string $value, string $label, string $tone = 'dark'): string
     {

@@ -7,31 +7,37 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use Atelier\Config;
 use Atelier\Controllers\PageController;
+use Atelier\Controllers\SitemapController;
 use Atelier\I18n;
 use Atelier\Router;
 
 $router = new Router();
+$page = new PageController();
 
-/* -------------------------- Sprachwahl -------------------------- */
+/* --------------------------- Ohne Sprachpräfix --------------------------- */
 
-// "/" leitet auf die deutsche Fassung – wie bisher in next.config.ts
+// "/" führt auf die deutsche Fassung – wie bisher in next.config.ts
 $router->get('/', static function (): void {
     header('Location: /de', true, 307);
     exit;
 });
 
+$router->get('/sitemap.xml', static fn () => (new SitemapController())->xml());
+$router->get('/robots.txt', static fn () => (new SitemapController())->robots());
+
+/* ------------------------------ Mit Sprache ------------------------------ */
+
 /**
- * Setzt die Sprache und bricht mit 404 ab, wenn das Präfix keine ist.
- * @param array<string,string> $params
+ * Prüft das Sprachpräfix und setzt die Sprache, bevor der Handler läuft.
+ *
+ * @param callable(array<string,string>):void $handler
  */
-$withLocale = static function (callable $handler): callable {
-    return static function (array $params) use ($handler): void {
+$page_ = static function (callable $handler) use ($page): callable {
+    return static function (array $params) use ($handler, $page): void {
         $locale = $params['locale'] ?? '';
         if (!I18n::isLocale($locale)) {
-            http_response_code(404);
-            (new PageController())->notFound($locale);
+            $page->notFound(I18n::DEFAULT);
             return;
         }
         I18n::set($locale);
@@ -39,14 +45,26 @@ $withLocale = static function (callable $handler): callable {
     };
 };
 
-$page = new PageController();
+$router->get('/{locale}', $page_(static fn (array $p) => $page->home()));
+$router->get('/{locale}/leistungen', $page_(static fn (array $p) => $page->services()));
+$router->get('/{locale}/preise', $page_(static fn (array $p) => $page->prices()));
+$router->get('/{locale}/portfolio', $page_(static fn (array $p) => $page->portfolio()));
+$router->get('/{locale}/portfolio/{slug}', $page_(static fn (array $p) => $page->story($p)));
+$router->get('/{locale}/regionen', $page_(static fn (array $p) => $page->regions()));
+$router->get('/{locale}/hochzeitsfotograf/{stadt}', $page_(static fn (array $p) => $page->city($p)));
+$router->get('/{locale}/hochzeitslocations', $page_(static fn (array $p) => $page->venues()));
+$router->get('/{locale}/hochzeitslocations/{slug}', $page_(static fn (array $p) => $page->venue($p)));
+$router->get('/{locale}/ratgeber', $page_(static fn (array $p) => $page->blog()));
+$router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->post($p)));
+$router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
+$router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
 
-/* ---------------------------- Seiten ---------------------------- */
+$router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
+$router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));
+$router->get('/{locale}/agb', $page_(static fn (array $p) => $page->legal('agb')));
 
-$router->get('/{locale}', $withLocale(static fn (array $p) => $page->home()));
-
-$router->notFound(static function (): void {
-    (new PageController())->notFound(I18n::DEFAULT);
+$router->notFound(static function () use ($page): void {
+    $page->notFound(I18n::locale());
 });
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');
