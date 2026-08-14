@@ -50,7 +50,15 @@ final class Config
         }
 
         $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        // Der Host kommt aus der Anfrage und ist damit nichts, worauf man
+        // bauen sollte: er landet in Einladungslinks und in E-Mails. Deshalb
+        // nur Zeichen, die in einem Hostnamen vorkommen duerfen – und im
+        // Betrieb gehoert site_url ohnehin in die config.php.
+        $host = preg_replace('/[^A-Za-z0-9.\-:\[\]]/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '';
+        if ($host === '') {
+            $host = 'localhost';
+        }
 
         return ($https ? 'https://' : 'http://') . $host;
     }

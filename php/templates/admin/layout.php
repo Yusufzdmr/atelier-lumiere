@@ -119,6 +119,13 @@ $link = static function (array $tab): string {
 
         <?php /* --------------------------- Inhalt ---------------------------- */ ?>
         <main class="min-w-0 py-8 lg:py-10">
+          <?php $warning = Admin::passwordWarning($locale); ?>
+          <?php if ($warning !== '') : ?>
+            <div class="mb-8 border-l-2 border-red-700 bg-red-50 px-5 py-3 text-[0.86rem] leading-relaxed text-red-800">
+              <?= e($warning) ?>
+            </div>
+          <?php endif; ?>
+
           <?php if (isset($_GET['gespeichert'])) : ?>
             <div class="mb-8 flex items-center gap-3 border border-gold/50 bg-sand/40 px-5 py-3 text-[0.88rem] text-ink">
               <span class="text-gold">✓</span>

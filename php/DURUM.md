@@ -47,6 +47,24 @@ taslak silme, misafir listesi ayrıştırma (7 biçim), kişiye özel link + hit
 OG etiketleri ve 1200×630 görsel üretimi, gizli yönetim linki (yanlış anahtar 404,
 sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 
+## Güvenlik
+
+| Konu | Durum |
+|---|---|
+| Deneme bremsi | **Veritabanında**, gönderen başına (`throttle` tablosu). Eskiden oturumdaydı: çerezi atan bir betik sınırsız deneme yapabiliyordu — ölçtüm, 30 denemenin hepsi geçiyordu. Artık geçmiyor. IP'nin kendisi değil, karması saklanıyor |
+| Yönetim parolası | `config.php`'de düz metin **ya da `password_hash`** olabilir (`$2y$…` görürse `password_verify`). Zayıf/varsayılan parolada panelde kırmızı uyarı çıkıyor. 8 deneme / 15 dk |
+| Yönetim oturumu | 4 saat hareketsizlikte, her hâlükârda 12 saatte kapanıyor. Girişte oturum kimliği yenileniyor |
+| CSRF | Yazan her uç noktada token var (panel, iletişim, galeri seçimi, RSVP, davetiye sihirbazı, misafir listesi) |
+| Başlıklar | `src/Http.php` her yanıta koyuyor: CSP, `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, canlıda HSTS. `.htaccess`'e güvenmiyor — `mod_headers` her sunucuda açık değil |
+| CSP | `script-src 'self'` + JSON-LD için tek kullanımlık nonce. Kodda hiç `onclick=` yok, tüm betikler dosya — o yüzden sıkı tutulabildi. `frame-src` yalnız YouTube/Vimeo/Google Maps |
+| Yükleme | Tür dosya **içeriğinden** belirleniyor, GD ile yeniden kodlanıyor, uzantı bizden. Üstüne `public/uploads/.htaccess`: PHP motoru kapalı, handler'lar kaldırılmış, `sandbox` CSP. (`.gitignore`'da istisna var, dosya sunucuya gidiyor) |
+| SQL | Her sorgu hazırlanmış ifade; dize birleştirme yok |
+| XSS | Şablonlarda çıktı `e()` ile; ham HTML yalnız sunucunun kendi ürettiği bloklar |
+| Açık yönlendirme | Giriş sonrası dönüş adresi `//baska-site` olamıyor |
+| Host başlığı | `Config::url()` istekten gelen host'u süzüyor (davetiye linkine ve e-postaya giriyor). Canlıda `site_url` zaten dolu olmalı |
+| API anahtarları | PayPal/Maps sunucuda kalıyor; tarayıcıya yalnız `publicTracking()` gidiyor. Harita görseli bile kendi adresimizden geçiyor |
+| Bilinen ödün | **Galeri parolaları düz metin saklanıyor.** Bilerek: çifte parolasını söyleyebilmek için fotoğrafçının onu görmesi gerekiyor. Değeri düşük bir sır (kendi fotoğraflarına erişim). Hash'lenmesi istenirse „parola bir kez gösterilir“ akışına geçilmeli |
+
 ## Kalan — bu sırayla
 
 ### 1. Modüler tema sistemi
@@ -155,6 +173,8 @@ Galeri demo: `elif-marco` / `solitude24`
   *dışında* durmalı (`templates/admin/list.php` böyle kurulu)
 - PHP'nin yerleşik sunucusu statik dosyaları `public/dev-router.php` olmadan vermez
 - Aynı porta ikinci sunucu açılırsa eskisi cevap vermeye devam eder — `netstat -ano | grep 8080`
+- **Bremsi denemek istersen** `DELETE FROM throttle` — yoksa kendi testlerin
+  seni kilitler. Sınır aşıldığında doğru parola da kabul edilmez, bu kasıtlı
 - **XAMPP'ta GD kapalı gelebilir**: `C:\xampp\php\php.ini` içinde `;extension=gd`
   satırındaki noktalı virgülü kaldır, sunucuyu yeniden başlat. Kapalıyken görseller
   küçültülmeden saklanır (artık hata vermez ama 6000 px dosyalar birikir)
@@ -184,6 +204,8 @@ src/Customers.php                müşteri + kupon; galeriyle senkron
 src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
 src/Texts.php                    sözlük üstü metin katmanı (sayfa metinleri)
 src/Places.php                   Google Places: yer arama, detay, statik harita
+src/Http.php                     güvenlik başlıkları + CSP (nonce burada üretilir)
+src/Security.php                 oturum, CSRF, veritabanı tabanlı deneme bremsi
 src/OgImage.php                  WhatsApp önizleme görseli (1200×630, önbellekli)
 src/Controllers/
   AdminController.php            genel bakış, temalar, entegrasyonlar

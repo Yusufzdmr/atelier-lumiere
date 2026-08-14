@@ -48,9 +48,51 @@ final class Security
 
     /**
      * Höchstens $limit Versuche je $window Sekunden – gegen durchprobierte
-     * Passwörter und Gutscheincodes.
+     * Passwörter, Gutscheincodes und Verwaltungsschlüssel.
+     *
+     * Gezählt wird in der Datenbank, nicht in der Sitzung. Das ist der ganze
+     * Punkt: eine Bremse in der Sitzung löst sich, sobald jemand das Cookie
+     * wegwirft – und genau das tut ein Skript, das Passwörter durchprobiert,
+     * ohne es zu merken.
+     *
+     * Von der Absenderadresse wird nur ein Streuwert gespeichert. Für das
+     * Zählen reicht er, und in der Datenbank steht dann keine IP-Adresse.
      */
     public static function throttle(string $key, int $limit, int $window): bool
+    {
+        $bucket = mb_substr($key . '|' . self::client(), 0, 190);
+
+        try {
+            // Ein Schritt: anlegen oder hochzählen. Ist das Fenster
+            // abgelaufen, beginnt es von vorn.
+            Db::run(
+                'INSERT INTO throttle (bucket, hits, until) VALUES (?, 1, DATE_ADD(NOW(), INTERVAL ? SECOND))
+                 ON DUPLICATE KEY UPDATE
+                   hits  = IF(until < NOW(), 1, hits + 1),
+                   until = IF(until < NOW(), DATE_ADD(NOW(), INTERVAL ? SECOND), until)',
+                [$bucket, $window, $window]
+            );
+
+            $row = Db::one('SELECT hits FROM throttle WHERE bucket = ?', [$bucket]);
+            $hits = (int) ($row['hits'] ?? 0);
+
+            // Abgelaufene Zeilen gelegentlich wegräumen, damit die Tabelle
+            // nicht endlos wächst.
+            if ($hits === 1 && random_int(1, 50) === 1) {
+                Db::run('DELETE FROM throttle WHERE until < DATE_SUB(NOW(), INTERVAL 1 DAY)');
+            }
+
+            return $hits > $limit;
+        } catch (\Throwable $e) {
+            // Fehlt die Tabelle (ältere Installation), soll die Anmeldung
+            // nicht unmöglich werden – dann greift wenigstens die Sitzung.
+            error_log('[throttle] ' . $e->getMessage());
+            return self::sessionThrottle($key, $limit, $window);
+        }
+    }
+
+    /** Zweite Reihe: zählt innerhalb einer Sitzung, falls die Tabelle fehlt. */
+    private static function sessionThrottle(string $key, int $limit, int $window): bool
     {
         self::session();
         $now = time();
@@ -64,6 +106,19 @@ final class Security
         $_SESSION['throttle'][$key] = $bucket;
 
         return $bucket['count'] > $limit;
+    }
+
+    /**
+     * Kennung des Absenders – gestreut, damit keine IP-Adresse gespeichert wird.
+     *
+     * Bewusst nur REMOTE_ADDR: X-Forwarded-For darf jeder in seine Anfrage
+     * schreiben, und eine Bremse, die sich per Kopfzeile umgehen lässt, ist
+     * keine.
+     */
+    private static function client(): string
+    {
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        return substr(hash('sha256', $ip . '|' . Config::str('admin_key', 'salz')), 0, 32);
     }
 
     /** Eingaben kürzen und von Steuerzeichen befreien. */

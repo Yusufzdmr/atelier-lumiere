@@ -65,7 +65,7 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
 
   <?php foreach ((array) $jsonLd as $block) : ?>
     <?php /* Kleiner-als maskieren, damit kein </script> im Datenblock stecken kann. */ ?>
-    <script type="application/ld+json"><?= str_replace('<', chr(92) . 'u003c', (string) json_encode($block, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></script>
+    <script type="application/ld+json" nonce="<?= e(\Atelier\Http::nonce()) ?>"><?= str_replace('<', chr(92) . 'u003c', (string) json_encode($block, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></script>
   <?php endforeach; ?>
 </head>
 <body class="min-h-screen antialiased">

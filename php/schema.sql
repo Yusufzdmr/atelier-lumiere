@@ -77,6 +77,17 @@ CREATE TABLE IF NOT EXISTS rsvps (
   INDEX rsvps_slug_idx (slug, at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Bremse gegen durchprobierte Passwoerter und Gutscheincodes.
+-- Muss ausserhalb der Sitzung liegen: wer das Sitzungscookie wegwirft,
+-- bekaeme sonst mit jedem Versuch einen frischen Zaehler.
+-- Gespeichert wird nur ein Streuwert der Absenderadresse, nie die Adresse selbst.
+CREATE TABLE IF NOT EXISTS throttle (
+  bucket VARCHAR(190) NOT NULL PRIMARY KEY,
+  hits   INT UNSIGNED NOT NULL DEFAULT 0,
+  until  DATETIME NOT NULL,
+  INDEX throttle_until_idx (until)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Anfragen aus dem Kontaktformular
 CREATE TABLE IF NOT EXISTS leads (
   id   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

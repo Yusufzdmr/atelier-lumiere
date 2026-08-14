@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use Atelier\Http;
 use Atelier\Controllers\AdminController;
 use Atelier\Controllers\ContentAdminController;
 use Atelier\Controllers\CustomerAdminController;
@@ -19,6 +20,9 @@ use Atelier\Controllers\SitemapController;
 use Atelier\Controllers\TextAdminController;
 use Atelier\I18n;
 use Atelier\Router;
+
+// Schutzkopfzeilen, bevor irgendetwas ausgegeben wird.
+Http::harden();
 
 $router = new Router();
 $page = new PageController();

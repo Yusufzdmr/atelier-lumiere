@@ -89,10 +89,30 @@ final class Admin
         return (string) (self::TABS[0][$locale] ?? self::TABS[0]['de']);
     }
 
+    /** Nach so langer Untaetigkeit ist Schluss – ein offener Laptop reicht sonst. */
+    private const IDLE = 4 * 3600;
+
+    /** Und spaetestens dann in jedem Fall, auch bei Betrieb. */
+    private const LIFETIME = 12 * 3600;
+
     public static function isLoggedIn(): bool
     {
         Security::session();
-        return !empty($_SESSION['admin']);
+        if (empty($_SESSION['admin'])) {
+            return false;
+        }
+
+        $now = time();
+        $seen = (int) ($_SESSION['adminSeen'] ?? 0);
+        $since = (int) ($_SESSION['adminSince'] ?? 0);
+
+        if (($now - $seen) > self::IDLE || ($now - $since) > self::LIFETIME) {
+            self::logout();
+            return false;
+        }
+
+        $_SESSION['adminSeen'] = $now;
+        return true;
     }
 
     /** @return bool true bei erfolgreicher Anmeldung */
@@ -103,13 +123,28 @@ final class Admin
         }
 
         $expected = Config::str('admin_key', 'demo');
-        if ($expected === '' || !hash_equals($expected, trim($password))) {
+        $password = trim($password);
+
+        if ($expected === '' || $password === '') {
+            return false;
+        }
+
+        // Steht in der config.php ein Hash (password_hash), wird er geprueft;
+        // sonst der Klartext, zeitkonstant. So laesst sich ein bestehender
+        // Zugang umstellen, ohne dass jemand ausgesperrt wird.
+        $ok = str_starts_with($expected, '$2y$') || str_starts_with($expected, '$argon2')
+            ? password_verify($password, $expected)
+            : hash_equals($expected, $password);
+
+        if (!$ok) {
             return false;
         }
 
         Security::session();
         session_regenerate_id(true);
         $_SESSION['admin'] = true;
+        $_SESSION['adminSince'] = time();
+        $_SESSION['adminSeen'] = time();
 
         return true;
     }
@@ -117,7 +152,7 @@ final class Admin
     public static function logout(): void
     {
         Security::session();
-        unset($_SESSION['admin']);
+        unset($_SESSION['admin'], $_SESSION['adminSince'], $_SESSION['adminSeen']);
         session_regenerate_id(true);
     }
 
@@ -135,8 +170,13 @@ final class Admin
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['password'])) {
             if (Security::checkCsrf($_POST['csrf'] ?? null) && self::login((string) $_POST['password'])) {
                 // Nach der Anmeldung dieselbe Adresse erneut aufrufen, damit ein
-                // Neuladen kein Formular noch einmal abschickt.
-                header('Location: ' . ($_SERVER['REQUEST_URI'] ?? I18n::path('/admin', $locale)), true, 303);
+                // Neuladen kein Formular noch einmal abschickt. Geprueft wird
+                // sie trotzdem: „//fremde-seite“ waere sonst ein gueltiges Ziel.
+                $back = (string) ($_SERVER['REQUEST_URI'] ?? '');
+                if ($back === '' || !str_starts_with($back, '/') || str_starts_with($back, '//')) {
+                    $back = I18n::path('/admin', $locale);
+                }
+                header('Location: ' . $back, true, 303);
                 exit;
             }
             $error = true;
@@ -152,6 +192,43 @@ final class Admin
             'csrf'   => Security::csrf(),
         ]);
         exit;
+    }
+
+    /**
+     * Steht der Zugang noch offen wie am ersten Tag?
+     *
+     * Das Passwort aus der Vorlage oder eines, das man in einer Mittagspause
+     * durchprobiert, ist der wahrscheinlichste Weg in diesen Bereich. Deshalb
+     * ein Hinweis im Adminbereich selbst – dort sieht ihn genau die Person,
+     * die ihn abstellen kann.
+     *
+     * @return string leer, wenn nichts zu melden ist
+     */
+    public static function passwordWarning(string $locale): string
+    {
+        $key = Config::str('admin_key', '');
+        $de = $locale === 'de';
+
+        // Ein Hash ist in Ordnung, egal wie er aussieht.
+        if (str_starts_with($key, '$2y$') || str_starts_with($key, '$argon2')) {
+            return '';
+        }
+
+        $weak = ['demo', 'test', 'admin', 'passwort', 'password', 'bitte-aendern', '1234', 'geheim'];
+
+        if ($key === '' || in_array(mb_strtolower($key), $weak, true)) {
+            return $de
+                ? 'Der Adminbereich hat noch das Standardpasswort. Vor dem Livegang in der config.php ändern – am besten als Hash.'
+                : 'Yönetim paneli hâlâ varsayılan parolayı kullanıyor. Yayına almadan önce config.php içinde değiştirin – tercihen hash olarak.';
+        }
+
+        if (mb_strlen($key) < 12) {
+            return $de
+                ? 'Das Adminpasswort ist kurz. Zwölf Zeichen oder mehr machen einen echten Unterschied.'
+                : 'Yönetim parolası kısa. On iki karakter ve üzeri gerçek bir fark yaratır.';
+        }
+
+        return '';
     }
 
     /** Schutz vor fremden Formularen; bricht mit 403 ab. */
