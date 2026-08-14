@@ -31,6 +31,26 @@ $groom = (string) ($invitation['groom'] ?? '');
 $initials = mb_strtoupper(mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1));
 // Persönliche Fassung: „Liebe Familie Müller“ steht über allem anderen.
 $guestName = (string) (($guest ?? null)['name'] ?? '');
+
+/**
+ * Die Schmuckelemente eines Ortes ausgeben.
+ *
+ * Position, Groesse und Bewegung stehen im Stilblock des Themas; hier steht
+ * nur das Bild mit seiner Klasse. Alternativtext bleibt leer: Blumen und
+ * Rahmen sind Zierde, keine Information – ein Vorleseprogramm soll sie
+ * ueberspringen.
+ */
+$decorations = static function (string $spot) use ($theme): string {
+    $html = '';
+    foreach ((array) ($theme['decorations'] ?? []) as $deco) {
+        if (!is_array($deco) || (string) ($deco['src'] ?? '') === '' || ($deco['spot'] ?? 'card') !== $spot) {
+            continue;
+        }
+        $html .= '<img src="' . e((string) $deco['src']) . '" alt="" aria-hidden="true" loading="lazy"'
+            . ' class="t-deco-' . e((string) $deco['id']) . '">';
+    }
+    return $html;
+};
 $field = 'w-full border-b bg-transparent px-0 py-2.5 text-[0.95rem] outline-none';
 $coming = 0;
 foreach ($rsvps as $rsvp) {
@@ -41,7 +61,8 @@ foreach ($rsvps as $rsvp) {
 ?>
 <style><?= $style ?></style>
 
-<div class="theme-<?= e((string) $theme['id']) ?> min-h-screen" style="background: <?= e((string) $theme['bg']) ?>">
+<div class="theme-<?= e((string) $theme['id']) ?> relative min-h-screen overflow-hidden" style="background: <?= e((string) $theme['bg']) ?>">
+  <?= $decorations('page') ?>
   <?php /* Umschlag – verschwindet nach dem Antippen */ ?>
   <div class="fixed inset-0 z-50 flex items-center justify-center px-6 transition-opacity duration-700"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
@@ -51,6 +72,7 @@ foreach ($rsvps as $rsvp) {
             aria-label="<?= $de ? 'Einladung öffnen' : 'Davetiyeyi aç' ?>">
       <span class="t-seal flex h-16 w-16 items-center justify-center rounded-full font-display text-lg"
             style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
+      <?= $decorations('envelope') ?>
       <span class="absolute bottom-5 text-[0.6rem] uppercase tracking-[0.28em]" style="color: <?= e((string) $theme['soft']) ?>">
         <?= $de ? 'Tippen zum Öffnen' : 'Açmak için dokunun' ?>
       </span>
@@ -60,6 +82,8 @@ foreach ($rsvps as $rsvp) {
   <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
     <div class="t-card relative overflow-hidden px-6 py-14 text-center sm:px-12"
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
+
+      <?= $decorations('card') ?>
 
       <div class="relative">
         <?php if ($guestName !== '') : ?>

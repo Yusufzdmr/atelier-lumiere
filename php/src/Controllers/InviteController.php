@@ -146,6 +146,9 @@ final class InviteController
             'sections'  => $sections,
             'hashtag'   => Security::clean($_POST['hashtag'] ?? '', 60),
             'theme'     => $theme,
+            // Die Kopie des Themas, wie es in diesem Moment aussieht. Was der
+            // Betrieb spaeter am Thema aendert, laesst diese Karte in Ruhe.
+            'themeSnapshot' => Themes::complete(Themes::find($theme) ?? []),
             'locale'    => I18n::locale(),
             'paid'      => $free,
             'price'     => Pricing::total($sections, count($events) > 1, $free),
@@ -299,7 +302,8 @@ final class InviteController
             ? Guests::find($slug, (string) $params['gast'])
             : null;
 
-        $theme = Themes::find((string) ($invitation['theme'] ?? '')) ?? Themes::all()[0];
+        // Nicht das heutige Thema, sondern das, mit dem sie verschickt wurde.
+        $theme = Invitations::theme($invitation);
         $sent = false;
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {

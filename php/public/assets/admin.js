@@ -155,3 +155,37 @@
     });
   });
 })();
+
+/* ---------------------- Themen: Vorschau in Gerätebreiten ---------------- */
+// Eine Einladung wird öfter auf einem Handy geöffnet als am Bildschirm.
+// Deshalb lässt sich die Vorschau auf drei Breiten stellen, statt zu hoffen.
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-theme-devices]").forEach(function (bar) {
+    var id = bar.getAttribute("data-theme-devices");
+    var preview = document.querySelector('[data-theme-preview="' + id + '"]');
+    if (!preview) return;
+
+    var buttons = bar.querySelectorAll("[data-theme-width]");
+
+    function choose(button) {
+      var width = button.getAttribute("data-theme-width") || "";
+      preview.style.maxWidth = width;
+      preview.style.marginLeft = "auto";
+      preview.style.marginRight = "auto";
+
+      buttons.forEach(function (other) {
+        var active = other === button;
+        other.classList.toggle("border-gold", active);
+        other.classList.toggle("text-ink", active);
+        other.classList.toggle("border-sand-deep", !active);
+        other.classList.toggle("text-muted", !active);
+      });
+    }
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () { choose(button); });
+    });
+  });
+})();

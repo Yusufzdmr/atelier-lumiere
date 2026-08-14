@@ -86,11 +86,52 @@ final class Themes
         return null;
     }
 
-    /** @param list<array<string,mixed>> $themes */
+    /**
+     * Themen sichern und die Fassung derer hochzaehlen, die sich geaendert
+     * haben.
+     *
+     * Die Nummer ist kein Selbstzweck: eine schon verschickte Einladung haelt
+     * ihre eigene Kopie des Themas fest (siehe Invitations::theme). Die Nummer
+     * sagt dann, wie weit sie vom heutigen Stand entfernt ist – und ob es sich
+     * lohnt, sie auf den neuen Stand zu heben.
+     *
+     * @param list<array<string,mixed>> $themes
+     */
     public static function save(array $themes): void
     {
-        Content::mutate(static function (array $content) use ($themes): array {
-            $content['themes'] = array_values($themes);
+        $before = [];
+        foreach (self::all() as $theme) {
+            $before[(string) $theme['id']] = $theme;
+        }
+
+        $next = [];
+        foreach (array_values($themes) as $theme) {
+            $theme = self::complete(is_array($theme) ? $theme : []);
+            $old = $before[(string) $theme['id']] ?? null;
+
+            if ($old !== null) {
+                // Fassung und Zeitstempel selbst duerfen den Vergleich nicht
+                // stoeren, sonst zaehlt jedes Speichern hoch.
+                $a = $old;
+                $b = $theme;
+                unset($a['version'], $a['updatedAt'], $b['version'], $b['updatedAt']);
+
+                if ($a === $b) {
+                    $theme['version'] = (int) $old['version'];
+                    $theme['updatedAt'] = (string) $old['updatedAt'];
+                    $next[] = $theme;
+                    continue;
+                }
+
+                $theme['version'] = (int) $old['version'] + 1;
+            }
+
+            $theme['updatedAt'] = date('c');
+            $next[] = $theme;
+        }
+
+        Content::mutate(static function (array $content) use ($next): array {
+            $content['themes'] = $next;
             return $content;
         });
     }
@@ -131,12 +172,113 @@ final class Themes
             'animationSpeed' => '1200',
             'animationDelay' => '0',
             'css'            => '',
+            // Ab hier: die modularen Bausteine
+            'family'      => '',
+            'fonts'       => ['display' => 'cormorant', 'body' => 'jost', 'scale' => '100', 'tracking' => '0'],
+            'decorations' => [],
+            'version'     => 1,
+            'updatedAt'   => '',
         ];
 
         $merged = array_merge($defaults, $theme);
         if (!is_array($merged['sub'])) {
             $merged['sub'] = ['de' => (string) $merged['sub'], 'tr' => (string) $merged['sub']];
         }
+
+        $merged['fonts'] = array_merge($defaults['fonts'], is_array($merged['fonts']) ? $merged['fonts'] : []);
+        $merged['decorations'] = array_values(array_map(
+            [self::class, 'completeDecoration'],
+            array_filter(is_array($merged['decorations']) ? $merged['decorations'] : [], 'is_array')
+        ));
+
+        // Ohne eigene Familie steht ein Thema fuer sich allein.
+        if ((string) $merged['family'] === '') {
+            $merged['family'] = (string) $merged['name'];
+        }
+
+        return $merged;
+    }
+
+    /* ------------------------------ Bausteine ------------------------------- */
+
+    /** Die selbst gehosteten Schriften – mehr gibt es nicht, und das ist gut so. */
+    public const FONTS = [
+        'cormorant' => ['label' => 'Cormorant Garamond', 'stack' => 'var(--font-cormorant), "Times New Roman", serif'],
+        'jost'      => ['label' => 'Jost', 'stack' => 'var(--font-jost), ui-sans-serif, system-ui, sans-serif'],
+    ];
+
+    /** Wo ein Schmuckelement sitzen kann. */
+    public const SPOTS = [
+        'card'     => ['de' => 'Auf der Karte', 'tr' => 'Kartın üzerinde'],
+        'page'     => ['de' => 'Auf der Seite (hinter der Karte)', 'tr' => 'Sayfada (kartın arkasında)'],
+        'envelope' => ['de' => 'Auf dem Kuvert', 'tr' => 'Zarfın üzerinde'],
+    ];
+
+    /** Wie ein Schmuckelement hereinkommt. */
+    public const MOVES = ['none', 'fade', 'rise', 'float', 'sway', 'zoom'];
+
+    public static function moveLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'none'  => 'Steht still',
+                'fade'  => 'Blendet ein',
+                'rise'  => 'Steigt auf',
+                'float' => 'Schwebt',
+                'sway'  => 'Wiegt sich',
+                'zoom'  => 'Wächst heran',
+            ],
+            'tr' => [
+                'none'  => 'Sabit durur',
+                'fade'  => 'Belirir',
+                'rise'  => 'Yükselir',
+                'float' => 'Süzülür',
+                'sway'  => 'Salınır',
+                'zoom'  => 'Büyüyerek gelir',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
+    /**
+     * Ein Schmuckelement vollstaendig machen.
+     *
+     * Alle Masse in Prozent: eine Einladung wird oefter auf einem Handy
+     * geoeffnet als auf einem Bildschirm, und Prozent skaliert mit.
+     *
+     * @param array<string,mixed> $deco
+     * @return array<string,mixed>
+     */
+    public static function completeDecoration(array $deco): array
+    {
+        $defaults = [
+            'id'       => '',
+            'label'    => '',
+            'src'      => '',
+            'spot'     => 'card',
+            'x'        => '4',
+            'y'        => '4',
+            'width'    => '20',
+            'rotate'   => '0',
+            'opacity'  => '100',
+            'front'    => false,
+            'move'     => 'fade',
+            'delay'    => '0',
+            'duration' => '1200',
+        ];
+
+        $merged = array_merge($defaults, $deco);
+        $merged['id'] = preg_replace('/[^a-z0-9]/', '', strtolower((string) $merged['id'])) ?: bin2hex(random_bytes(4));
+        $merged['spot'] = array_key_exists((string) $merged['spot'], self::SPOTS) ? (string) $merged['spot'] : 'card';
+        $merged['move'] = in_array((string) $merged['move'], self::MOVES, true) ? (string) $merged['move'] : 'fade';
+        $merged['front'] = (bool) $merged['front'];
+
+        foreach (['x' => [-50, 150], 'y' => [-50, 150], 'width' => [1, 200], 'rotate' => [-180, 180], 'opacity' => [0, 100]] as $key => [$min, $max]) {
+            $merged[$key] = (string) max($min, min($max, (int) $merged[$key]));
+        }
+        $merged['delay'] = (string) max(0, min(20000, (int) $merged['delay']));
+        $merged['duration'] = (string) max(0, min(20000, (int) $merged['duration']));
 
         return $merged;
     }
@@ -191,7 +333,22 @@ final class Themes
         $vars[] = '--t-speed: ' . (int) $theme['animationSpeed'] . 'ms;';
         $vars[] = '--t-delay: ' . (int) $theme['animationDelay'] . 'ms;';
 
+        // Schriften: nur die beiden selbst gehosteten, sonst laedt die Seite
+        // wieder von fremden Servern – und der Hinweis auf der Datenschutzseite
+        // stimmt nicht mehr.
+        $fonts = is_array($theme['fonts'] ?? null) ? $theme['fonts'] : [];
+        $display = self::FONTS[(string) ($fonts['display'] ?? '')] ?? self::FONTS['cormorant'];
+        $body = self::FONTS[(string) ($fonts['body'] ?? '')] ?? self::FONTS['jost'];
+        $vars[] = '--t-display: ' . $display['stack'] . ';';
+        $vars[] = '--t-body: ' . $body['stack'] . ';';
+        $vars[] = '--t-scale: ' . (max(60, min(160, (int) ($fonts['scale'] ?? 100))) / 100) . ';';
+        $vars[] = '--t-tracking: ' . (max(-30, min(80, (int) ($fonts['tracking'] ?? 0))) / 1000) . 'em;';
+
         $css = $scope . ' {' . implode(' ', $vars) . '}';
+
+        // Die Schriften greifen, ohne dass die Vorlage davon wissen muss.
+        $css .= $scope . ' .font-display{font-family:var(--t-display);}';
+        $css .= $scope . ' .t-card{font-family:var(--t-body);font-size:calc(1rem * var(--t-scale));letter-spacing:var(--t-tracking);}';
 
         $image = (string) $theme['image'];
         if ($image !== '') {
@@ -208,6 +365,8 @@ final class Themes
             $css .= $scope . ' .t-envelope{background-image:url("' . self::cssUrl($envelopeImage) . '");background-size:cover;background-position:center;}';
         }
 
+        $css .= self::decorationCss($theme, $scope);
+
         $own = self::safeCss((string) $theme['css']);
         if ($own !== '') {
             // Eigenes CSS bleibt im Geltungsbereich des Themas.
@@ -215,6 +374,77 @@ final class Themes
         }
 
         return $css;
+    }
+
+    /**
+     * Die Schmuckelemente als CSS.
+     *
+     * Jedes Element bekommt seine eigene Regel; die Vorlage setzt nur ein
+     * <img> mit der passenden Klasse. So bleibt alles Gestalterische hier und
+     * nichts davon im HTML – und die Inhaltsrichtlinie muss keine
+     * Ausnahme fuer style-Attribute machen.
+     *
+     * @param array<string,mixed> $theme
+     */
+    private static function decorationCss(array $theme, string $scope): string
+    {
+        $css = '';
+        $moves = [];
+
+        foreach ((array) ($theme['decorations'] ?? []) as $deco) {
+            if (!is_array($deco) || (string) ($deco['src'] ?? '') === '') {
+                continue;
+            }
+
+            $deco = self::completeDecoration($deco);
+            $selector = $scope . ' .t-deco-' . $deco['id'];
+
+            $css .= $selector . '{'
+                . 'position:absolute;'
+                . 'left:' . (float) $deco['x'] . '%;'
+                . 'top:' . (float) $deco['y'] . '%;'
+                . 'width:' . (float) $deco['width'] . '%;'
+                . 'height:auto;'
+                . 'opacity:' . ((int) $deco['opacity'] / 100) . ';'
+                . 'transform:rotate(' . (float) $deco['rotate'] . 'deg);'
+                . 'transform-origin:center;'
+                . 'pointer-events:none;'
+                . 'z-index:' . ($deco['front'] ? '5' : '0') . ';'
+                . '}';
+
+            if ($deco['move'] !== 'none') {
+                $name = 't-move-' . $deco['move'];
+                $moves[$deco['move']] = true;
+                $css .= $selector . '{'
+                    . 'animation:' . $name . ' ' . (int) $deco['duration'] . 'ms ease-out '
+                    . (int) $deco['delay'] . 'ms both;'
+                    . '}';
+            }
+        }
+
+        // Nur die Bewegungen mitschicken, die auch gebraucht werden.
+        foreach (array_keys($moves) as $move) {
+            $css .= self::moveKeyframes((string) $move);
+        }
+
+        // Wer Bewegung im Betriebssystem abbestellt hat, bekommt sie nicht.
+        if ($moves !== []) {
+            $css .= '@media (prefers-reduced-motion: reduce){' . $scope . ' [class*="t-deco-"]{animation:none;}}';
+        }
+
+        return $css;
+    }
+
+    private static function moveKeyframes(string $move): string
+    {
+        return match ($move) {
+            'fade'  => '@keyframes t-move-fade{from{opacity:0}}',
+            'rise'  => '@keyframes t-move-rise{from{opacity:0;transform:translateY(14px) rotate(var(--t-rot,0deg))}}',
+            'zoom'  => '@keyframes t-move-zoom{from{opacity:0;transform:scale(.86)}}',
+            'float' => '@keyframes t-move-float{0%{opacity:0}30%{opacity:1}50%{transform:translateY(-8px)}100%{opacity:1;transform:translateY(0)}}',
+            'sway'  => '@keyframes t-move-sway{0%{opacity:0}30%{opacity:1}50%{transform:translateX(6px)}100%{opacity:1;transform:translateX(0)}}',
+            default => '',
+        };
     }
 
     /**

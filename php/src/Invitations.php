@@ -101,6 +101,59 @@ final class Invitations
         return $label[$locale] ?? $label['de'];
     }
 
+    /* -------------------------------- Thema --------------------------------- */
+
+    /**
+     * Das Thema, mit dem diese Einladung gestaltet wurde.
+     *
+     * Entscheidend ist die Reihenfolge: zuerst die Kopie, die beim Erstellen
+     * mitgeschrieben wurde, und erst wenn es keine gibt das heutige Thema.
+     *
+     * Der Grund steht in jedem Postfach: Eine Einladung ist verschickt. Wer
+     * sie oeffnet, soll die Karte sehen, die das Paar herumgeschickt hat –
+     * nicht die, die dabei herauskaeme, wenn der Betrieb heute an den Farben
+     * dreht. Ein Thema zu aendern darf nie eine fremde Feier umgestalten.
+     *
+     * @param array<string,mixed> $invitation
+     * @return array<string,mixed>
+     */
+    public static function theme(array $invitation): array
+    {
+        $snapshot = $invitation['themeSnapshot'] ?? null;
+        if (is_array($snapshot) && ($snapshot['id'] ?? '') !== '') {
+            return Themes::complete($snapshot);
+        }
+
+        $live = Themes::find((string) ($invitation['theme'] ?? ''));
+        return Themes::complete($live ?? (Themes::all()[0] ?? []));
+    }
+
+    /** Haengt diese Einladung an einer aelteren Fassung ihres Themas? */
+    public static function themeOutdated(array $invitation): bool
+    {
+        $snapshot = $invitation['themeSnapshot'] ?? null;
+        if (!is_array($snapshot)) {
+            return false;
+        }
+
+        $live = Themes::find((string) ($snapshot['id'] ?? ''));
+        return $live !== null && (int) $live['version'] > (int) ($snapshot['version'] ?? 1);
+    }
+
+    /** Eine Einladung auf den heutigen Stand ihres Themas heben. */
+    public static function refreshTheme(string $slug): void
+    {
+        $invitation = self::find($slug);
+        if ($invitation === null) {
+            return;
+        }
+
+        $live = Themes::find((string) ($invitation['theme'] ?? ''));
+        if ($live !== null) {
+            self::update($slug, ['themeSnapshot' => $live]);
+        }
+    }
+
     /* ---------------------------- Verwaltungslink --------------------------- */
 
     /**

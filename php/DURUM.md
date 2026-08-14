@@ -37,6 +37,13 @@ sonra `php bin/import.php` (veya `--replace`).
 | Dönüşümler | İletişim formu (`generate_lead`), davetiye oluşturma (`purchase`, tutarıyla), `tel:` tıklaması (`phone_call`) — tek dinleyici, hiçbir bağlantının haberi olmadan. Ads etiketleri panelden. Sayfa `data-track-event` alanıyla bildiriyor, HTML'de script bloğu yok (CSP sıkı kalsın diye) |
 | Panel düzeni | Sekmeler artık **gruplanmış yan menüde** (İçerik / İşler / Görünüm / Ayarlar) — 16 sekme tek sırada bir duvardı. Geniş ekranda yapışkan yan menü, dar ekranda açılır kapanır seçim (açık sekmenin adı üstte yazılı). Üst çubuk yapışkan, uzun formlarda **kaydet düğmesi altta sabit** duruyor. Genel bakış: kutucuklar tıklanır, „son yedi günde ne geldi“ satırı ve dört hızlı işlem düğmesi |
 | Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
+| **Tema motoru — modüler** | Renk/font/zarf/mühür/arka plan/süsleme/animasyon ayrı ayrı. `family` alanı varyasyonları (Ivory, Rose, Sage, Dark) bir arada tutuyor; „Varyasyon oluştur“ ailede kalarak kopyalıyor |
+| **Tema versiyonlama** | Davetiye oluşturulurken temanın **anlık görüntüsü** kaydediliyor (`themeSnapshot`). Tema sonradan değişince gönderilmiş davetiyeler **değişmiyor** — uçtan uca test edildi. `Invitations::themeOutdated()` eskimişi görür, `refreshTheme()` bilerek günceller. Her kaydetmede `version` artıyor (içerik gerçekten değiştiyse) |
+| Süslemeler | Tema başına 12 öğeye kadar: çiçek, çerçeve, monogram. Konum/boyut/dönüş/opaklık **yüzde** cinsinden (telefonda da otursun diye), katman sırası (metnin önü/arkası), yer (kart/sayfa/zarf) ve hareket (belir/yüksel/süzül/salın/büyü) + gecikme + süre. `prefers-reduced-motion` açıksa hareket yok |
+| Şeffaf yükleme | `Media::storeGraphic()` — PNG/WebP/GIF alfa kanalını **koruyarak** WebP'ye çeviriyor (600×600 PNG → 3.7 KB WebP, köşe alfa=127 doğrulandı). SVG kabul ediliyor, içindeki `<script>` ve `on…=` temizleniyor; zaten yalnız `<img>` içinde gösteriliyor |
+| Yazı tipleri | Kendi sunucumuzdaki iki aile arasında seçim + boyut ve harf aralığı. Fazlası her açılışta Google'a bağlanmak olurdu |
+| Tema aktarımı | Her temanın JSON'u panelde; „Yeni tema“ altına yapıştırılınca içe aktarılıyor (görseller hariç — onlar diğer kurulumda) |
+| Cihaz önizlemesi | Önizleme kutusu masaüstü / tablet / telefon genişliğine geçiyor |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
 | Entegrasyonlar | PayPal (ID/Secret/mod + bağlantı testi), GA4/GTM/Ads + 3 dönüşüm etiketi, Meta Pixel, Search Console/Bing, serbest anahtar listesi (`Integrations::value('AD')`) |
 | **Kişiye özel davetiye** | `src/Guests.php` + `invite_guests` tablosu. Davetiye **tek kayıt kalır**, üstünde ince bir katman: kişi/aile adı + kendi adresi (`/de/einladung/ayse-mehmet/familie-mueller`). Kartın üstünde „Liebe Familie Müller“ / „Sayın Müller Ailesi“, RSVP adı önceden dolu. Sihirbazda tek alan, sonrasında yönetim sayfası |
@@ -72,30 +79,13 @@ sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 
 ## Kalan — bu sırayla
 
-### 1. Modüler tema sistemi
+### 1. Modüler temada kalanlar (küçük)
 
-Şu anki tema tek parça (renkler + arka plan + animasyon + CSS). İstenen:
-
-- Renk, font, zarf, mühür, dekorasyon, arka plan ve animasyonlar **ayrı ayrı** yönetilsin
-- Aynı temanın varyasyonları: Ivory, Rose, Sage, Dark
-- Arka plan dışında şeffaf PNG/WebP/SVG öğeler (çiçek, çerçeve, monogram, yaprak)
-  tek tek eklenebilsin; **konum, boyut, opaklık, katman sırası** panelden ayarlansın
-- Animasyonda tür + hangi öğe önce/sonra + süre + gecikme
-- Kopyalama var; **import/export** (JSON) eklenecek
-- **Versiyonlama**: tema değişince eski davetiyeler bozulmamalı. Davetiye kaydı
-  temanın kimliğini değil, o anki **anlık görüntüsünü** (veya sürüm numarasını)
-  tutmalı. Bu, yapılacakların en kritik parçası — sonradan eklemek zor
-- Büyük Canva PNG/JPG otomatik optimize; WebP/AVIF (`imagewebp` GD'de var,
-  AVIF PHP 8.1+ ve libavif gerektirir — ALL-INKL'de kontrol edilmeli)
-- Custom CSS izolasyonu ve güvenlik kontrolleri **korunacak** (zaten var)
-- Canlı önizlemede telefon / tablet / masaüstü geçişi
-- **OG görseline yazı basmak** (isim + tarih) şu an yapılmıyor: GD için TTF/OTF
-  gerekiyor, repoda yalnızca WOFF2 var. İstenirse Cormorant'ın TTF'i eklenip
-  `OgImage::build()` içine `imagettftext` konabilir. Şimdilik isim ve tarih
-  WhatsApp'ın kendi metin alanında görünüyor (orada daha da net duruyor)
-
-Müşteri tarafı basit kalmalı: **tema seç → bilgileri gir → isterse kişiye özel
-isimleri ekle → önizle → oluştur/paylaş.** Gelişmişlik panelde kalsın, sihirbazda değil.
+Motor ve panel hazır. Yapılmayanlar:
+- Süsleme konumunu **sürükleyerek** ayarlama (şu an sayıyla; sayı kesin, sürükleme hızlı)
+- AVIF (`imageavif` PHP 8.1+ ve libavif ister — ALL-INKL'de kontrol edilmeli; WebP zaten çalışıyor)
+- Panelde „bu temanın eski sürümüne bağlı N davetiye var“ sayacı ve toplu güncelleme
+  (tekil `refreshTheme()` hazır)
 
 ### 2. ALL-INKL'e yayın
 1. KAS → veritabanı oluştur, `schema.sql` içe aktar (phpMyAdmin)
@@ -172,6 +162,11 @@ Galeri demo: `elif-marco` / `solitude24`
 - Ölçümü denerken **tarayıcıda `localStorage.removeItem("al-consent-v1")`**,
   yoksa banner bir daha çıkmaz. İzinsizken hiçbir dış istek olmaması
   `performance.getEntriesByType("resource")` ile kontrol edilebilir
+- Tema değiştirince **yayınlanmış davetiyeler değişmez** — bu kasıtlı. Test
+  ederken „neden güncellenmiyor“ diye aramayın; `Invitations::refreshTheme()`
+  bilerek günceller
+- Süsleme yüklerken `Media::store()` **değil** `storeGraphic()` kullanılmalı;
+  ilki her şeyi JPEG yapar ve saydamlığı yok eder
 - **Bremsi denemek istersen** `DELETE FROM throttle` — yoksa kendi testlerin
   seni kilitler. Sınır aşıldığında doğru parola da kabul edilmez, bu kasıtlı
 - **XAMPP'ta GD kapalı gelebilir**: `C:\xampp\php\php.ini` içinde `;extension=gd`
@@ -203,6 +198,8 @@ src/Customers.php                müşteri + kupon; galeriyle senkron
 src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
 src/Texts.php                    sözlük üstü metin katmanı (sayfa metinleri)
 src/Places.php                   Google Places: yer arama, detay, statik harita
+src/Themes.php                   modüler tema: renk/font/süsleme/hareket + versiyon
+src/Media.php                    store() foto=JPEG · storeGraphic() süsleme=WebP+alfa/SVG
 src/Http.php                     güvenlik başlıkları + CSP (nonce burada üretilir)
 templates/partials/consent.php   çerez kutusu (sunucuda gizli, JS gösteriyor)
 public/assets/consent.js         izin mantığı, Consent Mode v2, dönüşümler

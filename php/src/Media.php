@@ -130,6 +130,119 @@ final class Media
     }
 
     /**
+     * Schmuckelemente: Blume, Rahmen, Monogramm.
+     *
+     * Anders als bei Fotos darf hier nichts nach JPEG umgewandelt werden – ein
+     * Rahmen ohne durchsichtigen Hintergrund ist kein Rahmen, sondern ein
+     * weisses Rechteck. Ausgegeben wird deshalb WebP mit Alphakanal (kleiner
+     * als PNG bei gleicher Qualitaet) oder, wo GD das nicht kann, PNG.
+     *
+     * SVG wird durchgereicht: es wird ausschliesslich in einem <img> gezeigt,
+     * und dort fuehren Browser kein Skript aus. Zusaetzlich raeumt
+     * cleanSvg() auf, und der Upload-Ordner erlaubt per .htaccess ohnehin
+     * nichts Ausfuehrbares.
+     *
+     * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int} $file
+     */
+    public static function storeGraphic(array $file, string $folder): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $tmp = (string) ($file['tmp_name'] ?? '');
+        if ($tmp === '' || !is_uploaded_file($tmp) || filesize($tmp) > 6 * 1024 * 1024) {
+            return null;
+        }
+
+        $raw = (string) file_get_contents($tmp);
+
+        // SVG erkennt getimagesize() nicht – es ist Text, kein Rasterbild.
+        if (preg_match('/^\s*(<\?xml|<svg)/i', $raw) === 1) {
+            $clean = self::cleanSvg($raw);
+            if ($clean === null) {
+                return null;
+            }
+            $name = bin2hex(random_bytes(8)) . '.svg';
+            $target = self::dir($folder) . '/' . $name;
+            return file_put_contents($target, $clean) === false
+                ? null
+                : self::url(trim($folder, '/') . '/' . $name);
+        }
+
+        $info = @getimagesize($tmp);
+        if ($info === false) {
+            return null;
+        }
+
+        [$width, $height] = $info;
+        $mime = (string) ($info['mime'] ?? '');
+
+        if (!function_exists('imagecreatefrompng')) {
+            return self::keep($tmp, $mime, $folder);
+        }
+
+        $image = match ($mime) {
+            'image/png'  => @imagecreatefrompng($tmp),
+            'image/webp' => @imagecreatefromwebp($tmp),
+            'image/gif'  => @imagecreatefromgif($tmp),
+            'image/jpeg' => @imagecreatefromjpeg($tmp),
+            default      => false,
+        };
+
+        if ($image === false) {
+            return null;
+        }
+
+        // Schmuck braucht keine Fotoaufloesung.
+        $max = 1400;
+        if ($width > $max) {
+            $newWidth = $max;
+            $newHeight = (int) round($height * ($max / $width));
+            $resized = imagecreatetruecolor($newWidth, $newHeight);
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            imagefill($resized, 0, 0, imagecolorallocatealpha($resized, 0, 0, 0, 127));
+            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            imagedestroy($image);
+            $image = $resized;
+        }
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+
+        $webp = function_exists('imagewebp');
+        $name = bin2hex(random_bytes(8)) . ($webp ? '.webp' : '.png');
+        $target = self::dir($folder) . '/' . $name;
+
+        $ok = $webp ? imagewebp($image, $target, 88) : imagepng($image, $target, 6);
+        imagedestroy($image);
+
+        return $ok ? self::url(trim($folder, '/') . '/' . $name) : null;
+    }
+
+    /**
+     * SVG entschaerfen.
+     *
+     * Im <img> laeuft ohnehin kein Skript; das hier ist die zweite Reihe fuer
+     * den Fall, dass die Datei doch einmal direkt aufgerufen wird.
+     */
+    private static function cleanSvg(string $svg): ?string
+    {
+        if (mb_strlen($svg) > 400 * 1024 || !str_contains(strtolower($svg), '<svg')) {
+            return null;
+        }
+
+        $svg = preg_replace('#<script\b.*?</script>#is', '', $svg) ?? '';
+        $svg = preg_replace('#<foreignObject\b.*?</foreignObject>#is', '', $svg) ?? '';
+        $svg = preg_replace('/\son[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $svg) ?? '';
+        $svg = preg_replace('/(href|xlink:href)\s*=\s*("|\')\s*(javascript|data):[^"\']*("|\')/i', '', $svg) ?? '';
+        $svg = preg_replace('#<!ENTITY.*?>#is', '', $svg) ?? '';
+
+        return trim($svg) === '' ? null : $svg;
+    }
+
+    /**
      * Mehrere Dateien eines Formularfelds (multiple).
      *
      * @return list<string>

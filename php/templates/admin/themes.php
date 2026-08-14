@@ -179,6 +179,148 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
             </div>
           </div>
 
+          <!-- Schriften und Familie -->
+          <div class="border-t border-sand-deep pt-6">
+            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Schrift & Familie' : 'Yazı & aile' ?></div>
+            <p class="<?= $hint ?>">
+              <?= $de
+                  ? 'Zwei Schriften liegen auf dem eigenen Server – mehr wären eine Verbindung zu Google bei jedem Aufruf. Die Familie fasst Varianten desselben Entwurfs zusammen (Ivory, Rose, Sage …); im Assistenten stehen sie dann beieinander.'
+                  : 'İki yazı tipi kendi sunucumuzda duruyor – fazlası her açılışta Google’a bağlanmak demek. Aile, aynı tasarımın varyasyonlarını (Ivory, Rose, Sage …) bir arada tutar; sihirbazda yan yana görünürler.' ?>
+            </p>
+            <div class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Familie' : 'Aile' ?></label>
+                <input name="family" value="<?= e((string) $theme['family']) ?>" class="<?= $input ?>" placeholder="Élysée">
+              </div>
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Überschriften' : 'Başlıklar' ?></label>
+                <select name="font_display" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::FONTS as $key => $font) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['fonts']['display'] ?? '') === $key ? 'selected' : '' ?>><?= e($font['label']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Fließtext' : 'Metin' ?></label>
+                <select name="font_body" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::FONTS as $key => $font) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['fonts']['body'] ?? '') === $key ? 'selected' : '' ?>><?= e($font['label']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="<?= $label ?>"><?= $de ? 'Größe %' : 'Boyut %' ?></label>
+                  <input type="number" min="60" max="160" step="5" name="font_scale" value="<?= e((string) ($theme['fonts']['scale'] ?? '100')) ?>" class="<?= $input ?>">
+                </div>
+                <div>
+                  <label class="<?= $label ?>"><?= $de ? 'Laufweite' : 'Harf aralığı' ?></label>
+                  <input type="number" min="-30" max="80" step="5" name="font_tracking" value="<?= e((string) ($theme['fonts']['tracking'] ?? '0')) ?>" class="<?= $input ?>">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schmuckelemente -->
+          <div class="border-t border-sand-deep pt-6">
+            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Schmuck' : 'Süslemeler' ?></div>
+            <p class="<?= $hint ?>">
+              <?= $de
+                  ? 'Blume, Rahmen, Monogramm – als PNG, WebP oder SVG mit durchsichtigem Hintergrund. Alle Maße in Prozent, damit es auf dem Handy genauso sitzt wie am Bildschirm.'
+                  : 'Çiçek, çerçeve, monogram – saydam zeminli PNG, WebP ya da SVG. Tüm ölçüler yüzde, telefonda da ekrandaki gibi otursun diye.' ?>
+            </p>
+
+            <?php $decorations = (array) $theme['decorations']; ?>
+            <?php if ($decorations !== []) : ?>
+              <div class="mt-4 space-y-3">
+                <?php foreach ($decorations as $deco) : ?>
+                  <?php $d = $deco['id']; ?>
+                  <div class="grid gap-4 border border-sand-deep p-4 sm:grid-cols-[5rem_1fr]">
+                    <div class="flex items-center justify-center border border-sand-deep bg-[repeating-conic-gradient(#EDE4D8_0_25%,#FAF7F2_0_50%)] bg-[length:12px_12px] p-2">
+                      <img src="<?= e((string) $deco['src']) ?>" alt="" class="max-h-16 w-auto">
+                    </div>
+                    <div>
+                      <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Ort' : 'Yer' ?></label>
+                          <select name="deco_<?= e($d) ?>_spot" class="<?= $input ?>">
+                            <?php foreach (\Atelier\Themes::SPOTS as $key => $caption) : ?>
+                              <option value="<?= e($key) ?>" <?= $deco['spot'] === $key ? 'selected' : '' ?>><?= e($caption[$locale] ?? $caption['de']) ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Links %' : 'Sol %' ?></label>
+                          <input type="number" min="-50" max="150" name="deco_<?= e($d) ?>_x" value="<?= e((string) $deco['x']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Oben %' : 'Üst %' ?></label>
+                          <input type="number" min="-50" max="150" name="deco_<?= e($d) ?>_y" value="<?= e((string) $deco['y']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Breite %' : 'Genişlik %' ?></label>
+                          <input type="number" min="1" max="200" name="deco_<?= e($d) ?>_width" value="<?= e((string) $deco['width']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Drehung °' : 'Dönüş °' ?></label>
+                          <input type="number" min="-180" max="180" name="deco_<?= e($d) ?>_rotate" value="<?= e((string) $deco['rotate']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Deckkraft %' : 'Opaklık %' ?></label>
+                          <input type="number" min="0" max="100" step="5" name="deco_<?= e($d) ?>_opacity" value="<?= e((string) $deco['opacity']) ?>" class="<?= $input ?>">
+                        </div>
+                      </div>
+
+                      <div class="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Bewegung' : 'Hareket' ?></label>
+                          <select name="deco_<?= e($d) ?>_move" class="<?= $input ?>">
+                            <?php foreach (\Atelier\Themes::MOVES as $move) : ?>
+                              <option value="<?= e($move) ?>" <?= $deco['move'] === $move ? 'selected' : '' ?>>
+                                <?= e(\Atelier\Themes::moveLabel($move, $locale)) ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Wartet (ms)' : 'Bekler (ms)' ?></label>
+                          <input type="number" min="0" max="20000" step="100" name="deco_<?= e($d) ?>_delay" value="<?= e((string) $deco['delay']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div>
+                          <label class="<?= $label ?>"><?= $de ? 'Dauer (ms)' : 'Süre (ms)' ?></label>
+                          <input type="number" min="0" max="20000" step="100" name="deco_<?= e($d) ?>_duration" value="<?= e((string) $deco['duration']) ?>" class="<?= $input ?>">
+                        </div>
+                        <div class="flex items-end gap-4">
+                          <label class="flex cursor-pointer items-center gap-2 pb-2 text-[0.78rem] text-ink">
+                            <input type="checkbox" name="deco_<?= e($d) ?>_front" <?= $deco['front'] ? 'checked' : '' ?> class="h-4 w-4 accent-[#B08D57]">
+                            <?= $de ? 'vor dem Text' : 'metnin önünde' ?>
+                          </label>
+                          <button name="was" value="deco-delete:<?= e($d) ?>"
+                                  data-confirm="<?= $de ? 'Dieses Element entfernen?' : 'Bu öğe kaldırılsın mı?' ?>"
+                                  class="ml-auto pb-2 text-[0.62rem] uppercase tracking-[0.14em] text-muted hover:text-red-700">
+                            <?= $de ? 'Entfernen' : 'Kaldır' ?>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+
+            <div class="mt-4 flex flex-wrap items-end gap-4 border border-dashed border-sand-deep p-4">
+              <div class="min-w-[14rem] flex-1">
+                <label class="<?= $label ?>"><?= $de ? 'Element hinzufügen' : 'Öğe ekle' ?></label>
+                <input type="file" name="deco_neu" accept="image/png,image/webp,image/svg+xml,image/gif"
+                       class="mt-2 w-full text-[0.8rem] text-muted file:mr-4 file:border file:border-sand-deep file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
+              </div>
+              <button name="was" value="deco-add"
+                      class="border border-ink px-6 py-3 text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
+                <?= $de ? 'Hochladen' : 'Yükle' ?>
+              </button>
+            </div>
+          </div>
+
           <!-- Eigenes CSS -->
           <div class="border-t border-sand-deep pt-6">
             <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Eigenes CSS (fortgeschritten)' : 'Kendi CSS’iniz (gelişmiş)' ?></div>
@@ -192,9 +334,25 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                       placeholder=".t-card { animation: meinEffekt 1.2s ease-out both; }&#10;@keyframes meinEffekt { from { opacity: 0; transform: scale(.96); } }"><?= e((string) $theme['css']) ?></textarea>
           </div>
 
+          <!-- Austausch -->
+          <div class="border-t border-sand-deep pt-6">
+            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Sichern & übertragen' : 'Yedekle & aktar' ?></div>
+            <p class="<?= $hint ?>">
+              <?= $de
+                  ? 'Fassung ' . (int) $theme['version'] . '. Verschickte Einladungen behalten die Fassung, mit der sie erstellt wurden – Änderungen hier gestalten keine fremde Feier um.'
+                  : 'Sürüm ' . (int) $theme['version'] . '. Gönderilmiş davetiyeler oluşturuldukları sürümü korur – buradaki değişiklikler kimsenin düğününü değiştirmez.' ?>
+            </p>
+            <textarea name="austausch" rows="3" spellcheck="false" readonly
+                      class="<?= $input ?> mt-3 resize-y font-mono text-[0.68rem]"><?= e((string) json_encode($theme, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></textarea>
+            <p class="<?= $hint ?>"><?= $de ? 'Zum Übertragen kopieren und unten bei „Neues Thema“ einfügen.' : 'Aktarmak için kopyalayıp aşağıda „Yeni tema“ altına yapıştırın.' ?></p>
+          </div>
+
           <div class="flex flex-wrap items-center gap-4 border-t border-sand-deep pt-6">
             <button class="bg-ink px-8 py-3.5 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
               <?= $de ? 'Speichern' : 'Kaydet' ?>
+            </button>
+            <button name="was" value="variant" class="border border-sand-deep px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-muted transition-colors hover:border-gold hover:text-gold">
+              <?= $de ? 'Variante anlegen' : 'Varyasyon oluştur' ?>
             </button>
             <button name="was" value="duplicate" class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-cream">
               <?= $de ? 'Kopie anlegen' : 'Kopyasını oluştur' ?>
@@ -210,6 +368,14 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
         <div class="lg:sticky lg:top-6 lg:self-start">
           <div class="flex items-center justify-between">
             <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Vorschau' : 'Önizleme' ?></div>
+            <div class="flex items-center gap-1" data-theme-devices="<?= e($id) ?>">
+              <?php foreach ([['w' => '', 'de' => 'Desktop', 'tr' => 'Masaüstü'], ['w' => '30rem', 'de' => 'Tablet', 'tr' => 'Tablet'], ['w' => '20rem', 'de' => 'Handy', 'tr' => 'Telefon']] as $device) : ?>
+                <button type="button" data-theme-width="<?= e($device['w']) ?>"
+                        class="border border-sand-deep px-2.5 py-1.5 text-[0.6rem] uppercase tracking-[0.12em] text-muted transition-colors hover:border-gold hover:text-gold">
+                  <?= e($device[$locale] ?? $device['de']) ?>
+                </button>
+              <?php endforeach; ?>
+            </div>
             <button type="button" data-theme-play="<?= e($id) ?>"
                     class="border border-ink px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
               <?= $de ? 'Animation abspielen' : 'Animasyonu oynat' ?>
@@ -279,5 +445,17 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
         <?= $de ? 'Anlegen' : 'Oluştur' ?>
       </button>
     </div>
-  </form>
+  
+    <div class="mt-6">
+      <label class="<?= $label ?>"><?= $de ? 'Oder ein gesichertes Thema einfügen' : 'Ya da yedeklenmiş bir temayı yapıştırın' ?></label>
+      <textarea name="einfuegen" rows="3" spellcheck="false"
+                class="<?= $input ?> mt-2 resize-y font-mono text-[0.68rem]"
+                placeholder='{"id":"...","name":"..."}'></textarea>
+      <p class="<?= $hint ?>">
+        <?= $de
+            ? 'Farben, Schriften und CSS kommen mit. Bilder nicht – die liegen auf der anderen Installation und müssen neu hochgeladen werden.'
+            : 'Renkler, yazı tipleri ve CSS gelir. Görseller gelmez – onlar diğer kurulumda duruyor, yeniden yüklenmeli.' ?>
+      </p>
+    </div>
+</form>
 </div>

@@ -188,11 +188,21 @@ final class AdminController
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             Admin::checkCsrfOrFail();
 
-            match ((string) ($_POST['was'] ?? '')) {
+            $was = Security::clean($_POST['was'] ?? '', 60);
+
+            // Ein einzelnes Schmuckelement entfernen: die Kennung haengt am Knopf.
+            if (str_starts_with($was, 'deco-delete:')) {
+                $this->deleteDecoration(substr($was, 12));
+                Admin::back($this->locale, '/themen');
+            }
+
+            match ($was) {
                 'save'            => $this->saveTheme(),
                 'add'             => $this->addTheme(),
                 'duplicate'       => $this->duplicateTheme(),
+                'variant'         => $this->variantTheme(),
                 'delete'          => $this->deleteTheme(),
+                'deco-add'        => $this->addDecoration(),
                 'image-delete'    => $this->deleteThemeImage('image'),
                 'envelope-delete' => $this->deleteThemeImage('envelopeImage'),
                 default           => null,
@@ -234,6 +244,26 @@ final class AdminController
             $next['animationDelay'] = (string) max(0, min(8000, (int) ($_POST['animationDelay'] ?? 0)));
             $next['css'] = Themes::safeCss((string) ($_POST['css'] ?? ''));
 
+            $next['family'] = Security::clean($_POST['family'] ?? '', 60);
+            $next['fonts'] = [
+                'display'  => array_key_exists((string) ($_POST['font_display'] ?? ''), Themes::FONTS) ? (string) $_POST['font_display'] : 'cormorant',
+                'body'     => array_key_exists((string) ($_POST['font_body'] ?? ''), Themes::FONTS) ? (string) $_POST['font_body'] : 'jost',
+                'scale'    => (string) max(60, min(160, (int) ($_POST['font_scale'] ?? 100))),
+                'tracking' => (string) max(-30, min(80, (int) ($_POST['font_tracking'] ?? 0))),
+            ];
+
+            // Die Schmuckelemente kommen als deco_<kennung>_<feld> herein.
+            $next['decorations'] = array_map(static function (array $deco): array {
+                $key = 'deco_' . $deco['id'] . '_';
+                foreach (['spot', 'x', 'y', 'width', 'rotate', 'opacity', 'move', 'delay', 'duration'] as $field) {
+                    if (array_key_exists($key . $field, $_POST)) {
+                        $deco[$field] = Security::clean($_POST[$key . $field], 40);
+                    }
+                }
+                $deco['front'] = isset($_POST[$key . 'front']);
+                return Themes::completeDecoration($deco);
+            }, (array) $theme['decorations']);
+
             // Hochgeladene Hintergruende (Canva-Export) ersetzen das bisherige Bild.
             foreach (['image', 'envelopeImage'] as $field) {
                 $file = $_FILES[$field] ?? null;
@@ -254,14 +284,127 @@ final class AdminController
         }
     }
 
-    private function addTheme(): void
+    /**
+     * Eine Variante desselben Entwurfs: Ivory, Rose, Sage, Dark.
+     *
+     * Unterschied zur Kopie: die Variante bleibt in der Familie. Der Assistent
+     * stellt sie dann neben ihre Geschwister, statt sie als fremdes Thema
+     * weiter unten einzureihen.
+     */
+    private function variantTheme(): void
     {
-        $name = Security::clean($_POST['name'] ?? '', 60);
-        if ($name === '') {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $themes = Themes::all();
+
+        foreach ($themes as $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+
+            $variant = $theme;
+            $variant['id'] = $this->freeThemeId($id . '-variante', $themes);
+            $variant['name'] = (string) $theme['name'] . ' II';
+            $variant['family'] = (string) $theme['family'];
+            $variant['version'] = 1;
+
+            $themes[] = $variant;
+            Themes::save($themes);
+            return;
+        }
+    }
+
+    /** Ein Schmuckelement hochladen – mit Durchsichtigkeit, ohne JPEG. */
+    private function addDecoration(): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $file = $_FILES['deco_neu'] ?? null;
+        if (!is_array($file)) {
+            return;
+        }
+
+        $url = Media::storeGraphic($file, 'themen/' . $id . '/schmuck');
+        if ($url === null) {
             return;
         }
 
         $themes = Themes::all();
+        foreach ($themes as $index => $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+
+            $decorations = (array) $theme['decorations'];
+            if (count($decorations) >= 12) {
+                Media::delete($url);
+                return;
+            }
+
+            $decorations[] = Themes::completeDecoration(['id' => bin2hex(random_bytes(4)), 'src' => $url]);
+            $themes[$index]['decorations'] = $decorations;
+            Themes::save($themes);
+            return;
+        }
+
+        Media::delete($url);
+    }
+
+    private function deleteDecoration(string $decoId): void
+    {
+        $id = Themes::slug(Security::clean($_POST['id'] ?? '', 40));
+        $decoId = preg_replace('/[^a-z0-9]/', '', strtolower($decoId)) ?? '';
+        $themes = Themes::all();
+
+        foreach ($themes as $index => $theme) {
+            if ((string) $theme['id'] !== $id) {
+                continue;
+            }
+
+            $kept = [];
+            foreach ((array) $theme['decorations'] as $deco) {
+                if ((string) ($deco['id'] ?? '') === $decoId) {
+                    Media::delete((string) ($deco['src'] ?? ''));
+                    continue;
+                }
+                $kept[] = $deco;
+            }
+
+            $themes[$index]['decorations'] = $kept;
+            Themes::save($themes);
+            return;
+        }
+    }
+
+    private function addTheme(): void
+    {
+        $name = Security::clean($_POST['name'] ?? '', 60);
+        $themes = Themes::all();
+
+        // Eingefuegtes Thema aus einer anderen Installation.
+        $paste = trim((string) ($_POST['einfuegen'] ?? ''));
+        if ($paste !== '') {
+            $decoded = json_decode($paste, true);
+            if (is_array($decoded) && ($decoded['name'] ?? '') !== '') {
+                $imported = Themes::complete($decoded);
+                $imported['id'] = $this->freeThemeId(Themes::slug($name !== '' ? $name : (string) $imported['name']), $themes);
+                if ($name !== '') {
+                    $imported['name'] = $name;
+                }
+                $imported['version'] = 1;
+                // Bilder liegen auf der anderen Installation; die Adressen
+                // wuerden ins Leere zeigen.
+                $imported['image'] = '';
+                $imported['envelopeImage'] = '';
+                $imported['decorations'] = [];
+
+                $themes[] = $imported;
+                Themes::save($themes);
+            }
+            return;
+        }
+
+        if ($name === '') {
+            return;
+        }
         $id = $this->freeThemeId(Themes::slug($name), $themes);
 
         // Als Ausgangspunkt das erste Thema - so ist ein neues Thema nie roh.
