@@ -1,26 +1,194 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-ink: #14110F;
+  --color-ink-soft: #2A2521;
+  --color-cream: #FAF7F2;
+  --color-sand: #EDE4D8;
+  --color-sand-deep: #DCCEBC;
+  --color-gold: #B08D57;
+  --color-gold-soft: #C9A87C;
+  --color-muted: #7A6F65;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-display: var(--font-cormorant), "Times New Roman", serif;
+  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-kenburns: kenburns 22s ease-out infinite alternate;
+
+  @keyframes kenburns {
+    from { transform: scale(1) translate3d(0,0,0); }
+    to   { transform: scale(1.12) translate3d(0,-1.5%,0); }
   }
 }
+
+:root {
+  --font-cormorant: "Cormorant Garamond";
+  --font-jost: "Jost";
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--color-gold); color: #fff; }
+
+/* ---------- Typografie ---------- */
+.font-display { font-family: var(--font-display); }
+
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--color-gold);
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.prose-lux p { margin-bottom: 1.1rem; line-height: 1.85; color: var(--color-muted); }
+.prose-lux h2 { font-family: var(--font-display); font-size: 1.9rem; font-weight: 300; margin: 2.4rem 0 1rem; color: var(--color-ink); }
+.prose-lux h3 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 400; margin: 1.8rem 0 .7rem; color: var(--color-ink); }
+.prose-lux ul { margin: 0 0 1.2rem; padding-left: 1.1rem; }
+.prose-lux li { list-style: none; position: relative; padding-left: 1.1rem; margin-bottom: .55rem; color: var(--color-muted); line-height: 1.7; }
+.prose-lux li::before { content: ""; position: absolute; left: 0; top: .7em; width: 6px; height: 1px; background: var(--color-gold); }
+.prose-lux strong { color: var(--color-ink); font-weight: 500; }
+
+/* ---------- Scroll-Reveal ---------- */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1);
+  will-change: opacity, transform;
+}
+.reveal[data-visible="true"] { opacity: 1; transform: none; }
+
+.reveal-mask { clip-path: inset(0 0 100% 0); transition: clip-path 1.1s cubic-bezier(.16,1,.3,1); }
+.reveal-mask[data-visible="true"] { clip-path: inset(0 0 0 0); }
+
+/* ---------- Linien & Details ---------- */
+.hairline { height: 1px; background: linear-gradient(90deg, transparent, var(--color-sand-deep), transparent); }
+
+.link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size .4s cubic-bezier(.16,1,.3,1);
+}
+.link-underline:hover { background-size: 100% 1px; }
+
+.grain::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none; opacity: .35; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .reveal-mask { clip-path: none; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--color-cream); }
+::-webkit-scrollbar-thumb { background: var(--color-sand-deep); border-radius: 99px; }
+
+/* ---------- Einladung / Davetiye Animationen ---------- */
+@keyframes fadeUp { from { opacity: 0; transform: translate3d(0, 26px, 0); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes floatUp { 0% { transform: translateY(110vh) rotate(0deg); opacity: 0; } 10% { opacity: .55; } 100% { transform: translateY(-12vh) rotate(320deg); opacity: 0; } }
+@keyframes pulseSoft { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
+
+.anim-up { animation: fadeUp 1s cubic-bezier(.16,1,.3,1) both; }
+.anim-in { animation: fadeIn 1.4s ease both; }
+.anim-line { transform-origin: center; animation: drawLine 1.2s cubic-bezier(.16,1,.3,1) both; }
+.anim-pulse { animation: pulseSoft 2.8s ease-in-out infinite; }
+
+.petal {
+  position: absolute; bottom: -10vh; width: 10px; height: 14px; border-radius: 60% 40% 55% 45%;
+  animation: floatUp linear infinite; pointer-events: none;
+}
+
+/* Standalone-Seiten (digitale Einladung) ohne Website-Rahmen */
+body:has([data-standalone="invite"]) header,
+body:has([data-standalone="invite"]) footer { display: none !important; }
+
+/* ============ Kuvert-Animation der digitalen Einladung ============ */
+.env-stage {
+  position: fixed; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  perspective: 1600px;
+  transition: opacity .9s ease, visibility .9s;
+}
+.env-stage[data-done="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.env { position: relative; width: min(340px, 82vw); aspect-ratio: 8 / 5; transform-style: preserve-3d; }
+
+.env-back, .env-front, .env-flap { position: absolute; left: 0; width: 100%; }
+.env-back  { top: 0; height: 100%; border-radius: 3px; box-shadow: 0 30px 60px -25px rgba(0,0,0,.45); }
+.env-card {
+  position: absolute; left: 6%; bottom: 6%; width: 88%; height: 94%;
+  border-radius: 2px; z-index: 2;
+  box-shadow: 0 12px 26px -14px rgba(0,0,0,.5);
+  transition: transform 1.15s cubic-bezier(.2,.85,.25,1) .85s;
+  display: flex; align-items: center; justify-content: center;
+}
+/* Vorderseite deckt die ganze Höhe ab; die Oberkante läuft V-förmig zur Mitte,
+   genau dort setzt die Lasche an – so bleibt keine Lücke sichtbar. */
+.env-front {
+  top: 0; height: 100%; z-index: 3; border-radius: 3px;
+  clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%);
+  box-shadow: inset 0 14px 26px -18px rgba(0,0,0,.35);
+}
+.env-flap {
+  top: 0; height: 46%; z-index: 4; transform-origin: top center;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition: transform .95s cubic-bezier(.6,.05,.3,1) .35s;
+  backface-visibility: hidden;
+}
+.env-seal {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  z-index: 6; transition: transform .55s cubic-bezier(.3,1.4,.5,1), opacity .5s ease;
+}
+
+.env[data-open="true"] .env-seal { transform: translate(-50%, -50%) scale(1.7) rotate(-14deg); opacity: 0; }
+.env[data-open="true"] .env-flap { transform: rotateX(-172deg); z-index: 1; }
+.env[data-open="true"] .env-card { transform: translateY(-108%); }
+
+.env-hint { animation: hintFloat 2.6s ease-in-out infinite; }
+@keyframes hintFloat { 0%,100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(5px); opacity: 1; } }
+
+/* Inhalt der Einladung nach dem Öffnen */
+@keyframes riseIn { from { opacity: 0; transform: translate3d(0, 34px, 0); } to { opacity: 1; transform: none; } }
+.rise { animation: riseIn 1.05s cubic-bezier(.16,1,.3,1) both; }
+
+@keyframes growLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.grow-line { transform-origin: center; animation: growLine 1.3s cubic-bezier(.16,1,.3,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .env-flap, .env-card, .env-seal, .env-stage { transition: none !important; }
+  .rise, .grow-line, .env-hint { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
