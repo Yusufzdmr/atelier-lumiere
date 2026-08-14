@@ -20,7 +20,9 @@ kuruluyor.
 
 ## 1. Veritabanı
 
-KAS → **Datenbanken** → yeni veritabanı oluştur.
+KAS → sol menü **Database** → yeni veritabanı oluştur.
+(Arayüz İngilizce; rehberdeki Almanca adların karşılıkları: Datenbanken → Database,
+Domain → Domains, SSL-Schutz → SSL Protection.)
 
 - Bir parola belirleyin (uzun olsun, sonra config.php'ye yazacaksınız)
 - Karakter seti **utf8mb4** olmalı. Seçenek çıkmazsa varsayılan kalsın,
@@ -28,8 +30,11 @@ KAS → **Datenbanken** → yeni veritabanı oluştur.
 - Oluşunca KAS size şunları verir: **veritabanı adı** (`d0xxxxxx` gibi),
   **kullanıcı adı** (genelde aynı), **host**
 
-Host için `w0219c08.kasserver.com` yazın. Çalışmazsa `localhost` deneyin —
-ALL-INKL'de ikisi de sık çalışıyor, adım 5'te belli olacak.
+**„Restrict access to the database"** sorulduğunda **„Only allow local access
+(localhost)"** seçin. Uygulama aynı sunucuda çalışıyor; „everywhere“ seçeneği
+veritabanını internete açar ve bir botun deneyeceği ilk kapı olur.
+
+Bu seçimin sonucu: `config.php`'de host **`localhost`** olacak, sunucu adı değil.
 
 MariaDB sürümünüz 10.11; şema en az 10.4 istiyor, yani sorun yok.
 
@@ -39,7 +44,7 @@ MariaDB sürümünüz 10.11; şema en az 10.4 istiyor, yani sorun yok.
 
 ## 2. Tabloları ve içeriği kur
 
-KAS → Datenbanken → veritabanının yanındaki **phpMyAdmin**.
+KAS → **Database** → veritabanının yanındaki **phpMyAdmin**.
 
 Sırayla iki dosya, **bu sırayla**:
 
@@ -102,7 +107,7 @@ seçeneğini açın. Bu ikisi olmadan site çalışmaz ve yüklemeler korumasız
 
 ## 4. Alan adını `public/` klasörüne bağla
 
-KAS → **Domain** → alan adı → yol (Pfad) ayarı:
+KAS → **Domains** → alan adı → yol (Path) ayarı:
 
 ```
 /www/htdocs/w0219c08/atelier/public
@@ -131,7 +136,7 @@ oturmuşu; kod 8.1 ve üstünde çalışıyor, 5.6 ve 7.4 çalışmaz.
 ```php
 'site_url'  => 'https://alanadiniz.de',   // sondaki eğik çizgi olmadan
 'dev'       => false,                      // canlıda mutlaka false
-'db_host'   => 'w0219c08.kasserver.com',   // olmazsa 'localhost' deneyin
+'db_host'   => 'localhost',                // veritabanı localhost'a kısıtlıysa
 'db_port'   => 3306,
 'db_name'   => 'd0xxxxxx',
 'db_user'   => 'd0xxxxxx',
@@ -156,7 +161,7 @@ dosyada açık durmaz. Düz metin de çalışır ama en az 12 karakter olsun.
 
 ## 6. SSL
 
-KAS → Domain → **SSL-Schutz** → Let's Encrypt → aç.
+KAS → **SSL Protection** → alan adı → Let's Encrypt → aç.
 
 Sertifika birkaç dakikada geliyor. Geldikten sonra `.htaccess` zaten
 tüm trafiği HTTPS'e yönlendiriyor, ek bir şey yapmanıza gerek yok.
