@@ -30,6 +30,11 @@ sonra `php bin/import.php` (veya `--replace`).
 | **Sayfa metinleri** | Yeni sekme (`/admin/texte`). Sözlükteki 312 metin — bölüm başlıkları („Was wir für euch tun“), düğme yazıları, form etiketleri — 17 grup halinde, iki dilde düzenlenebilir. `src/Texts.php` bir **üst katman**: sözlük dosyası hiç değişmiyor, yalnızca farklı olan saklanıyor. Bir alanı boşaltmak = ilk metne dönmek |
 | Mekân → Google | `src/Places.php` — panelden yer adı yazılır, Google Places karşılıklarını listeler, **her adayın yanında haritası** çıkar, „Bunu al“ deyince ad/adres/koordinat/place-id mekâna yazılır. Metinler ellenmez. Anahtar sunucuda kalır; harita bile kendi adresimizden (`/admin/karte`) geçer. Anahtar yokken sekme çalışır, sadece „önce anahtarı gir“ der |
 | Mekân yorumları | Seçili yerin Google yorumları **canlı** gösterilir (4+ yıldız, 80+ karakter, uzun olan üstte), yazar adı ve bağlantısıyla. **Saklanmaz, siteye kopyalanmaz** — Google şartları izin vermiyor, metinler yazarlarına ait ve kopya içerik SEO'da zarar. Amacı: „avludaki ışık, gürültülü salon“ gibi gerçek ayrıntıları görüp kendi cümlelerinizle yazmak |
+| Çerez izni + ölçüm | `templates/partials/consent.php` + `public/assets/consent.js`. Ön işaretli kutu yok, „Sadece gerekli“ „Tümünü kabul et“ ile **eşit görünürlükte**, karar `localStorage`'ta (`al-consent-v1`). Alt bilgide ve Datenschutz sayfasındaki `{{consent}}` ile her an geri açılıyor |
+| Consent Mode v2 | `dataLayer` sırası ölçüldü: `consent default (hepsi denied)` → `ads_data_redaction` → `js` → `config` → `consent update`. Yani izin **script yüklenmeden önce** denied |
+| İzinsizken | Tarayıcıda doğrulandı: Google/Meta/Doubleclick'e **sıfır istek**, `gtag` ve `fbq` tanımsız, HTML'de hiç dış `<script>` yok. Reddedince de aynı |
+| Kısmi izin | Yalnız istatistik seçilince GA4 yükleniyor, Meta Pixel yüklenmiyor — test edildi |
+| Dönüşümler | İletişim formu (`generate_lead`), davetiye oluşturma (`purchase`, tutarıyla), `tel:` tıklaması (`phone_call`) — tek dinleyici, hiçbir bağlantının haberi olmadan. Ads etiketleri panelden. Sayfa `data-track-event` alanıyla bildiriyor, HTML'de script bloğu yok (CSP sıkı kalsın diye) |
 | Panel düzeni | Sekmeler artık **gruplanmış yan menüde** (İçerik / İşler / Görünüm / Ayarlar) — 16 sekme tek sırada bir duvardı. Geniş ekranda yapışkan yan menü, dar ekranda açılır kapanır seçim (açık sekmenin adı üstte yazılı). Üst çubuk yapışkan, uzun formlarda **kaydet düğmesi altta sabit** duruyor. Genel bakış: kutucuklar tıklanır, „son yedi günde ne geldi“ satırı ve dört hızlı işlem düğmesi |
 | Öncesi + geri al | Her alanın altında, **yalnızca değiştiyse**, eski metin ve „geri al“ düğmesi. İçerik alanlarında karşılaştırma `site_content` id=2'den (içe aktarımda yazılan dokunulmamış kopya), sayfa metinlerinde `data/dict.php`'den geliyor. „Geri al“ formun tamamını da kaydediyor, o yüzden diğer yazdıklarınız kaybolmuyor |
 | Temalar | Renkler, Canva arka planı yükleme, animasyon seçimi + süre, kendi CSS'i (`.theme-<id>` altına sınırlanıyor, `@import`/`expression(` temizleniyor), canlı önizleme, ekle/kopyala/sil |
@@ -56,7 +61,7 @@ sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 | Yönetim oturumu | 4 saat hareketsizlikte, her hâlükârda 12 saatte kapanıyor. Girişte oturum kimliği yenileniyor |
 | CSRF | Yazan her uç noktada token var (panel, iletişim, galeri seçimi, RSVP, davetiye sihirbazı, misafir listesi) |
 | Başlıklar | `src/Http.php` her yanıta koyuyor: CSP, `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, canlıda HSTS. `.htaccess`'e güvenmiyor — `mod_headers` her sunucuda açık değil |
-| CSP | `script-src 'self'` + JSON-LD için tek kullanımlık nonce. Kodda hiç `onclick=` yok, tüm betikler dosya — o yüzden sıkı tutulabildi. `frame-src` yalnız YouTube/Vimeo/Google Maps |
+| CSP | `script-src 'self'` + JSON-LD için tek kullanımlık nonce. Ölçüm hostları **yalnızca panelde bir kimlik girilmişse** ekleniyor; ölçüm kapalıyken politika dar kalıyor. Kodda hiç `onclick=` yok, tüm betikler dosya — o yüzden sıkı tutulabildi. `frame-src` yalnız YouTube/Vimeo/Google Maps |
 | Yükleme | Tür dosya **içeriğinden** belirleniyor, GD ile yeniden kodlanıyor, uzantı bizden. Üstüne `public/uploads/.htaccess`: PHP motoru kapalı, handler'lar kaldırılmış, `sandbox` CSP. (`.gitignore`'da istisna var, dosya sunucuya gidiyor) |
 | SQL | Her sorgu hazırlanmış ifade; dize birleştirme yok |
 | XSS | Şablonlarda çıktı `e()` ile; ham HTML yalnız sunucunun kendi ürettiği bloklar |
@@ -92,16 +97,7 @@ sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 Müşteri tarafı basit kalmalı: **tema seç → bilgileri gir → isterse kişiye özel
 isimleri ekle → önizle → oluştur/paylaş.** Gelişmişlik panelde kalsın, sihirbazda değil.
 
-### 2. Çerez izni + ölçüm
-Next sürümündeki `../components/CookieConsent.tsx` ve `../components/Tracking.tsx`
-mantığı PHP + `assets/consent.js` olarak:
-- Ön işaretli kutu yok, "reddet" eşit görünürlükte, karar `localStorage` (`al-consent-v1`)
-- İstatistik izni → GA4; pazarlama izni → Ads + Meta Pixel; ikisinden biri → GTM
-- **Consent Mode v2**: script yüklenmeden önce hepsi `denied`, sonra `update`
-- Dönüşümler: iletişim formu, davetiye oluşturma, `tel:` tıklaması (tek dinleyici)
-- Kimlikler zaten panelde: `Integrations::publicTracking()`
-
-### 3. ALL-INKL'e yayın
+### 2. ALL-INKL'e yayın
 1. KAS → veritabanı oluştur, `schema.sql` içe aktar (phpMyAdmin)
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
@@ -119,7 +115,7 @@ mantığı PHP + `assets/consent.js` olarak:
 8. Test listesi: iki dil, iletişim formu e-postası, galeri girişi, davetiye oluşturma,
    PayPal sandbox turu, sitemap, robots, 404
 
-### 4. Krumbach bölge içeriği
+### 3. Krumbach bölge içeriği
 Şu an şehirler Stuttgart demo seti (Stuttgart, Ludwigsburg, Esslingen, Böblingen,
 Waiblingen, Heilbronn, Tübingen, Nürtingen, Pforzheim, Schwäbisch Gmünd).
 Hedef: Krumbach merkezli — Ulm, Neu-Ulm, Günzburg, Memmingen, Augsburg, München,
@@ -173,6 +169,9 @@ Galeri demo: `elif-marco` / `solitude24`
   *dışında* durmalı (`templates/admin/list.php` böyle kurulu)
 - PHP'nin yerleşik sunucusu statik dosyaları `public/dev-router.php` olmadan vermez
 - Aynı porta ikinci sunucu açılırsa eskisi cevap vermeye devam eder — `netstat -ano | grep 8080`
+- Ölçümü denerken **tarayıcıda `localStorage.removeItem("al-consent-v1")`**,
+  yoksa banner bir daha çıkmaz. İzinsizken hiçbir dış istek olmaması
+  `performance.getEntriesByType("resource")` ile kontrol edilebilir
 - **Bremsi denemek istersen** `DELETE FROM throttle` — yoksa kendi testlerin
   seni kilitler. Sınır aşıldığında doğru parola da kabul edilmez, bu kasıtlı
 - **XAMPP'ta GD kapalı gelebilir**: `C:\xampp\php\php.ini` içinde `;extension=gd`
@@ -205,6 +204,8 @@ src/Guests.php                   kişiye özel davetiyeler, liste ayrıştırma
 src/Texts.php                    sözlük üstü metin katmanı (sayfa metinleri)
 src/Places.php                   Google Places: yer arama, detay, statik harita
 src/Http.php                     güvenlik başlıkları + CSP (nonce burada üretilir)
+templates/partials/consent.php   çerez kutusu (sunucuda gizli, JS gösteriyor)
+public/assets/consent.js         izin mantığı, Consent Mode v2, dönüşümler
 src/Security.php                 oturum, CSRF, veritabanı tabanlı deneme bremsi
 src/OgImage.php                  WhatsApp önizleme görseli (1200×630, önbellekli)
 src/Controllers/

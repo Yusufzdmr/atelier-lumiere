@@ -39,6 +39,8 @@ $whatsapp = preg_replace('/\D+/', '', $phone) ?? '';
   <div class="grid gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
     <div>
       <?php if ($sent) : ?>
+        <?php /* Meldung an die Messung – ohne Skriptblock im HTML. */ ?>
+        <div data-track-event="contact" hidden></div>
         <div class="border border-gold/40 bg-sand/40 p-8 text-center">
           <div class="font-display text-2xl font-light text-ink">✓</div>
           <p class="mt-3 text-[0.95rem] leading-relaxed text-ink"><?= e(I18n::t('contact.success')) ?></p>

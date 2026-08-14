@@ -77,7 +77,13 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
 
   <?= \Atelier\View::partial('partials/footer', ['locale' => $locale]) ?>
 
+  <?= \Atelier\View::partial('partials/consent', [
+        'locale'   => $locale,
+        'tracking' => \Atelier\Integrations::publicTracking(),
+      ]) ?>
+
   <script src="/assets/app.js?v=<?= e((string) @filemtime(__DIR__ . '/../public/assets/app.js')) ?>" defer></script>
+  <script src="/assets/consent.js?v=<?= e((string) @filemtime(__DIR__ . '/../public/assets/consent.js')) ?>" defer></script>
 
   <?php /* Seiten mit eigenem Verhalten (Galerie, Assistent) laden ihr Skript zusätzlich. */ ?>
   <?php foreach ((array) ($meta['scripts'] ?? []) as $script) : ?>

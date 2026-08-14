@@ -62,6 +62,7 @@ $steps = $de
   <?php if ($done !== null) : ?>
     <!-- ---------------------------- Fertig ---------------------------- -->
     <div class="mx-auto max-w-2xl text-center">
+      <div data-track-event="invite" data-track-value="<?= (int) $done['price'] ?>" hidden></div>
       <div class="eyebrow">✓</div>
       <h2 class="headline mt-3 text-3xl"><?= e(I18n::t('invite.doneTitle')) ?></h2>
       <p class="mt-4 text-sm text-muted"><?= e(I18n::t('invite.doneText')) ?></p>

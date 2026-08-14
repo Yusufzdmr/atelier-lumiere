@@ -74,6 +74,11 @@ $navLinks = [
         <ul class="mt-6 space-y-2 text-sm text-cream/70">
           <li><a href="<?= e($p('/impressum')) ?>" class="hover:text-gold">Impressum</a></li>
           <li><a href="<?= e($p('/datenschutz')) ?>" class="hover:text-gold">Datenschutz</a></li>
+          <li>
+            <button type="button" data-consent-open class="hover:text-gold">
+              <?= e(\Atelier\I18n::t('cookie.settings')) ?>
+            </button>
+          </li>
           <li><a href="<?= e($p('/agb')) ?>" class="hover:text-gold">AGB</a></li>
         </ul>
       </div>
