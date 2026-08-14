@@ -8,6 +8,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use Atelier\Controllers\AdminController;
+use Atelier\Controllers\ContentAdminController;
 use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
@@ -68,6 +69,11 @@ $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new Gal
 
 $router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
 $router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
+$router->any('/{locale}/admin/inhalte', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
+$router->any('/{locale}/admin/pakete', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->packages()));
+$router->any('/{locale}/admin/ueber-mich', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));
+$router->any('/{locale}/admin/rechtliches', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->legal()));
+$router->any('/{locale}/admin/seo', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->seo()));
 $router->any('/{locale}/admin/themen', $page_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
 $router->any('/{locale}/admin/integrationen', $page_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
