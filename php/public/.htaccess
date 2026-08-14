@@ -1,0 +1,57 @@
+# Atelier Lumière – Apache-Konfiguration (ALL-INKL)
+#
+# Der Domain-Ordner im KAS sollte auf dieses Verzeichnis (public) zeigen.
+# Ist das nicht möglich, liegt eine zweite .htaccess eine Ebene höher, die
+# alles hierher schiebt.
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Immer HTTPS – Let's Encrypt ist im KAS mit einem Klick eingerichtet.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+    # Vorhandene Dateien und Ordner unverändert ausliefern …
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # … alles andere übernimmt der Front-Controller.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Zwischenspeicher: Stylesheet und Skript tragen einen Zeitstempel in der URL,
+# Bilder und Schriften ändern sich praktisch nie.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType image/jpeg                "access plus 6 months"
+    ExpiresByType image/webp                "access plus 6 months"
+    ExpiresByType image/svg+xml             "access plus 6 months"
+    ExpiresDefault                          "access plus 1 hour"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    # Hochgeladene Dateien sollen nie als Skript laufen.
+    <FilesMatch "\.(jpg|jpeg|png|webp|avif|gif|svg|woff2)$">
+        Header set Content-Disposition "inline"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Konfiguration und Zwischenstände sind nie öffentlich.
+<FilesMatch "^(config\.php|dev-router\.php|.*\.sql|.*\.json)$">
+    Require all denied
+</FilesMatch>

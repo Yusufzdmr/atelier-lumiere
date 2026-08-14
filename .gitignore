@@ -50,3 +50,7 @@ scripts/.raw/
 .agents/
 .claude/
 skills-lock.json
+
+# PHP-Fassung: lokale Konfiguration und Datenauszug
+php/config.php
+php/data/export.json
