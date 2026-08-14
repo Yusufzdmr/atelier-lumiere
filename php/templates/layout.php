@@ -71,5 +71,10 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
   <?= \Atelier\View::partial('partials/footer', ['locale' => $locale]) ?>
 
   <script src="/assets/app.js?v=<?= e((string) @filemtime(__DIR__ . '/../public/assets/app.js')) ?>" defer></script>
+
+  <?php /* Seiten mit eigenem Verhalten (Galerie, Assistent) laden ihr Skript zusätzlich. */ ?>
+  <?php foreach ((array) ($meta['scripts'] ?? []) as $script) : ?>
+    <script src="<?= e($script) ?>?v=<?= e((string) @filemtime(__DIR__ . '/../public' . $script)) ?>" defer></script>
+  <?php endforeach; ?>
 </body>
 </html>

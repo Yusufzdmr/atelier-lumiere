@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SitemapController;
 use Atelier\I18n;
@@ -58,6 +59,11 @@ $router->get('/{locale}/ratgeber', $page_(static fn (array $p) => $page->blog())
 $router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->post($p)));
 $router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
 $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
+
+$router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryController())->index()));
+$router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
+$router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) => (new GalleryController())->saveSelection()));
+$router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
 $router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));

@@ -95,6 +95,52 @@
     });
   });
 
+  /* ------------------- Video: erst nach dem Klick ------------------- */
+  // Vorher geht keine Anfrage an YouTube oder Vimeo – auch nicht für das
+  // Vorschaubild. Deshalb liegt das Standbild aus eigener Quelle darunter.
+  document.querySelectorAll("[data-video]").forEach(function (box) {
+    var button = box.querySelector("[data-video-load]");
+    if (!button) return;
+
+    button.addEventListener("click", function () {
+      var frame = document.createElement("iframe");
+      frame.src = box.getAttribute("data-embed") || "";
+      frame.title = box.getAttribute("data-title") || "Video";
+      frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture";
+      frame.allowFullscreen = true;
+      frame.className = "absolute inset-0 h-full w-full";
+      frame.setAttribute("loading", "lazy");
+      box.innerHTML = "";
+      box.appendChild(frame);
+    });
+  });
+
+  /* ------------------ Karte: erst nach dem Klick ------------------- */
+  document.querySelectorAll("[data-map]").forEach(function (box) {
+    var button = box.querySelector("[data-map-load]");
+    if (!button) return;
+
+    button.addEventListener("click", function () {
+      var query = box.getAttribute("data-query") || "";
+      var frame = document.createElement("iframe");
+      frame.src = "https://www.google.com/maps?q=" + encodeURIComponent(query) + "&output=embed";
+      frame.title = "Karte";
+      frame.className = "mt-5 w-full border border-sand-deep";
+      frame.height = "320";
+      frame.setAttribute("loading", "lazy");
+      frame.setAttribute("referrerpolicy", "no-referrer-when-downgrade");
+      button.remove();
+      box.appendChild(frame);
+    });
+  });
+
+  /* ------------- Cookie-Einstellungen aus den Rechtstexten ------------- */
+  document.querySelectorAll("[data-consent-open]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      window.dispatchEvent(new Event("al:open-consent"));
+    });
+  });
+
   /* --------------------------- Countdown --------------------------- */
   document.querySelectorAll("[data-countdown]").forEach(function (el) {
     var target = new Date(el.getAttribute("data-countdown")).getTime();
