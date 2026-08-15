@@ -9,6 +9,7 @@
  * @var string $locale
  * @var array<string,mixed> $invitation
  * @var list<array<string,mixed>> $guests
+ * @var list<array<string,mixed>> $rsvps   Zusagen und Absagen der Gäste
  * @var string $link       öffentlicher Link ohne Anrede
  * @var string $manageUrl  dieser Link hier
  * @var string $preview    Vorschaubild für WhatsApp
@@ -70,6 +71,63 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
   <?php if ($message !== '') : ?>
     <p class="mt-6 border border-gold/50 bg-sand/40 px-5 py-3 text-[0.9rem] text-ink"><?= e($message) ?></p>
   <?php endif; ?>
+
+  <?php /* --------------------------- Rückmeldungen --------------------------- */ ?>
+  <?php
+  $yes = array_values(array_filter($rsvps, static fn (array $r): bool => !empty($r['coming'])));
+  $no = array_values(array_filter($rsvps, static fn (array $r): bool => empty($r['coming'])));
+  // Nicht die Zahl der Antworten, sondern die der Personen: eine Zusage kann
+  // fuer eine ganze Familie gelten, und danach wird der Saal bestuhlt.
+  $heads = array_sum(array_map(static fn (array $r): int => max(1, (int) ($r['count'] ?? 1)), $yes));
+  ?>
+  <section class="mt-12 border border-sand-deep p-6">
+    <h2 class="font-display text-lg text-ink"><?= $de ? 'Wer kommt' : 'Kimler geliyor' ?></h2>
+
+    <?php if ($rsvps === []) : ?>
+      <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
+        <?= $de
+          ? 'Noch keine Rückmeldung. Sobald jemand auf der Einladung antwortet, steht es hier – die Seite zeigt immer den aktuellen Stand.'
+          : 'Henüz yanıt yok. Davetiyeden biri cevap verir vermez burada görünür – sayfa her zaman güncel durumu gösterir.' ?>
+      </p>
+    <?php else : ?>
+      <div class="mt-5 flex flex-wrap gap-8">
+        <div>
+          <div class="font-display text-3xl font-light text-ink"><?= (int) $heads ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Personen' : 'Kişi' ?></div>
+        </div>
+        <div>
+          <div class="font-display text-3xl font-light text-ink"><?= count($yes) ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Zusagen' : 'Kabul' ?></div>
+        </div>
+        <div>
+          <div class="font-display text-3xl font-light text-muted"><?= count($no) ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Absagen' : 'Ret' ?></div>
+        </div>
+      </div>
+
+      <ul class="mt-7 divide-y divide-sand-deep/60">
+        <?php foreach ($rsvps as $rsvp) : ?>
+          <?php $coming = !empty($rsvp['coming']); ?>
+          <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
+            <span class="text-[0.7rem] <?= $coming ? 'text-gold' : 'text-muted' ?>"><?= $coming ? '●' : '○' ?></span>
+            <span class="text-[0.95rem] text-ink"><?= e((string) ($rsvp['name'] ?? '')) ?></span>
+
+            <?php if ($coming && (int) ($rsvp['count'] ?? 1) > 1) : ?>
+              <span class="text-[0.78rem] text-muted">· <?= (int) $rsvp['count'] ?> <?= $de ? 'Personen' : 'kişi' ?></span>
+            <?php endif; ?>
+
+            <span class="ml-auto text-[0.7rem] text-muted"><?= e(Dates::short((string) ($rsvp['at'] ?? ''))) ?></span>
+
+            <?php if ((string) ($rsvp['note'] ?? '') !== '') : ?>
+              <p class="w-full pl-6 text-[0.82rem] leading-relaxed text-muted">
+                &bdquo;<?= e((string) $rsvp['note']) ?>&ldquo;
+              </p>
+            <?php endif; ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+  </section>
 
   <?php /* ------------------------- Allgemeiner Link ------------------------- */ ?>
   <section class="mt-12 border border-sand-deep p-6">

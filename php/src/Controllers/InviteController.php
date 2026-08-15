@@ -421,6 +421,10 @@ final class InviteController
             'meta'       => ['title' => 'Gästeliste', 'noindex' => true, 'scripts' => ['/assets/invite-manage.js']],
             'invitation' => $invitation,
             'guests'     => $guests,
+            // Die Zusagen gehoeren dem Paar. Bisher standen sie nur im
+            // Adminbereich – wer wissen wollte, wer kommt, musste den
+            // Fotografen fragen.
+            'rsvps'      => Invitations::rsvps($slug),
             'link'       => Config::url() . I18n::path('/einladung/' . $slug),
             'manageUrl'  => Invitations::manageUrl($invitation),
             'preview'    => OgImage::url($invitation),
