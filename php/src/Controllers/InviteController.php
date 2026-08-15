@@ -583,4 +583,136 @@ final class InviteController
         header('Location: ' . $order['approveUrl'], true, 303);
         exit;
     }
+
+    /* ------------------------------ Designs ------------------------------ */
+
+    /**
+     * Beispieldaten fuer die Themenvorschau. Bewusst eine erfundene Feier und
+     * keine echte Einladung: die echten gehoeren Paaren, stehen auf noindex
+     * und sollen nicht als Werbeflaeche im Netz liegen.
+     *
+     * @return array<string,mixed>
+     */
+    private function demoInvitation(array $theme, string $locale): array
+    {
+        $de = $locale === 'de';
+
+        return [
+            'slug'      => 'vorschau',
+            'bride'     => $de ? 'Marie' : 'Elif',
+            'groom'     => $de ? 'Jonas' : 'Kerem',
+            'eventType' => 'wedding',
+            'events'    => [[
+                'name'    => $de ? 'Hochzeit' : 'Düğün',
+                // Immer im naechsten Sommer, damit der Countdown nie abgelaufen ist.
+                'date'    => (string) (((int) date('Y')) + 1) . '-06-20',
+                'time'    => '15:30',
+                'venue'   => $de ? 'Schloss Solitude' : 'Solitude Şatosu',
+                'address' => 'Solitude 1, 70197 Stuttgart',
+            ]],
+            'message'  => $de
+                ? 'Wir möchten diesen besonderen Tag mit euch feiern.'
+                : 'Bu özel günü sizinle paylaşmak istiyoruz.',
+            'closing'  => $de ? 'Wir freuen uns auf euch' : 'Sizi aramızda görmek isteriz',
+            'families' => null,
+            'photos'   => [],
+            'program'  => [
+                ['time' => '15:30', 'title' => $de ? 'Trauung' : 'Nikâh'],
+                ['time' => '17:00', 'title' => $de ? 'Empfang' : 'Karşılama'],
+                ['time' => '19:00', 'title' => $de ? 'Dinner' : 'Yemek'],
+            ],
+            'menu'     => [],
+            'musicUrl' => '',
+            'videoUrl' => '',
+            'sections' => [
+                'rsvp'      => true,
+                'location'  => true,
+                'countdown' => true,
+                'program'   => true,
+                'family'    => false,
+                'menu'      => false,
+                'music'     => false,
+                'video'     => false,
+            ],
+            'hashtag'       => '',
+            'theme'         => (string) ($theme['id'] ?? ''),
+            'themeSnapshot' => $theme,
+            'locale'        => $locale,
+            'paid'          => true,
+            'price'         => 0,
+            'createdAt'     => date('c'),
+            'manageKey'     => '',
+            'ogImage'       => '',
+        ];
+    }
+
+    /** Alle Themen nebeneinander – das Schaufenster vor dem Assistenten. */
+    public function designs(): void
+    {
+        $locale = I18n::locale();
+        $themes = array_map([Themes::class, 'complete'], Themes::all());
+
+        View::page('pages/designs', [
+            'locale' => $locale,
+            'path'   => I18n::path('/designs', $locale),
+            'meta'   => Seo::forPage('designs', [
+                'title' => $locale === 'de'
+                    ? 'Designs für digitale Hochzeitseinladungen'
+                    : 'Dijital düğün davetiyesi tasarımları',
+                'description' => $locale === 'de'
+                    ? 'Alle Vorlagen für die digitale Einladung: Farbwelt, Kuvert und Siegel. Jede lässt sich vorab in Ruhe ansehen.'
+                    : 'Dijital davetiye şablonlarının tamamı: renk dünyası, zarf ve mühür. Her birini önceden rahatça inceleyebilirsiniz.',
+                'canonical' => Config::url() . I18n::path('/designs', $locale),
+            ]),
+            'themes' => $themes,
+            // Ein Stilblock je Thema: die Karten im Raster tragen echte Farben
+            // und Schriften, keine nachgebauten Farbtupfer.
+            'styles' => implode(' ', array_map([Themes::class, 'styleBlock'], $themes)),
+        ]);
+    }
+
+    /** Ein Thema als vollstaendige Einladung, zum Anschauen. */
+    public function designPreview(array $params): void
+    {
+        $wanted = (string) ($params['thema'] ?? '');
+        $theme = null;
+        foreach (Themes::all() as $candidate) {
+            if ((string) ($candidate['id'] ?? '') === $wanted) {
+                $theme = Themes::complete($candidate);
+                break;
+            }
+        }
+
+        if ($theme === null) {
+            (new PageController())->notFound(I18n::locale());
+            return;
+        }
+
+        $locale = I18n::locale();
+        $invitation = $this->demoInvitation($theme, $locale);
+        $date = (string) ($invitation['events'][0]['date'] ?? '');
+
+        View::page('pages/invitation', [
+            'locale' => $locale,
+            'path'   => I18n::path('/designs/' . (string) $theme['id'], $locale),
+            'meta'   => [
+                'title'    => (string) $theme['name'],
+                'noindex'  => true,
+                'scripts'  => ['/assets/invitation.js'],
+                'bare'     => true,
+            ],
+            'invitation' => $invitation,
+            'guest'      => null,
+            'theme'      => $theme,
+            'style'      => Themes::styleBlock($theme),
+            'dateLong'   => Dates::long($date),
+            'weekday'    => Dates::weekday($date),
+            'rsvps'      => [],
+            // Die Vorschau nimmt keine Zusagen entgegen; das Formular steht da,
+            // damit die Karte vollstaendig aussieht.
+            'sent'       => false,
+            'csrf'       => Security::csrf(),
+        ]);
+    }
+
 }

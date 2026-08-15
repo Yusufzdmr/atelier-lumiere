@@ -142,7 +142,7 @@ foreach ($rsvps as $rsvp) {
 
         <?php if (!empty($sections['countdown']) && ($first['date'] ?? '') !== '') : ?>
           <div class="mt-10 flex justify-center gap-6" data-countdown="<?= e((string) $first['date'] . 'T' . ((string) ($first['time'] ?? '12:00'))) ?>">
-            <?php foreach (['days' => 'countdownDays', 'hours' => 'countdownHours', 'minutes' => 'countdownMinutes', 'seconds' => 'countdownSeconds'] as $key => $dictKey) : ?>
+            <?php foreach (['days' => 'countdownDays', 'hours' => 'countdownHours', 'minutes' => 'countdownMin', 'seconds' => 'countdownSec'] as $key => $dictKey) : ?>
               <div>
                 <div class="font-display text-3xl font-light" data-<?= e($key) ?>>00</div>
                 <div class="mt-1 text-[0.55rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>"><?= e(I18n::t('invite.' . $dictKey)) ?></div>

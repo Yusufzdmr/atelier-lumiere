@@ -71,6 +71,12 @@ $router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->
 $router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
 $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
 
+// Das Schaufenster steht bewusst NICHT unter /einladung/: dort greift das
+// Muster {slug}, und ein Paar, das seine Einladung "designs" nennt, haette
+// entweder die eigene Karte oder diese Seite unerreichbar gemacht.
+$router->get('/{locale}/designs', $page_(static fn (array $p) => (new InviteController())->designs()));
+$router->get('/{locale}/designs/{thema}', $page_(static fn (array $p) => (new InviteController())->designPreview($p)));
+
 $router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
 $router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));
 $router->any('/{locale}/einladung/{slug}/verwalten', $page_(static fn (array $p) => (new InviteController())->manage($p)));

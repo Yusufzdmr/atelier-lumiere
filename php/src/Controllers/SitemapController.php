@@ -29,6 +29,7 @@ final class SitemapController
         ['path' => '/ueber-mich', 'key' => 'ueber-mich', 'priority' => '0.6', 'freq' => 'yearly'],
         ['path' => '/kontakt', 'key' => 'kontakt', 'priority' => '0.8', 'freq' => 'yearly'],
         ['path' => '/einladung', 'key' => 'einladung', 'priority' => '0.7', 'freq' => 'monthly'],
+        ['path' => '/designs', 'key' => 'designs', 'priority' => '0.7', 'freq' => 'monthly'],
         ['path' => '/impressum', 'key' => 'impressum', 'priority' => '0.2', 'freq' => 'yearly'],
         ['path' => '/datenschutz', 'key' => 'datenschutz', 'priority' => '0.2', 'freq' => 'yearly'],
         ['path' => '/agb', 'key' => 'agb', 'priority' => '0.2', 'freq' => 'yearly'],

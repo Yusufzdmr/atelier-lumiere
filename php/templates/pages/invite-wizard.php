@@ -180,7 +180,14 @@ $steps = $de
 
           <div>
             <div class="<?= $label ?>"><?= e(I18n::t('invite.design')) ?></div>
-            <p class="mt-2 text-[0.78rem] text-muted"><?= e(I18n::t('invite.designHint')) ?></p>
+            <p class="mt-2 text-[0.78rem] text-muted">
+              <?= e(I18n::t('invite.designHint')) ?>
+              <?php /* Die Kacheln hier sind klein. Wer erst schauen will, geht ins Schaufenster. */ ?>
+              <a href="<?= e(I18n::path('/designs', $locale)) ?>" target="_blank" rel="noopener"
+                 class="ml-1 whitespace-nowrap text-gold underline-offset-4 hover:underline">
+                <?= $locale === 'de' ? 'Alle Designs ansehen ↗' : 'Tüm tasarımlara bak ↗' ?>
+              </a>
+            </p>
 
             <div class="mt-5 grid gap-4 sm:grid-cols-3">
               <?php foreach ($themes as $i => $theme) : ?>
