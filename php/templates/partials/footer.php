@@ -19,6 +19,9 @@ $navLinks = [
     [$p('/portfolio'), I18n::t('nav.portfolio')],
     [$p('/preise'), I18n::t('nav.prices')],
     [$p('/hochzeitslocations'), I18n::t('nav.locations')],
+    // Verteilerseite zu den zehn Stadtseiten – seit sie nicht mehr oben steht,
+    // haengt ihre Erreichbarkeit an dieser Zeile.
+    [$p('/regionen'), I18n::t('nav.cities')],
     [$p('/ratgeber'), I18n::t('blog.nav')],
     [$p('/galerie'), I18n::t('nav.gallery')],
     [$p('/einladung'), I18n::t('nav.invitation')],

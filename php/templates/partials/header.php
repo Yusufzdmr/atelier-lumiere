@@ -12,17 +12,25 @@ use Atelier\I18n;
 
 $p = static fn (string $to): string => I18n::path($to, $locale);
 
+/*
+ * Oben steht nur, wofuer jemand herkommt. Leistungen, Locations und Regionen
+ * sind Seiten fuer die Suche, nicht fuer die Leiste: sie stehen in der
+ * Fusszeile und sind von Startseite, Regionen-, Stadt- und Locationseiten
+ * verlinkt, dazu vollstaendig in der sitemap.xml. Aus dem Index nimmt sie das
+ * nicht – aus dem Weg des Besuchers schon.
+ *
+ * Die Galerie ist kein Schaufenster, sondern der Login des Paares. Wer sie
+ * braucht, hat den Link in seiner Mail; im Menue verwechselt man sie mit dem
+ * Portfolio. Sie steht deshalb ebenfalls unten.
+ */
 $links = [
-    [$p('/leistungen'), I18n::t('nav.services')],
     [$p('/portfolio'), I18n::t('nav.portfolio')],
-    [$p('/hochzeitslocations'), I18n::t('nav.locations')],
-    [$p('/regionen'), I18n::t('nav.cities')],
     [$p('/preise'), I18n::t('nav.prices')],
     [$p('/ueber-mich'), I18n::t('nav.about')],
 ];
 
+// Abgesetzt und in Gold: das ist das eigene Produkt, nicht eine Seite mehr.
 $extra = [
-    [$p('/galerie'), I18n::t('nav.gallery')],
     [$p('/einladung'), I18n::t('nav.invitation')],
 ];
 
