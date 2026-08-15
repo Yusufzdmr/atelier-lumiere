@@ -31,14 +31,18 @@ final class Seo
         $image = (string) ($entry['image'] ?? '');
         $default = (string) ($marketing['defaultImage'] ?? '');
 
-        return [
+        // array_merge, damit Schluessel durchkommen, die der Adminbereich nicht
+        // verwaltet: 'scripts', 'ogType'. Eine feste Liste liess sie still
+        // verschwinden – der Einladungsassistent kam ohne sein invite.js auf
+        // die Seite, und damit tat dort kein einziger Knopf mehr etwas.
+        return array_merge($fallback, [
             'title'       => $title !== '' ? $title : (string) ($fallback['title'] ?? 'Atelier Lumière'),
             'description' => $description !== '' ? $description : (string) ($fallback['description'] ?? ''),
             'image'       => $image !== '' ? $image : (string) ($fallback['image'] ?? $default),
             'noindex'     => (bool) ($entry['noindex'] ?? $fallback['noindex'] ?? false),
             'canonical'   => (string) ($fallback['canonical'] ?? Config::url() . I18n::path(self::pathFor($key))),
             'jsonLd'      => $fallback['jsonLd'] ?? [],
-        ];
+        ]);
     }
 
     /**
@@ -62,14 +66,15 @@ final class Seo
             )
             : (string) ($fallback['title'] ?? '');
 
-        return [
+        // Wie oben: mitgegebene Zusatzschluessel durchreichen.
+        return array_merge($fallback, [
             'title'       => (string) $title,
             'description' => (string) ($fallback['description'] ?? ''),
             'image'       => (string) ($fallback['image'] ?? ($marketing['defaultImage'] ?? '')),
             'noindex'     => (bool) ($fallback['noindex'] ?? false),
             'canonical'   => Config::url() . I18n::path($path),
             'jsonLd'      => $fallback['jsonLd'] ?? [],
-        ];
+        ]);
     }
 
     /** Pfad einer festen Seite. */

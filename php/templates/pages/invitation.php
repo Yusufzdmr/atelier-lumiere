@@ -213,10 +213,10 @@ foreach ($rsvps as $rsvp) {
 
                 <div class="flex gap-4">
                   <label class="flex flex-1 cursor-pointer items-center gap-2 border px-4 py-2.5 text-[0.85rem]" style="border-color: <?= e((string) $theme['paperEdge']) ?>">
-                    <input type="radio" name="coming" value="1" checked class="h-4 w-4"> <?= e(I18n::t('invite.rsvpYes')) ?>
+                    <input type="radio" name="coming" value="1" checked class="h-4 w-4"> <?= e(I18n::t('invite.rsvpComing')) ?>
                   </label>
                   <label class="flex flex-1 cursor-pointer items-center gap-2 border px-4 py-2.5 text-[0.85rem]" style="border-color: <?= e((string) $theme['paperEdge']) ?>">
-                    <input type="radio" name="coming" value="0" class="h-4 w-4"> <?= e(I18n::t('invite.rsvpNo')) ?>
+                    <input type="radio" name="coming" value="0" class="h-4 w-4"> <?= e(I18n::t('invite.rsvpNotComing')) ?>
                   </label>
                 </div>
 

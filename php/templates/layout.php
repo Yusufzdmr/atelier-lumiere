@@ -72,11 +72,25 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
 <body class="min-h-screen antialiased">
   <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:bg-ink focus:px-4 focus:py-2 focus:text-cream">Skip</a>
 
-  <?= \Atelier\View::partial('partials/header', ['locale' => $locale, 'path' => $path]) ?>
+  <?php
+  /*
+   * Die Einladung ist keine Seite des Betriebs, sondern die Karte des Paares.
+   * Ein Gast oeffnet sie in WhatsApp; Menue und Fusszeile des Fotografen
+   * gehoeren dort nicht hin – sie machen aus der Einladung eine Unterseite.
+   * Der Einwilligungsbanner bleibt: Karte und Musik holen Fremdinhalte.
+   */
+  $bare = !empty($meta['bare']);
+  ?>
+
+  <?php if (!$bare) : ?>
+    <?= \Atelier\View::partial('partials/header', ['locale' => $locale, 'path' => $path]) ?>
+  <?php endif; ?>
 
   <main id="main"><?= $content ?></main>
 
-  <?= \Atelier\View::partial('partials/footer', ['locale' => $locale]) ?>
+  <?php if (!$bare) : ?>
+    <?= \Atelier\View::partial('partials/footer', ['locale' => $locale]) ?>
+  <?php endif; ?>
 
   <?= \Atelier\View::partial('partials/consent', [
         'locale'   => $locale,

@@ -329,6 +329,8 @@ final class InviteController
                 'ogType'      => 'article',
                 'noindex'     => true,
                 'scripts'     => ['/assets/invitation.js'],
+                // Vollbild: kein Menue, keine Fusszeile – siehe layout.php
+                'bare'        => true,
             ],
             'invitation' => $invitation,
             'guest'      => $guest,
