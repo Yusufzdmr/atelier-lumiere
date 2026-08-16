@@ -133,6 +133,58 @@ görsel yuvası (`Images::SLOTS`) panelden değiştirilebiliyor. `Images::img()`
 önce panele bakıyor, yoksa temsili görsele düşüyor. Yükleme `Media::store()`
 ile, yani orijinali de saklanıyor.
 
+## Sıradaki oturum buradan başlasın
+
+Bu iki iş konuşuldu, kararı verildi, **yapılmadı**. Sırayla.
+
+### 1. Arayüz İngilizcesi — 313 girdi
+
+`data/dict.php` içinde `de` ve `tr` var, **`en` yok**. Site artık `/en` sunuyor
+ama `I18n::raw()` Almancaya düştüğü için İngilizce sayfalarda Almanca metin
+görünüyor. Ham anahtar çıkmıyor, yani bozuk değil — eksik.
+
+Yapılacak: dosyaya `'en' => [...]` bölümü, `de` bölümünün birebir İngilizcesi.
+`tr` bölümüne **dokunulmayacak**, paneli o besliyor.
+
+Kontrol: `curl -s http://127.0.0.1:8080/en/preise | grep -oE '(nav|prices)\.[a-zA-Z]+'`
+çıktısı boş olmalı (zaten boş — düşme mekanizması yüzünden). Asıl kontrol
+sayfayı açıp Almanca cümle kalmadığını görmek.
+
+### 2. Görünürlük anahtarları — “sitede gizle, Google'da göster”
+
+Müşterinin isteği aynen: *“sitede gösterme düğmesi, Google'da göster düğmesi”*,
+**şehirlerde ve mekânlarda**. Amaç 100 şehir sayfası açıp sitede yalnızca
+birkaçını listelemek; Google'dan gelen sayfayı normal şekilde gezebilsin.
+
+İki **bağımsız** anahtar, kayıt başına:
+
+| Alan | Kapalıyken |
+|---|---|
+| `listed` | Bölgeler/mekânlar listesinde çıkmaz. Sayfa yaşar, adresi çalışır |
+| `indexed` | `sitemap.xml`'den çıkar ve sayfa `noindex` alır |
+
+Dokunulacak yerler:
+- `ListAdminController` — `cities` ve `venues` şeması: iki `check` alanı
+- `templates/pages/regions.php`, `venues.php` — listelerde `listed` süzgeci
+- `SitemapController` — `indexed` süzgeci
+- `PageController::city()` / `venue()` — `indexed` kapalıysa `meta['noindex']`
+
+Varsayılan **ikisi de açık** olmalı, yoksa mevcut 10 şehir bir anda kaybolur.
+
+> **Uyarı — müşteriye de söylendi:** 100 şehir sayfası Google'ın *doorway pages*
+> saydığı şeye çok yakın ve ceza sebebi. `bin/cities.php` bu yüzden metinler
+> %55'ten fazla benziyorsa içe aktarmayı **reddediyor**. Anahtarlar bu korumayı
+> kaldırmaz; sayfaların gerçekten farklı yazılmış olması şartı sürüyor.
+
+### Ayrıca bekleyen, daha küçük
+
+- Panelde iletişim talebinin **mesaj metni görünmüyor** (ad/e-posta/telefon var).
+  `templates/admin/overview.php`
+- Galeri ızgarası en-boy oranını fotoğrafın gerçek ölçüsünden değil **sıradan**
+  seçiyor (`templates/pages/gallery.php`, `$i % 5` / `$i % 3`). Müşteri “şimdilik
+  sorun değil” dedi, ama kesilen kare şikâyeti gelirse sebebi bu.
+- Müşteriyle **mesajlaşma paneli** — istendi, kapsamı konuşulmadı.
+
 ## Kalan — bu sırayla
 
 ### 1. Modüler temada kalanlar (küçük)
