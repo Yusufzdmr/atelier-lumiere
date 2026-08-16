@@ -25,6 +25,8 @@
     header.classList.toggle("py-3", solid);
     header.classList.toggle("bg-transparent", !solid);
     header.classList.toggle("py-6", !solid);
+    // Fuer den Schleier und die helle Schrift ueber dem Titelbild.
+    header.classList.toggle("is-solid", solid);
   }
 
   function setMenu(next) {

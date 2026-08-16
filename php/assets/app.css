@@ -199,3 +199,39 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
   .env-flap, .env-card, .env-seal, .env-stage { transition: none !important; }
   .rise, .grow-line, .env-hint { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
+
+/*
+ * Der Kopfbereich über dem Titelbild.
+ *
+ * Er lag durchsichtig auf dem Foto und schrieb in Tinte – auf einem hellen
+ * Bild las sich „ATELIER LUMIÈRE“ gut, auf einem dunklen war es weg. Wer den
+ * Namen des Betriebs nicht sieht, ist nicht auf einer eleganten Seite,
+ * sondern auf einer kaputten.
+ *
+ * Statt die Farbe pro Seite einzustellen: ein schmaler Schleier von oben, der
+ * das Bild dunkelt, und helle Schrift darauf. Sobald gescrollt wird, greift
+ * wieder der cremefarbene Balken mit dunkler Schrift.
+ */
+#site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(22, 18, 14, .55), rgba(22, 18, 14, .18) 60%, transparent);
+  opacity: 1;
+  transition: opacity .5s;
+  pointer-events: none;
+}
+#site-header.is-solid::before { opacity: 0; }
+
+/* Über dem Bild hell, im Balken wieder dunkel. */
+#site-header:not(.is-solid) .hdr-name,
+#site-header:not(.is-solid) .hdr-link { color: #FBF6EE; }
+#site-header:not(.is-solid) .hdr-sub { color: rgba(251, 246, 238, .72); }
+#site-header:not(.is-solid) .hdr-cta { color: #FBF6EE; border-color: rgba(251, 246, 238, .7); }
+#site-header:not(.is-solid) .hdr-cta:hover { background: #FBF6EE; color: #221C16; }
+#site-header:not(.is-solid) .hdr-bar { background: rgba(251, 246, 238, .4); }
+#site-header:not(.is-solid) .bar { background: #FBF6EE; }
+
+/* Das Gold des Betriebs ist auf hellem Papier gewaehlt; auf dem dunklen
+   Schleier verschwindet es. Dort eine hellere Fassung derselben Farbe. */
+#site-header:not(.is-solid) .hdr-gold { color: #E4C79A; }

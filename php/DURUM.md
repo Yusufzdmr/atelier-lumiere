@@ -79,6 +79,60 @@ sahte CSRF 403). Panel + genel sayfalar, iki dil: hepsi uyarısız 200.
 | API anahtarları | PayPal/Maps sunucuda kalıyor; tarayıcıya yalnız `publicTracking()` gidiyor. Harita görseli bile kendi adresimizden geçiyor |
 | Bilinen ödün | **Galeri parolaları düz metin saklanıyor.** Bilerek: çifte parolasını söyleyebilmek için fotoğrafçının onu görmesi gerekiyor. Değeri düşük bir sır (kendi fotoğraflarına erişim). Hash'lenmesi istenirse „parola bir kez gösterilir“ akışına geçilmeli |
 
+## Diller — 16/17 Ağustos'ta değişti
+
+**Site artık Almanca + İngilizce. Türkçe siteden kalktı.**
+**Panel Almanca + Türkçe** — müşteri Türkçe konuşuyor, sitenin ziyaretçisi konuşmuyor.
+
+İki ayrı dil kümesi var (`src/I18n.php`):
+
+```php
+LOCALES       = ['de', 'en']   // site
+ADMIN_LOCALES = ['de', 'tr']   // panel
+```
+
+`public/index.php` bunları iki ayrı kapıyla ayırıyor: `$page_` site rotalarını,
+`$admin_` panel rotalarını süzüyor. Sonucu: `/tr/admin` **var**, `/tr/preise` **yok**.
+Panelin sağ üstünde DE/TR seçici, bulunduğunuz sekmede kalıyor.
+
+`I18n::raw()` artık eksik anahtarda **Almancaya düşüyor**. Önceden anahtarın
+kendisini yazdırıyordu (`nav.prices` menüde görünürdü). Şu anki durumu
+kullanılabilir kılan şey bu.
+
+### ⚠️ Yarım kalan: arayüz çevirisi
+
+**313 sözlük girdisi henüz İngilizceye çevrilmedi.** `data/dict.php` içinde
+`de` ve `tr` bölümleri var, `en` bölümü **yok**. Bu yüzden İngilizce sayfalar
+şu an Almanca metin gösteriyor (ham anahtar değil — düşme mekanizması çalışıyor).
+
+Yapılacak: `data/dict.php` içine `'en' => [...]` bölümü, `de` bölümünün
+İngilizce karşılığı. `tr` bölümü **silinmemeli** — paneli o besliyor.
+
+İçerik alanları (şehir, mekân, portfolyo metinleri) ayrı bir iş ve müşteri
+kararıyla **sonraya bırakıldı**: panelde artık DE + EN çifti düzenleniyor
+(`.tr` yolları `.en` oldu, 43 yol + 89 etiket), İngilizce alanlar boş.
+Boş kalınca sayfa Almancayı gösteriyor. Veritabanındaki eski Türkçe içerik
+`.tr` altında duruyor ama artık hiçbir yerde okunmuyor — ölü veri.
+
+Panelde İngilizce alanlar **kiremit kırmızısı** çizgi ve etiketle ayrılıyor
+(`src/Form.php`), Almanca cümleyi yanlış kutuya yazmayı zorlaştırmak için.
+
+## Panel düzeni — aynı tarihte değişti
+
+Yan menü artık **Site / Galeri / Davetiye / Sistem** olarak gruplu (`src/Admin.php`).
+Eskiden İçerik/İşler/Görünüm/Ayarlar'dı — o, yapanın sırasıydı; bu, işletenin.
+"Temalar" → **Tasarımlar** ve Davetiye grubuna taşındı (davetiye kartının
+tasarımı, sitenin değil). "Müşteriler" → **Müşteriler & galeriler**.
+
+Sabit alanlı sekmelerde artık Kaydet'in yanında **"Sayfayı gör"** var
+(`templates/admin/content.php` + `ContentAdminController::handle()`'ın
+beşinci parametresi). Liste sekmelerinde zaten vardı.
+
+Yeni sekme: **Site → Görseller** (`/admin/bilder`). Sabit sayfaların sekiz
+görsel yuvası (`Images::SLOTS`) panelden değiştirilebiliyor. `Images::img()`
+önce panele bakıyor, yoksa temsili görsele düşüyor. Yükleme `Media::store()`
+ile, yani orijinali de saklanıyor.
+
 ## Kalan — bu sırayla
 
 ### 1. Modüler temada kalanlar (küçük)

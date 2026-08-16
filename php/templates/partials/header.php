@@ -58,19 +58,19 @@ $otherPath = static function (string $to) use ($path): string {
 <header id="site-header" class="fixed inset-x-0 top-0 z-50 transition-all duration-500 bg-transparent py-6">
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
     <a href="<?= e($p('')) ?>" class="group flex flex-col leading-none" aria-label="Atelier Lumière">
-      <span class="font-display whitespace-nowrap text-xl font-light tracking-[0.14em] text-ink sm:text-2xl">ATELIER LUMIÈRE</span>
-      <span class="mt-1 hidden text-[0.6rem] uppercase tracking-[0.32em] text-muted xl:block">Hochzeitsfotografie · Stuttgart</span>
+      <span class="hdr-name font-display whitespace-nowrap text-xl font-light tracking-[0.14em] text-ink transition-colors sm:text-2xl">ATELIER LUMIÈRE</span>
+      <span class="hdr-sub mt-1 hidden text-[0.6rem] uppercase tracking-[0.32em] text-muted transition-colors xl:block"><?= $locale === 'de' ? 'Hochzeitsfotografie' : 'Wedding photography' ?> · <?= e((string) (\Atelier\Content::get('contact')['city'] ?? '')) ?></span>
     </a>
 
     <nav class="hidden items-center gap-5 lg:flex xl:gap-6">
       <?php foreach ($links as [$href, $label]) : ?>
-        <a href="<?= e($href) ?>" class="link-underline whitespace-nowrap text-[0.78rem] uppercase tracking-[0.12em] transition-colors <?= $path === $href ? 'text-gold' : 'text-ink-soft hover:text-gold' ?>"><?= e($label) ?></a>
+        <a href="<?= e($href) ?>" class="hdr-link link-underline whitespace-nowrap text-[0.78rem] uppercase tracking-[0.12em] transition-colors <?= $path === $href ? 'text-gold' : 'text-ink-soft hover:text-gold' ?>"><?= e($label) ?></a>
       <?php endforeach; ?>
 
-      <span class="h-4 w-px bg-sand-deep" aria-hidden="true"></span>
+      <span class="hdr-bar h-4 w-px bg-sand-deep" aria-hidden="true"></span>
 
       <?php foreach ($extra as [$href, $label]) : ?>
-        <a href="<?= e($href) ?>" class="link-underline whitespace-nowrap text-[0.78rem] uppercase tracking-[0.12em] transition-colors <?= $path === $href ? 'text-gold' : 'text-gold/80 hover:text-gold' ?>"><?= e($label) ?></a>
+        <a href="<?= e($href) ?>" class="hdr-gold link-underline whitespace-nowrap text-[0.78rem] uppercase tracking-[0.12em] transition-colors <?= $path === $href ? 'text-gold' : 'text-gold/80 hover:text-gold' ?>"><?= e($label) ?></a>
       <?php endforeach; ?>
     </nav>
 
@@ -78,11 +78,11 @@ $otherPath = static function (string $to) use ($path): string {
       <div class="hidden items-center gap-1 sm:flex">
         <?php foreach (I18n::LOCALES as $l) : ?>
           <a href="<?= e($otherPath($l)) ?>" hreflang="<?= $l === 'en' ? 'en' : 'de-DE' ?>"
-             class="px-1.5 py-1 text-[0.7rem] uppercase tracking-[0.18em] transition-colors <?= $l === $locale ? 'text-gold' : 'text-muted hover:text-ink' ?>"><?= strtoupper($l) ?></a>
+             class="hdr-link px-1.5 py-1 text-[0.7rem] uppercase tracking-[0.18em] transition-colors <?= $l === $locale ? 'text-gold' : 'text-muted hover:text-ink' ?>"><?= strtoupper($l) ?></a>
         <?php endforeach; ?>
       </div>
 
-      <a href="<?= e($p('/kontakt')) ?>" class="hidden whitespace-nowrap border border-ink px-5 py-2.5 text-[0.7rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream md:inline-block"><?= e(I18n::t('nav.cta')) ?></a>
+      <a href="<?= e($p('/kontakt')) ?>" class="hdr-cta hidden whitespace-nowrap border border-ink px-5 py-2.5 text-[0.7rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream md:inline-block"><?= e(I18n::t('nav.cta')) ?></a>
 
       <button id="menu-toggle" type="button" aria-label="<?= e(I18n::t('nav.menu')) ?>" aria-expanded="false"
               class="relative z-50 flex h-10 w-10 flex-col items-center justify-center gap-[5px] lg:hidden">
