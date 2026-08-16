@@ -45,9 +45,17 @@ if (str_starts_with($stand, 'plus')) {
     $message = $de ? 'Das Vorschaubild ist gespeichert.' : 'Önizleme görseli kaydedildi.';
 }
 
-/** WhatsApp-Link mit fertigem Text – ein Antippen, und die Nachricht steht. */
-$whatsapp = static function (string $url, string $who) use ($de, $names, $date): string {
-    $greeting = $who !== '' ? ($de ? 'Liebe ' : 'Sayın ') . $who . ",\n\n" : '';
+/**
+ * WhatsApp-Link mit fertigem Text – ein Antippen, und die Nachricht steht.
+ *
+ * Die Anrede kommt aus Guests::salutation(), damit in der Nachricht dasselbe
+ * steht wie oben auf der Karte – und nicht „Liebe yilmaz“.
+ *
+ * @param array<string,mixed> $guest
+ */
+$whatsapp = static function (string $url, array $guest = []) use ($de, $names, $date, $locale): string {
+    $who = $guest !== [] ? \Atelier\Guests::salutation($guest, $locale) : '';
+    $greeting = $who !== '' ? $who . ",\n\n" : '';
     $text = $greeting
         . ($de
             ? 'wir laden euch herzlich zu unserer Hochzeit ein.'
@@ -169,7 +177,7 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
           <?php foreach ($pending as $guest) : ?>
             <li class="flex flex-wrap items-center gap-3">
               <span class="text-[0.95rem] text-ink"><?= e((string) ($guest['name'] ?? '')) ?></span>
-              <a href="<?= e($whatsapp((string) ($guest['url'] ?? ''), (string) ($guest['name'] ?? ''))) ?>"
+              <a href="<?= e($whatsapp((string) ($guest["url"] ?? ""), $guest)) ?>"
                  target="_blank" rel="noopener"
                  class="ml-auto whitespace-nowrap border border-gold px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold hover:text-white">
                 <?= $de ? 'Erinnern' : 'Hatırlat' ?>
@@ -195,7 +203,7 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
               class="border border-ink px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
         <?= $de ? 'Kopieren' : 'Kopyala' ?>
       </button>
-      <a href="<?= e($whatsapp($link, '')) ?>" target="_blank" rel="noopener"
+      <a href="<?= e($whatsapp($link)) ?>" target="_blank" rel="noopener"
          class="border border-gold px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold hover:text-white">
         WhatsApp
       </a>
@@ -215,6 +223,33 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
       <input type="hidden" name="schluessel" value="<?= e($key) ?>">
       <input type="hidden" name="was" value="namen">
+
+      <?php
+      /*
+       * Die Anrede steht oben auf der Karte, und „Liebe yilmaz“ hat dort schon
+       * einmal gestanden. Eine Familie wird anders angesprochen als eine
+       * Person, und im Deutschen ein Mann anders als eine Frau – das kann nur
+       * sagen, wer die Gäste kennt. Es gilt für alle Namen dieses Durchgangs;
+       * für gemischte Listen trägt man sie in zwei Durchgängen ein.
+       */
+      $kinds = [
+          'family' => [$de ? 'Familie' : 'Aile',      $de ? 'Liebe Familie Yılmaz' : 'Sevgili Yılmaz Ailesi'],
+          'male'   => [$de ? 'Herr' : 'Bay',          $de ? 'Lieber Yusuf' : 'Sevgili Yusuf'],
+          'female' => [$de ? 'Frau' : 'Bayan',        $de ? 'Liebe Ayşe' : 'Sevgili Ayşe'],
+      ];
+      ?>
+      <div class="mb-6">
+        <span class="<?= $label ?>"><?= $de ? 'Anrede für diese Namen' : 'Bu isimler için hitap' ?></span>
+        <div class="mt-3 grid gap-2 sm:grid-cols-3">
+          <?php foreach ($kinds as $value => [$title, $example]) : ?>
+            <label class="cursor-pointer border border-sand-deep px-4 py-3 transition-colors hover:border-muted has-[:checked]:border-gold">
+              <input type="radio" name="art" value="<?= e($value) ?>" class="sr-only" <?= $value === 'family' ? 'checked' : '' ?>>
+              <span class="block text-[0.85rem] text-ink"><?= e($title) ?></span>
+              <span class="mt-1 block text-[0.72rem] italic text-muted"><?= e($example) ?></span>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      </div>
 
       <label class="<?= $label ?>" for="namen"><?= $de ? 'Namen' : 'İsimler' ?></label>
       <textarea id="namen" name="namen" rows="7" class="<?= $field ?> resize-y"
@@ -276,7 +311,7 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
                       class="border border-ink px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
                 <?= $de ? 'Kopieren' : 'Kopyala' ?>
               </button>
-              <a href="<?= e($whatsapp((string) $guest['url'], (string) $guest['name'])) ?>" target="_blank" rel="noopener"
+              <a href="<?= e($whatsapp((string) $guest["url"], $guest)) ?>" target="_blank" rel="noopener"
                  class="border border-gold px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold hover:text-white">
                 WhatsApp
               </a>

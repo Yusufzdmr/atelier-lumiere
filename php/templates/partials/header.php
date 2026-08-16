@@ -42,7 +42,17 @@ $otherPath = static function (string $to) use ($path): string {
     } else {
         array_unshift($parts, $to);
     }
-    return '/' . implode('/', $parts);
+
+    /*
+     * Die Abfrage mitnehmen. Ohne sie fiel die Gaesteliste des Paares beim
+     * Sprachwechsel auf 404: ihr Schluessel steht in ?schluessel=, und der
+     * blieb hier liegen. Ein fehlender Schluessel ist absichtlich nicht von
+     * einer nicht vorhandenen Einladung zu unterscheiden – der Wechsel sah
+     * damit aus wie eine kaputte Seite.
+     */
+    $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
+
+    return '/' . implode('/', $parts) . ($query !== '' ? '?' . $query : '');
 };
 ?>
 <header id="site-header" class="fixed inset-x-0 top-0 z-50 transition-all duration-500 bg-transparent py-6">

@@ -50,16 +50,77 @@ final class Guests
 
     /* ------------------------------- Schreiben ------------------------------ */
 
+    /** Wie jemand angeredet wird. Steht oben auf der Karte. */
+    public const KINDS = ['family', 'male', 'female'];
+
+    /**
+     * „Liebe yilmaz“ stand auf einer echten Einladung – klein geschrieben und
+     * grammatisch daneben. Klein geschrieben, weil abends schnell getippt;
+     * daneben, weil eine Familie anders angeredet wird als eine Person und im
+     * Deutschen ein Mann anders als eine Frau.
+     *
+     * Deshalb steht die Anrede nicht mehr in der Vorlage, sondern hier, und
+     * das Paar sagt beim Eintragen, um wen es sich handelt.
+     */
+    public static function salutation(array $guest, string $locale): string
+    {
+        // Auch beim Ausgeben, nicht nur beim Anlegen: Namen, die vor dieser
+        // Änderung klein eingetippt wurden, stehen sonst weiter klein auf der
+        // Karte.
+        $name = self::properCase(trim((string) ($guest['name'] ?? '')));
+        if ($name === '') {
+            return '';
+        }
+
+        $kind = (string) ($guest['kind'] ?? 'family');
+        if (!in_array($kind, self::KINDS, true)) {
+            $kind = 'family';
+        }
+
+        if ($locale === 'de') {
+            return match ($kind) {
+                'family' => 'Liebe Familie ' . $name,
+                'male'   => 'Lieber ' . $name,
+                default  => 'Liebe ' . $name,
+            };
+        }
+
+        // Türkisch kennt die Unterscheidung nicht; nur Familie hängt an.
+        return $kind === 'family' ? 'Sevgili ' . $name . ' Ailesi' : 'Sevgili ' . $name;
+    }
+
+    /**
+     * Namen, die ganz klein geschrieben eingegeben wurden, bekommen ihre
+     * Grossbuchstaben. Nur dann – wer „van der Berg“ tippt, hat sich etwas
+     * dabei gedacht, und daraus soll kein „Van Der Berg“ werden.
+     */
+    private static function properCase(string $name): string
+    {
+        if ($name !== mb_strtolower($name)) {
+            return $name;
+        }
+
+        return implode(' ', array_map(
+            static fn (string $word): string => $word === ''
+                ? $word
+                : mb_strtoupper(mb_substr($word, 0, 1)) . mb_substr($word, 1),
+            explode(' ', $name)
+        ));
+    }
+
     /**
      * Einen Namen anlegen. Gibt den Datensatz zurück – oder null, wenn der
      * Name leer war oder es ihn schon gibt.
      *
      * @return array<string,mixed>|null
      */
-    public static function add(string $slug, string $name): ?array
+    public static function add(string $slug, string $name, string $kind = 'family'): ?array
     {
         $slug = Invitations::slug($slug);
-        $name = Security::clean($name, 80);
+        $name = self::properCase(Security::clean($name, 80));
+        if (!in_array($kind, self::KINDS, true)) {
+            $kind = 'family';
+        }
 
         if ($name === '' || self::count($slug) >= self::MAX) {
             return null;
@@ -78,6 +139,7 @@ final class Guests
             'slug'      => $slug,
             'token'     => $token,
             'name'      => $name,
+            'kind'      => $kind,
             'createdAt' => date('c'),
         ];
 
@@ -96,14 +158,14 @@ final class Guests
      * @param list<string> $names
      * @return array{added:int,skipped:int,guests:list<array<string,mixed>>}
      */
-    public static function addMany(string $slug, array $names): array
+    public static function addMany(string $slug, array $names, string $kind = 'family'): array
     {
         $added = 0;
         $skipped = 0;
         $guests = [];
 
         foreach ($names as $name) {
-            $guest = self::add($slug, $name);
+            $guest = self::add($slug, $name, $kind);
             if ($guest === null) {
                 $skipped++;
                 continue;

@@ -253,6 +253,24 @@ final class InviteController
         $out = [];
         foreach ($this->readLines('program', 12, 120) as $line) {
             $parts = array_map('trim', explode('|', $line, 2));
+
+            /*
+             * Ohne senkrechten Strich stand frueher die ganze Zeile in der
+             * Uhrzeit – und die wird auf zehn Zeichen gekuerzt. Aus
+             * "16:00 Beginn" wurde "16:00 begi", und der Gast las das so auf
+             * der Karte. Wer die Uhrzeit vorne hinschreibt, meint sie auch:
+             * bis zum ersten Leerzeichen die Zeit, der Rest der Programmpunkt.
+             */
+            if (count($parts) === 1) {
+                if (preg_match('/^(\d{1,2}(?:[:.]\d{2})?\s*(?:Uhr)?)\s+(\S.*)$/iu', $line, $m) === 1) {
+                    $parts = [trim($m[1]), trim($m[2])];
+                } elseif (preg_match('/^\d/', $line) !== 1) {
+                    // Gar keine Uhrzeit? Dann ist alles der Programmpunkt und
+                    // nichts wird auf zehn Zeichen gestutzt.
+                    $parts = ['', $line];
+                }
+            }
+
             $out[] = ['time' => mb_substr($parts[0] ?? '', 0, 10), 'title' => mb_substr($parts[1] ?? '', 0, 100)];
         }
         return $out;
@@ -468,7 +486,9 @@ final class InviteController
             return 'leer';
         }
 
-        $result = Guests::addMany($slug, $names);
+        // Familie, Herr oder Frau – davon haengt die Anrede auf der Karte ab.
+        $kind = Security::clean($_POST['art'] ?? '', 10);
+        $result = Guests::addMany($slug, $names, $kind);
 
         return $result['added'] > 0 ? 'plus' . $result['added'] : 'doppelt';
     }

@@ -89,7 +89,7 @@ foreach ($rsvps as $rsvp) {
         <?php if ($guestName !== '') : ?>
           <div class="mb-9">
             <div class="font-display text-xl font-light italic sm:text-2xl" style="color: <?= e((string) $theme['accent']) ?>">
-              <?= $de ? 'Liebe' : 'Sayın' ?> <?= e($guestName) ?>,
+              <?= e(\Atelier\Guests::salutation($guest ?? [], $locale)) ?>,
             </div>
             <div class="mx-auto mt-6 h-px w-16" style="background: <?= e((string) $theme['accentSoft']) ?>"></div>
           </div>
