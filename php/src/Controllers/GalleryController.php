@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Atelier\Controllers;
 
+use Atelier\Content;
 use Atelier\Dates;
 use Atelier\Galleries;
 use Atelier\I18n;
@@ -96,6 +97,72 @@ final class GalleryController
             'photos'    => $photos,
             'selection' => $selection,
             'dateLong'  => Dates::long((string) ($gallery['date'] ?? '')),
+            'csrf'      => Security::csrf(),
+        ]);
+    }
+
+    /**
+     * Eine Beispielgalerie – ohne Code, ohne Passwort.
+     *
+     * Auf der Anmeldeseite stand bisher in vier Punkten, was einen hinter dem
+     * Passwort erwartet. Das liest sich gut und zeigt nichts. Wer die Galerie
+     * einmal gesehen hat – die Bilder, das Herz, die Auswahl unten –, versteht
+     * in zehn Sekunden, wofuer die vier Punkte Worte brauchen.
+     *
+     * Es sind Platzhalterbilder und kein Kundenauftrag: hier liegt nichts,
+     * was jemandem gehoert.
+     */
+    /**
+     * Bilder für die Beispielgalerie: die der vorhandenen Reportagen.
+     *
+     * @return list<string>
+     */
+    private static function demoSeeds(): array
+    {
+        $seeds = [];
+        foreach (Content::list('stories') as $story) {
+            foreach ((array) ($story['seeds'] ?? []) as $seed) {
+                if (is_string($seed) && $seed !== '') {
+                    $seeds[] = $seed;
+                }
+            }
+        }
+
+        return array_slice(array_values(array_unique($seeds)), 0, 24);
+    }
+
+    public function demo(): void
+    {
+        $locale = I18n::locale();
+        $de = $locale === 'de';
+
+        $gallery = [
+            'code'     => 'beispiel',
+            'couple'   => $de ? 'Beispielgalerie' : 'Example gallery',
+            'date'     => date('Y') . '-06-20',
+            'venue'    => $de ? 'So sieht eure Galerie aus' : 'This is how your gallery looks',
+            'password' => '',
+            'expires'  => '',
+            // Die Bilder der vorhandenen Reportagen – Platzhalter, die es
+            // ohnehin schon auf der Seite gibt.
+            'seeds'    => self::demoSeeds(),
+            'uploads'  => [],
+        ];
+
+        View::page('pages/gallery', [
+            'locale' => $locale,
+            'path'   => I18n::path('/galerie/beispiel', $locale),
+            'meta'   => [
+                'title'   => $de ? 'Beispielgalerie' : 'Example gallery',
+                'noindex' => true,
+                'scripts' => ['/assets/gallery.js'],
+            ],
+            'gallery'   => $gallery,
+            'photos'    => Galleries::photos($gallery),
+            'selection' => null,
+            'dateLong'  => Dates::long((string) $gallery['date']),
+            // Die Leiste unten zeigt sich, nimmt aber nichts entgegen.
+            'demo'      => true,
             'csrf'      => Security::csrf(),
         ]);
     }

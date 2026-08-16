@@ -114,6 +114,7 @@ $router->post('/api/kupon', static fn (array $p) => (new InviteController())->ch
 $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryController())->index()));
 $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
 $router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) => (new GalleryController())->saveSelection()));
+$router->get('/{locale}/galerie/beispiel', $page_(static fn (array $p) => (new GalleryController())->demo()));
 $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
 
 $router->any('/{locale}/admin', $admin_(static fn (array $p) => (new AdminController($p['locale']))->overview()));

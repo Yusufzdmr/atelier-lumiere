@@ -76,6 +76,25 @@ $label = 'block text-[0.68rem] uppercase tracking-[0.2em] text-muted';
           </li>
         <?php endforeach; ?>
       </ol>
+
+      <?php
+      /*
+       * Vier Punkte beschreiben, was hinter dem Passwort liegt. Zeigen tun sie
+       * nichts. Wer die Galerie einmal offen gesehen hat, versteht sie in zehn
+       * Sekunden – deshalb steht sie hier zum Anschauen.
+       */
+      ?>
+      <div class="mt-10 border-t border-sand-deep pt-8">
+        <p class="text-[0.9rem] leading-relaxed text-muted">
+          <?= $de
+            ? 'Noch keinen Code? So sieht eine fertige Galerie aus – mit Bildern zum Durchsehen und dem Herz zum Aussuchen.'
+            : 'No code yet? This is what a finished gallery looks like – photographs to browse and the heart to pick with.' ?>
+        </p>
+        <a href="<?= e(I18n::path('/galerie/beispiel', $locale)) ?>"
+           class="mt-5 inline-block border border-ink px-7 py-3.5 text-[0.68rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
+          <?= $de ? 'Beispielgalerie ansehen' : 'See an example gallery' ?> →
+        </a>
+      </div>
     <?= Ui::revealClose() ?>
   </div>
 <?= Ui::sectionClose() ?>

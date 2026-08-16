@@ -83,10 +83,23 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
              placeholder="<?= $locale === 'de' ? 'Nachricht an uns (optional)' : 'Bize not (isteğe bağlı)' ?>"
              class="min-w-[12rem] flex-1 border-b border-sand-deep bg-transparent px-0 py-2 text-[0.9rem] text-ink outline-none focus:border-gold">
 
-      <button type="button" data-send
-              class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold disabled:opacity-50">
-        <?= e(I18n::t('gallery.send')) ?>
-      </button>
+      <?php if (empty($demo)) : ?>
+        <button type="button" data-send
+                class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold disabled:opacity-50">
+          <?= e(I18n::t('gallery.send')) ?>
+        </button>
+      <?php else : ?>
+        <?php /* In der Beispielgalerie darf jeder klicken – abgeschickt wird nichts. */ ?>
+        <span class="text-[0.78rem] text-muted">
+          <?= $locale === 'de'
+            ? 'Beispielgalerie – hier wird nichts abgeschickt.'
+            : 'Example gallery – nothing is sent from here.' ?>
+        </span>
+        <a href="<?= e(\Atelier\I18n::path('/kontakt', $locale)) ?>"
+           class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
+          <?= $locale === 'de' ? 'Termin anfragen' : 'Get in touch' ?>
+        </a>
+      <?php endif; ?>
 
       <span data-status class="text-[0.78rem] text-gold"></span>
     </div>
