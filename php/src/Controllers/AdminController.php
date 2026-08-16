@@ -8,6 +8,7 @@ use Atelier\Content;
 use Atelier\Db;
 use Atelier\Galleries;
 use Atelier\I18n;
+use Atelier\Images;
 use Atelier\Integrations;
 use Atelier\Leads;
 use Atelier\Paypal;
@@ -558,6 +559,72 @@ final class AdminController
     /* --------------------------------- Helfer ------------------------------- */
 
     /** @param array<string,mixed> $data */
+    /* -------------------------------- Bilder -------------------------------- */
+
+    /**
+     * Die festen Bildplätze der Website tauschen.
+     *
+     * Alles andere auf der Seite liess sich hier längst ändern – nur die
+     * Bilder nicht: sie standen als Kürzel in den Vorlagen. Wer sein eigenes
+     * Porträt auf „Über mich“ wollte, fand dafür keine Stelle.
+     */
+    public function images(): void
+    {
+        $de = $this->locale === 'de';
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            Admin::checkCsrfOrFail();
+
+            $bilder = Content::get('images');
+            $bilder = is_array($bilder) ? $bilder : [];
+
+            foreach (array_keys(Images::SLOTS) as $slot) {
+                // Leeren heisst: zurueck zum Platzhalter.
+                if (isset($_POST['weg'][$slot])) {
+                    Media::delete((string) ($bilder[$slot] ?? ''));
+                    unset($bilder[$slot]);
+                    continue;
+                }
+
+                /*
+                 * PHP dreht Feldnamen mit Klammern um: aus bild[about-portrait]
+                 * wird nicht $_FILES['bild']['about-portrait'], sondern
+                 * $_FILES['bild']['name']['about-portrait'] und so weiter. Hier
+                 * wieder zu einer Datei zusammensetzen.
+                 */
+                $f = $_FILES['bild'] ?? [];
+                $datei = isset($f['name'][$slot]) ? [
+                    'name'     => (string) $f['name'][$slot],
+                    'type'     => (string) ($f['type'][$slot] ?? ''),
+                    'tmp_name' => (string) ($f['tmp_name'][$slot] ?? ''),
+                    'error'    => (int) ($f['error'][$slot] ?? UPLOAD_ERR_NO_FILE),
+                    'size'     => (int) ($f['size'][$slot] ?? 0),
+                ] : [];
+
+                $url = Media::store($datei, 'seite');
+                if ($url !== null) {
+                    Media::delete((string) ($bilder[$slot] ?? ''));
+                    $bilder[$slot] = $url;
+                }
+            }
+
+            Content::mutate(static function (array $content) use ($bilder): array {
+                $content['images'] = $bilder;
+                return $content;
+            });
+
+            Admin::back($this->locale, '/bilder');
+        }
+
+        $bilder = Content::get('images');
+
+        $this->render('admin/images', '/bilder', [
+            'slots'  => Images::SLOTS,
+            'own'    => is_array($bilder) ? $bilder : [],
+            'title'  => $de ? 'Bilder der Website' : 'Site görselleri',
+        ]);
+    }
+
     private function render(string $template, string $tab, array $data = []): void
     {
         View::page($template, array_merge([

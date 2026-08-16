@@ -101,10 +101,43 @@ final class Images
     }
 
     /** Bildadresse für einen Platzhalter oder eine bereits fertige URL. */
+    /**
+     * Die festen Bildplätze der Seite – Startbild, Porträt, Kopfbilder.
+     *
+     * Sie standen als Kürzel in den Vorlagen und waren damit das Einzige auf
+     * der Website, das der Betrieb nicht selbst tauschen konnte: Texte ja,
+     * Städte ja, das eigene Porträt nein.
+     *
+     * @return array<string,array{de:string,tr:string}>
+     */
+    public const SLOTS = [
+        'lumiere-hero-main' => ['de' => 'Startseite, großes Bild', 'tr' => 'Ana sayfa, büyük görsel'],
+        'lumiere-intro'     => ['de' => 'Startseite, Bild im Text', 'tr' => 'Ana sayfa, metindeki görsel'],
+        'about-hero'        => ['de' => 'Über mich, Kopfbild', 'tr' => 'Hakkımda, üst görsel'],
+        'about-portrait'    => ['de' => 'Über mich, Porträt', 'tr' => 'Hakkımda, portre'],
+        'services-hero'     => ['de' => 'Leistungen, Kopfbild', 'tr' => 'Hizmetler, üst görsel'],
+        'prices-hero'       => ['de' => 'Preise, Kopfbild', 'tr' => 'Fiyatlar, üst görsel'],
+        'contact-hero'      => ['de' => 'Kontakt, Kopfbild', 'tr' => 'İletişim, üst görsel'],
+        'designs-hero'      => ['de' => 'Designs, Kopfbild', 'tr' => 'Tasarımlar, üst görsel'],
+    ];
+
+    /** Gesetzte Bilder aus dem Adminbereich. Einmal je Anfrage gelesen. */
+    private static ?array $own = null;
+
     public static function img(string $seed, int $w = 1200, int $h = 1600): string
     {
         if (preg_match('#^(https?:|data:|/)#', $seed) === 1) {
             return $seed;
+        }
+
+        // Was im Adminbereich hochgeladen wurde, gewinnt über den Platzhalter.
+        if (self::$own === null) {
+            $stored = Content::get('images');
+            self::$own = is_array($stored) ? $stored : [];
+        }
+        $eigen = (string) (self::$own[$seed] ?? '');
+        if ($eigen !== '') {
+            return $eigen;
         }
 
         $entry = self::pick($seed);

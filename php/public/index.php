@@ -101,6 +101,7 @@ $router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminControl
 $router->get('/{locale}/admin/karte', $page_(static fn (array $p) => (new AdminController($p['locale']))->map()));
 $router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
 $router->any('/{locale}/admin/inhalte', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
+$router->any('/{locale}/admin/bilder', $page_(static fn (array $p) => (new AdminController($p['locale']))->images()));
 $router->any('/{locale}/admin/texte', $page_(static fn (array $p) => (new TextAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/pakete', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->packages()));
 $router->any('/{locale}/admin/ueber-mich', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));

@@ -17,18 +17,14 @@ final class Admin
      * Die Abschnitte der Seitenleiste.
      *
      * Sechzehn Reiter in einer Reihe sind keine Navigation mehr, sondern eine
-     * Wand. Gruppiert wird danach, in welcher Rolle jemand hier sitzt: Texte
-     * pflegen, einen Auftrag bearbeiten, das Aussehen ändern, etwas einrichten.
-     *
-     * @var array<string,array{de:string,tr:string}>
-     */
-    /*
-     * Gruppiert nach den drei Dingen, die der Betrieb betreibt – nicht nach
-     * der Art der Bearbeitung. „Inhalte, Aufträge, Gestaltung“ war eine
-     * Ordnung fuer den, der es gebaut hat: die Themen der Einladung standen
-     * unter Gestaltung, die Kundengalerien unter Auftraege, und wer die
+     * Wand. Gruppiert wird nach den drei Dingen, die der Betrieb betreibt –
+     * nicht nach der Art der Bearbeitung. „Inhalte, Aufträge, Gestaltung“ war
+     * die Ordnung dessen, der es gebaut hat: die Designs der Einladung standen
+     * unter Gestaltung, die Kundengalerien unter Aufträge, und wer die
      * Einladung testen wollte, suchte an drei Stellen. Website, Galerie und
      * Einladung sind die Teile, die man einzeln in Betrieb nimmt.
+     *
+     * @var array<string,array{de:string,tr:string}>
      */
     public const GROUPS = [
         'website'   => ['de' => 'Website', 'tr' => 'Site'],
@@ -42,6 +38,7 @@ final class Admin
         ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
 
         ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
+        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller'],
         ['href' => '/texte', 'group' => 'website', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
         ['href' => '/leistungen', 'group' => 'website', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
         ['href' => '/pakete', 'group' => 'website', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
