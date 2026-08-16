@@ -90,7 +90,8 @@ final class Media
             $image = $resized;
         }
 
-        $name = bin2hex(random_bytes(8)) . '.jpg';
+        $stem = bin2hex(random_bytes(8));
+        $name = $stem . '.jpg';
         $relative = trim($folder, '/') . '/' . $name;
         $target = self::dir($folder) . '/' . $name;
 
@@ -98,7 +99,81 @@ final class Media
         $ok = imagejpeg($image, $target, self::QUALITY);
         imagedestroy($image);
 
-        return $ok ? self::url($relative) : null;
+        if (!$ok) {
+            return null;
+        }
+
+        // Das Original daneben legen – siehe keepOriginal().
+        self::keepOriginal($tmp, $mime, $folder, $stem);
+
+        return self::url($relative);
+    }
+
+    /** Unterordner neben den verkleinerten Bildern. */
+    public const ORIGINALS = 'original';
+
+    /**
+     * Das unveraenderte Bild neben dem verkleinerten aufheben.
+     *
+     * Die Galerie zeigt 1600 Pixel – richtig fuer den Browser, zu wenig fuer
+     * den Albumdruck. Wenn das Paar seine Bilder ausgesucht hat, soll der
+     * Drucker die vollen Dateien bekommen und nicht der Fotograf noch einmal
+     * suchen, hochladen und schicken muessen.
+     *
+     * Gleicher Dateiname wie das verkleinerte Bild, nur in einem Unterordner:
+     * so ist das Original aus der Adresse des kleinen ableitbar und die
+     * gespeicherte Bildliste bleibt, was sie war.
+     */
+    private static function keepOriginal(string $tmp, string $mime, string $folder, string $stem): void
+    {
+        $extension = match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+            default      => null,
+        };
+
+        if ($extension === null) {
+            return;
+        }
+
+        $target = self::dir(trim($folder, '/') . '/' . self::ORIGINALS) . '/' . $stem . '.' . $extension;
+
+        // move_uploaded_file waere hier falsch: die Datei wird anschliessend
+        // noch als verkleinerte Fassung gebraucht.
+        @copy($tmp, $target);
+    }
+
+    /**
+     * Zu einem verkleinerten Bild das Original finden.
+     *
+     * @return string|null Pfad auf der Platte, oder null wenn es keines gibt
+     *                     (Bilder von vor dieser Änderung, oder Platzhalter)
+     */
+    public static function originalPath(string $url): ?string
+    {
+        $prefix = '/' . trim(Config::str('upload_dir', 'uploads'), '/') . '/';
+        if (!str_starts_with($url, $prefix)) {
+            return null;
+        }
+
+        $relative = substr($url, strlen($prefix));
+        if (str_contains($relative, '..')) {
+            return null;
+        }
+
+        $folder = dirname($relative);
+        $stem = pathinfo($relative, PATHINFO_FILENAME);
+        $base = self::dir() . '/' . $folder . '/' . self::ORIGINALS . '/' . $stem;
+
+        foreach (['jpg', 'png', 'webp', 'gif'] as $extension) {
+            if (is_file($base . '.' . $extension)) {
+                return $base . '.' . $extension;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -350,6 +425,13 @@ final class Media
         $path = self::dir() . '/' . $relative;
         if (is_file($path)) {
             @unlink($path);
+        }
+
+        // Sonst bleibt das Original als Karteileiche liegen – und Originale
+        // sind das Vielfache dessen, was das verkleinerte Bild wiegt.
+        $original = self::originalPath($url);
+        if ($original !== null) {
+            @unlink($original);
         }
     }
 }

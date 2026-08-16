@@ -65,7 +65,9 @@ final class Preflight
 
     private static function extensions(bool $de): array
     {
-        $needed = ['pdo_mysql', 'mbstring', 'json', 'curl', 'fileinfo'];
+        // zip: ohne sie gibt es keinen Sammel-Download der Bildauswahl für den
+        // Albumhersteller – die Seite steht dann da, aber ohne ihren Knopf.
+        $needed = ['pdo_mysql', 'mbstring', 'json', 'curl', 'fileinfo', 'zip'];
         $missing = array_values(array_filter($needed, static fn (string $e): bool => !extension_loaded($e)));
 
         return self::result(

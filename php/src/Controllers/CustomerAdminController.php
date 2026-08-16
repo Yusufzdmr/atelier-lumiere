@@ -166,6 +166,9 @@ final class CustomerAdminController
             'gutschein-frei' => Customers::resetCoupon($code),
             'archivieren'   => Customers::update($code, ['status' => 'archived']),
             'aktivieren'    => Customers::update($code, ['status' => 'active']),
+            // Link fuer den Albumhersteller – erzeugen und wieder abschalten.
+            'freigabe'      => Galleries::shareCreate($code),
+            'freigabe-aus'  => Galleries::shareRevoke($code),
             'fotos'         => Galleries::addPhotos($code, Media::storeMany('fotos', 'galerien/' . $code, 60)),
             'foto-loeschen' => Galleries::removePhoto($code, (int) Security::clean($_POST['foto'] ?? '', 6)),
             'loeschen'      => $this->remove($customer),
