@@ -323,8 +323,14 @@ $steps = $de
             </div>
 
             <div data-needs="music">
-              <label class="<?= $label ?>"><?= $de ? 'Musik (Link zu einer Audiodatei)' : 'Müzik (ses dosyası linki)' ?></label>
-              <input name="musicUrl" value="<?= e($old('musicUrl')) ?>" class="<?= $field ?>" placeholder="https://">
+              <label class="<?= $label ?>"><?= $de ? 'Musik' : 'Müzik' ?></label>
+              <input type="file" name="musicFile" accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav"
+                     class="mt-2 block w-full text-[0.85rem] text-ink file:mr-4 file:border file:border-ink file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
+              <p class="mt-2 text-[0.75rem] leading-relaxed text-muted">
+                <?= $de
+                  ? 'MP3, M4A, OGG oder WAV, bis 12 MB. Ein YouTube- oder Spotify-Link funktioniert hier nicht: die Karte müsste dafür beim Öffnen bei einem Fremden laden, und das tut sie bewusst nicht.'
+                  : 'MP3, M4A, OGG veya WAV, en fazla 12 MB. YouTube ya da Spotify linki burada çalışmaz: kart açılırken yabancı bir siteye bağlanması gerekirdi, bunu bilerek yapmıyoruz.' ?>
+              </p>
             </div>
 
             <div data-needs="video">

@@ -129,6 +129,62 @@ final class Media
             : null;
     }
 
+    /** Groesser als ein Lied braucht eine Einladung nicht. */
+    private const MAX_AUDIO = 12 * 1024 * 1024;
+
+    /**
+     * Hintergrundmusik der Einladung.
+     *
+     * Frueher stand hier ein Feld fuer eine Adresse, und wer – wie jeder – den
+     * YouTube-Link seines Lieds hineinkopierte, bekam ein <audio>-Element mit
+     * einer HTML-Seite darin. Das kann nicht klingen. Ein Video-Einbett-Player
+     * waere der falsche Ausweg: er laedt beim Oeffnen der Karte bei einem
+     * Fremden, und genau das soll auf dieser Seite ohne Einwilligung nie
+     * passieren. Also liegt die Datei bei uns.
+     *
+     * Wie bei Bildern entscheidet der Inhalt, nicht der Dateiname, und die
+     * Endung vergeben wir selbst.
+     *
+     * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int} $file
+     */
+    public static function storeAudio(array $file, string $folder): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $tmp = (string) ($file['tmp_name'] ?? '');
+        if ($tmp === '' || !is_uploaded_file($tmp) || (int) ($file['size'] ?? 0) > self::MAX_AUDIO) {
+            return null;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo !== false ? (string) finfo_file($finfo, $tmp) : '';
+        if ($finfo !== false) {
+            finfo_close($finfo);
+        }
+
+        // mp4/m4a meldet je nach Server audio/x-m4a oder audio/mp4.
+        $extension = match ($mime) {
+            'audio/mpeg', 'audio/mp3'   => 'mp3',
+            'audio/mp4', 'audio/x-m4a'  => 'm4a',
+            'audio/ogg', 'application/ogg' => 'ogg',
+            'audio/wav', 'audio/x-wav'  => 'wav',
+            default                     => null,
+        };
+
+        if ($extension === null) {
+            return null;
+        }
+
+        $name = bin2hex(random_bytes(8)) . '.' . $extension;
+        $target = self::dir($folder) . '/' . $name;
+
+        return move_uploaded_file($tmp, $target)
+            ? self::url(trim($folder, '/') . '/' . $name)
+            : null;
+    }
+
     /**
      * Schmuckelemente: Blume, Rahmen, Monogramm.
      *

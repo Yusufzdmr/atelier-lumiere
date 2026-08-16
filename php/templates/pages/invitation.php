@@ -255,9 +255,19 @@ foreach ($rsvps as $rsvp) {
       </div>
     </div>
 
-    <?php if (!empty($sections['music']) && ($invitation['musicUrl'] ?? '') !== '') : ?>
+    <?php
+    /*
+     * Nur eine Datei aus dem eigenen Upload-Ordner. Aeltere Einladungen tragen
+     * hier noch den YouTube-Link, den das Feld frueher entgegennahm; daraus
+     * wuerde ein <audio> mit einer HTML-Seite darin, ein Knopf, der nichts tut.
+     * Lieber kein Knopf als ein toter.
+     */
+    $music = (string) ($invitation['musicUrl'] ?? '');
+    $hasMusic = !empty($sections['music']) && str_starts_with($music, '/uploads/');
+    ?>
+    <?php if ($hasMusic) : ?>
       <?php /* Ton startet erst nach dem Öffnen – Browser erlauben es nicht anders. */ ?>
-      <audio data-music loop preload="none" src="<?= e((string) $invitation['musicUrl']) ?>"></audio>
+      <audio data-music loop preload="none" src="<?= e($music) ?>"></audio>
       <button type="button" data-music-toggle
               class="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg"
               style="background: <?= e((string) $theme['accent']) ?>; color: <?= e((string) $theme['paper']) ?>"

@@ -141,7 +141,11 @@ final class InviteController
             'photos'    => Media::storeMany('photos', 'einladungen/' . $slug, self::MAX_PHOTOS),
             'program'   => !empty($sections['program']) ? $this->readProgram() : [],
             'menu'      => !empty($sections['menu']) ? $this->readLines('menu', 12, 80) : [],
-            'musicUrl'  => !empty($sections['music']) ? Security::clean($_POST['musicUrl'] ?? '', 300) : '',
+            // Die Datei liegt bei uns; eine fremde Adresse nimmt das Feld nicht
+            // mehr entgegen. Siehe Media::storeAudio().
+            'musicUrl'  => !empty($sections['music'])
+                ? (string) (Media::storeAudio($_FILES['musicFile'] ?? [], 'einladungen/' . $slug) ?? '')
+                : '',
             'videoUrl'  => !empty($sections['video']) ? Security::clean($_POST['videoUrl'] ?? '', 300) : '',
             'sections'  => $sections,
             'hashtag'   => Security::clean($_POST['hashtag'] ?? '', 60),
