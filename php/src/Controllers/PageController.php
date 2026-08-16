@@ -39,8 +39,8 @@ final class PageController
             'process'      => Content::list('process'),
             'testimonials' => Content::list('testimonials'),
             'faq'          => Content::list('faq'),
-            'cities'       => Content::list('cities'),
-            'venues'       => array_slice(Content::list('venues'), 0, 6),
+            'cities'       => Content::listed('cities'),
+            'venues'       => array_slice(Content::listed('venues'), 0, 6),
             'stories'      => array_slice(Content::list('stories'), 0, 3),
             'packages'     => Content::list('packages'),
         ]));
@@ -151,7 +151,7 @@ final class PageController
                     ['name' => I18n::t('city.allCities'), 'path' => '/regionen'],
                 ])],
             ]),
-            'cities' => Content::list('cities'),
+            'cities' => Content::listed('cities'),
         ]));
     }
 
@@ -190,6 +190,9 @@ final class PageController
             'meta' => Seo::forTemplate('city', ['name' => $name], '/hochzeitsfotograf/' . $slug, [
                 'title'       => $de ? "Hochzeitsfotograf $name – Foto & Video ab 690 €" : "Wedding photographer $name – photo & film from 690 €",
                 'description' => mb_substr(I18n::pick($city['lead'] ?? null), 0, 158),
+                // Aus der Suche genommen, aber weiter erreichbar: wer den Link
+                // hat, sieht die Seite.
+                'noindex'     => !Content::shows($city, 'indexed'),
                 'jsonLd'      => [
                     Seo::faq($this->faqPairs((array) ($city['faq'] ?? []))),
                     Seo::breadcrumb([
@@ -219,7 +222,7 @@ final class PageController
                     ['name' => I18n::t('venue.all'), 'path' => '/hochzeitslocations'],
                 ])],
             ]),
-            'venues' => Content::list('venues'),
+            'venues' => Content::listed('venues'),
         ]));
     }
 
@@ -244,6 +247,7 @@ final class PageController
                 [
                     'title'       => $de ? "$name Hochzeitsfotograf – Erfahrung vor Ort" : "$name wedding photographer – we know the place",
                     'description' => mb_substr(I18n::pick($venue['lead'] ?? null), 0, 158),
+                    'noindex'     => !Content::shows($venue, 'indexed'),
                     'jsonLd'      => [Seo::breadcrumb([
                         ['name' => 'Home', 'path' => '/'],
                         ['name' => I18n::t('venue.all'), 'path' => '/hochzeitslocations'],

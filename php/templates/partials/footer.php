@@ -12,7 +12,7 @@ use Atelier\I18n;
 
 $p = static fn (string $to): string => I18n::path($to, $locale);
 $c = Content::get('contact');
-$cities = array_slice(Content::list('cities'), 0, 8);
+$cities = array_slice(Content::listed('cities'), 0, 8);
 
 $navLinks = [
     [$p('/leistungen'), I18n::t('nav.services')],

@@ -47,6 +47,35 @@ final class Content
         return is_array($value) ? array_values(array_filter($value, 'is_array')) : [];
     }
 
+    /**
+     * Zwei Schalter je Eintrag, unabhängig voneinander:
+     *
+     *   listed   steht in den Übersichten (Regionen, Locations, Startseite)
+     *   indexed  steht in der sitemap.xml und darf indexiert werden
+     *
+     * Fehlt der Schalter, gilt er als an. Sonst wären beim ersten Aufruf nach
+     * dieser Änderung alle vorhandenen Städte auf einen Schlag verschwunden –
+     * die Daten kennen das Feld noch nicht.
+     */
+    public static function shows(array $item, string $switch): bool
+    {
+        return !array_key_exists($switch, $item) || (bool) $item[$switch];
+    }
+
+    /**
+     * Wie list(), aber ohne die aus den Übersichten genommenen Einträge.
+     * Die Seiten selbst bleiben erreichbar – ausgeblendet ist nur die Liste.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function listed(string $key): array
+    {
+        return array_values(array_filter(
+            self::list($key),
+            static fn (array $item): bool => self::shows($item, 'listed')
+        ));
+    }
+
     /** Einzelnes Feld über einen Pfad: field('contact.email') */
     public static function field(string $path, string $default = ''): string
     {

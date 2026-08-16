@@ -80,6 +80,16 @@ final class Form
         $type = $field['type'] ?? 'text';
         $name = self::key($field['path']);
         $value = self::get($data, $field['path']);
+
+        /*
+         * Ein Kästchen, dessen Feld es in den Daten noch gar nicht gibt, wäre
+         * sonst leer – und stünde damit auf „aus“, obwohl der Code die
+         * fehlende Angabe als „an“ liest. Beim ersten Speichern hätte sich der
+         * Schalter dann von selbst umgelegt.
+         */
+        if ($type === 'check' && $value === null) {
+            $value = (bool) ($field['default'] ?? false);
+        }
         $label = '<label class="' . (str_ends_with((string) $field['path'], '.en') ? self::LABEL_EN : self::LABEL) . '" for="' . e($name) . '">' . e($field['label']) . '</label>';
         $hint = isset($field['hint'])
             ? '<p class="mt-2 text-[0.72rem] leading-relaxed text-muted">' . e($field['hint']) . '</p>'

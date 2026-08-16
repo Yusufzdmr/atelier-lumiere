@@ -34,6 +34,29 @@ final class ListAdminController
         return $this->locale === 'de';
     }
 
+    /**
+     * Was in der Liste hinter der Adresse steht, wenn ein Schalter aus ist.
+     *
+     * Ohne diesen Hinweis sieht eine ausgeblendete Stadt in der Liste genauso
+     * aus wie eine sichtbare – man klappt sie auf, um nachzusehen, und das bei
+     * hundert Einträgen.
+     *
+     * @param array<string,mixed> $item
+     */
+    private function hidden(array $item): string
+    {
+        $de = $this->de();
+        $marks = [];
+        if (!Content::shows($item, 'listed')) {
+            $marks[] = $de ? 'nicht gelistet' : 'listede yok';
+        }
+        if (!Content::shows($item, 'indexed')) {
+            $marks[] = $de ? 'nicht bei Google' : "Google'da yok";
+        }
+
+        return $marks === [] ? '' : ' · ' . implode(' · ', $marks);
+    }
+
     /* ---------------------------- Leistungen & Ablauf ----------------------- */
 
     public function services(): void
@@ -157,7 +180,7 @@ final class ListAdminController
         $spec = [
             'key'     => 'cities',
             'heading' => fn (array $item): string => (string) ($item['name'] ?? ''),
-            'note'    => fn (array $item): string => '/' . $this->locale . '/hochzeitsfotograf/' . (string) ($item['slug'] ?? ''),
+            'note'    => fn (array $item): string => '/' . $this->locale . '/hochzeitsfotograf/' . (string) ($item['slug'] ?? '') . $this->hidden($item),
             'view'    => fn (array $item): string => I18n::path('/hochzeitsfotograf/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete'  => [
                 'label'   => $de ? 'Diese Stadtseite löschen' : 'Bu şehir sayfasını sil',
@@ -173,6 +196,22 @@ final class ListAdminController
                         ['path' => "cities.$i.kreis.en", 'label' => $de ? 'Landkreis (EN)' : 'İlçe (EN)'],
                         ['path' => "cities.$i.drive.de", 'label' => $de ? 'Anfahrt (DE)' : 'Ulaşım (DE)'],
                         ['path' => "cities.$i.drive.en", 'label' => $de ? 'Anfahrt (EN)' : 'Ulaşım (EN)'],
+                    ],
+                ],
+                [
+                    'title'  => $de ? 'Sichtbarkeit' : 'Görünürlük',
+                    'hint'   => $de
+                        ? 'Beides getrennt schaltbar. Die Seite bleibt in jedem Fall unter ihrer Adresse erreichbar – ausgeblendet wird nur der Weg dorthin.'
+                        : 'İkisi ayrı ayrı çalışır. Sayfa her hâlükârda kendi adresinden açılır – gizlenen yalnızca ona giden yol.',
+                    'fields' => [
+                        [
+                            'path' => "cities.$i.listed", 'type' => 'check', 'default' => true,
+                            'label' => $de ? 'In den Listen der Website zeigen (Regionen, Startseite, Fußbereich)' : 'Sitedeki listelerde göster (Bölgeler, ana sayfa, alt bilgi)',
+                        ],
+                        [
+                            'path' => "cities.$i.indexed", 'type' => 'check', 'default' => true,
+                            'label' => $de ? 'In die sitemap.xml aufnehmen und von Google indexieren lassen' : 'sitemap.xml’e ekle ve Google dizine alsın',
+                        ],
                     ],
                 ],
                 [
@@ -237,14 +276,18 @@ final class ListAdminController
                     return [
                         'slug'       => Lists::freeSlug('cities', Security::clean($_POST['slug'] ?? '', 80) ?: $name, 'stadt'),
                         'name'       => $name,
-                        'kreis'      => ['de' => '', 'tr' => ''],
+                        'kreis'      => ['de' => '', 'en' => ''],
                         'drive'      => Lists::l10n($drive, $drive),
-                        'lead'       => ['de' => '', 'tr' => ''],
-                        'body'       => ['de' => [], 'tr' => []],
+                        'lead'       => ['de' => '', 'en' => ''],
+                        'body'       => ['de' => [], 'en' => []],
                         'spots'      => [],
                         'faq'        => [],
                         'venues'     => [],
                         'neighbours' => [],
+                        // Eine neue Seite ist sichtbar, bis jemand etwas
+                        // anderes sagt.
+                        'listed'     => true,
+                        'indexed'    => true,
                     ];
                 },
             ],
@@ -265,7 +308,7 @@ final class ListAdminController
         $spec = [
             'key'     => 'venues',
             'heading' => fn (array $item): string => (string) ($item['name'] ?? ''),
-            'note'    => fn (array $item): string => (string) ($item['city'] ?? '') . ' · /' . (string) ($item['slug'] ?? ''),
+            'note'    => fn (array $item): string => (string) ($item['city'] ?? '') . ' · /' . (string) ($item['slug'] ?? '') . $this->hidden($item),
             'view'    => fn (array $item): string => I18n::path('/hochzeitslocations/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete'  => [
                 'label'   => $de ? 'Diese Location löschen' : 'Bu mekânı sil',
@@ -295,6 +338,22 @@ final class ListAdminController
                         ['path' => "venues.$i.type.en", 'label' => $de ? 'Art (EN)' : 'Tür (EN)'],
                         ['path' => "venues.$i.capacity.de", 'label' => $de ? 'Kapazität (DE)' : 'Kapasite (DE)'],
                         ['path' => "venues.$i.capacity.en", 'label' => $de ? 'Kapazität (EN)' : 'Kapasite (EN)'],
+                    ],
+                ],
+                [
+                    'title'  => $de ? 'Sichtbarkeit' : 'Görünürlük',
+                    'hint'   => $de
+                        ? 'Beides getrennt schaltbar. Die Seite bleibt in jedem Fall unter ihrer Adresse erreichbar – ausgeblendet wird nur der Weg dorthin.'
+                        : 'İkisi ayrı ayrı çalışır. Sayfa her hâlükârda kendi adresinden açılır – gizlenen yalnızca ona giden yol.',
+                    'fields' => [
+                        [
+                            'path' => "venues.$i.listed", 'type' => 'check', 'default' => true,
+                            'label' => $de ? 'In den Listen der Website zeigen (Locations, Startseite)' : 'Sitedeki listelerde göster (Mekânlar, ana sayfa)',
+                        ],
+                        [
+                            'path' => "venues.$i.indexed", 'type' => 'check', 'default' => true,
+                            'label' => $de ? 'In die sitemap.xml aufnehmen und von Google indexieren lassen' : 'sitemap.xml’e ekle ve Google dizine alsın',
+                        ],
                     ],
                 ],
                 [
@@ -367,15 +426,17 @@ final class ListAdminController
                         'city'     => $city,
                         'citySlug' => $citySlug,
                         'address'  => Security::clean($_POST['address'] ?? '', 200),
-                        'type'     => ['de' => '', 'tr' => ''],
-                        'capacity' => ['de' => '', 'tr' => ''],
-                        'lead'     => ['de' => '', 'tr' => ''],
-                        'body'     => ['de' => [], 'tr' => []],
-                        'light'    => ['de' => '', 'tr' => ''],
-                        'rules'    => ['de' => [], 'tr' => []],
-                        'spots'    => ['de' => [], 'tr' => []],
+                        'type'     => ['de' => '', 'en' => ''],
+                        'capacity' => ['de' => '', 'en' => ''],
+                        'lead'     => ['de' => '', 'en' => ''],
+                        'body'     => ['de' => [], 'en' => []],
+                        'light'    => ['de' => '', 'en' => ''],
+                        'rules'    => ['de' => [], 'en' => []],
+                        'spots'    => ['de' => [], 'en' => []],
                         'timing'   => [],
                         'faq'      => [],
+                        'listed'   => true,
+                        'indexed'  => true,
                     ];
                 },
             ],

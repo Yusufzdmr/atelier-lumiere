@@ -50,10 +50,19 @@ final class SitemapController
             $entries[] = $page;
         }
 
+        // Der zweite Schalter je Eintrag: aus der Sitemap genommen und auf der
+        // Seite selbst mit noindex versehen (PageController). Das Gegenstück
+        // zu 'listed', das nur die Übersichten betrifft.
         foreach (Content::list('cities') as $city) {
+            if (!Content::shows($city, 'indexed')) {
+                continue;
+            }
             $entries[] = ['path' => '/hochzeitsfotograf/' . (string) ($city['slug'] ?? ''), 'priority' => '0.95', 'freq' => 'monthly'];
         }
         foreach (Content::list('venues') as $venue) {
+            if (!Content::shows($venue, 'indexed')) {
+                continue;
+            }
             $entries[] = ['path' => '/hochzeitslocations/' . (string) ($venue['slug'] ?? ''), 'priority' => '0.9', 'freq' => 'monthly'];
         }
         foreach (Content::posts() as $post) {
