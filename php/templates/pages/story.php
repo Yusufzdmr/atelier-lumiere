@@ -12,6 +12,7 @@
 use function Atelier\e;
 use Atelier\I18n;
 use Atelier\Ui;
+use Atelier\Video;
 
 $p = static fn (string $to): string => I18n::path($to, $locale);
 $de = $locale === 'de';
@@ -78,6 +79,30 @@ $gallery = $uploads !== [] ? $uploads : $seeds;
       </div>
     <?= Ui::revealClose() ?>
   </div>
+
+  <?php
+  /*
+   * Der Hochzeitsfilm. Das Feld gab es im Adminbereich längst – „Hochzeitsfilm
+   * (YouTube / Vimeo)“ unter jeder Reportage –, nur zeigte diese Seite ihn nie
+   * an: eingetragen, gespeichert, und dann nirgends zu sehen.
+   *
+   * Zwei Klicks wie überall sonst: vor dem Antippen geht keine Anfrage an
+   * YouTube, egal ob jemand eingewilligt hat.
+   */
+  $film = (string) ($story['videoUrl'] ?? '');
+  ?>
+  <?php if ($film !== '' && Video::isSupported($film)) : ?>
+    <div class="mt-16">
+      <?= Ui::revealOpen(0) ?>
+        <div class="text-[0.62rem] uppercase tracking-[0.24em] text-gold">
+          <?= $de ? 'Der Film' : 'Film' ?>
+        </div>
+        <div class="mt-5">
+          <?= Video::embedBox($film, $couple . ' – Film', (string) ($gallery[0] ?? '')) ?>
+        </div>
+      <?= Ui::revealClose() ?>
+    </div>
+  <?php endif; ?>
 
   <?php if ($gallery !== []) : ?>
     <div class="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
