@@ -74,11 +74,36 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
 
   <?php /* --------------------------- Rückmeldungen --------------------------- */ ?>
   <?php
-  $yes = array_values(array_filter($rsvps, static fn (array $r): bool => !empty($r['coming'])));
-  $no = array_values(array_filter($rsvps, static fn (array $r): bool => empty($r['coming'])));
+  /*
+   * Antworten sind nach Datum absteigend sortiert. Wer zweimal antwortet, weil
+   * sich etwas geaendert hat, soll nicht zweimal in der Liste stehen – die
+   * erste gefundene Antwort je Gast ist die neueste und gilt.
+   */
+  $answers = [];
+  $answered = [];
+  foreach ($rsvps as $rsvp) {
+      $token = (string) ($rsvp['guest'] ?? '');
+      if ($token !== '') {
+          if (isset($answered[$token])) {
+              continue;
+          }
+          $answered[$token] = true;
+      }
+      $answers[] = $rsvp;
+  }
+
+  $yes = array_values(array_filter($answers, static fn (array $r): bool => !empty($r['coming'])));
+  $no = array_values(array_filter($answers, static fn (array $r): bool => empty($r['coming'])));
   // Nicht die Zahl der Antworten, sondern die der Personen: eine Zusage kann
   // fuer eine ganze Familie gelten, und danach wird der Saal bestuhlt.
   $heads = array_sum(array_map(static fn (array $r): int => max(1, (int) ($r['count'] ?? 1)), $yes));
+
+  // Eingetragen, aber noch keine Antwort. Das ist die Liste, an der man
+  // tatsaechlich arbeitet – die anderen sind erledigt.
+  $pending = array_values(array_filter(
+      $guests,
+      static fn (array $g): bool => !isset($answered[(string) ($g['token'] ?? '')])
+  ));
   ?>
   <section class="mt-12 border border-sand-deep p-6">
     <h2 class="font-display text-lg text-ink"><?= $de ? 'Wer kommt' : 'Kimler geliyor' ?></h2>
@@ -106,7 +131,7 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
       </div>
 
       <ul class="mt-7 divide-y divide-sand-deep/60">
-        <?php foreach ($rsvps as $rsvp) : ?>
+        <?php foreach ($answers as $rsvp) : ?>
           <?php $coming = !empty($rsvp['coming']); ?>
           <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
             <span class="text-[0.7rem] <?= $coming ? 'text-gold' : 'text-muted' ?>"><?= $coming ? '●' : '○' ?></span>
@@ -126,6 +151,33 @@ $whatsapp = static function (string $url, string $who) use ($de, $names, $date):
           </li>
         <?php endforeach; ?>
       </ul>
+    <?php endif; ?>
+
+    <?php if ($pending !== []) : ?>
+      <div class="mt-9 border-t border-sand-deep/60 pt-7">
+        <h3 class="text-[0.66rem] uppercase tracking-[0.18em] text-muted">
+          <?= $de ? 'Warten noch auf Antwort' : 'Cevap bekleyenler' ?>
+          <span class="text-gold">(<?= count($pending) ?>)</span>
+        </h3>
+        <p class="mt-2 text-[0.8rem] leading-relaxed text-muted">
+          <?= $de
+            ? 'Diese Namen stehen auf eurer Liste, haben aber über ihren eigenen Link noch nicht geantwortet.'
+            : 'Bu isimler listenizde ama kendi bağlantılarından henüz cevap vermediler.' ?>
+        </p>
+
+        <ul class="mt-5 space-y-2.5">
+          <?php foreach ($pending as $guest) : ?>
+            <li class="flex flex-wrap items-center gap-3">
+              <span class="text-[0.95rem] text-ink"><?= e((string) ($guest['name'] ?? '')) ?></span>
+              <a href="<?= e($whatsapp((string) ($guest['url'] ?? ''), (string) ($guest['name'] ?? ''))) ?>"
+                 target="_blank" rel="noopener"
+                 class="ml-auto whitespace-nowrap border border-gold px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold hover:text-white">
+                <?= $de ? 'Erinnern' : 'Hatırlat' ?>
+              </a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
     <?php endif; ?>
   </section>
 

@@ -204,6 +204,10 @@ foreach ($rsvps as $rsvp) {
             <?php else : ?>
               <form method="post" class="mx-auto mt-6 max-w-sm space-y-5 text-left">
                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <?php if (($guest ?? null) !== null) : ?>
+                  <?php /* Damit das Paar sieht, wer von der Liste noch nicht geantwortet hat. */ ?>
+                  <input type="hidden" name="gast" value="<?= e((string) $guest['token']) ?>">
+                <?php endif; ?>
 
                 <div>
                   <label class="block text-[0.6rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>"><?= e(I18n::t('invite.rsvpName')) ?> *</label>

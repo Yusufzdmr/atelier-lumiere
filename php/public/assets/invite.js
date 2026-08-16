@@ -232,14 +232,149 @@
   paintEvents();
   paintPrice();
 
-  /* ------------------------- Link kopieren ------------------------- */
+})();
+
+/**
+ * Zeilen mit Plus-Knopf für Programm und Menü.
+ *
+ * Darunter liegt weiter das Textfeld, und abgeschickt wird auch weiter dessen
+ * Inhalt – eine Zeile je Punkt, bei mehreren Spalten mit "|" dazwischen. Das
+ * Feld verschwindet nur aus dem Blick. Wer ohne Skript kommt, sieht es wie
+ * vorher und kann tippen; wer mit Skript kommt, sieht Felder und muss von
+ * dem senkrechten Strich nie erfahren.
+ */
+(function () {
+  "use strict";
+
+  document.querySelectorAll("[data-repeater]").forEach(function (box) {
+    var area = box.querySelector("textarea");
+    if (!area) return;
+
+    var columns = (box.getAttribute("data-columns") || "text").split(",");
+    var rows = document.createElement("div");
+    rows.className = "mt-3 space-y-3";
+
+    area.hidden = true;
+    box.appendChild(rows);
+
+    /** Aus den Zeilen wieder den Text bauen, den der Server erwartet. */
+    function sync() {
+      var lines = [];
+      rows.querySelectorAll("[data-row]").forEach(function (row) {
+        var values = [];
+        row.querySelectorAll("input").forEach(function (input) {
+          values.push(input.value.trim());
+        });
+        // Eine Zeile, in der nichts steht, gehört nicht in die Einladung.
+        if (values.join("") !== "") lines.push(values.join(" | "));
+      });
+      area.value = lines.join("\n");
+    }
+
+    function addRow(values) {
+      var row = document.createElement("div");
+      row.setAttribute("data-row", "");
+      row.className = "flex items-center gap-3";
+
+      columns.forEach(function (column, i) {
+        var input = document.createElement("input");
+        input.type = "text";
+        input.value = values[i] || "";
+        input.placeholder = box.getAttribute("data-placeholder-" + column) || "";
+        // Die Uhrzeit ist kurz, der Programmpunkt bekommt den Rest.
+        input.className =
+          (column === "time" ? "w-24 shrink-0 " : "flex-1 ") +
+          "border-b border-sand-deep bg-transparent px-0 py-2.5 text-[0.95rem] text-ink outline-none transition-colors placeholder:text-muted/50 focus:border-gold";
+        input.addEventListener("input", sync);
+        row.appendChild(input);
+      });
+
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.title = box.getAttribute("data-remove") || "";
+      remove.setAttribute("aria-label", remove.title);
+      remove.className = "shrink-0 px-2 text-lg leading-none text-muted transition-colors hover:text-ink";
+      remove.addEventListener("click", function () {
+        row.remove();
+        if (!rows.querySelector("[data-row]")) addRow([]);
+        sync();
+      });
+      row.appendChild(remove);
+
+      rows.appendChild(row);
+      return row;
+    }
+
+    // Was schon dasteht, in Zeilen übersetzen – sonst eine leere zum Anfangen.
+    var existing = area.value.split("\n").filter(function (line) {
+      return line.trim() !== "";
+    });
+    if (existing.length === 0) {
+      addRow([]);
+    } else {
+      existing.forEach(function (line) {
+        addRow(line.split("|").map(function (part) { return part.trim(); }));
+      });
+    }
+
+    var add = document.createElement("button");
+    add.type = "button";
+    add.textContent = box.getAttribute("data-add") || "+";
+    add.className = "mt-4 text-[0.68rem] uppercase tracking-[0.18em] text-gold transition-colors hover:text-ink";
+    add.addEventListener("click", function () {
+      var row = addRow([]);
+      var first = row.querySelector("input");
+      if (first) first.focus();
+    });
+    box.appendChild(add);
+
+    sync();
+  });
+})();
+
+/**
+ * Link kopieren – eigener Block.
+ *
+ * Das stand vorher im Assistenten, hinter dessen "kein Formular, dann nichts
+ * tun". Auf der Seite nach dem Erstellen gibt es aber kein Formular mehr, nur
+ * noch die beiden Knöpfe "Link kopieren" – und die taten deshalb nie etwas.
+ *
+ * navigator.clipboard gibt es nur in sicheren Kontexten; unter http auf einer
+ * LAN-Adresse fehlt es. Dann der alte Weg über ein unsichtbares Feld, damit
+ * der Knopf überall etwas tut.
+ */
+(function () {
+  "use strict";
+
+  function copy(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    var helper = document.createElement("textarea");
+    helper.value = text;
+    helper.setAttribute("readonly", "");
+    helper.style.position = "fixed";
+    helper.style.top = "-1000px";
+    document.body.appendChild(helper);
+    helper.select();
+    try {
+      document.execCommand("copy");
+    } catch (e) {
+      /* Dann bleibt dem Paar das Markieren von Hand. */
+    }
+    document.body.removeChild(helper);
+    return Promise.resolve();
+  }
+
   document.querySelectorAll("[data-copy]").forEach(function (button) {
     button.addEventListener("click", function () {
-      if (!navigator.clipboard) return;
-      navigator.clipboard.writeText(button.getAttribute("data-copy") || "");
       var before = button.textContent;
-      button.textContent = "✓";
-      setTimeout(function () { button.textContent = before; }, 1500);
+      copy(button.getAttribute("data-copy") || "").then(function () {
+        button.textContent = "✓";
+        setTimeout(function () { button.textContent = before; }, 1500);
+      });
     });
   });
 })();

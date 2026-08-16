@@ -515,9 +515,16 @@ final class InviteController
             return false;
         }
 
+        // Kam die Antwort über einen persönlichen Link, wird sie dem Namen von
+        // der Liste zugeordnet – nur so kann das Paar sehen, wer noch fehlt.
+        // Ein erfundenes Kürzel bleibt draußen: geprüft wird gegen die Liste.
+        $token = Security::clean($_POST['gast'] ?? '', 80);
+        $guest = $token !== '' ? Guests::find($slug, $token) : null;
+
         Invitations::addRsvp($slug, [
             'slug'   => $slug,
             'name'   => $name,
+            'guest'  => $guest !== null ? (string) $guest['token'] : '',
             'coming' => (string) ($_POST['coming'] ?? '1') === '1',
             'count'  => max(1, min(20, (int) ($_POST['count'] ?? 1))),
             'note'   => Security::clean($_POST['note'] ?? '', 300),

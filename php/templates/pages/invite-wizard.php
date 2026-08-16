@@ -301,14 +301,37 @@ $steps = $de
           </div>
 
           <div class="space-y-7 border-t border-sand-deep pt-8">
+            <?php
+            /*
+             * Programm und Menue: das Textfeld bleibt stehen und bleibt das
+             * Feld, das abgeschickt wird – ohne Skript tut die Seite also
+             * weiter, was sie immer tat. assets/invite.js legt darueber die
+             * Zeilen mit dem Plus-Knopf und schreibt sie hier hinein. Niemand
+             * muss dann wissen, dass ein senkrechter Strich Uhrzeit und
+             * Programmpunkt trennt.
+             */
+            ?>
             <div data-needs="program">
-              <label class="<?= $label ?>"><?= $de ? 'Programm – je Zeile: Uhrzeit | Programmpunkt' : 'Program – her satır: Saat | Bölüm' ?></label>
-              <textarea name="program" rows="4" class="<?= $field ?> resize-y" placeholder="16:00 | <?= $de ? 'Empfang' : 'Karşılama' ?>"><?= e($old('program')) ?></textarea>
+              <label class="<?= $label ?>"><?= $de ? 'Programm' : 'Program' ?></label>
+              <div data-repeater="program"
+                   data-columns="time,text"
+                   data-placeholder-time="16:00"
+                   data-placeholder-text="<?= e($de ? 'Empfang' : 'Karşılama') ?>"
+                   data-add="<?= e($de ? '+ Programmpunkt' : '+ Program ekle') ?>"
+                   data-remove="<?= e($de ? 'Entfernen' : 'Kaldır') ?>">
+                <textarea name="program" rows="4" class="<?= $field ?> resize-y" placeholder="16:00 | <?= $de ? 'Empfang' : 'Karşılama' ?>"><?= e($old('program')) ?></textarea>
+              </div>
             </div>
 
             <div data-needs="menu">
-              <label class="<?= $label ?>"><?= $de ? 'Menü – je Zeile ein Gang' : 'Menü – her satıra bir yemek' ?></label>
-              <textarea name="menu" rows="4" class="<?= $field ?> resize-y"><?= e($old('menu')) ?></textarea>
+              <label class="<?= $label ?>"><?= $de ? 'Menü' : 'Menü' ?></label>
+              <div data-repeater="menu"
+                   data-columns="text"
+                   data-placeholder-text="<?= e($de ? 'Vorspeise' : 'Başlangıç') ?>"
+                   data-add="<?= e($de ? '+ Gang' : '+ Yemek ekle') ?>"
+                   data-remove="<?= e($de ? 'Entfernen' : 'Kaldır') ?>">
+                <textarea name="menu" rows="4" class="<?= $field ?> resize-y"><?= e($old('menu')) ?></textarea>
+              </div>
             </div>
 
             <div class="grid gap-7 sm:grid-cols-2" data-needs="family">
