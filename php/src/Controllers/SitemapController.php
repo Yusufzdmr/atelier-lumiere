@@ -78,7 +78,7 @@ final class SitemapController
                 $out .= '    <priority>' . $entry['priority'] . "</priority>\n";
 
                 foreach (I18n::LOCALES as $alt) {
-                    $out .= '    <xhtml:link rel="alternate" hreflang="' . ($alt === 'tr' ? 'tr-TR' : 'de-DE')
+                    $out .= '    <xhtml:link rel="alternate" hreflang="' . ($alt === 'en' ? 'en' : 'de-DE')
                         . '" href="' . htmlspecialchars($url . '/' . $alt . $entry['path'], ENT_XML1) . '"/>' . "\n";
                 }
                 $out .= '    <xhtml:link rel="alternate" hreflang="x-default" href="'

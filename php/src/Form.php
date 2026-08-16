@@ -27,6 +27,8 @@ final class Form
 {
     private const INPUT = 'w-full border-b border-sand-deep bg-transparent px-0 py-2.5 text-[0.92rem] text-ink outline-none focus:border-gold';
     private const LABEL = 'block text-[0.6rem] uppercase tracking-[0.18em] text-muted';
+    /** Englische Beschriftungen in derselben Farbe wie ihr Streifen. */
+    private const LABEL_EN = 'block text-[0.6rem] uppercase tracking-[0.18em] text-[#9C4A3C]';
 
     /** Punktpfad -> Formularname (Punkte sind in Namen unpraktisch). */
     public static function key(string $path): string
@@ -78,7 +80,7 @@ final class Form
         $type = $field['type'] ?? 'text';
         $name = self::key($field['path']);
         $value = self::get($data, $field['path']);
-        $label = '<label class="' . self::LABEL . '" for="' . e($name) . '">' . e($field['label']) . '</label>';
+        $label = '<label class="' . (str_ends_with((string) $field['path'], '.en') ? self::LABEL_EN : self::LABEL) . '" for="' . e($name) . '">' . e($field['label']) . '</label>';
         $hint = isset($field['hint'])
             ? '<p class="mt-2 text-[0.72rem] leading-relaxed text-muted">' . e($field['hint']) . '</p>'
             : '';
@@ -96,8 +98,19 @@ final class Form
             default => '<input id="' . e($name) . '" name="' . e($name) . '" value="' . e((string) $value) . '" class="' . self::INPUT . '">',
         };
 
+        /*
+         * Die englischen Felder farblich absetzen.
+         *
+         * Deutsch und Englisch stehen paarweise untereinander und sehen sonst
+         * gleich aus – man tippt den deutschen Satz ins englische Feld, merkt
+         * es beim Speichern nicht, und auf der Seite steht es doppelt. Ein
+         * schmaler Streifen an der Seite genügt, um sie auseinanderzuhalten.
+         */
+        $englisch = str_ends_with((string) $field['path'], '.en');
+        $rahmen = $englisch ? ' class="border-l-2 border-[#9C4A3C]/40 pl-4"' : '';
+
         // Beim Kästchen steckt die Beschriftung schon im Steuerelement.
-        return '<div>' . ($type === 'check' ? '' : $label) . $control . $hint
+        return '<div' . $rahmen . '>' . ($type === 'check' ? '' : $label) . $control . $hint
             . self::originalNote($field, $value, $originals) . '</div>';
     }
 

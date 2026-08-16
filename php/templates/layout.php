@@ -22,7 +22,7 @@ $noindex = (bool) ($meta['noindex'] ?? false) || (bool) Config::get('noindex', f
 $jsonLd = $meta['jsonLd'] ?? [];
 
 // hreflang: derselbe Pfad in der anderen Sprache
-$bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
+$bare = preg_replace('#^/(de|en)#', '', $path) ?? '';
 ?>
 <!doctype html>
 <html lang="<?= e(I18n::htmlLang()) ?>">
@@ -41,7 +41,7 @@ $bare = preg_replace('#^/(de|tr)#', '', $path) ?? '';
 
   <link rel="canonical" href="<?= e($canonical) ?>">
   <link rel="alternate" hreflang="de-DE" href="<?= e(Config::url() . '/de' . $bare) ?>">
-  <link rel="alternate" hreflang="tr-TR" href="<?= e(Config::url() . '/tr' . $bare) ?>">
+  <link rel="alternate" hreflang="en" href="<?= e(Config::url() . '/en' . $bare) ?>">
   <link rel="alternate" hreflang="x-default" href="<?= e(Config::url() . '/de' . $bare) ?>">
 
   <meta property="og:type" content="<?= e($ogType) ?>">

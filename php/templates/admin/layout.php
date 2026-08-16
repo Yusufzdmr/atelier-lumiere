@@ -57,7 +57,23 @@ $link = static function (array $tab): string {
 
       <?php if ($nav) : ?>
         <div class="flex items-center gap-4">
-          <a href="<?= e(I18n::path('', $locale)) ?>" target="_blank" rel="noopener"
+          <?php
+          /*
+           * Die Sprache des Adminbereichs, nicht die der Website. Die Website
+           * spricht Deutsch und Englisch, hier sitzt der Betrieb – und der
+           * arbeitet lieber auf Türkisch. Der Umschalter bleibt auf demselben
+           * Reiter stehen.
+           */
+          $hier = $current === '' ? '/admin' : '/admin' . $current;
+          ?>
+          <div class="flex items-center gap-1">
+            <?php foreach (I18n::ADMIN_LOCALES as $l) : ?>
+              <a href="<?= e(I18n::path($hier, $l)) ?>"
+                 class="px-1.5 py-1 text-[0.64rem] uppercase tracking-[0.16em] transition-colors <?= $l === $locale ? 'text-gold' : 'text-muted hover:text-ink' ?>"><?= e(strtoupper($l)) ?></a>
+            <?php endforeach; ?>
+          </div>
+
+          <a href="<?= e(I18n::path('', I18n::DEFAULT)) ?>" target="_blank" rel="noopener"
              class="text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold">
             <?= $de ? 'Zur Website' : 'Siteye dön' ?> ↗
           </a>

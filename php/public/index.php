@@ -58,6 +58,25 @@ $page_ = static function (callable $handler) use ($page): callable {
     };
 };
 
+/**
+ * Wie oben, aber für den Adminbereich: der spricht Deutsch und Türkisch,
+ * die Website Deutsch und Englisch. /tr/admin gibt es deshalb weiter,
+ * /tr/preise nicht mehr.
+ *
+ * @param callable(array<string,string>):void $handler
+ */
+$admin_ = static function (callable $handler) use ($page): callable {
+    return static function (array $params) use ($handler, $page): void {
+        $locale = $params['locale'] ?? '';
+        if (!I18n::isAdminLocale($locale)) {
+            $page->notFound(I18n::DEFAULT);
+            return;
+        }
+        I18n::set($locale);
+        $handler($params);
+    };
+};
+
 $router->get('/{locale}', $page_(static fn (array $p) => $page->home()));
 $router->get('/{locale}/leistungen', $page_(static fn (array $p) => $page->services()));
 $router->get('/{locale}/preise', $page_(static fn (array $p) => $page->prices()));
@@ -97,27 +116,27 @@ $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new G
 $router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) => (new GalleryController())->saveSelection()));
 $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
 
-$router->any('/{locale}/admin', $page_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
-$router->get('/{locale}/admin/karte', $page_(static fn (array $p) => (new AdminController($p['locale']))->map()));
-$router->get('/{locale}/admin/abmelden', $page_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
-$router->any('/{locale}/admin/inhalte', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
-$router->any('/{locale}/admin/bilder', $page_(static fn (array $p) => (new AdminController($p['locale']))->images()));
-$router->any('/{locale}/admin/texte', $page_(static fn (array $p) => (new TextAdminController($p['locale']))->index()));
-$router->any('/{locale}/admin/pakete', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->packages()));
-$router->any('/{locale}/admin/ueber-mich', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));
-$router->any('/{locale}/admin/rechtliches', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->legal()));
-$router->any('/{locale}/admin/seo', $page_(static fn (array $p) => (new ContentAdminController($p['locale']))->seo()));
-$router->any('/{locale}/admin/leistungen', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->services()));
-$router->any('/{locale}/admin/staedte', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->cities()));
-$router->any('/{locale}/admin/locations', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->venues()));
-$router->any('/{locale}/admin/portfolio', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->stories()));
-$router->any('/{locale}/admin/ratgeber', $page_(static fn (array $p) => (new ListAdminController($p['locale']))->posts()));
-$router->any('/{locale}/admin/kunden', $page_(static fn (array $p) => (new CustomerAdminController($p['locale']))->index()));
-$router->any('/{locale}/admin/kunden/{code}', $page_(static fn (array $p) => (new CustomerAdminController($p['locale']))->show($p)));
-$router->any('/{locale}/admin/einladungen', $page_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
-$router->any('/{locale}/admin/themen', $page_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
-$router->any('/{locale}/admin/systemcheck', $page_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
-$router->any('/{locale}/admin/integrationen', $page_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
+$router->any('/{locale}/admin', $admin_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
+$router->get('/{locale}/admin/karte', $admin_(static fn (array $p) => (new AdminController($p['locale']))->map()));
+$router->get('/{locale}/admin/abmelden', $admin_(static fn (array $p) => (new AdminController($p['locale']))->logout()));
+$router->any('/{locale}/admin/inhalte', $admin_(static fn (array $p) => (new ContentAdminController($p['locale']))->texts()));
+$router->any('/{locale}/admin/bilder', $admin_(static fn (array $p) => (new AdminController($p['locale']))->images()));
+$router->any('/{locale}/admin/texte', $admin_(static fn (array $p) => (new TextAdminController($p['locale']))->index()));
+$router->any('/{locale}/admin/pakete', $admin_(static fn (array $p) => (new ContentAdminController($p['locale']))->packages()));
+$router->any('/{locale}/admin/ueber-mich', $admin_(static fn (array $p) => (new ContentAdminController($p['locale']))->about()));
+$router->any('/{locale}/admin/rechtliches', $admin_(static fn (array $p) => (new ContentAdminController($p['locale']))->legal()));
+$router->any('/{locale}/admin/seo', $admin_(static fn (array $p) => (new ContentAdminController($p['locale']))->seo()));
+$router->any('/{locale}/admin/leistungen', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->services()));
+$router->any('/{locale}/admin/staedte', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->cities()));
+$router->any('/{locale}/admin/locations', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->venues()));
+$router->any('/{locale}/admin/portfolio', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->stories()));
+$router->any('/{locale}/admin/ratgeber', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->posts()));
+$router->any('/{locale}/admin/kunden', $admin_(static fn (array $p) => (new CustomerAdminController($p['locale']))->index()));
+$router->any('/{locale}/admin/kunden/{code}', $admin_(static fn (array $p) => (new CustomerAdminController($p['locale']))->show($p)));
+$router->any('/{locale}/admin/einladungen', $admin_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
+$router->any('/{locale}/admin/themen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
+$router->any('/{locale}/admin/systemcheck', $admin_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
+$router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
 $router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));

@@ -56,13 +56,13 @@ final class ListAdminController
             'sections' => fn (int $i): array => [[
                 'fields' => [
                     ['path' => "services.$i.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                    ['path' => "services.$i.title.tr", 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => "services.$i.title.en", 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                     ['path' => "services.$i.short.de", 'label' => $de ? 'Kurztext (DE)' : 'Kısa metin (DE)', 'type' => 'area', 'rows' => 2],
-                    ['path' => "services.$i.short.tr", 'label' => $de ? 'Kurztext (TR)' : 'Kısa metin (TR)', 'type' => 'area', 'rows' => 2],
+                    ['path' => "services.$i.short.en", 'label' => $de ? 'Kurztext (EN)' : 'Kısa metin (EN)', 'type' => 'area', 'rows' => 2],
                     ['path' => "services.$i.body.de", 'label' => $de ? 'Fließtext (DE) – Leerzeile trennt Absätze' : 'Uzun metin (DE) – boş satır paragraf ayırır', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 12000],
-                    ['path' => "services.$i.body.tr", 'label' => $de ? 'Fließtext (TR)' : 'Uzun metin (TR)', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 12000],
+                    ['path' => "services.$i.body.en", 'label' => $de ? 'Fließtext (EN)' : 'Uzun metin (EN)', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 12000],
                     ['path' => "services.$i.bullets.de", 'label' => $de ? 'Enthalten (DE) – eine Zeile je Punkt' : 'İçerik (DE) – her satıra bir madde', 'type' => 'lines', 'rows' => 5],
-                    ['path' => "services.$i.bullets.tr", 'label' => $de ? 'Enthalten (TR)' : 'İçerik (TR)', 'type' => 'lines', 'rows' => 5],
+                    ['path' => "services.$i.bullets.en", 'label' => $de ? 'Enthalten (EN)' : 'İçerik (EN)', 'type' => 'lines', 'rows' => 5],
                     ['path' => "services.$i.slug", 'label' => $de ? 'Anker (URL-Teil)' : 'Bağlantı adı (URL)', 'hint' => $de ? 'Ändern macht alte Links auf diesen Abschnitt ungültig.' : 'Değiştirmek bu bölüme giden eski bağlantıları bozar.'],
                     ['path' => "services.$i.seed", 'label' => $de ? 'Bild-Kennung' : 'Görsel anahtarı', 'hint' => $de ? 'Platzhalter-Name oder eine Bildadresse.' : 'Temsili görsel adı ya da bir görsel adresi.'],
                 ],
@@ -72,7 +72,7 @@ final class ListAdminController
                 'button' => $de ? 'Leistung anlegen' : 'Hizmet oluştur',
                 'fields' => [
                     ['path' => 'title_de', 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                    ['path' => 'title_tr', 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => 'title_tr', 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                     ['path' => 'slug', 'label' => $de ? 'Anker (leer = aus dem Titel)' : 'Bağlantı adı (boş = başlıktan)'],
                 ],
                 'make' => function (): ?array {
@@ -113,9 +113,9 @@ final class ListAdminController
                 'fields' => [
                     ['path' => "process.$i.step", 'label' => $de ? 'Nummer' : 'Numara'],
                     ['path' => "process.$i.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                    ['path' => "process.$i.title.tr", 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => "process.$i.title.en", 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                     ['path' => "process.$i.text.de", 'label' => $de ? 'Text (DE)' : 'Metin (DE)', 'type' => 'area', 'rows' => 3, 'wide' => true],
-                    ['path' => "process.$i.text.tr", 'label' => $de ? 'Text (TR)' : 'Metin (TR)', 'type' => 'area', 'rows' => 3, 'wide' => true],
+                    ['path' => "process.$i.text.en", 'label' => $de ? 'Text (EN)' : 'Metin (EN)', 'type' => 'area', 'rows' => 3, 'wide' => true],
                 ],
             ]],
             'add' => [
@@ -123,7 +123,7 @@ final class ListAdminController
                 'button' => $de ? 'Schritt anlegen' : 'Adım oluştur',
                 'fields' => [
                     ['path' => 'title_de', 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                    ['path' => 'title_tr', 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => 'title_tr', 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                 ],
                 'make' => function (): ?array {
                     $titleDe = Security::clean($_POST['title_de'] ?? '', 120);
@@ -170,9 +170,9 @@ final class ListAdminController
                     'fields' => [
                         ['path' => "cities.$i.name", 'label' => $de ? 'Name' : 'Ad'],
                         ['path' => "cities.$i.kreis.de", 'label' => $de ? 'Landkreis (DE)' : 'İlçe (DE)'],
-                        ['path' => "cities.$i.kreis.tr", 'label' => $de ? 'Landkreis (TR)' : 'İlçe (TR)'],
+                        ['path' => "cities.$i.kreis.en", 'label' => $de ? 'Landkreis (EN)' : 'İlçe (EN)'],
                         ['path' => "cities.$i.drive.de", 'label' => $de ? 'Anfahrt (DE)' : 'Ulaşım (DE)'],
-                        ['path' => "cities.$i.drive.tr", 'label' => $de ? 'Anfahrt (TR)' : 'Ulaşım (TR)'],
+                        ['path' => "cities.$i.drive.en", 'label' => $de ? 'Anfahrt (EN)' : 'Ulaşım (EN)'],
                     ],
                 ],
                 [
@@ -182,9 +182,9 @@ final class ListAdminController
                         : 'Her şehrin kendi cümleleri olmalı. Kopya şehir sayfalarını Google değersiz sayar.',
                     'fields' => [
                         ['path' => "cities.$i.lead.de", 'label' => $de ? 'Einleitung (DE)' : 'Giriş (DE)', 'type' => 'area', 'rows' => 3],
-                        ['path' => "cities.$i.lead.tr", 'label' => $de ? 'Einleitung (TR)' : 'Giriş (TR)', 'type' => 'area', 'rows' => 3],
+                        ['path' => "cities.$i.lead.en", 'label' => $de ? 'Einleitung (EN)' : 'Giriş (EN)', 'type' => 'area', 'rows' => 3],
                         ['path' => "cities.$i.body.de", 'label' => $de ? 'Fließtext (DE) – Leerzeile trennt Absätze' : 'Uzun metin (DE) – boş satır paragraf ayırır', 'type' => 'paras', 'rows' => 8, 'wide' => true, 'max' => 16000],
-                        ['path' => "cities.$i.body.tr", 'label' => $de ? 'Fließtext (TR)' : 'Uzun metin (TR)', 'type' => 'paras', 'rows' => 8, 'wide' => true, 'max' => 16000],
+                        ['path' => "cities.$i.body.en", 'label' => $de ? 'Fließtext (EN)' : 'Uzun metin (EN)', 'type' => 'paras', 'rows' => 8, 'wide' => true, 'max' => 16000],
                     ],
                 ],
                 [
@@ -292,18 +292,18 @@ final class ListAdminController
                         ['path' => "venues.$i.lat", 'label' => $de ? 'Breitengrad' : 'Enlem', 'hint' => $de ? 'Kommt aus der Ortssuche oben.' : 'Yukarıdaki yer aramasından gelir.'],
                         ['path' => "venues.$i.lng", 'label' => $de ? 'Längengrad' : 'Boylam'],
                         ['path' => "venues.$i.type.de", 'label' => $de ? 'Art (DE)' : 'Tür (DE)'],
-                        ['path' => "venues.$i.type.tr", 'label' => $de ? 'Art (TR)' : 'Tür (TR)'],
+                        ['path' => "venues.$i.type.en", 'label' => $de ? 'Art (EN)' : 'Tür (EN)'],
                         ['path' => "venues.$i.capacity.de", 'label' => $de ? 'Kapazität (DE)' : 'Kapasite (DE)'],
-                        ['path' => "venues.$i.capacity.tr", 'label' => $de ? 'Kapazität (TR)' : 'Kapasite (TR)'],
+                        ['path' => "venues.$i.capacity.en", 'label' => $de ? 'Kapazität (EN)' : 'Kapasite (EN)'],
                     ],
                 ],
                 [
                     'title'  => $de ? 'Texte' : 'Metinler',
                     'fields' => [
                         ['path' => "venues.$i.lead.de", 'label' => $de ? 'Einleitung (DE)' : 'Giriş (DE)', 'type' => 'area', 'rows' => 3],
-                        ['path' => "venues.$i.lead.tr", 'label' => $de ? 'Einleitung (TR)' : 'Giriş (TR)', 'type' => 'area', 'rows' => 3],
+                        ['path' => "venues.$i.lead.en", 'label' => $de ? 'Einleitung (EN)' : 'Giriş (EN)', 'type' => 'area', 'rows' => 3],
                         ['path' => "venues.$i.body.de", 'label' => $de ? 'Fließtext (DE)' : 'Uzun metin (DE)', 'type' => 'paras', 'rows' => 7, 'wide' => true, 'max' => 16000],
-                        ['path' => "venues.$i.body.tr", 'label' => $de ? 'Fließtext (TR)' : 'Uzun metin (TR)', 'type' => 'paras', 'rows' => 7, 'wide' => true, 'max' => 16000],
+                        ['path' => "venues.$i.body.en", 'label' => $de ? 'Fließtext (EN)' : 'Uzun metin (EN)', 'type' => 'paras', 'rows' => 7, 'wide' => true, 'max' => 16000],
                     ],
                 ],
                 [
@@ -313,11 +313,11 @@ final class ListAdminController
                         : 'Çiftlerin asıl aradığı kısım: ışığın ne zaman iyi olduğu ve mekânın neye izin verdiği.',
                     'fields' => [
                         ['path' => "venues.$i.light.de", 'label' => $de ? 'Licht (DE)' : 'Işık (DE)', 'type' => 'area', 'rows' => 3],
-                        ['path' => "venues.$i.light.tr", 'label' => $de ? 'Licht (TR)' : 'Işık (TR)', 'type' => 'area', 'rows' => 3],
+                        ['path' => "venues.$i.light.en", 'label' => $de ? 'Licht (EN)' : 'Işık (EN)', 'type' => 'area', 'rows' => 3],
                         ['path' => "venues.$i.rules.de", 'label' => $de ? 'Regeln (DE) – eine Zeile je Punkt' : 'Kurallar (DE) – her satıra bir madde', 'type' => 'lines', 'rows' => 4],
-                        ['path' => "venues.$i.rules.tr", 'label' => $de ? 'Regeln (TR)' : 'Kurallar (TR)', 'type' => 'lines', 'rows' => 4],
+                        ['path' => "venues.$i.rules.en", 'label' => $de ? 'Regeln (EN)' : 'Kurallar (EN)', 'type' => 'lines', 'rows' => 4],
                         ['path' => "venues.$i.spots.de", 'label' => $de ? 'Fotostellen (DE)' : 'Çekim yerleri (DE)', 'type' => 'lines', 'rows' => 4],
-                        ['path' => "venues.$i.spots.tr", 'label' => $de ? 'Fotostellen (TR)' : 'Çekim yerleri (TR)', 'type' => 'lines', 'rows' => 4],
+                        ['path' => "venues.$i.spots.en", 'label' => $de ? 'Fotostellen (EN)' : 'Çekim yerleri (EN)', 'type' => 'lines', 'rows' => 4],
                     ],
                 ],
                 [
@@ -425,9 +425,9 @@ final class ListAdminController
                         ['path' => "stories.$i.citySlug", 'label' => $de ? 'Stadtseite' : 'Şehir sayfası', 'type' => 'select', 'options' => $cityOptions],
                         ['path' => "stories.$i.venueSlug", 'label' => 'Location', 'type' => 'select', 'options' => $venueOptions],
                         ['path' => "stories.$i.venue.de", 'label' => $de ? 'Location-Text (DE)' : 'Mekân yazısı (DE)'],
-                        ['path' => "stories.$i.venue.tr", 'label' => $de ? 'Location-Text (TR)' : 'Mekân yazısı (TR)'],
+                        ['path' => "stories.$i.venue.en", 'label' => $de ? 'Location-Text (EN)' : 'Mekân yazısı (EN)'],
                         ['path' => "stories.$i.month.de", 'label' => $de ? 'Monat (DE)' : 'Ay (DE)'],
-                        ['path' => "stories.$i.month.tr", 'label' => $de ? 'Monat (TR)' : 'Ay (TR)'],
+                        ['path' => "stories.$i.month.en", 'label' => $de ? 'Monat (EN)' : 'Ay (EN)'],
                         [
                             'path' => "stories.$i.videoUrl", 'label' => $de ? 'Hochzeitsfilm (YouTube / Vimeo)' : 'Düğün filmi (YouTube / Vimeo)', 'wide' => true,
                             'hint' => $de
@@ -440,11 +440,11 @@ final class ListAdminController
                     'title'  => $de ? 'Texte' : 'Metinler',
                     'fields' => [
                         ['path' => "stories.$i.intro.de", 'label' => $de ? 'Einleitung (DE)' : 'Giriş (DE)', 'type' => 'area', 'rows' => 3],
-                        ['path' => "stories.$i.intro.tr", 'label' => $de ? 'Einleitung (TR)' : 'Giriş (TR)', 'type' => 'area', 'rows' => 3],
+                        ['path' => "stories.$i.intro.en", 'label' => $de ? 'Einleitung (EN)' : 'Giriş (EN)', 'type' => 'area', 'rows' => 3],
                         ['path' => "stories.$i.body.de", 'label' => $de ? 'Text (DE) – Leerzeile trennt Absätze' : 'Metin (DE) – boş satır paragraf ayırır', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 16000],
-                        ['path' => "stories.$i.body.tr", 'label' => $de ? 'Text (TR)' : 'Metin (TR)', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 16000],
+                        ['path' => "stories.$i.body.en", 'label' => $de ? 'Text (EN)' : 'Metin (EN)', 'type' => 'paras', 'rows' => 6, 'wide' => true, 'max' => 16000],
                         ['path' => "stories.$i.quote.de", 'label' => $de ? 'Zitat des Paares (DE)' : 'Çiftin yorumu (DE)', 'type' => 'area', 'rows' => 2],
-                        ['path' => "stories.$i.quote.tr", 'label' => $de ? 'Zitat des Paares (TR)' : 'Çiftin yorumu (TR)', 'type' => 'area', 'rows' => 2],
+                        ['path' => "stories.$i.quote.en", 'label' => $de ? 'Zitat des Paares (EN)' : 'Çiftin yorumu (EN)', 'type' => 'area', 'rows' => 2],
                     ],
                 ],
             ],
@@ -521,7 +521,7 @@ final class ListAdminController
                     'grid'   => 'md:grid-cols-3',
                     'fields' => [
                         ['path' => "posts.$i.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                        ['path' => "posts.$i.title.tr", 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                        ['path' => "posts.$i.title.en", 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                         ['path' => "posts.$i.date", 'label' => $de ? 'Datum (JJJJ-MM-TT)' : 'Tarih (YYYY-AA-GG)', 'hint' => $de ? 'Bestimmt die Reihenfolge im Ratgeber.' : 'Rehberdeki sırayı belirler.'],
                         ['path' => "posts.$i.citySlug", 'label' => $de ? 'Stadtseite' : 'Şehir sayfası', 'type' => 'select', 'options' => $cityOptions],
                         ['path' => "posts.$i.venueSlug", 'label' => 'Location', 'type' => 'select', 'options' => $venueOptions],
@@ -532,9 +532,9 @@ final class ListAdminController
                     'title'  => $de ? 'Texte' : 'Metinler',
                     'fields' => [
                         ['path' => "posts.$i.excerpt.de", 'label' => $de ? 'Anriss (DE)' : 'Özet (DE)', 'type' => 'area', 'rows' => 3],
-                        ['path' => "posts.$i.excerpt.tr", 'label' => $de ? 'Anriss (TR)' : 'Özet (TR)', 'type' => 'area', 'rows' => 3],
+                        ['path' => "posts.$i.excerpt.en", 'label' => $de ? 'Anriss (EN)' : 'Özet (EN)', 'type' => 'area', 'rows' => 3],
                         ['path' => "posts.$i.body.de", 'label' => $de ? 'Beitrag (DE) – Leerzeile trennt Absätze' : 'Yazı (DE) – boş satır paragraf ayırır', 'type' => 'paras', 'rows' => 14, 'wide' => true, 'max' => 40000],
-                        ['path' => "posts.$i.body.tr", 'label' => $de ? 'Beitrag (TR)' : 'Yazı (TR)', 'type' => 'paras', 'rows' => 14, 'wide' => true, 'max' => 40000],
+                        ['path' => "posts.$i.body.en", 'label' => $de ? 'Beitrag (EN)' : 'Yazı (EN)', 'type' => 'paras', 'rows' => 14, 'wide' => true, 'max' => 40000],
                     ],
                 ],
                 [
@@ -551,7 +551,7 @@ final class ListAdminController
                 'button' => $de ? 'Beitrag anlegen' : 'Yazı oluştur',
                 'fields' => [
                     ['path' => 'title_de', 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
-                    ['path' => 'title_tr', 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => 'title_tr', 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                     ['path' => 'slug', 'label' => $de ? 'Adresse (leer = aus dem Titel)' : 'Adres (boş = başlıktan)'],
                     ['path' => 'date', 'label' => $de ? 'Datum (leer = heute)' : 'Tarih (boş = bugün)'],
                     ['path' => 'citySlug', 'label' => $de ? 'Stadtseite' : 'Şehir sayfası', 'type' => 'select', 'options' => $cityOptions],

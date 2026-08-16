@@ -77,7 +77,7 @@ $otherPath = static function (string $to) use ($path): string {
     <div class="flex items-center gap-3">
       <div class="hidden items-center gap-1 sm:flex">
         <?php foreach (I18n::LOCALES as $l) : ?>
-          <a href="<?= e($otherPath($l)) ?>" hreflang="<?= $l === 'tr' ? 'tr-TR' : 'de-DE' ?>"
+          <a href="<?= e($otherPath($l)) ?>" hreflang="<?= $l === 'en' ? 'en' : 'de-DE' ?>"
              class="px-1.5 py-1 text-[0.7rem] uppercase tracking-[0.18em] transition-colors <?= $l === $locale ? 'text-gold' : 'text-muted hover:text-ink' ?>"><?= strtoupper($l) ?></a>
         <?php endforeach; ?>
       </div>
@@ -106,7 +106,7 @@ $otherPath = static function (string $to) use ($path): string {
     <div class="mt-8 flex items-center justify-between">
       <div class="flex gap-3">
         <?php foreach (I18n::LOCALES as $l) : ?>
-          <a href="<?= e($otherPath($l)) ?>" class="text-xs uppercase tracking-[0.22em] <?= $l === $locale ? 'text-gold' : 'text-muted' ?>"><?= $l === 'de' ? 'Deutsch' : 'Türkçe' ?></a>
+          <a href="<?= e($otherPath($l)) ?>" class="text-xs uppercase tracking-[0.22em] <?= $l === $locale ? 'text-gold' : 'text-muted' ?>"><?= $l === 'de' ? 'Deutsch' : 'English' ?></a>
         <?php endforeach; ?>
       </div>
       <a href="<?= e($p('/kontakt')) ?>" class="bg-ink px-6 py-3 text-[0.72rem] uppercase tracking-[0.2em] text-cream"><?= e(I18n::t('nav.cta')) ?></a>

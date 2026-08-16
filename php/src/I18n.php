@@ -4,16 +4,38 @@ declare(strict_types=1);
 namespace Atelier;
 
 /**
- * Zweisprachigkeit wie in der Next.js-Fassung: /de und /tr, dieselben Texte.
+ * Zwei Sprachsätze: /de und /en für die Website, /de und /tr für den
+ * Adminbereich. Wer die Seite besucht, und wer sie pflegt, sind nicht
+ * dieselben Leute und brauchen nicht dieselben Sprachen.
  *
- * Die Wörterbücher liegen in data/dict.php und werden aus lib/dict.ts erzeugt
- * (scripts/export-dict.mjs) – so bleiben beide Fassungen wortgleich, statt
- * dass jemand hunderte Sätze abtippt.
+ * Die Wörterbücher liegen in data/dict.php.
  */
 final class I18n
 {
-    public const LOCALES = ['de', 'tr'];
+    /**
+     * Die Sprachen der öffentlichen Seite.
+     *
+     * Türkisch stand hier von Anfang an, weil der Betrieb türkisch-deutsche
+     * Hochzeiten fotografiert. Die Gäste einer Website sind aber nicht die
+     * Gäste einer Hochzeit: gesucht wird auf Deutsch, und wer nicht deutsch
+     * liest, liest eher englisch als türkisch.
+     */
+    public const LOCALES = ['de', 'en'];
     public const DEFAULT = 'de';
+
+    /**
+     * Die Sprachen des Adminbereichs – ein anderer Satz, andere Leute.
+     *
+     * Hier sitzt nicht der Besucher, sondern der Betrieb, und der ist
+     * türkischsprachig. Deshalb bleibt Türkisch, obwohl es die Website nicht
+     * mehr spricht, und Englisch fehlt, weil es hier niemand braucht.
+     */
+    public const ADMIN_LOCALES = ['de', 'tr'];
+
+    public static function isAdminLocale(string $value): bool
+    {
+        return in_array($value, self::ADMIN_LOCALES, true);
+    }
 
     private static string $locale = self::DEFAULT;
     /** @var array<string,array<string,mixed>> */
@@ -26,7 +48,11 @@ final class I18n
 
     public static function set(string $locale): void
     {
-        self::$locale = self::isLocale($locale) ? $locale : self::DEFAULT;
+        // Auch die Adminsprachen zulassen: sonst faellt /tr/admin auf Deutsch
+        // zurueck, sobald irgendetwas dort das Woerterbuch fragt.
+        self::$locale = self::isLocale($locale) || self::isAdminLocale($locale)
+            ? $locale
+            : self::DEFAULT;
     }
 
     public static function locale(): string
@@ -41,12 +67,12 @@ final class I18n
 
     public static function htmlLang(): string
     {
-        return self::$locale === 'tr' ? 'tr-TR' : 'de-DE';
+        return self::$locale === 'en' ? 'en' : 'de-DE';
     }
 
     public static function ogLocale(): string
     {
-        return self::$locale === 'tr' ? 'tr_TR' : 'de_DE';
+        return self::$locale === 'en' ? 'en_GB' : 'de_DE';
     }
 
     /**
@@ -77,6 +103,22 @@ final class I18n
             self::$dict = $dict;
         }
 
+        /*
+         * Erst in der gefragten Sprache, dann auf Deutsch. Ohne diesen Rückweg
+         * stand auf einer noch nicht übersetzten Seite nicht der deutsche Satz,
+         * sondern der Schlüssel selbst – "nav.prices" mitten im Menü. Lieber
+         * eine Zeile in der falschen Sprache als sichtbare Technik.
+         */
+        $node = self::find($locale, $path);
+        if ($node === null && $locale !== self::DEFAULT) {
+            $node = self::find(self::DEFAULT, $path);
+        }
+
+        return $node;
+    }
+
+    private static function find(string $locale, string $path): mixed
+    {
         $node = self::$dict[$locale] ?? [];
         foreach (explode('.', $path) as $part) {
             if (!is_array($node) || !array_key_exists($part, $node)) {
@@ -89,7 +131,7 @@ final class I18n
     }
 
     /**
-     * Zweisprachiges Feld aus den Inhalten: ['de' => …, 'tr' => …].
+     * Mehrsprachiges Feld aus den Inhalten: ['de' => …, 'en' => …].
      *
      * @param array<string,mixed>|string|null $field
      */
@@ -107,7 +149,7 @@ final class I18n
     }
 
     /**
-     * Liste aus einem zweisprachigen Feld.
+     * Liste aus einem mehrsprachigen Feld.
      *
      * @param array<string,mixed>|null $field
      * @return list<string>

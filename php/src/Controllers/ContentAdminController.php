@@ -42,11 +42,11 @@ final class ContentAdminController
                 'hint'   => $de ? 'Zeilenumbruch in der Überschrift = neue Zeile auf der Seite.' : 'Başlıkta satır sonu = sayfada yeni satır.',
                 'fields' => [
                     ['path' => 'hero.eyebrow.de', 'label' => 'Eyebrow (DE)'],
-                    ['path' => 'hero.eyebrow.tr', 'label' => 'Eyebrow (TR)'],
+                    ['path' => 'hero.eyebrow.en', 'label' => 'Eyebrow (EN)'],
                     ['path' => 'hero.title.de', 'label' => $de ? 'Überschrift (DE)' : 'Başlık (DE)', 'type' => 'area', 'rows' => 2],
-                    ['path' => 'hero.title.tr', 'label' => $de ? 'Überschrift (TR)' : 'Başlık (TR)', 'type' => 'area', 'rows' => 2],
+                    ['path' => 'hero.title.en', 'label' => $de ? 'Überschrift (EN)' : 'Başlık (EN)', 'type' => 'area', 'rows' => 2],
                     ['path' => 'hero.text.de', 'label' => $de ? 'Text (DE)' : 'Metin (DE)', 'type' => 'area', 'rows' => 3],
-                    ['path' => 'hero.text.tr', 'label' => $de ? 'Text (TR)' : 'Metin (TR)', 'type' => 'area', 'rows' => 3],
+                    ['path' => 'hero.text.en', 'label' => $de ? 'Text (EN)' : 'Metin (EN)', 'type' => 'area', 'rows' => 3],
                 ],
             ],
             [
@@ -70,7 +70,7 @@ final class ContentAdminController
                     ['path' => 'contact.zip', 'label' => 'PLZ'],
                     ['path' => 'contact.city', 'label' => $de ? 'Ort' : 'Şehir'],
                     ['path' => 'contact.hours.de', 'label' => $de ? 'Zeiten (DE)' : 'Saatler (DE)'],
-                    ['path' => 'contact.hours.tr', 'label' => $de ? 'Zeiten (TR)' : 'Saatler (TR)'],
+                    ['path' => 'contact.hours.en', 'label' => $de ? 'Zeiten (EN)' : 'Saatler (EN)'],
                     [
                         'path'  => 'contact.mapsQuery',
                         'label' => $de ? 'Karte – abweichender Ort (optional)' : 'Harita – farklı konum (isteğe bağlı)',
@@ -100,13 +100,13 @@ final class ContentAdminController
                 'title'  => (string) ($package['name'][$this->locale] ?? ($package['name']['de'] ?? 'Paket')),
                 'fields' => [
                     ['path' => "packages.$i.name.de", 'label' => $de ? 'Name (DE)' : 'Ad (DE)'],
-                    ['path' => "packages.$i.name.tr", 'label' => $de ? 'Name (TR)' : 'Ad (TR)'],
+                    ['path' => "packages.$i.name.en", 'label' => $de ? 'Name (EN)' : 'Ad (EN)'],
                     ['path' => "packages.$i.price", 'label' => $de ? 'Preis' : 'Fiyat'],
                     ['path' => "packages.$i.hint.de", 'label' => $de ? 'Zusatz (DE)' : 'Ek bilgi (DE)'],
-                    ['path' => "packages.$i.hint.tr", 'label' => $de ? 'Zusatz (TR)' : 'Ek bilgi (TR)'],
+                    ['path' => "packages.$i.hint.en", 'label' => $de ? 'Zusatz (EN)' : 'Ek bilgi (EN)'],
                     ['path' => "packages.$i.featured", 'label' => $de ? 'Als beliebtestes Paket hervorheben' : 'En popüler paket olarak öne çıkar', 'type' => 'check'],
                     ['path' => "packages.$i.features.de", 'label' => $de ? 'Leistungen (DE) – eine je Zeile' : 'İçerik (DE) – her satıra bir madde', 'type' => 'lines', 'rows' => 6, 'wide' => true],
-                    ['path' => "packages.$i.features.tr", 'label' => $de ? 'Leistungen (TR) – eine je Zeile' : 'İçerik (TR) – her satıra bir madde', 'type' => 'lines', 'rows' => 6, 'wide' => true],
+                    ['path' => "packages.$i.features.en", 'label' => $de ? 'Leistungen (EN) – eine je Zeile' : 'İçerik (EN) – her satıra bir madde', 'type' => 'lines', 'rows' => 6, 'wide' => true],
                 ],
             ];
         }
@@ -141,9 +141,9 @@ final class ContentAdminController
                 'fields' => [
                     ['path' => 'about.name', 'label' => $de ? 'Name' : 'Ad'],
                     ['path' => 'about.lead.de', 'label' => $de ? 'Vorspann (DE)' : 'Giriş (DE)'],
-                    ['path' => 'about.lead.tr', 'label' => $de ? 'Vorspann (TR)' : 'Giriş (TR)'],
+                    ['path' => 'about.lead.en', 'label' => $de ? 'Vorspann (EN)' : 'Giriş (EN)'],
                     ['path' => 'about.body.de', 'label' => $de ? 'Text (DE) – Leerzeile trennt Absätze' : 'Metin (DE) – boş satır paragraf ayırır', 'type' => 'paras', 'rows' => 8, 'wide' => true],
-                    ['path' => 'about.body.tr', 'label' => $de ? 'Text (TR)' : 'Metin (TR)', 'type' => 'paras', 'rows' => 8, 'wide' => true],
+                    ['path' => 'about.body.en', 'label' => $de ? 'Text (EN)' : 'Metin (EN)', 'type' => 'paras', 'rows' => 8, 'wide' => true],
                 ],
             ],
             [
@@ -151,7 +151,7 @@ final class ContentAdminController
                 'hint'   => $de ? 'Je Zeile: Titel | Text' : 'Her satır: Başlık | Metin',
                 'fields' => [
                     ['path' => 'about.valuesTitle.de', 'label' => $de ? 'Überschrift (DE)' : 'Başlık (DE)'],
-                    ['path' => 'about.valuesTitle.tr', 'label' => $de ? 'Überschrift (TR)' : 'Başlık (TR)'],
+                    ['path' => 'about.valuesTitle.en', 'label' => $de ? 'Überschrift (EN)' : 'Başlık (EN)'],
                     [
                         'path' => 'about.values', 'label' => $de ? 'Punkte' : 'Maddeler', 'type' => 'rows', 'rows' => 6, 'wide' => true,
                         'cols' => [['key' => 't', 'bilingual' => true], ['key' => 'd', 'bilingual' => true]],
@@ -162,9 +162,9 @@ final class ContentAdminController
                 'title'  => $de ? 'Ausrüstung' : 'Ekipman',
                 'fields' => [
                     ['path' => 'about.gearTitle.de', 'label' => $de ? 'Überschrift (DE)' : 'Başlık (DE)'],
-                    ['path' => 'about.gearTitle.tr', 'label' => $de ? 'Überschrift (TR)' : 'Başlık (TR)'],
+                    ['path' => 'about.gearTitle.en', 'label' => $de ? 'Überschrift (EN)' : 'Başlık (EN)'],
                     ['path' => 'about.gear.de', 'label' => $de ? 'Liste (DE)' : 'Liste (DE)', 'type' => 'lines', 'rows' => 6, 'wide' => true],
-                    ['path' => 'about.gear.tr', 'label' => $de ? 'Liste (TR)' : 'Liste (TR)', 'type' => 'lines', 'rows' => 6, 'wide' => true],
+                    ['path' => 'about.gear.en', 'label' => $de ? 'Liste (EN)' : 'Liste (EN)', 'type' => 'lines', 'rows' => 6, 'wide' => true],
                 ],
             ],
             [
@@ -239,9 +239,9 @@ final class ContentAdminController
                 'hint'   => ($de ? 'Adresse: ' : 'Adres: ') . '/' . $this->locale . ($page['path'] === '/' ? '' : $page['path']),
                 'fields' => [
                     ['path' => "marketing.pages.$key.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)', 'hint' => $de ? 'Etwa 60 Zeichen.' : 'Yaklaşık 60 karakter.'],
-                    ['path' => "marketing.pages.$key.title.tr", 'label' => $de ? 'Titel (TR)' : 'Başlık (TR)'],
+                    ['path' => "marketing.pages.$key.title.en", 'label' => $de ? 'Titel (EN)' : 'Başlık (EN)'],
                     ['path' => "marketing.pages.$key.description.de", 'label' => $de ? 'Beschreibung (DE)' : 'Açıklama (DE)', 'type' => 'area', 'rows' => 3, 'hint' => $de ? 'Etwa 160 Zeichen.' : 'Yaklaşık 160 karakter.'],
-                    ['path' => "marketing.pages.$key.description.tr", 'label' => $de ? 'Beschreibung (TR)' : 'Açıklama (TR)', 'type' => 'area', 'rows' => 3],
+                    ['path' => "marketing.pages.$key.description.en", 'label' => $de ? 'Beschreibung (EN)' : 'Açıklama (EN)', 'type' => 'area', 'rows' => 3],
                     ['path' => "marketing.pages.$key.noindex", 'label' => $de ? 'Nicht in Google aufnehmen' : 'Google’a girmesin', 'type' => 'check', 'wide' => true],
                 ],
             ];
@@ -254,13 +254,13 @@ final class ContentAdminController
                 : 'Çok sayıda örneği olan sayfalar için. {name} şehir/mekân adı, {title} yazı başlığı, {couple} ve {venue} çekim bilgisi olur.',
             'fields' => [
                 ['path' => 'marketing.templates.city.de', 'label' => $de ? 'Städte (DE)' : 'Şehirler (DE)'],
-                ['path' => 'marketing.templates.city.tr', 'label' => $de ? 'Städte (TR)' : 'Şehirler (TR)'],
+                ['path' => 'marketing.templates.city.en', 'label' => $de ? 'Städte (EN)' : 'Şehirler (EN)'],
                 ['path' => 'marketing.templates.venue.de', 'label' => 'Locations (DE)'],
-                ['path' => 'marketing.templates.venue.tr', 'label' => 'Locations (TR)'],
+                ['path' => 'marketing.templates.venue.en', 'label' => 'Locations (EN)'],
                 ['path' => 'marketing.templates.post.de', 'label' => $de ? 'Ratgeber (DE)' : 'Rehber (DE)'],
-                ['path' => 'marketing.templates.post.tr', 'label' => $de ? 'Ratgeber (TR)' : 'Rehber (TR)'],
+                ['path' => 'marketing.templates.post.en', 'label' => $de ? 'Ratgeber (EN)' : 'Rehber (EN)'],
                 ['path' => 'marketing.templates.story.de', 'label' => 'Portfolio (DE)'],
-                ['path' => 'marketing.templates.story.tr', 'label' => 'Portfolio (TR)'],
+                ['path' => 'marketing.templates.story.en', 'label' => 'Portfolio (EN)'],
             ],
         ];
 
