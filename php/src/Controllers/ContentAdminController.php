@@ -85,7 +85,7 @@ final class ContentAdminController
 
         $this->handle('/inhalte', $sections, $de ? 'Texte & Kontakt' : 'Metinler & iletişim', $de
             ? 'Diese Texte erscheinen auf der Startseite und im Footer – in beiden Sprachen.'
-            : 'Bu metinler ana sayfada ve alt bilgide, iki dilde de görünür.');
+            : 'Bu metinler ana sayfada ve alt bilgide, iki dilde de görünür.', '/kontakt');
     }
 
     /* --------------------------- Preise & Pakete ---------------------------- */
@@ -126,7 +126,7 @@ final class ContentAdminController
 
         $this->handle('/pakete', $sections, $de ? 'Preise & Pakete' : 'Fiyatlar & paketler', $de
             ? 'Die Pakete erscheinen auf der Preisseite und in der Seitenspalte der Stadtseiten.'
-            : 'Paketler fiyat sayfasında ve şehir sayfalarının yan sütununda görünür.');
+            : 'Paketler fiyat sayfasında ve şehir sayfalarının yan sütununda görünür.', '/preise');
     }
 
     /* -------------------------- Über mich & Stimmen ------------------------- */
@@ -187,7 +187,7 @@ final class ContentAdminController
 
         $this->handle('/ueber-mich', $sections, $de ? 'Über mich & Stimmen' : 'Hakkımda & yorumlar', $de
             ? 'Diese Inhalte erscheinen auf „Über mich“, auf der Startseite und bei den Preisen.'
-            : 'Bu içerikler „Hakkımda“ sayfasında, ana sayfada ve fiyatlarda görünür.');
+            : 'Bu içerikler „Hakkımda“ sayfasında, ana sayfada ve fiyatlarda görünür.', '/ueber-mich');
     }
 
     /* ------------------------------ Rechtstexte ----------------------------- */
@@ -222,7 +222,7 @@ final class ContentAdminController
 
         $this->handle('/rechtliches', $sections, $de ? 'Rechtstexte' : 'Yasal metinler', $de
             ? 'Vor der Veröffentlichung sollte ein Anwalt darüberschauen – die Vorlagen sind ein Ausgangspunkt, keine Rechtsberatung.'
-            : 'Yayından önce bir avukatın görmesi gerekir – şablonlar başlangıç noktasıdır, hukuki danışmanlık değildir.');
+            : 'Yayından önce bir avukatın görmesi gerekir – şablonlar başlangıç noktasıdır, hukuki danışmanlık değildir.', '/impressum');
     }
 
     /* -------------------------------- SEO ----------------------------------- */
@@ -276,7 +276,7 @@ final class ContentAdminController
      *
      * @param list<array<string,mixed>> $sections
      */
-    private function handle(string $tab, array $sections, string $title, string $intro): void
+    private function handle(string $tab, array $sections, string $title, string $intro, string $view = ''): void
     {
         $fields = [];
         foreach ($sections as $section) {
@@ -321,6 +321,8 @@ final class ContentAdminController
             'data'      => Content::all(),
             'originals' => Content::original(),
             'reset'     => '',
+            // Neben dem Speichern der Weg zur Seite, die dieser Reiter fuellt.
+            'view'      => $view === '' ? '' : I18n::path($view, $this->locale),
         ]);
     }
 }

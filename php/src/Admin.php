@@ -22,34 +22,44 @@ final class Admin
      *
      * @var array<string,array{de:string,tr:string}>
      */
+    /*
+     * Gruppiert nach den drei Dingen, die der Betrieb betreibt – nicht nach
+     * der Art der Bearbeitung. „Inhalte, Aufträge, Gestaltung“ war eine
+     * Ordnung fuer den, der es gebaut hat: die Themen der Einladung standen
+     * unter Gestaltung, die Kundengalerien unter Auftraege, und wer die
+     * Einladung testen wollte, suchte an drei Stellen. Website, Galerie und
+     * Einladung sind die Teile, die man einzeln in Betrieb nimmt.
+     */
     public const GROUPS = [
-        'inhalt'  => ['de' => 'Inhalte', 'tr' => 'İçerik'],
-        'auftrag' => ['de' => 'Aufträge', 'tr' => 'İşler'],
-        'design'  => ['de' => 'Gestaltung', 'tr' => 'Görünüm'],
-        'technik' => ['de' => 'Einstellungen', 'tr' => 'Ayarlar'],
+        'website'   => ['de' => 'Website', 'tr' => 'Site'],
+        'galerie'   => ['de' => 'Galerie', 'tr' => 'Galeri'],
+        'einladung' => ['de' => 'Einladung', 'tr' => 'Davetiye'],
+        'technik'   => ['de' => 'System', 'tr' => 'Sistem'],
     ];
 
     /** Die Reiter des Adminbereichs, in dieser Reihenfolge. */
     public const TABS = [
         ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
 
-        ['href' => '/inhalte', 'group' => 'inhalt', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
-        ['href' => '/texte', 'group' => 'inhalt', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
-        ['href' => '/leistungen', 'group' => 'inhalt', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
-        ['href' => '/pakete', 'group' => 'inhalt', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
-        ['href' => '/staedte', 'group' => 'inhalt', 'de' => 'Städte', 'tr' => 'Şehirler'],
-        ['href' => '/locations', 'group' => 'inhalt', 'de' => 'Locations', 'tr' => 'Mekânlar'],
-        ['href' => '/portfolio', 'group' => 'inhalt', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
-        ['href' => '/ratgeber', 'group' => 'inhalt', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
-        ['href' => '/ueber-mich', 'group' => 'inhalt', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
-        ['href' => '/rechtliches', 'group' => 'inhalt', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
+        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
+        ['href' => '/texte', 'group' => 'website', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
+        ['href' => '/leistungen', 'group' => 'website', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
+        ['href' => '/pakete', 'group' => 'website', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
+        ['href' => '/staedte', 'group' => 'website', 'de' => 'Städte', 'tr' => 'Şehirler'],
+        ['href' => '/locations', 'group' => 'website', 'de' => 'Locations', 'tr' => 'Mekânlar'],
+        ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
+        ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
+        ['href' => '/ueber-mich', 'group' => 'website', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
+        ['href' => '/rechtliches', 'group' => 'website', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
+        ['href' => '/seo', 'group' => 'website', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
 
-        ['href' => '/kunden', 'group' => 'auftrag', 'de' => 'Kunden', 'tr' => 'Müşteriler'],
-        ['href' => '/einladungen', 'group' => 'auftrag', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+        // Die Kundenakte ist die Galerie: wer eine anlegt, legt eine Galerie an.
+        ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler'],
 
-        ['href' => '/themen', 'group' => 'design', 'de' => 'Themen', 'tr' => 'Temalar'],
+        ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+        // Themen sind die Designs der Einladungskarte, nicht der Website.
+        ['href' => '/themen', 'group' => 'einladung', 'de' => 'Designs', 'tr' => 'Tasarımlar'],
 
-        ['href' => '/seo', 'group' => 'technik', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
         ['href' => '/integrationen', 'group' => 'technik', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
         ['href' => '/systemcheck', 'group' => 'technik', 'de' => 'Vor dem Livegang', 'tr' => 'Yayın kontrolü'],
     ];

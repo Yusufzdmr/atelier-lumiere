@@ -14,6 +14,7 @@
  * @var array<string,mixed> $originals  Stand beim Einspielen – für „zurücksetzen“
  * @var string $csrf
  * @var string $reset  optionaler Wert für „auf Standard zurücksetzen“
+ * @var string $view   optionale Adresse der Seite, die dieser Reiter füllt
  */
 
 use function Atelier\e;
@@ -50,6 +51,20 @@ $de = $locale === 'de';
     <button class="bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $de ? 'Speichern' : 'Kaydet' ?>
     </button>
+
+    <?php
+    /*
+     * Neben dem Speichern der Weg zu der Seite, die man gerade geändert hat.
+     * In den Listenreitern gab es das längst; hier fehlte es, und wer die
+     * Preise angefasst hatte, musste sich erst überlegen, wo Preise stehen.
+     */
+    ?>
+    <?php if (($view ?? '') !== '') : ?>
+      <a href="<?= e((string) $view) ?>" target="_blank" rel="noopener"
+         class="text-[0.68rem] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold">
+        <?= $de ? 'Seite ansehen' : 'Sayfayı gör' ?> ↗
+      </a>
+    <?php endif; ?>
 
     <?php if (($reset ?? '') !== '') : ?>
       <button name="was" value="<?= e($reset) ?>"
