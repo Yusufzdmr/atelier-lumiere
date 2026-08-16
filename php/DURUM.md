@@ -18,7 +18,7 @@ sonra `php bin/import.php` (veya `--replace`).
 
 | Alan | Durum |
 |---|---|
-| İskelet | Router, şablon motoru, PDO katmanı, iki dil (624 metin aktarıldı), oturum/CSRF, `.htaccess` |
+| İskelet | Router, şablon motoru, PDO katmanı, üç sözlük — site `de`+`en`, panel `de`+`tr`, her biri 315 anahtar — oturum/CSRF, `.htaccess` |
 | Genel sayfalar | Ana sayfa, hizmetler, fiyatlar, portfolyo + hikâye, bölgeler, 10 şehir, mekân listesi + 7 mekân, rehber + yazılar, hakkımda, iletişim (form + e-posta + kayıt), Impressum/Datenschutz/AGB, sitemap.xml (74 kayıt), robots.txt |
 | Müşteri galerisi | Giriş, fotoğraf ızgarası, kalple seçim, lightbox, seçim gönderimi (veritabanı + e-posta) |
 | Görsel yükleme | `src/Media.php` — GD ile 1600 px JPEG, tür dosya içeriğinden, silme upload klasörüyle sınırlı. **GD yoksa** dosya küçültülmeden olduğu gibi saklanır (hata sayfası yerine) |
@@ -27,7 +27,7 @@ sonra `php bin/import.php` (veya `--replace`).
 | Liste düzenleyicisi | `src/Lists.php` + `templates/admin/list.php` + `src/Controllers/ListAdminController.php` — şehir/mekân/portfolyo/rehber/hizmet aynı kalıptan: aç, düzenle, kaydet, ekle, sırala (↑↓), sil. Her kayıt kendi formunda (10 şehir tek düğmeye gitmez) |
 | Müşteriler | `src/Customers.php` + `CustomerAdminController` — kayıt açınca galeri **otomatik** oluşur (parola ve kupon otomatik üretilir, galeri bitişi düğün + 2 yıl). Fotoğraf yükleme/silme, çiftin seçimi (kalpli kareler + notu), kupon yönetimi (kod/aktif/tek kullanım/son tarih/yeni kod/yeniden aç), arşivle, giriş adını yazdırarak kalıcı sil |
 | Davetiyeler | `InviteAdminController` — davetiye listesi, ödendi/kupon/ödenmedi rozeti, RSVP'ler (kabul/ret/kişi sayısı + notlar), **kişiye özel davetiye listesi + çiftin yönetim linki**, müşteri kaydına bağlantı, yarım kalan taslaklar, silme |
-| **Sayfa metinleri** | Yeni sekme (`/admin/texte`). Sözlükteki 312 metin — bölüm başlıkları („Was wir für euch tun“), düğme yazıları, form etiketleri — 17 grup halinde, iki dilde düzenlenebilir. `src/Texts.php` bir **üst katman**: sözlük dosyası hiç değişmiyor, yalnızca farklı olan saklanıyor. Bir alanı boşaltmak = ilk metne dönmek |
+| **Sayfa metinleri** | Yeni sekme (`/admin/texte`). Sözlükteki 315 metin — bölüm başlıkları („Was wir für euch tun“), düğme yazıları, form etiketleri — 17 grup halinde, sitenin iki dilinde (DE + EN) düzenlenebilir. `src/Texts.php` bir **üst katman**: sözlük dosyası hiç değişmiyor, yalnızca farklı olan saklanıyor. Bir alanı boşaltmak = ilk metne dönmek |
 | Mekân → Google | `src/Places.php` — panelden yer adı yazılır, Google Places karşılıklarını listeler, **her adayın yanında haritası** çıkar, „Bunu al“ deyince ad/adres/koordinat/place-id mekâna yazılır. Metinler ellenmez. Anahtar sunucuda kalır; harita bile kendi adresimizden (`/admin/karte`) geçer. Anahtar yokken sekme çalışır, sadece „önce anahtarı gir“ der |
 | Mekân yorumları | Seçili yerin Google yorumları **canlı** gösterilir (4+ yıldız, 80+ karakter, uzun olan üstte), yazar adı ve bağlantısıyla. **Saklanmaz, siteye kopyalanmaz** — Google şartları izin vermiyor, metinler yazarlarına ait ve kopya içerik SEO'da zarar. Amacı: „avludaki ışık, gürültülü salon“ gibi gerçek ayrıntıları görüp kendi cümlelerinizle yazmak |
 | Çerez izni + ölçüm | `templates/partials/consent.php` + `public/assets/consent.js`. Ön işaretli kutu yok, „Sadece gerekli“ „Tümünü kabul et“ ile **eşit görünürlükte**, karar `localStorage`'ta (`al-consent-v1`). Alt bilgide ve Datenschutz sayfasındaki `{{consent}}` ile her an geri açılıyor |
@@ -99,14 +99,32 @@ Panelin sağ üstünde DE/TR seçici, bulunduğunuz sekmede kalıyor.
 kendisini yazdırıyordu (`nav.prices` menüde görünürdü). Şu anki durumu
 kullanılabilir kılan şey bu.
 
-### ⚠️ Yarım kalan: arayüz çevirisi
+### Arayüz İngilizcesi — bitti (17 Ağustos)
 
-**313 sözlük girdisi henüz İngilizceye çevrilmedi.** `data/dict.php` içinde
-`de` ve `tr` bölümleri var, `en` bölümü **yok**. Bu yüzden İngilizce sayfalar
-şu an Almanca metin gösteriyor (ham anahtar değil — düşme mekanizması çalışıyor).
+`data/dict.php` artık üç bölümlü: `de`, `en`, `tr` — üçü de **315 anahtar**,
+küme birebir aynı. `tr` duruyor, paneli o besliyor.
 
-Yapılacak: `data/dict.php` içine `'en' => [...]` bölümü, `de` bölümünün
-İngilizce karşılığı. `tr` bölümü **silinmemeli** — paneli o besliyor.
+Sözlük işin yarısıymış. Site eskiden Almanca + Türkçe olduğu için şablonlarda
+yaklaşık **yüz satır içi ikili** vardı (`$de ? 'Deutsch' : 'Türkçe'`). Site
+İngilizceye geçince o „değilse“ dalı İngilizce sayfalara **Türkçe** basmaya
+başlamıştı: davetiye sihirbazı „Bilgileriniz“ diyordu, iletişim formu „Sadece
+fotoğraf“ seçeneği sunuyordu. Hepsi çevrildi.
+
+İkisi metin hatası değil, **eksik anahtardı**:
+
+- `invite-wizard.php` içindeki `$eventTypes` ve `$sectionLabels` dizileri
+  `[$locale]` ile okunuyor. `'tr'` anahtarı vardı, `'en'` yoktu → İngilizce
+  sayfada o etiketler **boş** çıkıyordu
+- `Dates::MONTHS` ve `WEEKDAYS` yalnızca `de` ve `tr` biliyordu → İngilizce
+  sayfalarda ay adının yeri **boştu** („14  2026“)
+
+Bunlar da sözlüğe alındı: `common.skip` (şablonda sabit „Skip“ vardı, Almanca
+sayfada bile), `contact.phoneLabel` (sabit „Telefon“). Ayrıca `Guests::salutation`,
+`Invitations::kindLabel`, `PageController`, `InviteController` ve iki JS dosyası
+(`invite-manage.js` kopyalama bildirimi, `app.js` harita başlığı).
+
+Örnek isimler bilerek duruyor: canlı önizlemede Ayşe & Mehmet, misafir listesi
+örneğinde Yılmaz. Onlar arayüz değil, isim.
 
 İçerik alanları (şehir, mekân, portfolyo metinleri) ayrı bir iş ve müşteri
 kararıyla **sonraya bırakıldı**: panelde artık DE + EN çifti düzenleniyor
@@ -133,50 +151,43 @@ görsel yuvası (`Images::SLOTS`) panelden değiştirilebiliyor. `Images::img()`
 önce panele bakıyor, yoksa temsili görsele düşüyor. Yükleme `Media::store()`
 ile, yani orijinali de saklanıyor.
 
-## Sıradaki oturum buradan başlasın
+## 17 Ağustos'ta yapılan iki iş
 
-Bu iki iş konuşuldu, kararı verildi, **yapılmadı**. Sırayla.
+Önceki notta sırada duran ikisi de bitti: arayüz İngilizcesi (yukarıda, „Diller“
+başlığı altında) ve aşağıdaki görünürlük anahtarları.
 
-### 1. Arayüz İngilizcesi — 313 girdi
+### Görünürlük anahtarları
 
-`data/dict.php` içinde `de` ve `tr` var, **`en` yok**. Site artık `/en` sunuyor
-ama `I18n::raw()` Almancaya düştüğü için İngilizce sayfalarda Almanca metin
-görünüyor. Ham anahtar çıkmıyor, yani bozuk değil — eksik.
-
-Yapılacak: dosyaya `'en' => [...]` bölümü, `de` bölümünün birebir İngilizcesi.
-`tr` bölümüne **dokunulmayacak**, paneli o besliyor.
-
-Kontrol: `curl -s http://127.0.0.1:8080/en/preise | grep -oE '(nav|prices)\.[a-zA-Z]+'`
-çıktısı boş olmalı (zaten boş — düşme mekanizması yüzünden). Asıl kontrol
-sayfayı açıp Almanca cümle kalmadığını görmek.
-
-### 2. Görünürlük anahtarları — “sitede gizle, Google'da göster”
-
-Müşterinin isteği aynen: *“sitede gösterme düğmesi, Google'da göster düğmesi”*,
-**şehirlerde ve mekânlarda**. Amaç 100 şehir sayfası açıp sitede yalnızca
-birkaçını listelemek; Google'dan gelen sayfayı normal şekilde gezebilsin.
-
-İki **bağımsız** anahtar, kayıt başına:
+Şehir ve mekân kayıtlarında iki **bağımsız** anahtar var. Panelde her kaydın
+kendi „Görünürlük“ bölümünde:
 
 | Alan | Kapalıyken |
 |---|---|
-| `listed` | Bölgeler/mekânlar listesinde çıkmaz. Sayfa yaşar, adresi çalışır |
-| `indexed` | `sitemap.xml`'den çıkar ve sayfa `noindex` alır |
+| `listed` | Bölgeler / mekânlar listesinde, ana sayfada ve alt bilgide çıkmaz. Sayfa yaşar, adresi çalışır |
+| `indexed` | `sitemap.xml`'den çıkar ve sayfanın kendisi `noindex` alır |
 
-Dokunulacak yerler:
-- `ListAdminController` — `cities` ve `venues` şeması: iki `check` alanı
-- `templates/pages/regions.php`, `venues.php` — listelerde `listed` süzgeci
-- `SitemapController` — `indexed` süzgeci
-- `PageController::city()` / `venue()` — `indexed` kapalıysa `meta['noindex']`
+Okuma tarafı `Content::listed('cities')` ve `Content::shows($item, 'indexed')`
+üzerinden. **Alan yoksa açık sayılır** — 10 mevcut şehir bu yüzden kaybolmadı.
 
-Varsayılan **ikisi de açık** olmalı, yoksa mevcut 10 şehir bir anda kaybolur.
+Buradaki tuzak kutucuktaydı: veri alanı tanımıyor, kod „yok = açık“ okuyor, ama
+form **boş kutucuk** çiziyordu. Bir kez kaydet, anahtar kendiliğinden kapanır.
+`Form` artık `check` alanlarında `'default' => true` kabul ediyor; alanı hiç
+görmemiş kayıt **işaretli** açılıyor. Yeni bir alan eklerken aynı şey geçerli.
 
-> **Uyarı — müşteriye de söylendi:** 100 şehir sayfası Google'ın *doorway pages*
-> saydığı şeye çok yakın ve ceza sebebi. `bin/cities.php` bu yüzden metinler
-> %55'ten fazla benziyorsa içe aktarmayı **reddediyor**. Anahtarlar bu korumayı
-> kaldırmaz; sayfaların gerçekten farklı yazılmış olması şartı sürüyor.
+Panelde liste satırında adresin yanında „nicht gelistet / listede yok“ ve
+„nicht bei Google / Google'da yok“ yazıyor — yoksa gizli şehir görünenden
+ayırt edilemiyor.
 
-### Ayrıca bekleyen, daha küçük
+> **Uyarı — müşteriye de söylendi, değişmedi:** 100 şehir sayfası Google'ın
+> *doorway pages* saydığı şeye çok yakın. `bin/cities.php` metinler %55'ten
+> fazla benziyorsa içe aktarmayı **reddediyor**. Anahtarlar bu korumayı
+> kaldırmaz.
+
+## Sıradaki oturum buradan başlasın
+
+Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
+bekliyor. Sıralaması aşağıda „Kalan — bu sırayla“ başlığında. Kod tarafında
+elle alınabilecekler:
 
 - Panelde iletişim talebinin **mesaj metni görünmüyor** (ad/e-posta/telefon var).
   `templates/admin/overview.php`
@@ -184,6 +195,12 @@ Varsayılan **ikisi de açık** olmalı, yoksa mevcut 10 şehir bir anda kaybolu
   seçiyor (`templates/pages/gallery.php`, `$i % 5` / `$i % 3`). Müşteri “şimdilik
   sorun değil” dedi, ama kesilen kare şikâyeti gelirse sebebi bu.
 - Müşteriyle **mesajlaşma paneli** — istendi, kapsamı konuşulmadı.
+- `Seo.php`'deki `areaServed` **bütün** şehirleri sayıyor (`Content::list`).
+  100 şehirde 100 satırlık JSON-LD olur. Zararsız ama saçma; `listed`'e
+  bağlanabilir. Bilerek dokunulmadı.
+- Şehir sayfasındaki mekân listesi ve komşu şehirler **süzülmüyor** — onlar
+  müşterinin tek tek yazdığı bağlantılar, liste değil. Google'dan gelen ziyaretçi
+  gizli bir şehre komşusundan ulaşabilir; bu kasıtlı.
 
 ## Kalan — bu sırayla
 
@@ -297,6 +314,16 @@ Galeri demo: `elif-marco` / `solitude24`
 - Test ederken `curl -F "alan=çok
   satırlı değer"` kabuk tarafından bozulabilir — çok satırlı gönderiler için
   değeri bir dosyaya yazıp `-F "alan=<dosya"` ya da `--data-urlencode` kullan
+- **`node ../scripts/export-to-php.mjs` artık ÇALIŞTIRILMAMALI.** İki dosyayı
+  birden bozar: `data/themes.php`'den **219 satır siler** (modüler tema motoru
+  yalnızca PHP tarafında var, `lib/themes.ts` onu tanımıyor) ve `data/dict.php`'den
+  `blog.more` anahtarını uçurur (elle eklenmişti, `post.php` onu kullanıyor).
+  Sözlük ve temalar bu tarafta **elle yaşıyor**; `lib/dict.ts` artık kaynak değil.
+  Dosyanın başındaki „nicht von Hand bearbeiten“ satırı eskimiş
+- **Yeni bir `check` alanına `'default' => true` koymayı unutma.** Kod „alan yok
+  = açık“ okuyorsa ama form boş kutucuk çiziyorsa, ilk kaydetmede anahtar
+  kendiliğinden kapanır. `Form::field` bu yüzden `default`'u tanıyor
+  (`ListAdminController`'daki `listed`/`indexed`)
 - Neon (Next sürümü) boşta uyur; ilk sorgu yavaş olabilir
 
 ## Nerede ne var (panel)
