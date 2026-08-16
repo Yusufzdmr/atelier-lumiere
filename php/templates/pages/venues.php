@@ -15,7 +15,7 @@ $de = $locale === 'de';
 ?>
 <?= Ui::pageHero(
     'venues-index',
-    $de ? 'Hochzeitslocations in der Region Stuttgart' : 'Stuttgart bölgesinde düğün mekânları',
+    $de ? 'Hochzeitslocations in der Region Stuttgart' : 'Wedding venues in the Stuttgart region',
     I18n::t('home.venuesEyebrow'),
     I18n::t('venue.lead')
 ) ?>
@@ -49,7 +49,7 @@ $de = $locale === 'de';
     <p class="text-[0.9rem] leading-relaxed text-muted">
       <?= $de
           ? 'Eure Location ist nicht dabei? Kein Problem – wir fahren vor der Hochzeit einmal hin, prüfen Licht und Wege und stimmen den Zeitplan darauf ab. Das ist in allen Tagespaketen enthalten.'
-          : 'Mekânınız listede yok mu? Sorun değil – düğünden önce bir kez gidip ışığı ve güzergâhı kontrol ediyor, zaman planını ona göre ayarlıyoruz. Bu, tüm tam gün paketlere dahildir.' ?>
+          : 'Your venue is not on the list? No problem – we drive out once before the wedding, look at the light and the routes and build the timeline around them. That is part of every full-day package.' ?>
     </p>
     <a href="<?= e($p('/kontakt')) ?>" class="mt-6 inline-block bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream hover:bg-gold"><?= e(I18n::t('nav.cta')) ?></a>
   <?= Ui::revealClose() ?>

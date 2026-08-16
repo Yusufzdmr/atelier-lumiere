@@ -21,7 +21,7 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
 $de = $locale === 'de';
 $name = (string) ($city['name'] ?? '');
 $slug = (string) ($city['slug'] ?? '');
-$h1 = $de ? 'Hochzeitsfotograf ' . $name : $name . ' düğün fotoğrafçısı';
+$h1 = $de ? 'Hochzeitsfotograf ' . $name : 'Wedding photographer ' . $name;
 ?>
 <?= Ui::pageHero('city-' . $slug, $h1, I18n::t('city.metaTitleSuffix'), I18n::pick($city['lead'] ?? null, $locale), 'lg') ?>
 
@@ -35,7 +35,7 @@ $h1 = $de ? 'Hochzeitsfotograf ' . $name : $name . ' düğün fotoğrafçısı';
   <div class="grid gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
     <div>
       <?= Ui::revealOpen(0, 'prose-lux max-w-none') ?>
-        <h2><?= $de ? 'Hochzeitsfotografie in ' . e($name) : e($name) . ' bölgesinde düğün fotoğrafçılığı' ?></h2>
+        <h2><?= $de ? 'Hochzeitsfotografie in ' . e($name) : 'Wedding photography in ' . e($name) ?></h2>
         <?php foreach (I18n::pickList($city['body'] ?? null, $locale) as $paragraph) : ?>
           <p><?= e($paragraph) ?></p>
         <?php endforeach; ?>
@@ -130,7 +130,7 @@ $h1 = $de ? 'Hochzeitsfotograf ' . $name : $name . ' düğün fotoğrafçısı';
         <?php foreach ($neighbours as $neighbour) : ?>
           <a href="<?= e($p('/hochzeitsfotograf/' . (string) ($neighbour['slug'] ?? ''))) ?>"
              class="border border-sand-deep px-5 py-2.5 text-[0.8rem] text-ink-soft transition-colors hover:border-gold hover:text-gold">
-            <?= $de ? 'Hochzeitsfotograf ' : 'Düğün fotoğrafçısı ' ?><?= e((string) ($neighbour['name'] ?? '')) ?>
+            <?= $de ? 'Hochzeitsfotograf ' : 'Wedding photographer ' ?><?= e((string) ($neighbour['name'] ?? '')) ?>
           </a>
         <?php endforeach; ?>
       </div>

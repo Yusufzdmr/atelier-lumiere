@@ -25,10 +25,10 @@ $steps = $de
         'Wir sehen eure Auswahl sofort und gestalten das Album danach.',
     ]
     : [
-        'Galeri kodu ve parolayı e-posta ile gönderiyoruz.',
-        'Tüm kareler tam çözünürlükte – aile ve arkadaşlarla paylaşılabilir.',
-        'Beğendiklerinizi kalple işaretleyin ve albüm seçimini gönderin.',
-        'Seçiminizi anında görüyor, albümü ona göre hazırlıyoruz.',
+        'You get an e-mail from us with the gallery code and the password.',
+        'Every picture in full resolution – shareable with family and friends.',
+        'Mark favourites with the heart and send the selection for the album.',
+        'We see your selection straight away and build the album around it.',
     ];
 
 $field = 'w-full border-b border-sand-deep bg-transparent px-0 py-3 text-[0.95rem] text-ink outline-none transition-colors focus:border-gold';

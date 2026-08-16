@@ -37,7 +37,7 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
       </div>
       <a href="<?= e(I18n::path('/galerie/abmelden', $locale)) ?>"
          class="border border-sand-deep px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:border-gold hover:text-gold">
-        <?= $locale === 'de' ? 'Abmelden' : 'Çıkış' ?>
+        <?= $locale === 'de' ? 'Abmelden' : 'Sign out' ?>
       </a>
     </div>
 
@@ -80,7 +80,7 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
       </div>
 
       <input type="text" data-note maxlength="800" value="<?= e((string) ($selection['note'] ?? '')) ?>"
-             placeholder="<?= $locale === 'de' ? 'Nachricht an uns (optional)' : 'Bize not (isteğe bağlı)' ?>"
+             placeholder="<?= $locale === 'de' ? 'Nachricht an uns (optional)' : 'A note to us (optional)' ?>"
              class="min-w-[12rem] flex-1 border-b border-sand-deep bg-transparent px-0 py-2 text-[0.9rem] text-ink outline-none focus:border-gold">
 
       <?php if (empty($demo)) : ?>

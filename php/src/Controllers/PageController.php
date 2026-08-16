@@ -167,7 +167,7 @@ final class PageController
         $slug = (string) $city['slug'];
         $name = (string) ($city['name'] ?? '');
         $de = I18n::isDe();
-        $h1 = $de ? 'Hochzeitsfotograf ' . $name : $name . ' düğün fotoğrafçısı';
+        $h1 = $de ? 'Hochzeitsfotograf ' . $name : 'Wedding photographer ' . $name;
 
         // Nachbarstädte und Locations nach den im Admin gepflegten Verweisen
         $neighbours = [];
@@ -188,7 +188,7 @@ final class PageController
 
         View::page('pages/city', $this->base('/hochzeitsfotograf/' . $slug, [
             'meta' => Seo::forTemplate('city', ['name' => $name], '/hochzeitsfotograf/' . $slug, [
-                'title'       => $de ? "Hochzeitsfotograf $name – Foto & Video ab 690 €" : "$name Düğün Fotoğrafçısı – Foto & Video 690 €'dan",
+                'title'       => $de ? "Hochzeitsfotograf $name – Foto & Video ab 690 €" : "Wedding photographer $name – photo & film from 690 €",
                 'description' => mb_substr(I18n::pick($city['lead'] ?? null), 0, 158),
                 'jsonLd'      => [
                     Seo::faq($this->faqPairs((array) ($city['faq'] ?? []))),
@@ -242,7 +242,7 @@ final class PageController
                 ['name' => $name, 'city' => (string) ($venue['city'] ?? '')],
                 '/hochzeitslocations/' . $slug,
                 [
-                    'title'       => $de ? "$name Hochzeitsfotograf – Erfahrung vor Ort" : "$name düğün fotoğrafçısı – mekân tecrübesi",
+                    'title'       => $de ? "$name Hochzeitsfotograf – Erfahrung vor Ort" : "$name wedding photographer – we know the place",
                     'description' => mb_substr(I18n::pick($venue['lead'] ?? null), 0, 158),
                     'jsonLd'      => [Seo::breadcrumb([
                         ['name' => 'Home', 'path' => '/'],
@@ -326,7 +326,7 @@ final class PageController
             'meta' => Seo::forPage('ueber-mich', [
                 'title'       => I18n::isDe()
                     ? 'Über mich – ' . (string) ($about['name'] ?? '') . ', Hochzeitsfotograf Stuttgart'
-                    : 'Hakkımda – ' . (string) ($about['name'] ?? '') . ', Stuttgart düğün fotoğrafçısı',
+                    : 'About me – ' . (string) ($about['name'] ?? '') . ', wedding photographer in Stuttgart',
                 'description' => I18n::pick($about['lead'] ?? null),
                 'jsonLd'      => [Seo::breadcrumb([
                     ['name' => 'Home', 'path' => '/'],
@@ -440,7 +440,7 @@ final class PageController
 
         View::page('pages/not-found', $this->base('', [
             'meta' => [
-                'title'       => I18n::isDe() ? 'Seite nicht gefunden' : 'Sayfa bulunamadı',
+                'title'       => I18n::isDe() ? 'Seite nicht gefunden' : 'Page not found',
                 'description' => '',
                 'noindex'     => true,
                 'canonical'   => Config::url() . I18n::path(''),

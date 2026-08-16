@@ -61,7 +61,7 @@ $whatsapp = preg_replace('/\D+/', '', $phone) ?? '';
         <h2 class="text-[0.68rem] uppercase tracking-[0.22em] text-gold"><?= e(I18n::t('contact.directTitle')) ?></h2>
         <div class="mt-6 space-y-5 text-[0.95rem]">
           <div>
-            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted">Telefon</div>
+            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= e(I18n::t('contact.phoneLabel')) ?></div>
             <a href="tel:<?= e($phone) ?>" class="mt-1 block text-ink hover:text-gold"><?= e((string) ($contact['phoneHuman'] ?? '')) ?></a>
           </div>
           <div>

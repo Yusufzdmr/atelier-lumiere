@@ -251,7 +251,7 @@ $values = array_slice((array) ($about['values'] ?? []), 0, 4);
 <!-- ---------------- Kontakt ---------------- -->
 <?= Ui::sectionOpen('ink', 'relative overflow-hidden') ?>
   <div class="relative z-10 mx-auto max-w-2xl text-center">
-    <?= Ui::head(I18n::t('home.ctaTitle'), 'Kontakt', I18n::t('home.ctaText'), 'center', 'light') ?>
+    <?= Ui::head(I18n::t('home.ctaTitle'), I18n::t('nav.contact'), I18n::t('home.ctaText'), 'center', 'light') ?>
     <?= Ui::revealOpen(150, 'mt-10') ?>
       <?= Ui::btn($p('/kontakt'), I18n::t('home.ctaButton'), 'light') ?>
     <?= Ui::revealClose() ?>

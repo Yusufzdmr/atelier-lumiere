@@ -126,7 +126,7 @@
       var query = box.getAttribute("data-query") || "";
       var frame = document.createElement("iframe");
       frame.src = "https://www.google.com/maps?q=" + encodeURIComponent(query) + "&output=embed";
-      frame.title = "Karte";
+      frame.title = document.documentElement.lang.startsWith("de") ? "Karte" : "Map";
       frame.className = "mt-5 w-full border border-sand-deep";
       frame.height = "320";
       frame.setAttribute("loading", "lazy");

@@ -25,7 +25,7 @@ $navLinks = [
     [$p('/ratgeber'), I18n::t('blog.nav')],
     [$p('/galerie'), I18n::t('nav.gallery')],
     [$p('/einladung'), I18n::t('nav.invitation')],
-    [$p('/designs'), $locale === 'de' ? 'Designs' : 'Tasarımlar'],
+    [$p('/designs'), 'Designs'],
     [$p('/kontakt'), I18n::t('nav.contact')],
 ];
 ?>

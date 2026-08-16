@@ -240,25 +240,25 @@ final class InviteController
                 'Atelier Lumière',
             ]
             : [
-                'Davetiyeniz hazır.',
+                'Your invitation is ready.',
                 '',
-                'Misafirlerinize göndereceğiniz bağlantı:',
+                'This is the link for your guests:',
                 $url,
                 '',
-                'Bu da size ait sayfa. İsimleri oradan girer, kişiye özel',
-                'bağlantıları alır ve kimlerin geldiğini görürsünüz:',
+                'And this is your own page. There you enter names, collect the',
+                'personal links and see who has replied:',
                 $manage,
                 '',
-                'İkinci adresi lütfen saklayın ve davetiyelerle birlikte',
-                'paylaşmayın – o size ait.',
+                'Please keep this second address safe and do not pass it on',
+                'with the invitations – it belongs to you.',
                 '',
-                'Sevgiler',
+                'Warm regards',
                 'Atelier Lumière',
             ];
 
         return Mail::send(
             $to,
-            ($de ? 'Eure Einladung: ' : 'Davetiyeniz: ') . $names,
+            ($de ? 'Eure Einladung: ' : 'Your invitation: ') . $names,
             $lines
         );
     }
@@ -514,7 +514,11 @@ final class InviteController
         View::page('pages/invite-manage', [
             'locale'     => I18n::locale(),
             'path'       => I18n::path('/einladung/' . $slug . '/verwalten'),
-            'meta'       => ['title' => 'Gästeliste', 'noindex' => true, 'scripts' => ['/assets/invite-manage.js']],
+            'meta'       => [
+                'title'   => I18n::isDe() ? 'Gästeliste' : 'Guest list',
+                'noindex' => true,
+                'scripts' => ['/assets/invite-manage.js'],
+            ],
             'invitation' => $invitation,
             'guests'     => $guests,
             // Die Zusagen gehoeren dem Paar. Bisher standen sie nur im
@@ -708,27 +712,27 @@ final class InviteController
 
         return [
             'slug'      => 'vorschau',
-            'bride'     => $de ? 'Marie' : 'Elif',
-            'groom'     => $de ? 'Jonas' : 'Kerem',
+            'bride'     => 'Marie',
+            'groom'     => 'Jonas',
             'eventType' => 'wedding',
             'events'    => [[
-                'name'    => $de ? 'Hochzeit' : 'Düğün',
+                'name'    => $de ? 'Hochzeit' : 'Wedding',
                 // Immer im naechsten Sommer, damit der Countdown nie abgelaufen ist.
                 'date'    => (string) (((int) date('Y')) + 1) . '-06-20',
                 'time'    => '15:30',
-                'venue'   => $de ? 'Schloss Solitude' : 'Solitude Şatosu',
+                'venue'   => 'Schloss Solitude',
                 'address' => 'Solitude 1, 70197 Stuttgart',
             ]],
             'message'  => $de
                 ? 'Wir möchten diesen besonderen Tag mit euch feiern.'
-                : 'Bu özel günü sizinle paylaşmak istiyoruz.',
-            'closing'  => $de ? 'Wir freuen uns auf euch' : 'Sizi aramızda görmek isteriz',
+                : 'We would love to share this special day with you.',
+            'closing'  => $de ? 'Wir freuen uns auf euch' : 'We look forward to seeing you',
             'families' => null,
             'photos'   => [],
             'program'  => [
-                ['time' => '15:30', 'title' => $de ? 'Trauung' : 'Nikâh'],
-                ['time' => '17:00', 'title' => $de ? 'Empfang' : 'Karşılama'],
-                ['time' => '19:00', 'title' => $de ? 'Dinner' : 'Yemek'],
+                ['time' => '15:30', 'title' => $de ? 'Trauung' : 'Ceremony'],
+                ['time' => '17:00', 'title' => $de ? 'Empfang' : 'Reception'],
+                ['time' => '19:00', 'title' => $de ? 'Dinner' : 'Dinner'],
             ],
             'menu'     => [],
             'musicUrl' => '',
@@ -767,10 +771,10 @@ final class InviteController
             'meta'   => Seo::forPage('designs', [
                 'title' => $locale === 'de'
                     ? 'Designs für digitale Hochzeitseinladungen'
-                    : 'Dijital düğün davetiyesi tasarımları',
+                    : 'Designs for digital wedding invitations',
                 'description' => $locale === 'de'
                     ? 'Alle Vorlagen für die digitale Einladung: Farbwelt, Kuvert und Siegel. Jede lässt sich vorab in Ruhe ansehen.'
-                    : 'Dijital davetiye şablonlarının tamamı: renk dünyası, zarf ve mühür. Her birini önceden rahatça inceleyebilirsiniz.',
+                    : 'Every template for the digital invitation: colours, envelope and seal. Each one can be looked at in advance, in peace.',
                 'canonical' => Config::url() . I18n::path('/designs', $locale),
             ]),
             'themes' => $themes,

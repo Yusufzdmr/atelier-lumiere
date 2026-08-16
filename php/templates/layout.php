@@ -70,7 +70,7 @@ $bare = preg_replace('#^/(de|en)#', '', $path) ?? '';
   <?php endforeach; ?>
 </head>
 <body class="min-h-screen antialiased">
-  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:bg-ink focus:px-4 focus:py-2 focus:text-cream">Skip</a>
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:bg-ink focus:px-4 focus:py-2 focus:text-cream"><?= e(I18n::t('common.skip')) ?></a>
 
   <?php
   /*

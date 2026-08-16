@@ -18,7 +18,7 @@ $de = $locale === 'de';
 $name = (string) ($venue['name'] ?? '');
 $slug = (string) ($venue['slug'] ?? '');
 $address = (string) ($venue['address'] ?? '');
-$h1 = $de ? $name . ' – Hochzeitsfotograf & Videograf' : $name . ' – düğün fotoğrafçısı & videografı';
+$h1 = $de ? $name . ' – Hochzeitsfotograf & Videograf' : $name . ' – wedding photographer & videographer';
 ?>
 <?= Ui::pageHero('venue-' . $slug, $h1, I18n::pick($venue['type'] ?? null, $locale), I18n::pick($venue['lead'] ?? null, $locale), 'lg') ?>
 
@@ -105,7 +105,7 @@ $h1 = $de ? $name . ' – Hochzeitsfotograf & Videograf' : $name . ' – düğü
           <?php if ($city !== null) : ?>
             <a href="<?= e($p('/hochzeitsfotograf/' . (string) ($city['slug'] ?? ''))) ?>"
                class="mt-3 block bg-ink px-5 py-3 text-center text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
-              <?= $de ? 'Hochzeitsfotograf ' . e((string) ($city['name'] ?? '')) : e((string) ($city['name'] ?? '')) . ' düğün fotoğrafçısı' ?>
+              <?= $de ? 'Hochzeitsfotograf ' . e((string) ($city['name'] ?? '')) : 'Wedding photographer ' . e((string) ($city['name'] ?? '')) ?>
             </a>
           <?php endif; ?>
         </div>

@@ -34,15 +34,15 @@ if (str_starts_with($stand, 'plus')) {
     $count = (int) substr($stand, 4);
     $message = $de
         ? $count . ($count === 1 ? ' Name hinzugefügt.' : ' Namen hinzugefügt.')
-        : $count . ' isim eklendi.';
+        : $count . ($count === 1 ? ' name added.' : ' names added.');
 } elseif ($stand === 'doppelt') {
-    $message = $de ? 'Diese Namen standen schon auf der Liste.' : 'Bu isimler listede zaten vardı.';
+    $message = $de ? 'Diese Namen standen schon auf der Liste.' : 'Those names were already on the list.';
 } elseif ($stand === 'leer') {
-    $message = $de ? 'Da war nichts zum Eintragen.' : 'Eklenecek bir şey yoktu.';
+    $message = $de ? 'Da war nichts zum Eintragen.' : 'There was nothing to add.';
 } elseif ($stand === 'geloescht') {
-    $message = $de ? 'Der Name ist entfernt. Sein Link führt jetzt auf die Einladung ohne Anrede.' : 'İsim silindi. Bağlantısı artık hitapsız davetiyeye gider.';
+    $message = $de ? 'Der Name ist entfernt. Sein Link führt jetzt auf die Einladung ohne Anrede.' : 'The name is gone. Its link now leads to the invitation without a greeting.';
 } elseif ($stand === 'vorschau') {
-    $message = $de ? 'Das Vorschaubild ist gespeichert.' : 'Önizleme görseli kaydedildi.';
+    $message = $de ? 'Das Vorschaubild ist gespeichert.' : 'The preview picture is saved.';
 }
 
 /**
@@ -59,7 +59,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
     $text = $greeting
         . ($de
             ? 'wir laden euch herzlich zu unserer Hochzeit ein.'
-            : 'sizi düğünümüze davet etmekten mutluluk duyarız.')
+            : 'we would love to invite you to our wedding.')
         . ($date !== '' ? "\n" . Dates::long($date) : '')
         . "\n\n" . $url . "\n\n" . $names;
 
@@ -68,12 +68,12 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
 ?>
 <div class="mx-auto max-w-3xl px-5 py-14 sm:py-20">
 
-  <div class="eyebrow"><?= $de ? 'Eure Einladung' : 'Davetiyeniz' ?></div>
+  <div class="eyebrow"><?= $de ? 'Eure Einladung' : 'Your invitation' ?></div>
   <h1 class="font-display mt-2 text-3xl font-light text-ink sm:text-4xl"><?= e($names) ?></h1>
   <p class="mt-4 max-w-xl text-sm leading-relaxed text-muted">
     <?= $de
       ? 'Hier tragt ihr ein, wen ihr persönlich ansprechen wollt. Die Einladung bleibt dieselbe – nur die Anrede oben auf der Karte ändert sich, und jeder bekommt seinen eigenen Link.'
-      : 'Burada kimlere isimleriyle hitap etmek istediğinizi yazarsınız. Davetiye aynı kalır – yalnızca kartın üstündeki hitap değişir ve her biri kendi bağlantısını alır.' ?>
+      : 'Here you enter who you want to address personally. The invitation stays the same – only the greeting at the top of the card changes, and everyone gets their own link.' ?>
   </p>
 
   <?php if ($message !== '') : ?>
@@ -114,27 +114,27 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
   ));
   ?>
   <section class="mt-12 border border-sand-deep p-6">
-    <h2 class="font-display text-lg text-ink"><?= $de ? 'Wer kommt' : 'Kimler geliyor' ?></h2>
+    <h2 class="font-display text-lg text-ink"><?= $de ? 'Wer kommt' : 'Who is coming' ?></h2>
 
     <?php if ($rsvps === []) : ?>
       <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
         <?= $de
           ? 'Noch keine Rückmeldung. Sobald jemand auf der Einladung antwortet, steht es hier – die Seite zeigt immer den aktuellen Stand.'
-          : 'Henüz yanıt yok. Davetiyeden biri cevap verir vermez burada görünür – sayfa her zaman güncel durumu gösterir.' ?>
+          : 'No replies yet. As soon as somebody answers on the invitation it appears here – the page always shows the current state.' ?>
       </p>
     <?php else : ?>
       <div class="mt-5 flex flex-wrap gap-8">
         <div>
           <div class="font-display text-3xl font-light text-ink"><?= (int) $heads ?></div>
-          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Personen' : 'Kişi' ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Personen' : 'People' ?></div>
         </div>
         <div>
           <div class="font-display text-3xl font-light text-ink"><?= count($yes) ?></div>
-          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Zusagen' : 'Kabul' ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Zusagen' : 'Coming' ?></div>
         </div>
         <div>
           <div class="font-display text-3xl font-light text-muted"><?= count($no) ?></div>
-          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Absagen' : 'Ret' ?></div>
+          <div class="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Absagen' : 'Not coming' ?></div>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
             <span class="text-[0.95rem] text-ink"><?= e((string) ($rsvp['name'] ?? '')) ?></span>
 
             <?php if ($coming && (int) ($rsvp['count'] ?? 1) > 1) : ?>
-              <span class="text-[0.78rem] text-muted">· <?= (int) $rsvp['count'] ?> <?= $de ? 'Personen' : 'kişi' ?></span>
+              <span class="text-[0.78rem] text-muted">· <?= (int) $rsvp['count'] ?> <?= $de ? 'Personen' : 'people' ?></span>
             <?php endif; ?>
 
             <span class="ml-auto text-[0.7rem] text-muted"><?= e(Dates::short((string) ($rsvp['at'] ?? ''))) ?></span>
@@ -164,13 +164,13 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
     <?php if ($pending !== []) : ?>
       <div class="mt-9 border-t border-sand-deep/60 pt-7">
         <h3 class="text-[0.66rem] uppercase tracking-[0.18em] text-muted">
-          <?= $de ? 'Warten noch auf Antwort' : 'Cevap bekleyenler' ?>
+          <?= $de ? 'Warten noch auf Antwort' : 'Still waiting for a reply' ?>
           <span class="text-gold">(<?= count($pending) ?>)</span>
         </h3>
         <p class="mt-2 text-[0.8rem] leading-relaxed text-muted">
           <?= $de
             ? 'Diese Namen stehen auf eurer Liste, haben aber über ihren eigenen Link noch nicht geantwortet.'
-            : 'Bu isimler listenizde ama kendi bağlantılarından henüz cevap vermediler.' ?>
+            : 'These names are on your list but have not yet answered through their own link.' ?>
         </p>
 
         <ul class="mt-5 space-y-2.5">
@@ -180,7 +180,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
               <a href="<?= e($whatsapp((string) ($guest["url"] ?? ""), $guest)) ?>"
                  target="_blank" rel="noopener"
                  class="ml-auto whitespace-nowrap border border-gold px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold hover:text-white">
-                <?= $de ? 'Erinnern' : 'Hatırlat' ?>
+                <?= $de ? 'Erinnern' : 'Remind' ?>
               </a>
             </li>
           <?php endforeach; ?>
@@ -191,17 +191,17 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
 
   <?php /* ------------------------- Allgemeiner Link ------------------------- */ ?>
   <section class="mt-12 border border-sand-deep p-6">
-    <h2 class="font-display text-lg text-ink"><?= $de ? 'Der allgemeine Link' : 'Genel bağlantı' ?></h2>
+    <h2 class="font-display text-lg text-ink"><?= $de ? 'Der allgemeine Link' : 'The general link' ?></h2>
     <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
       <?= $de
         ? 'Ohne Anrede – für eine Gruppe oder wenn es schnell gehen muss.'
-        : 'Hitapsız – bir grup için ya da acele ettiğinizde.' ?>
+        : 'Without a greeting – for a group, or when it has to be quick.' ?>
     </p>
     <div class="mt-4 flex flex-wrap items-center gap-3">
       <code class="min-w-0 flex-1 break-all border border-sand-deep bg-cream px-4 py-3 text-[0.8rem] text-ink"><?= e($link) ?></code>
       <button type="button" data-copy="<?= e($link) ?>"
               class="border border-ink px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
-        <?= $de ? 'Kopieren' : 'Kopyala' ?>
+        <?= $de ? 'Kopieren' : 'Copy' ?>
       </button>
       <a href="<?= e($whatsapp($link)) ?>" target="_blank" rel="noopener"
          class="border border-gold px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold hover:text-white">
@@ -212,11 +212,11 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
 
   <?php /* --------------------------- Namen eintragen ------------------------ */ ?>
   <section class="mt-8 border border-sand-deep p-6">
-    <h2 class="font-display text-lg text-ink"><?= $de ? 'Namen eintragen' : 'İsimleri girin' ?></h2>
+    <h2 class="font-display text-lg text-ink"><?= $de ? 'Namen eintragen' : 'Enter names' ?></h2>
     <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
       <?= $de
         ? 'Eine Zeile je Person oder Familie. Ihr könnt eine Liste auch einfach hineinkopieren – aus einer Tabelle, aus WhatsApp, wie sie gerade da ist.'
-        : 'Her satıra bir kişi ya da aile. Listeyi olduğu gibi de yapıştırabilirsiniz – tablodan, WhatsApp’tan, elinizde nasılsa öyle.' ?>
+        : 'One line per person or family. You can also simply paste a list in – from a spreadsheet, from WhatsApp, however it happens to be.' ?>
     </p>
 
     <form method="post" enctype="multipart/form-data" class="mt-6">
@@ -233,13 +233,13 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
        * für gemischte Listen trägt man sie in zwei Durchgängen ein.
        */
       $kinds = [
-          'family' => [$de ? 'Familie' : 'Aile',      $de ? 'Liebe Familie Yılmaz' : 'Sevgili Yılmaz Ailesi'],
-          'male'   => [$de ? 'Herr' : 'Bay',          $de ? 'Lieber Yusuf' : 'Sevgili Yusuf'],
-          'female' => [$de ? 'Frau' : 'Bayan',        $de ? 'Liebe Ayşe' : 'Sevgili Ayşe'],
+          'family' => [$de ? 'Familie' : 'Family',    $de ? 'Liebe Familie Yılmaz' : 'Dear Yılmaz family'],
+          'male'   => [$de ? 'Herr' : 'Mr',           $de ? 'Lieber Yusuf' : 'Dear Yusuf'],
+          'female' => [$de ? 'Frau' : 'Ms',           $de ? 'Liebe Ayşe' : 'Dear Ayşe'],
       ];
       ?>
       <div class="mb-6">
-        <span class="<?= $label ?>"><?= $de ? 'Anrede für diese Namen' : 'Bu isimler için hitap' ?></span>
+        <span class="<?= $label ?>"><?= $de ? 'Anrede für diese Namen' : 'Greeting for these names' ?></span>
         <div class="mt-3 grid gap-2 sm:grid-cols-3">
           <?php foreach ($kinds as $value => [$title, $example]) : ?>
             <label class="cursor-pointer border border-sand-deep px-4 py-3 transition-colors hover:border-muted has-[:checked]:border-gold">
@@ -251,25 +251,25 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
         </div>
       </div>
 
-      <label class="<?= $label ?>" for="namen"><?= $de ? 'Namen' : 'İsimler' ?></label>
+      <label class="<?= $label ?>" for="namen"><?= $de ? 'Namen' : 'Names' ?></label>
       <textarea id="namen" name="namen" rows="7" class="<?= $field ?> resize-y"
                 placeholder="<?= $de
                   ? 'Familie Müller&#10;Familie Oxford&#10;Anna &amp; Thomas&#10;Familie Yılmaz'
-                  : 'Müller Ailesi&#10;Oxford Ailesi&#10;Anna &amp; Thomas&#10;Yılmaz Ailesi' ?>"></textarea>
+                  : 'Müller family&#10;Oxford family&#10;Anna &amp; Thomas&#10;Yılmaz family' ?>"></textarea>
 
       <div class="mt-6">
-        <label class="<?= $label ?>" for="liste"><?= $de ? 'Oder eine Datei (.txt oder .csv)' : 'Ya da bir dosya (.txt veya .csv)' ?></label>
+        <label class="<?= $label ?>" for="liste"><?= $de ? 'Oder eine Datei (.txt oder .csv)' : 'Or a file (.txt or .csv)' ?></label>
         <input id="liste" type="file" name="liste" accept=".txt,.csv,text/plain,text/csv"
                class="mt-2 w-full text-[0.8rem] text-muted file:mr-4 file:border file:border-sand-deep file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
         <p class="mt-2 text-[0.72rem] leading-relaxed text-muted">
           <?= $de
             ? 'Aus Excel: „Speichern unter“ → CSV. Die erste Spalte wird genommen.'
-            : 'Excel’den: „Farklı kaydet“ → CSV. İlk sütun alınır.' ?>
+            : 'From Excel: &bdquo;Save as&ldquo; → CSV. The first column is taken.' ?>
         </p>
       </div>
 
       <button class="mt-7 bg-ink px-8 py-3.5 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
-        <?= $de ? 'Einladungen erstellen' : 'Davetiyeleri oluştur' ?>
+        <?= $de ? 'Einladungen erstellen' : 'Create invitations' ?>
       </button>
     </form>
   </section>
@@ -277,7 +277,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
   <?php /* ----------------------------- Die Liste ---------------------------- */ ?>
   <section class="mt-8">
     <h2 class="font-display text-lg text-ink">
-      <?= $de ? 'Persönliche Einladungen' : 'Kişiye özel davetiyeler' ?>
+      <?= $de ? 'Persönliche Einladungen' : 'Personal invitations' ?>
       <span class="ml-2 text-[0.8rem] text-muted">(<?= count($guests) ?>)</span>
     </h2>
 
@@ -285,7 +285,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
       <p class="mt-4 border border-sand-deep p-5 text-sm text-muted">
         <?= $de
           ? 'Noch keine Namen. Sobald ihr oben welche eintragt, stehen hier die Links.'
-          : 'Henüz isim yok. Yukarıya girdiğiniz anda bağlantılar burada görünür.' ?>
+          : 'No names yet. The moment you enter some above, the links appear here.' ?>
       </p>
     <?php else : ?>
       <div class="mt-4 space-y-3">
@@ -298,9 +298,9 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
                 <input type="hidden" name="schluessel" value="<?= e($key) ?>">
                 <input type="hidden" name="was" value="loeschen">
                 <input type="hidden" name="token" value="<?= e((string) $guest['token']) ?>">
-                <button data-confirm="<?= $de ? 'Diesen Namen entfernen?' : 'Bu isim kaldırılsın mı?' ?>"
+                <button data-confirm="<?= $de ? 'Diesen Namen entfernen?' : 'Remove this name?' ?>"
                         class="text-[0.66rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-red-800">
-                  <?= $de ? 'Entfernen' : 'Kaldır' ?>
+                  <?= $de ? 'Entfernen' : 'Remove' ?>
                 </button>
               </form>
             </div>
@@ -309,7 +309,7 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
               <code class="min-w-0 flex-1 break-all border border-sand-deep bg-cream px-4 py-2.5 text-[0.78rem] text-ink"><?= e((string) $guest['url']) ?></code>
               <button type="button" data-copy="<?= e((string) $guest['url']) ?>"
                       class="border border-ink px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
-                <?= $de ? 'Kopieren' : 'Kopyala' ?>
+                <?= $de ? 'Kopieren' : 'Copy' ?>
               </button>
               <a href="<?= e($whatsapp((string) $guest["url"], $guest)) ?>" target="_blank" rel="noopener"
                  class="border border-gold px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold hover:text-white">
@@ -324,11 +324,11 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
 
   <?php /* ---------------------------- Vorschaubild -------------------------- */ ?>
   <section class="mt-12 border border-sand-deep p-6">
-    <h2 class="font-display text-lg text-ink"><?= $de ? 'Das Bild in WhatsApp' : 'WhatsApp’ta görünen resim' ?></h2>
+    <h2 class="font-display text-lg text-ink"><?= $de ? 'Das Bild in WhatsApp' : 'The picture in WhatsApp' ?></h2>
     <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
       <?= $de
         ? 'So sieht die Vorschau aus, wenn ihr den Link verschickt. Wir nehmen dafür euer erstes Foto. Wenn ihr lieber ein eigenes Bild möchtet, ladet es hier hoch – quer, etwa 1200 × 630 Punkte.'
-        : 'Bağlantıyı gönderdiğinizde önizleme böyle görünür. Bunun için ilk fotoğrafınızı kullanıyoruz. Kendi görselinizi isterseniz buradan yükleyin – yatay, yaklaşık 1200 × 630 piksel.' ?>
+        : 'This is what the preview looks like when you send the link. We use your first photo for it. If you would rather have a picture of your own, upload it here – landscape, about 1200 × 630 pixels.' ?>
     </p>
 
     <div class="mt-5 max-w-md border border-sand-deep bg-cream">
@@ -353,12 +353,12 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
              class="w-full text-[0.8rem] text-muted file:mr-4 file:border file:border-sand-deep file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
       <div class="mt-5 flex flex-wrap items-center gap-4">
         <button class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
-          <?= $de ? 'Bild speichern' : 'Görseli kaydet' ?>
+          <?= $de ? 'Bild speichern' : 'Save picture' ?>
         </button>
         <?php if ((string) ($invitation['ogImage'] ?? '') !== '') : ?>
           <button name="entfernen" value="1"
                   class="text-[0.66rem] uppercase tracking-[0.18em] text-muted underline-offset-4 hover:text-gold hover:underline">
-            <?= $de ? 'Wieder unser Foto nehmen' : 'Yeniden fotoğrafımızı kullan' ?>
+            <?= $de ? 'Wieder unser Foto nehmen' : 'Use our photo again' ?>
           </button>
         <?php endif; ?>
       </div>
@@ -367,17 +367,17 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
 
   <?php /* -------------------------- Diesen Link merken ---------------------- */ ?>
   <section class="mt-12 border-t border-sand-deep pt-8">
-    <h2 class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Diese Seite wiederfinden' : 'Bu sayfaya geri dönmek' ?></h2>
+    <h2 class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Diese Seite wiederfinden' : 'Finding this page again' ?></h2>
     <p class="mt-3 max-w-xl text-[0.82rem] leading-relaxed text-muted">
       <?= $de
         ? 'Speichert euch diesen Link – nur damit kommt ihr wieder hierher. Gebt ihn nicht mit den Einladungen weiter.'
-        : 'Bu bağlantıyı saklayın – buraya yalnızca onunla dönebilirsiniz. Davetiyelerle birlikte paylaşmayın.' ?>
+        : 'Save this link – it is the only way back here. Do not pass it on with the invitations.' ?>
     </p>
     <div class="mt-4 flex flex-wrap items-center gap-3">
       <code class="min-w-0 flex-1 break-all border border-sand-deep bg-cream px-4 py-3 text-[0.76rem] text-muted"><?= e($manageUrl) ?></code>
       <button type="button" data-copy="<?= e($manageUrl) ?>"
               class="border border-sand-deep px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-muted transition-colors hover:border-gold hover:text-gold">
-        <?= $de ? 'Kopieren' : 'Kopyala' ?>
+        <?= $de ? 'Kopieren' : 'Copy' ?>
       </button>
     </div>
   </section>

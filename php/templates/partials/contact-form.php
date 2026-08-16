@@ -60,10 +60,10 @@ $old = static fn (string $key): string => (string) ($values[$key] ?? '');
     <select id="service" name="service" class="<?= $field ?>">
       <?php
       $options = [
-          'foto'        => $locale === 'de' ? 'Nur Fotografie' : 'Sadece fotoğraf',
-          'video'       => $locale === 'de' ? 'Nur Film' : 'Sadece video',
-          'beides'      => $locale === 'de' ? 'Foto & Film' : 'Foto & video',
-          'standesamt'  => $locale === 'de' ? 'Standesamt / Verlobung' : 'Nikah / nişan',
+          'foto'        => $locale === 'de' ? 'Nur Fotografie' : 'Photography only',
+          'video'       => $locale === 'de' ? 'Nur Film' : 'Film only',
+          'beides'      => $locale === 'de' ? 'Foto & Film' : 'Photo & film',
+          'standesamt'  => $locale === 'de' ? 'Standesamt / Verlobung' : 'Registry office / engagement',
       ];
       foreach ($options as $value => $text) :
       ?>

@@ -72,7 +72,7 @@ $gallery = $uploads !== [] ? $uploads : $seeds;
           <?php if ($city !== null) : ?>
             <a href="<?= e($p('/hochzeitsfotograf/' . (string) ($city['slug'] ?? ''))) ?>"
                class="block border border-ink px-5 py-3 text-center text-[0.66rem] uppercase tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-cream">
-              <?= $de ? 'Hochzeitsfotograf ' : 'Düğün fotoğrafçısı ' ?><?= e((string) ($city['name'] ?? '')) ?>
+              <?= $de ? 'Hochzeitsfotograf ' : 'Wedding photographer ' ?><?= e((string) ($city['name'] ?? '')) ?>
             </a>
           <?php endif; ?>
         </div>
@@ -95,7 +95,7 @@ $gallery = $uploads !== [] ? $uploads : $seeds;
     <div class="mt-16">
       <?= Ui::revealOpen(0) ?>
         <div class="text-[0.62rem] uppercase tracking-[0.24em] text-gold">
-          <?= $de ? 'Der Film' : 'Film' ?>
+          <?= $de ? 'Der Film' : 'The film' ?>
         </div>
         <div class="mt-5">
           <?= Video::embedBox($film, $couple . ' – Film', (string) ($gallery[0] ?? '')) ?>

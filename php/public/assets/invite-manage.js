@@ -16,7 +16,7 @@
 
       function done() {
         // Kurz zurückmelden: sonst weiß niemand, ob der Klick angekommen ist.
-        button.textContent = document.documentElement.lang === "tr" ? "Kopyalandı" : "Kopiert";
+        button.textContent = document.documentElement.lang.startsWith("de") ? "Kopiert" : "Copied";
         window.setTimeout(function () {
           button.textContent = original;
         }, 1800);
@@ -41,7 +41,7 @@
           document.execCommand("copy");
           done();
         } catch (error) {
-          window.prompt(document.documentElement.lang === "tr" ? "Kopyalayın:" : "Kopieren:", text);
+          window.prompt(document.documentElement.lang.startsWith("de") ? "Kopieren:" : "Copy:", text);
         }
         document.body.removeChild(field);
       }

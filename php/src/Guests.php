@@ -85,8 +85,8 @@ final class Guests
             };
         }
 
-        // Türkisch kennt die Unterscheidung nicht; nur Familie hängt an.
-        return $kind === 'family' ? 'Sevgili ' . $name . ' Ailesi' : 'Sevgili ' . $name;
+        // Englisch kennt die Unterscheidung nicht; nur die Familie hängt an.
+        return $kind === 'family' ? 'Dear ' . $name . ' family' : 'Dear ' . $name;
     }
 
     /**

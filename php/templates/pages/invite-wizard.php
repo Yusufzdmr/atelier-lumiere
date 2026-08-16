@@ -30,29 +30,29 @@ $label = 'block text-[0.64rem] uppercase tracking-[0.2em] text-muted';
 $old = static fn (string $key, string $fallback = ''): string => (string) ($values[$key] ?? $fallback);
 
 $eventTypes = [
-    'wedding'      => ['de' => 'Hochzeit', 'tr' => 'Düğün'],
-    'multi'        => ['de' => 'Mehrere Feiern (z. B. Henna + Hochzeit)', 'tr' => 'Çoklu etkinlik (kına + düğün)'],
-    'henna'        => ['de' => 'Henna-Abend', 'tr' => 'Kına gecesi'],
-    'engagement'   => ['de' => 'Verlobung', 'tr' => 'Nişan'],
-    'circumcision' => ['de' => 'Beschneidungsfest', 'tr' => 'Sünnet'],
-    'birthday'     => ['de' => 'Geburtstag', 'tr' => 'Doğum günü'],
-    'corporate'    => ['de' => 'Firmenfeier', 'tr' => 'Kurumsal etkinlik'],
+    'wedding'      => ['de' => 'Hochzeit', 'en' => 'Wedding'],
+    'multi'        => ['de' => 'Mehrere Feiern (z. B. Henna + Hochzeit)', 'en' => 'Several celebrations (e.g. henna + wedding)'],
+    'henna'        => ['de' => 'Henna-Abend', 'en' => 'Henna night'],
+    'engagement'   => ['de' => 'Verlobung', 'en' => 'Engagement'],
+    'circumcision' => ['de' => 'Beschneidungsfest', 'en' => 'Circumcision celebration'],
+    'birthday'     => ['de' => 'Geburtstag', 'en' => 'Birthday'],
+    'corporate'    => ['de' => 'Firmenfeier', 'en' => 'Company celebration'],
 ];
 
 $sectionLabels = [
-    'rsvp'      => ['de' => 'Zusagen (RSVP)', 'tr' => 'Katılım bildirimi (RSVP)'],
-    'location'  => ['de' => 'Ort & Karte', 'tr' => 'Konum & harita'],
-    'countdown' => ['de' => 'Countdown', 'tr' => 'Geri sayım'],
-    'program'   => ['de' => 'Programm', 'tr' => 'Program'],
-    'family'    => ['de' => 'Familien', 'tr' => 'Aile bilgileri'],
-    'menu'      => ['de' => 'Menü', 'tr' => 'Yemek menüsü'],
-    'music'     => ['de' => 'Musik', 'tr' => 'Müzik'],
-    'video'     => ['de' => 'Video-Intro', 'tr' => 'Video intro'],
+    'rsvp'      => ['de' => 'Zusagen (RSVP)', 'en' => 'Replies (RSVP)'],
+    'location'  => ['de' => 'Ort & Karte', 'en' => 'Place & map'],
+    'countdown' => ['de' => 'Countdown', 'en' => 'Countdown'],
+    'program'   => ['de' => 'Programm', 'en' => 'Programme'],
+    'family'    => ['de' => 'Familien', 'en' => 'Families'],
+    'menu'      => ['de' => 'Menü', 'en' => 'Menu'],
+    'music'     => ['de' => 'Musik', 'en' => 'Music'],
+    'video'     => ['de' => 'Video-Intro', 'en' => 'Video intro'],
 ];
 
 $steps = $de
     ? ['Anlass & Design', 'Eure Angaben', 'Feier', 'Abschnitte', 'Fotos & Link']
-    : ['Etkinlik & tasarım', 'Bilgileriniz', 'Tören', 'Bölümler', 'Fotoğraf & link'];
+    : ['Occasion & design', 'Your details', 'Celebration', 'Sections', 'Photos & link'];
 ?>
 <?= Ui::pageHero('invite-hero', I18n::t('invite.title'), I18n::t('nav.invitation'), I18n::t('invite.lead')) ?>
 
@@ -94,12 +94,12 @@ $steps = $de
       <?php /* Ohne Konto ist dieser Link der einzige Weg zurueck zur Gaesteliste. */ ?>
       <div class="mt-8 border border-sand-deep p-6 text-left">
         <div class="text-[0.6rem] uppercase tracking-[0.24em] text-gold">
-          <?= $de ? 'Persönliche Einladungen' : 'Kişiye özel davetiyeler' ?>
+          <?= $de ? 'Persönliche Einladungen' : 'Personal invitations' ?>
         </div>
         <p class="mt-3 text-[0.85rem] leading-relaxed text-muted">
           <?= $de
             ? 'Ihr könnt jede Familie einzeln ansprechen – „Liebe Familie Müller“ – und jeder bekommt seinen eigenen Link. Das geht hier, jetzt oder später:'
-            : 'Her aileye ayrı ayrı hitap edebilirsiniz – „Sayın Müller Ailesi“ – ve her biri kendi bağlantısını alır. Şimdi ya da sonra, buradan:' ?>
+            : 'You can address each family by name – &bdquo;Dear Müller family&ldquo; – and each one gets its own link. Here, now or later:' ?>
         </p>
         <div class="mt-4 flex flex-col gap-3 sm:flex-row">
           <code class="flex-1 overflow-x-auto border border-sand-deep bg-cream px-4 py-3 text-[0.76rem] text-ink"><?= e((string) $done['manage']) ?></code>
@@ -111,7 +111,7 @@ $steps = $de
         <p class="mt-3 text-[0.74rem] leading-relaxed text-muted">
           <?= $de
             ? 'Diesen Link gut aufheben und nicht mit den Einladungen weitergeben – er gehört euch.'
-            : 'Bu bağlantıyı saklayın ve davetiyelerle paylaşmayın – o size ait.' ?>
+            : 'Keep this link safe and do not pass it on with the invitations – it belongs to you.' ?>
         </p>
 
         <?php
@@ -125,19 +125,19 @@ $steps = $de
           <p class="mt-4 border border-gold/50 bg-sand/40 px-4 py-3 text-[0.8rem] leading-relaxed text-ink">
             <?= $de
               ? 'Beide Links sind auch an ' . e((string) $done['email']) . ' unterwegs.'
-              : 'İki bağlantı ' . e((string) $done['email']) . ' adresine de gönderildi.' ?>
+              : 'Both links are also on their way to ' . e((string) $done['email']) . '.' ?>
           </p>
         <?php else : ?>
           <p class="mt-4 border border-red-700/40 bg-red-50 px-4 py-3 text-[0.8rem] leading-relaxed text-red-800">
             <?= $de
               ? 'Achtung: Dieser Link ist nirgendwo sonst gespeichert. Kopiert ihn jetzt oder schickt ihn euch selbst – wenn ihr das Fenster schließt, ist er weg.'
-              : 'Dikkat: Bu bağlantı başka hiçbir yerde kayıtlı değil. Şimdi kopyalayın ya da kendinize gönderin — pencereyi kapatırsanız kaybolur.' ?>
+              : 'Careful: this link is not stored anywhere else. Copy it now or send it to yourself – if you close the window, it is gone.' ?>
           </p>
         <?php endif; ?>
       </div>
 
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <?= Ui::btn((string) $done['manage'], $de ? 'Gästeliste öffnen' : 'Misafir listesini aç', 'solid') ?>
+        <?= Ui::btn((string) $done['manage'], $de ? 'Gästeliste öffnen' : 'Open guest list', 'solid') ?>
         <?= Ui::btn((string) $done['path'], I18n::t('invite.openInvite'), 'outline') ?>
         <?= Ui::btn($p('/einladung'), I18n::t('invite.createAnother'), 'outline') ?>
       </div>
@@ -161,8 +161,8 @@ $steps = $de
     <?php if ($error !== '') : ?>
       <p class="mb-8 border border-red-700/40 bg-red-50 px-5 py-3 text-sm text-red-700">
         <?= $error === 'fields'
-            ? ($de ? 'Bitte Namen und mindestens ein Datum ausfüllen.' : 'Lütfen isimleri ve en az bir tarihi doldurun.')
-            : ($de ? 'Das hat nicht geklappt. Bitte die Seite neu laden und erneut versuchen.' : 'Olmadı. Sayfayı yenileyip tekrar deneyin.') ?>
+            ? ($de ? 'Bitte Namen und mindestens ein Datum ausfüllen.' : 'Please fill in the names and at least one date.')
+            : ($de ? 'Das hat nicht geklappt. Bitte die Seite neu laden und erneut versuchen.' : 'That did not work. Please reload the page and try again.') ?>
       </p>
     <?php endif; ?>
 
@@ -170,7 +170,7 @@ $steps = $de
       <div class="mb-10 border-l-2 border-gold bg-sand/40 p-6">
         <p class="text-[0.92rem] leading-relaxed text-ink"><?= e(I18n::t('invite.freeNote')) ?></p>
         <p class="mt-2 text-[0.82rem] text-muted">
-          <?= $de ? 'Aktionscode: ' : 'Kampanya kodu: ' ?><code class="text-gold"><?= e((string) $campaign['code']) ?></code>
+          <?= $de ? 'Aktionscode: ' : 'Promotion code: ' ?><code class="text-gold"><?= e((string) $campaign['code']) ?></code>
         </p>
       </div>
     <?php endif; ?>
@@ -191,7 +191,7 @@ $steps = $de
         <!-- 1 – Anlass & Design -->
         <fieldset data-step="0" class="space-y-8">
           <div>
-            <label class="<?= $label ?>" for="eventType"><?= $de ? 'Anlass' : 'Etkinlik türü' ?></label>
+            <label class="<?= $label ?>" for="eventType"><?= $de ? 'Anlass' : 'Occasion' ?></label>
             <select id="eventType" name="eventType" class="<?= $field ?>" data-event-type>
               <?php foreach ($eventTypes as $key => $caption) : ?>
                 <option value="<?= e($key) ?>" <?= $old('eventType', 'wedding') === $key ? 'selected' : '' ?>><?= e($caption[$locale]) ?></option>
@@ -206,7 +206,7 @@ $steps = $de
               <?php /* Die Kacheln hier sind klein. Wer erst schauen will, geht ins Schaufenster. */ ?>
               <a href="<?= e(I18n::path('/designs', $locale)) ?>" target="_blank" rel="noopener"
                  class="ml-1 whitespace-nowrap text-gold underline-offset-4 hover:underline">
-                <?= $locale === 'de' ? 'Alle Designs ansehen ↗' : 'Tüm tasarımlara bak ↗' ?>
+                <?= $locale === 'de' ? 'Alle Designs ansehen ↗' : 'See all designs ↗' ?>
               </a>
             </p>
 
@@ -253,12 +253,12 @@ $steps = $de
 
           <div>
             <label class="<?= $label ?>" for="message"><?= e(I18n::t('invite.message')) ?></label>
-            <textarea id="message" name="message" rows="3" class="<?= $field ?> resize-none"><?= e($old('message', $de ? 'Wir möchten diesen besonderen Tag mit euch feiern.' : 'Bu özel günü sizinle birlikte kutlamak isteriz.')) ?></textarea>
+            <textarea id="message" name="message" rows="3" class="<?= $field ?> resize-none"><?= e($old('message', $de ? 'Wir möchten diesen besonderen Tag mit euch feiern.' : 'We would love to celebrate this special day with you.')) ?></textarea>
           </div>
 
           <div class="grid gap-7 sm:grid-cols-2">
             <div>
-              <label class="<?= $label ?>" for="closing"><?= $de ? 'Grußformel' : 'Kapanış' ?></label>
+              <label class="<?= $label ?>" for="closing"><?= $de ? 'Grußformel' : 'Closing line' ?></label>
               <input id="closing" name="closing" value="<?= e($old('closing')) ?>" class="<?= $field ?>">
             </div>
             <div>
@@ -276,13 +276,13 @@ $steps = $de
            */
           ?>
           <div class="mt-7 border-t border-sand-deep pt-7">
-            <label class="<?= $label ?>" for="email"><?= $de ? 'Eure E-Mail-Adresse' : 'E-posta adresiniz' ?></label>
+            <label class="<?= $label ?>" for="email"><?= $de ? 'Eure E-Mail-Adresse' : 'Your e-mail address' ?></label>
             <input id="email" type="email" name="email" value="<?= e($old('email')) ?>" class="<?= $field ?>"
-                   placeholder="<?= $de ? 'name@beispiel.de' : 'ad@ornek.com' ?>" autocomplete="email">
+                   placeholder="<?= $de ? 'name@beispiel.de' : 'name@example.com' ?>" autocomplete="email">
             <p class="mt-2 text-[0.75rem] leading-relaxed text-muted">
               <?= $de
                 ? 'Dorthin schicken wir eure beiden Links: die Einladung und die Seite, auf der ihr Gäste eintragt und die Zusagen seht. Ohne sie sind beide weg, sobald ihr dieses Fenster schließt. Wir schreiben euch sonst nicht.'
-                : 'İki bağlantınızı oraya göndeririz: davetiye ve misafirleri girip cevapları gördüğünüz sayfa. Adres olmadan bu pencereyi kapattığınızda ikisi de kaybolur. Başka hiçbir şey için yazmayız.' ?>
+                : 'That is where we send your two links: the invitation, and the page where you enter guests and see the replies. Without an address both are gone the moment you close this window. We will not write to you for anything else.' ?>
             </p>
           </div>
         </fieldset>
@@ -291,12 +291,12 @@ $steps = $de
         <fieldset data-step="2" class="space-y-10">
           <?php for ($i = 0; $i < 2; $i++) : ?>
             <div class="<?= $i === 1 ? 'border-t border-sand-deep pt-8' : '' ?>" <?= $i === 1 ? 'data-second-event' : '' ?>>
-              <div class="eyebrow"><?= $i === 0 ? ($de ? 'Feier' : 'Tören') : ($de ? 'Zweite Feier' : 'İkinci tören') ?></div>
+              <div class="eyebrow"><?= $i === 0 ? ($de ? 'Feier' : 'Celebration') : ($de ? 'Zweite Feier' : 'Second celebration') ?></div>
 
               <div class="mt-5 grid gap-7 sm:grid-cols-2">
                 <div>
-                  <label class="<?= $label ?>"><?= $de ? 'Bezeichnung' : 'Adı' ?></label>
-                  <input name="event<?= $i ?>_name" value="<?= e($old("event{$i}_name", $i === 0 ? ($de ? 'Hochzeit' : 'Düğün') : '')) ?>" class="<?= $field ?>">
+                  <label class="<?= $label ?>"><?= $de ? 'Bezeichnung' : 'Name' ?></label>
+                  <input name="event<?= $i ?>_name" value="<?= e($old("event{$i}_name", $i === 0 ? ($de ? 'Hochzeit' : 'Wedding') : '')) ?>" class="<?= $field ?>">
                 </div>
                 <div>
                   <label class="<?= $label ?>"><?= e(I18n::t('invite.date')) ?> <?= $i === 0 ? '*' : '' ?></label>
@@ -334,7 +334,7 @@ $steps = $de
                   <span class="text-[0.92rem] text-ink"><?= e($sectionLabels[$key][$locale]) ?></span>
                 </span>
                 <span class="shrink-0 text-[0.72rem] uppercase tracking-[0.14em] <?= $price['now'] === 0 ? 'text-gold' : 'text-muted' ?>">
-                  <?= $price['now'] === 0 ? ($de ? 'inklusive' : 'dahil') : '+' . $price['now'] . ' €' ?>
+                  <?= $price['now'] === 0 ? ($de ? 'inklusive' : 'included') : '+' . $price['now'] . ' €' ?>
                 </span>
               </label>
             <?php endforeach; ?>
@@ -352,14 +352,14 @@ $steps = $de
              */
             ?>
             <div data-needs="program">
-              <label class="<?= $label ?>"><?= $de ? 'Programm' : 'Program' ?></label>
+              <label class="<?= $label ?>"><?= $de ? 'Programm' : 'Programme' ?></label>
               <div data-repeater="program"
                    data-columns="time,text"
                    data-placeholder-time="16:00"
-                   data-placeholder-text="<?= e($de ? 'Empfang' : 'Karşılama') ?>"
-                   data-add="<?= e($de ? '+ Programmpunkt' : '+ Program ekle') ?>"
-                   data-remove="<?= e($de ? 'Entfernen' : 'Kaldır') ?>">
-                <textarea name="program" rows="4" class="<?= $field ?> resize-y" placeholder="16:00 | <?= $de ? 'Empfang' : 'Karşılama' ?>"><?= e($old('program')) ?></textarea>
+                   data-placeholder-text="<?= e($de ? 'Empfang' : 'Reception') ?>"
+                   data-add="<?= e($de ? '+ Programmpunkt' : '+ Programme item') ?>"
+                   data-remove="<?= e($de ? 'Entfernen' : 'Remove') ?>">
+                <textarea name="program" rows="4" class="<?= $field ?> resize-y" placeholder="16:00 | <?= $de ? 'Empfang' : 'Reception' ?>"><?= e($old('program')) ?></textarea>
               </div>
             </div>
 
@@ -367,37 +367,37 @@ $steps = $de
               <label class="<?= $label ?>"><?= $de ? 'Menü' : 'Menü' ?></label>
               <div data-repeater="menu"
                    data-columns="text"
-                   data-placeholder-text="<?= e($de ? 'Vorspeise' : 'Başlangıç') ?>"
-                   data-add="<?= e($de ? '+ Gang' : '+ Yemek ekle') ?>"
-                   data-remove="<?= e($de ? 'Entfernen' : 'Kaldır') ?>">
+                   data-placeholder-text="<?= e($de ? 'Vorspeise' : 'Starter') ?>"
+                   data-add="<?= e($de ? '+ Gang' : '+ Course') ?>"
+                   data-remove="<?= e($de ? 'Entfernen' : 'Remove') ?>">
                 <textarea name="menu" rows="4" class="<?= $field ?> resize-y"><?= e($old('menu')) ?></textarea>
               </div>
             </div>
 
             <div class="grid gap-7 sm:grid-cols-2" data-needs="family">
               <div>
-                <label class="<?= $label ?>"><?= $de ? 'Familie der Braut' : 'Gelin ailesi' ?></label>
+                <label class="<?= $label ?>"><?= $de ? 'Familie der Braut' : 'Family of the bride' ?></label>
                 <input name="familyBride" value="<?= e($old('familyBride')) ?>" class="<?= $field ?>">
               </div>
               <div>
-                <label class="<?= $label ?>"><?= $de ? 'Familie des Bräutigams' : 'Damat ailesi' ?></label>
+                <label class="<?= $label ?>"><?= $de ? 'Familie des Bräutigams' : 'Family of the groom' ?></label>
                 <input name="familyGroom" value="<?= e($old('familyGroom')) ?>" class="<?= $field ?>">
               </div>
             </div>
 
             <div data-needs="music">
-              <label class="<?= $label ?>"><?= $de ? 'Musik' : 'Müzik' ?></label>
+              <label class="<?= $label ?>"><?= $de ? 'Musik' : 'Music' ?></label>
               <input type="file" name="musicFile" accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav"
                      class="mt-2 block w-full text-[0.85rem] text-ink file:mr-4 file:border file:border-ink file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
               <p class="mt-2 text-[0.75rem] leading-relaxed text-muted">
                 <?= $de
                   ? 'MP3, M4A, OGG oder WAV, bis 12 MB. Ein YouTube- oder Spotify-Link funktioniert hier nicht: die Karte müsste dafür beim Öffnen bei einem Fremden laden, und das tut sie bewusst nicht.'
-                  : 'MP3, M4A, OGG veya WAV, en fazla 12 MB. YouTube ya da Spotify linki burada çalışmaz: kart açılırken yabancı bir siteye bağlanması gerekirdi, bunu bilerek yapmıyoruz.' ?>
+                  : 'MP3, M4A, OGG or WAV, up to 12 MB. A YouTube or Spotify link does not work here: the card would have to load from a stranger when it opens, and it deliberately does not.' ?>
               </p>
             </div>
 
             <div data-needs="video">
-              <label class="<?= $label ?>"><?= $de ? 'Video-Intro (YouTube, Vimeo oder MP4)' : 'Video intro (YouTube, Vimeo veya MP4)' ?></label>
+              <label class="<?= $label ?>"><?= $de ? 'Video-Intro (YouTube, Vimeo oder MP4)' : 'Video intro (YouTube, Vimeo or MP4)' ?></label>
               <input name="videoUrl" value="<?= e($old('videoUrl')) ?>" class="<?= $field ?>" placeholder="https://">
             </div>
           </div>
@@ -406,10 +406,10 @@ $steps = $de
         <!-- 5 – Fotos & Link -->
         <fieldset data-step="4" class="space-y-8">
           <div>
-            <label class="<?= $label ?>"><?= $de ? 'Fotos (bis zu vier)' : 'Fotoğraflar (en fazla dört)' ?></label>
+            <label class="<?= $label ?>"><?= $de ? 'Fotos (bis zu vier)' : 'Photos (up to four)' ?></label>
             <input type="file" name="photos[]" accept="image/*" multiple class="mt-2 w-full text-[0.85rem] text-muted">
             <p class="mt-2 text-[0.74rem] text-muted">
-              <?= $de ? 'Werden beim Hochladen verkleinert. Hochkant wirkt auf der Karte am besten.' : 'Yüklenirken küçültülür. Kartta dikey kareler en iyi durur.' ?>
+              <?= $de ? 'Werden beim Hochladen verkleinert. Hochkant wirkt auf der Karte am besten.' : 'Scaled down as they are uploaded. Portrait format works best on the card.' ?>
             </p>
           </div>
 
@@ -417,16 +417,16 @@ $steps = $de
                     kann es nach dem Erstellen jederzeit nachholen. */ ?>
           <div>
             <label class="<?= $label ?>" for="guests">
-              <?= $de ? 'Persönliche Einladungen (optional)' : 'Kişiye özel davetiyeler (isteğe bağlı)' ?>
+              <?= $de ? 'Persönliche Einladungen (optional)' : 'Personal invitations (optional)' ?>
             </label>
             <textarea id="guests" name="guests" rows="4" class="<?= $field ?> resize-y"
                       placeholder="<?= $de
                         ? 'Familie Müller&#10;Anna &amp; Thomas&#10;Familie Yılmaz'
-                        : 'Müller Ailesi&#10;Anna &amp; Thomas&#10;Yılmaz Ailesi' ?>"><?= e($old('guests')) ?></textarea>
+                        : 'Müller family&#10;Anna &amp; Thomas&#10;Yılmaz family' ?>"><?= e($old('guests')) ?></textarea>
             <p class="mt-2 text-[0.72rem] leading-relaxed text-muted">
               <?= $de
                 ? 'Eine Zeile je Person oder Familie. Jeder bekommt dieselbe Karte mit seiner eigenen Anrede und einem eigenen Link. Lässt sich später ergänzen.'
-                : 'Her satıra bir kişi ya da aile. Herkes aynı kartı kendi hitabı ve kendi bağlantısıyla alır. Sonradan da eklenebilir.' ?>
+                : 'One line per person or family. Everyone gets the same card with their own greeting and their own link. More can be added later.' ?>
             </p>
           </div>
 

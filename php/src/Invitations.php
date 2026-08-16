@@ -87,13 +87,13 @@ final class Invitations
     public static function kindLabel(string $eventType, string $locale): string
     {
         $labels = [
-            'wedding'      => ['de' => 'Hochzeitseinladung', 'tr' => 'Düğün Davetiyesi'],
-            'multi'        => ['de' => 'Einladung', 'tr' => 'Davetiye'],
-            'henna'        => ['de' => 'Einladung zum Henna-Abend', 'tr' => 'Kına Gecesi Davetiyesi'],
-            'engagement'   => ['de' => 'Verlobungseinladung', 'tr' => 'Nişan Davetiyesi'],
-            'circumcision' => ['de' => 'Einladung zum Beschneidungsfest', 'tr' => 'Sünnet Davetiyesi'],
-            'birthday'     => ['de' => 'Geburtstagseinladung', 'tr' => 'Doğum Günü Davetiyesi'],
-            'corporate'    => ['de' => 'Einladung', 'tr' => 'Davetiye'],
+            'wedding'      => ['de' => 'Hochzeitseinladung', 'en' => 'Wedding Invitation'],
+            'multi'        => ['de' => 'Einladung', 'en' => 'Invitation'],
+            'henna'        => ['de' => 'Einladung zum Henna-Abend', 'en' => 'Henna Night Invitation'],
+            'engagement'   => ['de' => 'Verlobungseinladung', 'en' => 'Engagement Invitation'],
+            'circumcision' => ['de' => 'Einladung zum Beschneidungsfest', 'en' => 'Circumcision Celebration Invitation'],
+            'birthday'     => ['de' => 'Geburtstagseinladung', 'en' => 'Birthday Invitation'],
+            'corporate'    => ['de' => 'Einladung', 'en' => 'Invitation'],
         ];
 
         $label = $labels[$eventType] ?? $labels['wedding'];

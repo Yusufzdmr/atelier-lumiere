@@ -56,7 +56,7 @@ $faq = (array) ($post['faq'] ?? []);
             <?php if ($city !== null) : ?>
               <a href="<?= e($p('/hochzeitsfotograf/' . (string) ($city['slug'] ?? ''))) ?>"
                  class="block border border-ink px-5 py-3 text-center text-[0.66rem] uppercase tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-cream">
-                <?= $de ? 'Hochzeitsfotograf ' : 'Düğün fotoğrafçısı ' ?><?= e((string) ($city['name'] ?? '')) ?>
+                <?= $de ? 'Hochzeitsfotograf ' : 'Wedding photographer ' ?><?= e((string) ($city['name'] ?? '')) ?>
               </a>
             <?php endif; ?>
             <?php if ($venue !== null) : ?>

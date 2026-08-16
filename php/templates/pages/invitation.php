@@ -69,12 +69,12 @@ foreach ($rsvps as $rsvp) {
        style="background: <?= e((string) $theme['bg']) ?>">
     <button type="button" data-envelope-open class="t-envelope relative flex h-56 w-full max-w-sm items-center justify-center border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
             style="background: <?= e((string) $theme['envelope']) ?>; border-color: <?= e((string) $theme['envelopeEdge']) ?>"
-            aria-label="<?= $de ? 'Einladung öffnen' : 'Davetiyeyi aç' ?>">
+            aria-label="<?= $de ? 'Einladung öffnen' : 'Open invitation' ?>">
       <span class="t-seal flex h-16 w-16 items-center justify-center rounded-full font-display text-lg"
             style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
       <?= $decorations('envelope') ?>
       <span class="absolute bottom-5 text-[0.6rem] uppercase tracking-[0.28em]" style="color: <?= e((string) $theme['soft']) ?>">
-        <?= $de ? 'Tippen zum Öffnen' : 'Açmak için dokunun' ?>
+        <?= $de ? 'Tippen zum Öffnen' : 'Tap to open' ?>
       </span>
     </button>
   </div>
@@ -243,7 +243,7 @@ foreach ($rsvps as $rsvp) {
 
             <?php if ($coming > 0) : ?>
               <p class="mt-6 text-[0.75rem] uppercase tracking-[0.18em]" style="color: <?= e((string) $theme['soft']) ?>">
-                <?= $coming ?> <?= $de ? 'Zusagen' : 'katılım' ?>
+                <?= $coming ?> <?= $de ? 'Zusagen' : 'replies' ?>
               </p>
             <?php endif; ?>
           </div>
@@ -275,7 +275,7 @@ foreach ($rsvps as $rsvp) {
       <button type="button" data-music-toggle
               class="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg"
               style="background: <?= e((string) $theme['accent']) ?>; color: <?= e((string) $theme['paper']) ?>"
-              aria-label="<?= $de ? 'Musik' : 'Müzik' ?>">♪</button>
+              aria-label="<?= $de ? 'Musik' : 'Music' ?>">♪</button>
     <?php endif; ?>
   </div>
 </div>

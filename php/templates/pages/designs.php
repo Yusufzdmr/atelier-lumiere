@@ -24,11 +24,11 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
 
 <?= Ui::pageHero(
       'designs-hero',
-      $de ? 'Wählt euer Design' : 'Tasarımınızı seçin',
-      $de ? 'Designs' : 'Tasarımlar',
+      $de ? 'Wählt euer Design' : 'Choose your design',
+      'Designs',
       $de
         ? 'Jede Vorlage bringt ihre eigene Farbwelt, ihr Kuvert und ihr Siegel mit. Schaut sie in Ruhe an – ändern lässt sich später alles.'
-        : 'Her şablonun kendi renk dünyası, zarfı ve mührü var. Acele etmeden bakın — sonradan hepsi değiştirilebilir.'
+        : 'Every template brings its own colours, its envelope and its seal. Take your time looking – everything can be changed later.'
     ) ?>
 
 <section class="mx-auto max-w-7xl px-5 pb-24 sm:px-8">
@@ -39,11 +39,11 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
       $name = (string) ($theme['name'] ?? '');
       $sub = (string) (($theme['sub'] ?? [])[$locale] ?? '');
       // Zwei Buchstaben wie auf dem echten Siegel des Beispielpaares.
-      $initials = $de ? 'MJ' : 'EK';
+      $initials = 'MJ';
       ?>
       <article class="theme-<?= e($id) ?> group">
         <a href="<?= e($p('/designs/' . $id)) ?>" class="block"
-           aria-label="<?= e(($de ? 'Vorschau öffnen: ' : 'Önizlemeyi aç: ') . $name) ?>">
+           aria-label="<?= e(($de ? 'Vorschau öffnen: ' : 'Open preview: ') . $name) ?>">
 
           <div class="t-card relative flex aspect-[4/5] items-center justify-center overflow-hidden border transition-transform duration-500 group-hover:-translate-y-1"
                style="background: var(--t-bg); border-color: var(--t-paper-edge);">
@@ -55,15 +55,15 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
                     style="background: var(--t-seal); color: var(--t-seal-text);"><?= e($initials) ?></span>
 
               <span class="mt-5 text-[0.56rem] uppercase tracking-[0.3em]" style="color: var(--t-soft);">
-                <?= $de ? 'Wir heiraten' : 'Evleniyoruz' ?>
+                <?= $de ? 'Wir heiraten' : 'We are getting married' ?>
               </span>
 
               <span class="font-display mt-3 text-2xl leading-tight" style="color: var(--t-fg);">
-                <?= $de ? 'Marie' : 'Elif' ?>
+                <?= 'Marie' ?>
               </span>
               <span class="font-display text-lg" style="color: var(--t-accent);">&amp;</span>
               <span class="font-display text-2xl leading-tight" style="color: var(--t-fg);">
-                <?= $de ? 'Jonas' : 'Kerem' ?>
+                <?= 'Jonas' ?>
               </span>
 
               <span class="mt-4 block h-px w-16" style="background: var(--t-accent);"></span>
@@ -82,7 +82,7 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
               <?php endif; ?>
             </div>
             <span class="whitespace-nowrap text-[0.62rem] uppercase tracking-[0.18em] text-gold">
-              <?= $de ? 'Ansehen' : 'Bak' ?> →
+              <?= $de ? 'Ansehen' : 'View' ?> →
             </span>
           </div>
         </a>
@@ -94,11 +94,11 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
     <p class="text-sm text-muted">
       <?= $de
         ? 'Farben, Schriften und Verzierungen lassen sich in jeder Vorlage anpassen.'
-        : 'Renkler, yazı tipleri ve süslemeler her şablonda değiştirilebilir.' ?>
+        : 'Colours, fonts and ornaments can be adjusted in every template.' ?>
     </p>
     <a href="<?= e($p('/einladung')) ?>"
        class="mt-6 inline-block bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
-      <?= $de ? 'Einladung erstellen' : 'Davetiye oluştur' ?>
+      <?= $de ? 'Einladung erstellen' : 'Create invitation' ?>
     </a>
   </div>
 </section>
