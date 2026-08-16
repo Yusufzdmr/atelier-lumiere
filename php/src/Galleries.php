@@ -273,12 +273,6 @@ final class Galleries
     /** @param array<string,mixed> $selection */
     private static function notify(array $selection): void
     {
-        $to = Config::str('mail_to');
-        $from = Config::str('mail_from');
-        if ($to === '' || $from === '') {
-            return;
-        }
-
         $picks = (array) ($selection['picks'] ?? []);
         $numbers = implode(', ', array_map(static fn (int $i): int => $i + 1, array_map('intval', $picks)));
 
@@ -295,14 +289,6 @@ final class Galleries
             $body[] = 'Nachricht: ' . $selection['note'];
         }
 
-        @mail(
-            $to,
-            '=?UTF-8?B?' . base64_encode('Albumauswahl: ' . Security::singleLine((string) $selection['couple'])) . '?=',
-            implode("\n", $body),
-            implode("\r\n", [
-                'From: Atelier Lumière <' . Security::singleLine($from) . '>',
-                'Content-Type: text/plain; charset=UTF-8',
-            ])
-        );
+        Mail::toStudio('Albumauswahl: ' . (string) $selection['couple'], $body);
     }
 }

@@ -10,6 +10,7 @@ use Atelier\Guests;
 use Atelier\Dates;
 use Atelier\I18n;
 use Atelier\Invitations;
+use Atelier\Mail;
 use Atelier\Media;
 use Atelier\OgImage;
 use Atelier\Paypal;
@@ -149,6 +150,12 @@ final class InviteController
             'videoUrl'  => !empty($sections['video']) ? Security::clean($_POST['videoUrl'] ?? '', 300) : '',
             'sections'  => $sections,
             'hashtag'   => Security::clean($_POST['hashtag'] ?? '', 60),
+            // Nur fuer die beiden Links nach dem Erstellen. Ungueltiges kommt
+            // gar nicht erst in den Datensatz.
+            'email'     => (static function (): string {
+                $mail = Security::clean($_POST['email'] ?? '', 160);
+                return filter_var($mail, FILTER_VALIDATE_EMAIL) ? $mail : '';
+            })(),
             'theme'     => $theme,
             // Die Kopie des Themas, wie es in diesem Moment aussieht. Was der
             // Betrieb spaeter am Thema aendert, laesst diese Karte in Ruhe.
@@ -178,15 +185,82 @@ final class InviteController
             Invitations::deleteDraft($token);
         }
 
+        $url = Config::url() . I18n::path('/einladung/' . $slug);
+        $manage = Invitations::manageUrl($invitation);
+        $sent = $this->mailLinks($invitation, $url, $manage);
+
         return [
             'slug'   => $slug,
             'path'   => I18n::path('/einladung/' . $slug),
-            'url'    => Config::url() . I18n::path('/einladung/' . $slug),
-            'manage' => Invitations::manageUrl($invitation),
+            'url'    => $url,
+            'manage' => $manage,
             'guests' => Guests::all($slug),
             'price'  => $invitation['price'],
             'free'   => $free,
+            'mailed' => $sent,
+            'email'  => (string) $invitation['email'],
         ];
+    }
+
+    /**
+     * Die beiden Links an das Paar schicken.
+     *
+     * Der Verwaltungslink ist der einzige Weg zurück zur Gästeliste – es gibt
+     * kein Konto, unter dem man ihn wiederfände. Wer das Fenster schliesst,
+     * ohne ihn zu kopieren, hat eine bezahlte Einladung und keinen Zugang mehr
+     * dazu. Deshalb geht er hier raus, sofort nach dem Anlegen.
+     *
+     * @param array<string,mixed> $invitation
+     */
+    private function mailLinks(array $invitation, string $url, string $manage): bool
+    {
+        $to = (string) ($invitation['email'] ?? '');
+        if ($to === '') {
+            return false;
+        }
+
+        $de = (string) ($invitation['locale'] ?? 'de') === 'de';
+        $names = trim((string) $invitation['bride'] . ' & ' . (string) $invitation['groom'], ' &');
+
+        $lines = $de
+            ? [
+                'Eure Einladung ist fertig.',
+                '',
+                'Das ist der Link für eure Gäste:',
+                $url,
+                '',
+                'Und das ist eure eigene Seite. Dort tragt ihr Namen ein, holt',
+                'euch die persönlichen Links und seht, wer zugesagt hat:',
+                $manage,
+                '',
+                'Diese zweite Adresse bitte gut aufheben und nicht mit den',
+                'Einladungen weitergeben – sie gehört euch.',
+                '',
+                'Herzliche Grüße',
+                'Atelier Lumière',
+            ]
+            : [
+                'Davetiyeniz hazır.',
+                '',
+                'Misafirlerinize göndereceğiniz bağlantı:',
+                $url,
+                '',
+                'Bu da size ait sayfa. İsimleri oradan girer, kişiye özel',
+                'bağlantıları alır ve kimlerin geldiğini görürsünüz:',
+                $manage,
+                '',
+                'İkinci adresi lütfen saklayın ve davetiyelerle birlikte',
+                'paylaşmayın – o size ait.',
+                '',
+                'Sevgiler',
+                'Atelier Lumière',
+            ];
+
+        return Mail::send(
+            $to,
+            ($de ? 'Eure Einladung: ' : 'Davetiyeniz: ') . $names,
+            $lines
+        );
     }
 
     /** Zwischenstand sichern und den Fortsetzungslink zurückgeben. */

@@ -113,6 +113,27 @@ $steps = $de
             ? 'Diesen Link gut aufheben und nicht mit den Einladungen weitergeben – er gehört euch.'
             : 'Bu bağlantıyı saklayın ve davetiyelerle paylaşmayın – o size ait.' ?>
         </p>
+
+        <?php
+        /*
+         * Ohne diesen Link kommt niemand mehr an die Gästeliste. Deshalb steht
+         * hier, ob er auch per Mail unterwegs ist – und wenn nicht, dass das
+         * Fenster jetzt nicht einfach zugehen sollte.
+         */
+        ?>
+        <?php if (!empty($done['mailed'])) : ?>
+          <p class="mt-4 border border-gold/50 bg-sand/40 px-4 py-3 text-[0.8rem] leading-relaxed text-ink">
+            <?= $de
+              ? 'Beide Links sind auch an ' . e((string) $done['email']) . ' unterwegs.'
+              : 'İki bağlantı ' . e((string) $done['email']) . ' adresine de gönderildi.' ?>
+          </p>
+        <?php else : ?>
+          <p class="mt-4 border border-red-700/40 bg-red-50 px-4 py-3 text-[0.8rem] leading-relaxed text-red-800">
+            <?= $de
+              ? 'Achtung: Dieser Link ist nirgendwo sonst gespeichert. Kopiert ihn jetzt oder schickt ihn euch selbst – wenn ihr das Fenster schließt, ist er weg.'
+              : 'Dikkat: Bu bağlantı başka hiçbir yerde kayıtlı değil. Şimdi kopyalayın ya da kendinize gönderin — pencereyi kapatırsanız kaybolur.' ?>
+          </p>
+        <?php endif; ?>
       </div>
 
       <div class="mt-8 flex flex-wrap justify-center gap-3">
@@ -244,6 +265,25 @@ $steps = $de
               <label class="<?= $label ?>" for="hashtag">Hashtag</label>
               <input id="hashtag" name="hashtag" value="<?= e($old('hashtag')) ?>" class="<?= $field ?>" placeholder="#ayse-mehmet2026">
             </div>
+          </div>
+
+          <?php
+          /*
+           * Steht hier und nicht am Ende: wer den Assistenten abbricht, hat die
+           * Adresse dann trotzdem schon dagelassen. Nach dem Erstellen geht der
+           * Verwaltungslink dorthin – ohne ihn ist die Einladung bezahlt und
+           * die Gästeliste unerreichbar, sobald jemand das Fenster schliesst.
+           */
+          ?>
+          <div class="mt-7 border-t border-sand-deep pt-7">
+            <label class="<?= $label ?>" for="email"><?= $de ? 'Eure E-Mail-Adresse' : 'E-posta adresiniz' ?></label>
+            <input id="email" type="email" name="email" value="<?= e($old('email')) ?>" class="<?= $field ?>"
+                   placeholder="<?= $de ? 'name@beispiel.de' : 'ad@ornek.com' ?>" autocomplete="email">
+            <p class="mt-2 text-[0.75rem] leading-relaxed text-muted">
+              <?= $de
+                ? 'Dorthin schicken wir eure beiden Links: die Einladung und die Seite, auf der ihr Gäste eintragt und die Zusagen seht. Ohne sie sind beide weg, sobald ihr dieses Fenster schließt. Wir schreiben euch sonst nicht.'
+                : 'İki bağlantınızı oraya göndeririz: davetiye ve misafirleri girip cevapları gördüğünüz sayfa. Adres olmadan bu pencereyi kapattığınızda ikisi de kaybolur. Başka hiçbir şey için yazmayız.' ?>
+            </p>
           </div>
         </fieldset>
 
