@@ -1,0 +1,121 @@
+<!--
+  Messgeraet fuer senkrechten Leerraum. Gehoert NICHT in public/ – dort liegt
+  es nur, solange gemessen wird, und wird danach geloescht: es zeigt fremde
+  Seiten in einem Rahmen und braucht dafuer eine Adresse ohne CSP.
+
+  So wird es benutzt:
+    cp bin/probe.html public/_probe.html
+    chrome --headless=new --virtual-time-budget=6000       --dump-dom "http://127.0.0.1:8080/_probe.html?u=/de&w=390"      # Zahlen
+    chrome --headless=new --window-size=390,844 --virtual-time-budget=6000       --screenshot=x.png "http://127.0.0.1:8080/_probe.html?u=/de&w=390&y=2400"
+    rm public/_probe.html
+
+  Warum ueberhaupt: die Browser-Automatisierung kann hier keine Telefonbreite
+  stellen (innerWidth bleibt 1920) und ihr Tab liegt im Hintergrund, wo Chrome
+  nicht zeichnet und IntersectionObserver nie feuert – dann misst sich jede
+  Seite als leer. Ein Rahmen von 390px loest beides: Medienabfragen richten
+  sich nach seiner Breite, und Headless zeichnet wirklich.
+
+  Fuer Seiten hinter der Anmeldung: die HTML mit einer angemeldeten Sitzung
+  holen, <base href="/"> hinter <head> setzen, als public/_x.html ablegen und
+  mit u=/_x.html messen. Danach loeschen – darin steht ein CSRF-Merkmal.
+-->
+<!doctype html>
+<meta charset="utf-8">
+<title>probe</title>
+<body style="margin:0;font:12px monospace">
+<div id="out">läuft…</div>
+<script>
+// Messgeraet, kein Teil der Seite. Laedt eine Seite in einem 390px breiten
+// Rahmen und sucht senkrechte Baender, in denen nichts steht.
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const url = q.get('u') || '/de';
+  const w = parseInt(q.get('w') || '390', 10);
+  const h = parseInt(q.get('h') || '844', 10);
+  const min = parseInt(q.get('min') || '90', 10);
+
+  const shot = q.has('y');                 // Bildmodus: Rahmen sichtbar, an y gerollt
+  const f = document.createElement('iframe');
+  f.style.cssText = shot
+    ? 'position:fixed;left:0;top:0;border:0;width:' + w + 'px;height:' + h + 'px'
+    : 'position:absolute;left:-9999px;top:0;border:0;width:' + w + 'px;height:' + h + 'px';
+  f.src = url;
+  document.body.appendChild(f);
+  await new Promise(r => f.addEventListener('load', r));
+  await new Promise(r => setTimeout(r, 900));
+
+  const d = f.contentDocument, W = f.contentWindow;
+  if (!d) { document.getElementById('out').textContent = 'RESULT ' + JSON.stringify({url, error: 'kein Zugriff'}); return; }
+
+  // Der eingeblendete Endzustand, ohne auf den Beobachter zu warten.
+  d.querySelectorAll('.reveal, .reveal-mask').forEach(e => e.setAttribute('data-visible', 'true'));
+  d.querySelectorAll('*').forEach(e => { if (e.classList.contains('anim-up')) e.style.opacity = 1; });
+  await new Promise(r => setTimeout(r, 300));
+
+  if (shot) {
+    document.getElementById('out').remove();
+    // Der Cookie-Kasten deckt auf dem Telefon die halbe Seite ab und ist beim
+    // Suchen nach Leerraum nur im Weg.
+    d.querySelectorAll('*').forEach(e => {
+      if (W.getComputedStyle(e).position === 'fixed' && !e.id.includes('header')) e.remove();
+    });
+    const y = parseInt(q.get('y'), 10);
+    // Die Seite hat scroll-behavior: smooth – unter Sichtzeit im Headless
+    // rueckt eine weiche Rollung nicht vor und bleibt bei null stehen.
+    d.documentElement.style.scrollBehavior = 'auto';
+    W.scrollTo({ top: y, behavior: 'instant' });
+    await new Promise(r => setTimeout(r, 400));
+    document.title = 'y=' + Math.round(W.scrollY) + ' von ' + d.documentElement.scrollHeight;
+    return;
+  }
+
+  const docH = d.documentElement.scrollHeight;
+
+  // Was zaehlt als Inhalt: Text, Bilder, Rahmen, Knoepfe, farbige Flaechen
+  // nicht — eine getoente Flaeche ohne Text ist genau das, was leer wirkt.
+  const spans = [];
+  const push = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.height <= 0 || r.width <= 0) return;
+    const cs = W.getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') return;
+    if (parseFloat(cs.opacity) === 0) return;
+    if (cs.position === 'fixed') return;      // Kopfzeile, Cookie-Kasten
+    spans.push([Math.round(r.top + W.scrollY), Math.round(r.bottom + W.scrollY)]);
+  };
+
+  d.querySelectorAll('img, svg, video, iframe, button, input, textarea, select, hr').forEach(push);
+  const walker = d.createTreeWalker(d.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue || !n.nodeValue.trim()) continue;
+    const p = n.parentElement;
+    if (!p || p.closest('script, style, head')) continue;
+    const range = d.createRange();
+    range.selectNodeContents(n);
+    for (const r of range.getClientRects()) {
+      if (r.height > 0) spans.push([Math.round(r.top + W.scrollY), Math.round(r.bottom + W.scrollY)]);
+    }
+  }
+
+  spans.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const s of spans) {
+    const last = merged[merged.length - 1];
+    if (last && s[0] <= last[1]) { last[1] = Math.max(last[1], s[1]); } else { merged.push([s[0], s[1]]); }
+  }
+
+  const gaps = [];
+  for (let i = 1; i < merged.length; i++) {
+    const g = merged[i][0] - merged[i - 1][1];
+    if (g >= min) gaps.push({ at: merged[i - 1][1], px: g });
+  }
+  const tail = docH - (merged.length ? merged[merged.length - 1][1] : 0);
+  if (tail >= min) gaps.push({ at: merged.length ? merged[merged.length - 1][1] : 0, px: tail, tail: true });
+
+  document.getElementById('out').textContent = 'RESULT ' + JSON.stringify({
+    url, w, docH, blocks: merged.length,
+    emptyPx: gaps.reduce((a, g) => a + g.px, 0),
+    gaps: gaps.sort((a, b) => b.px - a.px).slice(0, 12)
+  });
+})();
+</script>
