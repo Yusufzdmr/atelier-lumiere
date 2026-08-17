@@ -297,7 +297,53 @@ Motor ve panel hazır. Yapılmayanlar:
 - Panelde „bu temanın eski sürümüne bağlı N davetiye var“ sayacı ve toplu güncelleme
   (tekil `refreshTheme()` hazır)
 
-### 2. ALL-INKL'e yayın
+### 2. ALL-INKL'e yayın — kod yüklendi, üç adım kaldı (17 Ağustos)
+
+**SSH erişimi çalışıyor ve anahtarla, parolasız:** `~/.ssh/config` içinde
+`atelier` kaydı var (`w0219c08.kasserver.com`, kullanıcı `ssh-w0219c08`,
+anahtar `id_ed25519_atelier`). `ssh atelier` yeterli.
+
+Sunucunun durumu (17 Ağustos'ta bakıldı):
+
+| | |
+|---|---|
+| PHP | 8.3.29 |
+| Eklentiler | `pdo_mysql` `mbstring` `json` `curl` `fileinfo` `zip` **`gd`** — hepsi var |
+| Klasör | `/www/htdocs/w0219c08/atelier/` — **bugünkü kod yüklü** (7.9 MB) |
+| Yanında | `newbornshooting-babydream.de` — **canlı başka bir site**, dokunulmayacak |
+| `config.php` | **yok** — bilerek; sırlar buradan geçmiyor |
+| `public/uploads/` | boş (yalnız `.htaccess`) — silinecek fotoğraf yok |
+
+14 Ağustos'ta bir yükleme yapılmış ama `config.php` hiç oluşturulmadığı için
+site ayağa kalkmamış. 17 Ağustos'ta kod bugünkü hâliyle yenilendi: sözlük
+üç dilli (`de,en,tr`), `inhalte.sql` çevirilerle 306 KB, robots düzeltmesi
+içinde. Yükleme `tar` + `ssh` ile yapıldı — **msys2'nin `rsync`'i Windows'ta
+`ssh` açamıyor** (`dup() in/out/err failed`), zaman kaybetmeyin.
+
+Kalan üç adım, üçü de **sizin yapmanız gereken** (KAS arayüzü + sırlar):
+
+1. **Veritabanı** — KAS → Database → yeni veritabanı (utf8mb4). Sonra sunucuda:
+   `cd /www/htdocs/w0219c08/atelier && mysql -u KULLANICI -p VERITABANI < schema.sql`
+   ve aynısı `data/inhalte.sql` ile
+2. **`config.php`** — `cp config.example.php config.php`, sonra `db_*`,
+   `admin_key` (hash olarak) ve `mail_to`. Ayrıntısı `YAYIN.md` 5. adımda
+3. **Alan adı** → `/www/htdocs/w0219c08/atelier/public` klasörüne bakmalı.
+   `atelier-lumiere.de` **henüz çözülmüyor** (kayıtlı değil ya da yönlenmemiş).
+   Ayhan'ın hemen bakması için pratik yol: hesapta zaten duran
+   `newbornshooting-babydream.de`'nin bir alt alan adını (`atelier.` gibi) KAS'tan
+   bu klasöre bağlamak — dakikalık iş, mevcut siteye dokunmaz
+
+> Demo adresinde `config.php` içinde **`noindex` => `true`** olmalı. Sebebi
+> „Yayına alma — VPS“ belgesinde uzun uzun yazılı: aynı içerik iki adreste
+> durursa Google hangisinin asıl olduğunu kendi seçer. Gerçek alan adına
+> geçilince `false`.
+
+**VPS (45.147.46.177) gerekmedi.** Oraya da bakıldı: nginx 1.18 / Ubuntu ve
+üstünde canlı `gidonla.com` var. ALL-INKL zaten erişilebilir ve asıl hedef
+olduğu için demo oraya kuruluyor. VPS anlatımı yine de `YAYIN-VPS.md`'de
+duruyor — bir gün lazım olursa, canlı siteyi düşürmeden.
+
+### 2b. ALL-INKL — eski adım listesi
 1. KAS → veritabanı oluştur, `schema.sql` içe aktar (phpMyAdmin)
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
