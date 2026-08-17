@@ -266,12 +266,12 @@ elle alınabilecekler:
     hizmetler SEO başlık ve açıklamaları, `about.lead` („Fotograf aus
     Stuttgart“ → Krumbach), rehber yazısındaki „Baden-Württemberg“ → Bayerisch-
     Schwaben. Bunlar işletme hakkında **yanlış bilgi** veriyordu
-  - **⚠️ Düzeltildi ama teyit ister:** Impressum'da „Handwerkskammer Region
-    Stuttgart“ → **Handwerkskammer für Schwaben, Augsburg**; Datenschutz'ta
-    denetim makamı Baden-Württemberg → **BayLDA, Ansbach**. Krumbach Bavyera'da,
-    Baden-Württemberg'de değil — eskisi kesinlikle yanlıştı, yenisi büyük
-    olasılıkla doğru ama **avukat teyidi gerekir** (belgenin kendi notu da
-    zaten bunu söylüyor)
+  - **Düzeltildi:** Impressum'da „Handwerkskammer Region Stuttgart“ →
+    **Handwerkskammer für Schwaben, Augsburg**; Datenschutz'ta denetim makamı
+    Baden-Württemberg → **BayLDA, Ansbach**. Krumbach Bavyera'da, Baden-
+    Württemberg'de değil. Avukat teyidi **istenmedi** (17 Ağustos, müşteri
+    kararı: „klasik şeyler onlar“) — makam adları adresten çıkıyor, ikisi de
+    kamuya açık bilgi
   - **Bilerek dokunulmadı:** portfolyo, mekânlar, yorumlar ve Stuttgart şehir
     sayfası. Bunların içeriği **gerçekten** Stuttgart — değiştirmek metni
     yalancı yapardı. Gerçek Krumbach çekimleri gelince beraber değişecekler
@@ -451,6 +451,22 @@ templates/admin/place-panel.php   mekân sekmesindeki Google yer arama paneli
 templates/pages/invite-manage.php  çiftin misafir listesi (müşteriye görünen yüz)
 public/assets/invite-manage.js     link kopyalama
 ```
+
+## Sitenin işlediği kişisel veriler
+
+Bu liste bir uyarı değil, bir envanter — Datenschutz metni bunların hepsini
+zaten tarif ediyor. Bir karar verilirken „biz veri almıyoruz“ diye
+hatırlanmasın diye buraya yazıldı.
+
+| Nerede | Ne saklanıyor |
+|---|---|
+| `leads` | İletişim formu: ad, e-posta, telefon, düğün tarihi, mekân, kişi sayısı, hizmet, **serbest mesaj** |
+| `customers` · `galleries` | Çift adı, galeri kodu ve **parolası (düz metin, bilerek)**, düğün tarihi |
+| `selections` | Çiftin albüm için seçtiği kareler + notu |
+| `invitations` · `rsvps` | İsimler, tarih, mekân, adres, fotoğraflar; misafir cevapları (ad, katılım, kişi sayısı, not) |
+| `invite_guests` | **Üçüncü kişilerin adları** — düğün misafirleri. Siteyi hiç görmemiş insanlar, listeyi çift giriyor. Datenschutz §7 bunu doğru kurguluyor: sorumlu çift, biz işleyeniz |
+| `throttle` | IP'nin **karması** (IP'nin kendisi değil) |
+| Ölçüm | GA4 / Meta Pixel — yalnızca izin verilirse, izinsizken tek istek gitmiyor |
 
 ## Müşteriden bekleyenler
 
