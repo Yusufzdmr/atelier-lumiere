@@ -17,25 +17,43 @@ use function Atelier\e;
  */
 final class LegalText
 {
+    /**
+     * Der Satz, der über jeder nicht-deutschen Fassung steht.
+     *
+     * Er kommt aus dem Code und nicht aus dem Adminbereich: Verbindlich ist
+     * die deutsche Fassung, und dieser Hinweis darf nicht versehentlich
+     * wegredigiert werden oder von ihr abweichen.
+     */
+    private const BINDING = [
+        'en' => 'This English version is a convenience translation. '
+              . 'Only the German version is legally binding.',
+    ];
+
     /** @param array<string,mixed> $page */
     public static function render(array $page): string
     {
         $vars = self::vars();
+        $locale = I18n::locale();
 
-        $html = '<h1 class="headline text-4xl">' . e((string) ($page['title'] ?? '')) . '</h1>'
+        $html = '<h1 class="headline text-4xl">' . e(I18n::pick($page['title'] ?? null)) . '</h1>'
             . '<div class="prose-lux mt-10 max-w-2xl">';
+
+        $binding = self::BINDING[$locale] ?? '';
+        if ($binding !== '') {
+            $html .= '<p class="border-l-2 border-gold pl-4 text-[0.85rem] text-muted">' . e($binding) . '</p>';
+        }
 
         foreach ((array) ($page['sections'] ?? []) as $section) {
             $html .= '<section>';
-            $heading = (string) ($section['heading'] ?? '');
+            $heading = I18n::pick($section['heading'] ?? null);
             if ($heading !== '') {
                 $html .= '<h2>' . e(self::fill($heading, $vars)) . '</h2>';
             }
-            $html .= self::blocks((string) ($section['body'] ?? ''), $vars);
+            $html .= self::blocks(I18n::pick($section['body'] ?? null), $vars);
             $html .= '</section>';
         }
 
-        $note = (string) ($page['note'] ?? '');
+        $note = I18n::pick($page['note'] ?? null);
         if ($note !== '') {
             $html .= '<div class="text-[0.8rem]">' . self::blocks($note, $vars) . '</div>';
         }

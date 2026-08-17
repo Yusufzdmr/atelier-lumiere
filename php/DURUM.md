@@ -126,11 +126,41 @@ sayfada bile), `contact.phoneLabel` (sabit „Telefon“). Ayrıca `Guests::salu
 Örnek isimler bilerek duruyor: canlı önizlemede Ayşe & Mehmet, misafir listesi
 örneğinde Yılmaz. Onlar arayüz değil, isim.
 
-İçerik alanları (şehir, mekân, portfolyo metinleri) ayrı bir iş ve müşteri
-kararıyla **sonraya bırakıldı**: panelde artık DE + EN çifti düzenleniyor
-(`.tr` yolları `.en` oldu, 43 yol + 89 etiket), İngilizce alanlar boş.
-Boş kalınca sayfa Almancayı gösteriyor. Veritabanındaki eski Türkçe içerik
-`.tr` altında duruyor ama artık hiçbir yerde okunmuyor — ölü veri.
+### İçerik metinleri — bitti (17 Ağustos)
+
+Müşteri „hepsini çevir" dedi, çevrildi. **431 iki dilli alanın hepsinde
+İngilizce var, boş alan sıfır** (~10.100 İngilizce kelime):
+
+| Bölüm | Alan |
+|---|---|
+| Şehirler (10 sayfa) | 110 |
+| Mekânlar (7 sayfa) | 100 |
+| Rehber yazıları (3) | 21 |
+| Portfolyo (5) | 22 |
+| Hizmetler / paketler / ek hizmetler | 31 |
+| Hakkımda, SSS, süreç, yorumlar, ana sayfa | 40 |
+| SEO başlıkları & açıklamaları | 22 |
+| Temalar, sayfa metni istisnaları | 18 |
+| **Yasal metinler** (Impressum / Datenschutz / AGB) | 66 |
+
+Şehir metinlerinde **her sayfanın kendi ayrıntısı korundu** — çeviri
+tektipleştirmedi. Bu şart: `bin/cities.php` metinler %55'ten fazla benzerse
+içe aktarmayı reddediyor, ve doorway page riski İngilizce tarafta da aynı.
+
+Yasal metinler için veri yapısı değişti: `title`, `heading`, `body`, `note`
+düz metindi, artık `{de, en}`. `LegalText::render` `I18n::pick` kullanıyor
+(düz metni de kabul ediyor, yani eski veri kırılmıyor), panel DE + EN çifti
+gösteriyor. İngilizce sayfaların üstünde **koddan gelen** bir uyarı var:
+„This English version is a convenience translation. Only the German version
+is legally binding." Panelden silinemesin ve Almancadan sapmasın diye
+`LegalText::BINDING` sabitinde duruyor.
+
+Veritabanındaki eski Türkçe içerik `.tr` altında duruyor ama artık hiçbir
+yerde okunmuyor — ölü veri.
+
+**Sunucuya nasıl gidiyor:** çeviri veritabanında yaşıyor, `php bin/export.php`
+onu `data/inhalte.sql`'e döküyor ve o dosya git'te. Yani çeviriyi taşımak için
+elle bir şey girmek gerekmiyor.
 
 Panelde İngilizce alanlar **kiremit kırmızısı** çizgi ve etiketle ayrılıyor
 (`src/Form.php`), Almanca cümleyi yanlış kutuya yazmayı zorlaştırmak için.
@@ -195,6 +225,13 @@ elle alınabilecekler:
   seçiyor (`templates/pages/gallery.php`, `$i % 5` / `$i % 3`). Müşteri “şimdilik
   sorun değil” dedi, ama kesilen kare şikâyeti gelirse sebebi bu.
 - Müşteriyle **mesajlaşma paneli** — istendi, kapsamı konuşulmadı.
+- **SEO metinleri hâlâ Stuttgart diyor.** Çeviri sırasında görüldü: ana sayfa,
+  fiyatlar, iletişim, bölgeler ve portfolyo başlık/açıklamalarında „Stuttgart,
+  Ludwigsburg, Esslingen“ geçiyor, oysa işletme Krumbach'a taşındı. Almanca
+  metnin kendisi öyle olduğu için **çeviri de öyle** — sadakat tercihi, hata
+  değil. Panelden SEO & meta sekmesinden düzeltilmeli, sonra İngilizcesi
+  peşinden gider. Aynı şey `about.lead` („Fotograf aus Stuttgart") ve
+  `venues` içeriği (Stuttgart demo verisi) için de geçerli.
 - `Seo.php`'deki `areaServed` **bütün** şehirleri sayıyor (`Content::list`).
   100 şehirde 100 satırlık JSON-LD olur. Zararsız ama saçma; `listed`'e
   bağlanabilir. Bilerek dokunulmadı.
@@ -217,10 +254,16 @@ Motor ve panel hazır. Yapılmayanlar:
 2. `config.example.php` → `config.php`, veritabanı + `admin_key` + `mail_to` doldur
 3. Dosyaları FTP/SSH ile yükle; alan adının kök klasörü **`public/`** olmalı
    (KAS'ta ayarlanamazsa bir üst dizine yönlendiren ikinci `.htaccess` gerekir)
-4. `node ../scripts/export-to-php.mjs` → `php bin/import.php` ile içerik + galeriler.
-   İçe aktarım artık `site_content` id=2'ye **dokunulmamış bir kopya** da yazıyor;
-   paneldeki „öncesi / geri al“ bunu kullanıyor. Zaten kurulu bir sistemde bir
-   kez elle: `php -r 'require "src/bootstrap.php"; Atelier\Content::saveOriginal(json_decode(file_get_contents("data/export.json"), true)["content"]);'`
+4. İçerik: **`data/inhalte.sql`'i phpMyAdmin'den içe aktar** (schema.sql'den sonra).
+   Dosya git'te ve İngilizce çeviriyi de içeriyor; `php bin/export.php` ile
+   yerelden yeniden üretilir. **`node ../scripts/export-to-php.mjs` çalıştırma**
+   — `themes.php`'yi bozuyor, aşağıdaki tuzaklara bak.
+   `inhalte.sql` `site_content` id=2'ye **dokunulmamış kopyayı** da yazıyor;
+   paneldeki „öncesi / geri al“ onu kullanıyor. O kopya çeviriden **önceki**
+   hâl, yani İngilizce alanlarda „öncesi“ satırı çıkmıyor (boş orijinal =
+   uyarı yok, `Form::originalNote`). İstenirse bir kez elle güncellenebilir:
+   `php -r 'require "src/bootstrap.php"; Atelier\Content::saveOriginal(Atelier\Content::all());'`
+   — ama o zaman Almanca alanlardaki „Stuttgart → Krumbach" geçmişi kaybolur
 5. Let's Encrypt (KAS'ta tek tık), `uploads/` yazılabilir olmalı (755)
 6. İsteğe bağlı: Google Cloud Console'da **Places API (New)** + **Maps Static API**
    açıp anahtarı Entegrasyonlar sekmesine gir (mekân arama için; birkaç düzine

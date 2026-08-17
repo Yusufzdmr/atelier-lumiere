@@ -421,15 +421,24 @@ final class PageController
         }
 
         $descriptions = [
-            'impressum'   => 'Impressum gemäß § 5 DDG.',
-            'datenschutz' => 'Informationen zur Verarbeitung personenbezogener Daten nach Art. 13 DSGVO.',
-            'agb'         => 'Allgemeine Geschäftsbedingungen für Foto- und Filmaufträge sowie digitale Produkte.',
+            'impressum'   => [
+                'de' => 'Impressum gemäß § 5 DDG.',
+                'en' => 'Legal notice in accordance with § 5 DDG.',
+            ],
+            'datenschutz' => [
+                'de' => 'Informationen zur Verarbeitung personenbezogener Daten nach Art. 13 DSGVO.',
+                'en' => 'Information on the processing of personal data under Art. 13 GDPR.',
+            ],
+            'agb'         => [
+                'de' => 'Allgemeine Geschäftsbedingungen für Foto- und Filmaufträge sowie digitale Produkte.',
+                'en' => 'Terms and conditions for photography and film commissions and for digital products.',
+            ],
         ];
 
         View::page('pages/legal', $this->base('/' . $key, [
             'meta' => Seo::forPage($key, [
-                'title'       => (string) ($page['title'] ?? ucfirst($key)),
-                'description' => $descriptions[$key] ?? '',
+                'title'       => I18n::pick($page['title'] ?? null) ?: ucfirst($key),
+                'description' => I18n::pick($descriptions[$key] ?? null),
             ]),
             'page' => $page,
         ]));

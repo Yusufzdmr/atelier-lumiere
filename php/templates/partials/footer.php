@@ -14,6 +14,13 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
 $c = Content::get('contact');
 $cities = array_slice(Content::listed('cities'), 0, 8);
 
+/*
+ * Kurze Beschriftungen für die Rechtstexte – nicht die Seitentitel selbst.
+ * „Allgemeine Geschäftsbedingungen“ im Fuß wäre länger als die Spalte, und
+ * fest auf Deutsch stand hier vorher „Impressum“ neben englischen Links.
+ */
+$legalTitle = static fn (string $de, string $en): string => $locale === 'de' ? $de : $en;
+
 $navLinks = [
     [$p('/leistungen'), I18n::t('nav.services')],
     [$p('/portfolio'), I18n::t('nav.portfolio')],
@@ -76,14 +83,14 @@ $navLinks = [
         </address>
 
         <ul class="mt-6 space-y-2 text-sm text-cream/70">
-          <li><a href="<?= e($p('/impressum')) ?>" class="hover:text-gold">Impressum</a></li>
-          <li><a href="<?= e($p('/datenschutz')) ?>" class="hover:text-gold">Datenschutz</a></li>
+          <li><a href="<?= e($p('/impressum')) ?>" class="hover:text-gold"><?= e($legalTitle('Impressum', 'Legal notice')) ?></a></li>
+          <li><a href="<?= e($p('/datenschutz')) ?>" class="hover:text-gold"><?= e($legalTitle('Datenschutz', 'Privacy')) ?></a></li>
           <li>
             <button type="button" data-consent-open class="hover:text-gold">
               <?= e(\Atelier\I18n::t('cookie.settings')) ?>
             </button>
           </li>
-          <li><a href="<?= e($p('/agb')) ?>" class="hover:text-gold">AGB</a></li>
+          <li><a href="<?= e($p('/agb')) ?>" class="hover:text-gold"><?= e($legalTitle('AGB', 'Terms')) ?></a></li>
         </ul>
       </div>
     </div>

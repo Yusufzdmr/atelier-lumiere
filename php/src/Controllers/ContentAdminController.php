@@ -200,21 +200,29 @@ final class ContentAdminController
 
         foreach (['impressum' => 'Impressum', 'datenschutz' => 'Datenschutz', 'agb' => 'AGB'] as $key => $caption) {
             $fields = [
-                ['path' => "legal.$key.title", 'label' => $de ? 'Seitentitel' : 'Sayfa başlığı', 'wide' => true],
+                ['path' => "legal.$key.title.de", 'label' => ($de ? 'Seitentitel' : 'Sayfa başlığı') . ' (DE)', 'wide' => true],
+                ['path' => "legal.$key.title.en", 'label' => ($de ? 'Seitentitel' : 'Sayfa başlığı') . ' (EN)', 'wide' => true],
             ];
 
             foreach ((array) ($legal[$key]['sections'] ?? []) as $i => $section) {
-                $fields[] = ['path' => "legal.$key.sections.$i.heading", 'label' => ($de ? 'Abschnitt' : 'Bölüm') . ' ' . ($i + 1), 'wide' => true];
-                $fields[] = ['path' => "legal.$key.sections.$i.body", 'label' => $de ? 'Text' : 'Metin', 'type' => 'area', 'rows' => 6, 'wide' => true, 'max' => 8000];
+                $caption = ($de ? 'Abschnitt' : 'Bölüm') . ' ' . ($i + 1);
+                $fields[] = ['path' => "legal.$key.sections.$i.heading.de", 'label' => $caption . ' (DE)', 'wide' => true];
+                $fields[] = ['path' => "legal.$key.sections.$i.heading.en", 'label' => $caption . ' (EN)', 'wide' => true];
+                $fields[] = ['path' => "legal.$key.sections.$i.body.de", 'label' => ($de ? 'Text' : 'Metin') . ' (DE)', 'type' => 'area', 'rows' => 6, 'wide' => true, 'max' => 8000];
+                $fields[] = ['path' => "legal.$key.sections.$i.body.en", 'label' => ($de ? 'Text' : 'Metin') . ' (EN)', 'type' => 'area', 'rows' => 6, 'wide' => true, 'max' => 8000];
             }
 
-            $fields[] = ['path' => "legal.$key.note", 'label' => $de ? 'Hinweis am Seitenende' : 'Sayfa sonu notu', 'type' => 'area', 'rows' => 3, 'wide' => true];
+            $hinweis = $de ? 'Hinweis am Seitenende' : 'Sayfa sonu notu';
+            $fields[] = ['path' => "legal.$key.note.de", 'label' => $hinweis . ' (DE)', 'type' => 'area', 'rows' => 3, 'wide' => true];
+            $fields[] = ['path' => "legal.$key.note.en", 'label' => $hinweis . ' (EN)', 'type' => 'area', 'rows' => 3, 'wide' => true];
 
             $sections[] = [
                 'title'  => $caption,
                 'hint'   => $de
-                    ? 'Platzhalter {street} {zip} {city} {email} {phone} {legalName} {owner} werden aus den Kontaktdaten gefüllt. {{consent}} setzt den Knopf für die Cookie-Einstellungen.'
-                    : '{street} {zip} {city} {email} {phone} {legalName} {owner} yer tutucuları iletişim bilgilerinden dolar. {{consent}} çerez ayarları düğmesini koyar.',
+                    ? 'Platzhalter {street} {zip} {city} {email} {phone} {legalName} {owner} werden aus den Kontaktdaten gefüllt. {{consent}} setzt den Knopf für die Cookie-Einstellungen. '
+                      . 'Verbindlich ist die deutsche Fassung – über der englischen steht dieser Hinweis automatisch.'
+                    : '{street} {zip} {city} {email} {phone} {legalName} {owner} yer tutucuları iletişim bilgilerinden dolar. {{consent}} çerez ayarları düğmesini koyar. '
+                      . 'Geçerli olan Almanca metindir – İngilizcesinin üstünde bu not otomatik çıkar.',
                 'fields' => $fields,
                 'grid'   => 'md:grid-cols-1',
             ];
