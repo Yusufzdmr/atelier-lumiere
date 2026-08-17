@@ -531,6 +531,52 @@ Kontrol: yedi vesile üç dilde; yayınlanan sayfa `wedding` · `multi` ·
   sürümünden kalmış. WhatsApp önizlemesi `kindLabel` üzerinden zaten vesileyi
   doğru veriyor, orada hata yoktu
 
+## 17 Ağustos, akşam — hitap: „Sevgili Yılmaz" değil, „Yılmaz ailesi"
+
+Ayhan'ın sözü: *„Sevgili Yılmaz olmuyor, Sevgili Yılmaz ailesi olur. Ama tek
+kişilerde de Sevgili Yusuf, ama Sevgili Yusuf ailesi olmaz. Buraya bir ayar
+vermemiz lazım, insanların doğru yapması için."*
+
+Ayrım kodda **vardı** (`Guests::KINDS`: family · male · female) ama **soru
+yanlış yerde soruluyordu**: „Anrede" seçimi bütün partiye uygulanıyor ve
+öntanımlı `family`. Misafir listesi tek hamlede yapıştırıldığı için listedeki
+her tek kişi bir aile oluyordu. Çift bunu göremiyordu da: listede sadece çıplak
+ad duruyordu, hitap ilk kez kartta görünüyordu.
+
+Üç değişiklik, bu sırayla:
+
+1. **Her satır kendi başına okunuyor** (`Guests::guessKind`):
+   - önde ya da arkada aile sözü (`Familie`, `Fam.`, `Ailesi`, `family`) →
+     **aile**, ve o söz **atılıyor** (yoksa „Liebe Familie Familie Yılmaz")
+   - bağlaç (`&`, `+`, `und`, `and`, `ve`, virgül) → **birkaç kişi**
+   - tek kelime → **soyadı, yani aile** · iki kelime → **bir kişi**
+   - „Tanı" artık öntanımlı; üç sabit seçenek hâlâ bütün partiyi zorlamak için duruyor
+2. **Dördüncü tür: `people`.** „Liebe Familie Anna & Thomas" yanlıştı ve
+   seçilecek başka bir şey yoktu. Artık „Liebe Anna & Thomas" / „Dear Anna &
+   Thomas"
+3. **Listede hitap görünüyor**, kartta okunacağı hâliyle, yanında dört seçenekli
+   bir kutu. Tek kelimeyi aile saymak bir **karar**, bilgi değil — o yüzden
+   karar görünür ve tek tıkla düzeltilebilir. „İnsanların doğru yapması için"
+   olan kısım bu
+
+Kontrol: gerçek formdan beş isimlik karışık liste → `people`'dan `Herr`'e
+değiştirme → kartın kendisi („Lieber Yusuf Demir", „Liebe Familie Yılmaz").
+Test misafirleri silindi. Sunucuda da doğrulandı.
+
+Yan iş: **Türkçe noktalı İ normalleştirmesi tek yere indi** (`Guests::flat`),
+`isHeading` artık onu çağırıyor — aynı dört satır iki yerde duruyordu. Başlık
+satırları (`İsim`, `Misafir`, `Aile`, `Gäste`) hâlâ atlanıyor.
+
+### Bunun altında duran soru — karar müşterinin
+
+Ayhan örnekleri **Türkçe** verdi ama davetiye kartı yalnız `de` ve `en`
+konuşuyor (`I18n::LOCALES`). Sitenin Türkçeyi bırakma gerekçesi yazılı ve
+sağlam: *arama Almanca yapılır*. **Ama davetiye siteye gelen ziyaretçiye değil,
+düğünün misafirine gidiyor** — ve bu işletme Türk-Alman düğünleri çekiyor.
+Yani „Sevgili Yılmaz ailesi" bugün hiçbir kartta çıkmıyor. Davetiyenin üçüncü
+bir dili olmalı mı, sorusu açık; kod tarafı hazır (sözlükte `tr` zaten var,
+`salutation` yalnız `de`/`en` ayrımı yapıyor).
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
