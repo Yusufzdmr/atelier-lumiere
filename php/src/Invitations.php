@@ -101,6 +101,29 @@ final class Invitations
         return $label[$locale] ?? $label['de'];
     }
 
+    /**
+     * Die Zeile über den Namen – „Wir heiraten“, aber nur bei einer Hochzeit.
+     *
+     * Der Assistent bietet sieben Anlässe an, die Karte kannte nur einen: auf
+     * einer Geburtstagseinladung stand „Wir heiraten“. Die Formulierungen
+     * liegen im Wörterbuch unter invite und sind deshalb im Adminbereich
+     * änderbar – wie eine Feier heisst, entscheidet der Betrieb.
+     */
+    public static function occasionLine(string $eventType, ?string $locale = null): string
+    {
+        $keys = [
+            'wedding'      => 'invite.weMarry',
+            'multi'        => 'invite.weCelebrate',
+            'henna'        => 'invite.weHenna',
+            'engagement'   => 'invite.weEngage',
+            'circumcision' => 'invite.weCircumcision',
+            'birthday'     => 'invite.weBirthday',
+            'corporate'    => 'invite.weCelebrate',
+        ];
+
+        return I18n::t($keys[$eventType] ?? 'invite.weMarry', $locale);
+    }
+
     /* -------------------------------- Thema --------------------------------- */
 
     /**

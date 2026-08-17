@@ -20,6 +20,7 @@
 
 use function Atelier\e;
 use Atelier\I18n;
+use Atelier\Invitations;
 use Atelier\Pricing;
 use Atelier\Ui;
 
@@ -194,7 +195,8 @@ $steps = $de
             <label class="<?= $label ?>" for="eventType"><?= $de ? 'Anlass' : 'Occasion' ?></label>
             <select id="eventType" name="eventType" class="<?= $field ?>" data-event-type>
               <?php foreach ($eventTypes as $key => $caption) : ?>
-                <option value="<?= e($key) ?>" <?= $old('eventType', 'wedding') === $key ? 'selected' : '' ?>><?= e($caption[$locale]) ?></option>
+                <option value="<?= e($key) ?>" <?= $old('eventType', 'wedding') === $key ? 'selected' : '' ?>
+                        data-line="<?= e(Invitations::occasionLine($key, $locale)) ?>"><?= e($caption[$locale]) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -487,8 +489,8 @@ $steps = $de
               <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[0.6rem]" data-preview-seal
                    style="background: <?= e((string) $themes[0]['seal']) ?>; color: <?= e((string) $themes[0]['sealText']) ?>">✦</div>
 
-              <div class="mt-5 text-[0.5rem] uppercase tracking-[0.32em]" data-preview-soft
-                   style="color: <?= e((string) $themes[0]['soft']) ?>"><?= e(I18n::t('invite.weMarry')) ?></div>
+              <div class="mt-5 text-[0.5rem] uppercase tracking-[0.32em]" data-preview-soft data-preview-occasion
+                   style="color: <?= e((string) $themes[0]['soft']) ?>"><?= e(Invitations::occasionLine($old('eventType', 'wedding'), $locale)) ?></div>
 
               <div class="font-display mt-4 flex flex-col leading-tight">
                 <span class="text-2xl font-light" data-preview-bride-out>Ayşe</span>

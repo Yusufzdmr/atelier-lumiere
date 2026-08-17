@@ -147,10 +147,21 @@
   var type = form.querySelector("[data-event-type]");
   var second = form.querySelector("[data-second-event]");
 
+  var occasionOut = form.parentNode.querySelector("[data-preview-occasion]")
+    || document.querySelector("[data-preview-occasion]");
+
   function paintEvents() {
-    if (!second || !type) return;
+    if (!type) return;
     // „Mehrere Feiern“ ist der einzige Anlass mit zwei Terminen.
-    second.style.display = type.value === "multi" ? "" : "none";
+    if (second) second.style.display = type.value === "multi" ? "" : "none";
+
+    // Die Zeile ueber den Namen haengt am Anlass: eine Geburtstagsfeier
+    // heiratet nicht. Jede Option bringt ihren Satz mit, uebersetzt und im
+    // Adminbereich aenderbar – hier steht deshalb kein Text.
+    var option = type.options[type.selectedIndex];
+    var zeile = option && option.getAttribute("data-line");
+    if (occasionOut && zeile) occasionOut.textContent = zeile;
+
     paintPrice();
   }
 

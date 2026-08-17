@@ -119,7 +119,7 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <div class="text-[0.58rem] uppercase tracking-[0.34em]" style="color: <?= e((string) $theme['soft']) ?>">
-          <?= e(I18n::t('invite.weMarry')) ?>
+          <?= e(\Atelier\Invitations::occasionLine((string) ($invitation['eventType'] ?? ''), $locale)) ?>
         </div>
 
         <h1 class="t-name font-display mt-6 flex flex-col leading-tight">
