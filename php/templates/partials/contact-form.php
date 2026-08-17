@@ -85,6 +85,10 @@ $old = static fn (string $key): string => (string) ($values[$key] ?? '');
     </span>
   </label>
 
+  <?php /* Die Datenschutzerklaerung sagt dasselbe – auf einer anderen Seite,
+           die beim Ausfuellen niemand aufschlaegt. */ ?>
+  <p class="text-[0.78rem] leading-relaxed text-muted"><?= e(I18n::t('contact.dataNote')) ?></p>
+
   <?php if ($errors !== []) : ?>
     <p class="text-sm text-red-700"><?= e(I18n::t('contact.error')) ?></p>
   <?php endif; ?>

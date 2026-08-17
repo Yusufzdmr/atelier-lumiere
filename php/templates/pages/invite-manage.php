@@ -271,6 +271,11 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
       <button class="mt-7 bg-ink px-8 py-3.5 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
         <?= $de ? 'Einladungen erstellen' : 'Create invitations' ?>
       </button>
+
+      <?php /* Hier stehen Namen von Leuten, die diese Seite nie gesehen haben. */ ?>
+      <p class="mt-4 text-[0.75rem] leading-relaxed text-muted">
+        <?= e(\Atelier\I18n::t('invite.guestsDataNote')) ?>
+      </p>
     </form>
   </section>
 

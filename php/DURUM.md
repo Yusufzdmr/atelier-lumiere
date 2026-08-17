@@ -452,6 +452,27 @@ templates/pages/invite-manage.php  çiftin misafir listesi (müşteriye görüne
 public/assets/invite-manage.js     link kopyalama
 ```
 
+## Veri koruma — formların yanındaki cümle (17 Ağustos)
+
+Müşteri „KVKK belirt“ dedi. **Burada geçerli olan KVKK değil DSGVO/GDPR** —
+işletme Almanya'da, sunucu AB'de. Kastettiği şey doğruydu ama: Datenschutz
+sayfasında hukuki metin var, **formun yanında** insanın okuyacağı cümle yoktu.
+Veri giren üç yere birer satır eklendi (sözlükte, DE + EN + TR, panelden
+düzenlenebilir):
+
+| Nerede | Anahtar | Ne diyor |
+|---|---|---|
+| İletişim formu | `contact.dataNote` | „Bilgilerinizi yalnızca talebinizi yanıtlamak için kullanıyoruz. Reklam yok, üçüncü kişilere aktarım yok.“ |
+| Davetiye RSVP | `invite.rsvpDataNote` | „Cevabınızı yalnızca çift görür. Değerlendirmiyoruz ve size yazmıyoruz.“ |
+| Misafir listesi | `invite.guestsDataNote` | „İsimler yalnızca kendi davetiye bağlantılarınızda görünür… davetiyeyle birlikte siliniyor.“ |
+
+Üçüncüsü en önemlisi: orada **siteyi hiç görmemiş insanların** adları giriliyor.
+
+GDPR'ın Art. 13 şartı (veri girilen yerden gizlilik metnine erişim) **zaten
+karşılanıyordu** — üç sayfanın üçünde de `/datenschutz` linki var, kontrol
+edildi. O yüzden fazladan link konmadı. „DSGVO“ kısaltması cümlelerin içine
+yazılmadı: kısaltma metni okunmaz yapıyor, mevzuat adı zaten linkteki belgede.
+
 ## Sitenin işlediği kişisel veriler
 
 Bu liste bir uyarı değil, bir envanter — Datenschutz metni bunların hepsini

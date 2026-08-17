@@ -238,6 +238,10 @@ foreach ($rsvps as $rsvp) {
                         style="background: <?= e((string) $theme['accent']) ?>; color: <?= e((string) $theme['paper']) ?>">
                   <?= e(I18n::t('invite.rsvpSend')) ?>
                 </button>
+
+                <p class="mt-4 text-[0.7rem] leading-relaxed" style="color: <?= e((string) $theme['soft']) ?>">
+                  <?= e(I18n::t('invite.rsvpDataNote')) ?>
+                </p>
               </form>
             <?php endif; ?>
 
