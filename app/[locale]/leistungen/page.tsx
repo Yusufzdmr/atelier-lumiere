@@ -4,6 +4,8 @@ import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
 import JsonLd from "@/components/JsonLd";
 import { Section, Photo, Breadcrumbs, Btn } from "@/components/ui";
+import VideoEmbed from "@/components/VideoEmbed";
+import { img } from "@/lib/images";
 import { getServices } from "@/lib/cms";
 import { getDict } from "@/lib/dict";
 import { breadcrumbLd, serviceLd, pageMeta } from "@/lib/seo";
@@ -33,10 +35,34 @@ export default async function ServicesPage({ params }: { params: Promise<{ local
       <Section>
         <Breadcrumbs items={[{ name: "Home", href: p("") }, { name: t.services.title }]} />
 
-        <div className="space-y-24">
-          {services.map((s, i) => (
+        {/* Kapitelleiste: zeigt auf einen Blick, was es gibt, und springt dorthin.
+            Der Gast soll nicht klicken muessen, um zu sehen, was ihn erwartet –
+            aber er soll auch nicht scrollen muessen, um es zu finden. */}
+        <nav className="sticky top-[4.5rem] z-20 -mx-4 mb-12 border-y border-sand-deep bg-cream/90 px-4 backdrop-blur sm:mx-0 sm:px-0">
+          <ul className="flex gap-6 overflow-x-auto py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {services.map((s, i) => (
+              <li key={s.slug} className="shrink-0">
+                <a
+                  href={`#${s.slug}`}
+                  className="link-underline text-[0.68rem] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+                >
+                  <span className="text-gold">0{i + 1}</span> {s.title[l]}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="space-y-16 sm:space-y-20">
+          {services.map((s, i) => {
+            // Beispiele: eigene Aufnahmen, sonst passende Bilder aus dem Bestand.
+            // Ein Abschnitt, der nur Text zeigt, beantwortet die Frage
+            // "wie sieht das denn aus?" naemlich gar nicht.
+            const examples = (s.photos ?? []).filter(Boolean);
+            const shots = examples.length ? examples : [0, 1, 2, 3].map((k) => `svc-${s.slug}-${k}`);
+            return (
             <div key={s.slug} id={s.slug} className="scroll-mt-28">
-              <div className={`grid items-center gap-12 lg:grid-cols-2 lg:gap-20 ${i % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
+              <div className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-20 ${i % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
                 <Reveal mask>
                   <Photo seed={s.seed} alt={s.title[l]} ratio="4/5" sizes="(max-width: 1024px) 100vw, 50vw" />
                 </Reveal>
@@ -59,8 +85,42 @@ export default async function ServicesPage({ params }: { params: Promise<{ local
                   </Btn>
                 </Reveal>
               </div>
+
+              {/* Beispielstrecke */}
+              <Reveal className="mt-10">
+                <h3 className="text-[0.68rem] uppercase tracking-[0.22em] text-gold">{t.services.examples}</h3>
+                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                  {shots.map((src, k) => (
+                    <Photo
+                      key={k}
+                      seed={src}
+                      alt={`${s.title[l]} – ${k + 1}`}
+                      ratio="4/5"
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      w={600}
+                      h={750}
+                    />
+                  ))}
+                </div>
+              </Reveal>
+
+              {/* Beispielfilm – nur wenn einer hinterlegt ist */}
+              {s.videoUrl && (
+                <Reveal className="mt-10">
+                  <h3 className="text-[0.68rem] uppercase tracking-[0.22em] text-gold">{t.services.exampleFilm}</h3>
+                  <div className="mt-5">
+                    <VideoEmbed
+                      url={s.videoUrl}
+                      locale={l}
+                      poster={img(shots[0], 1200, 675)}
+                      title={`${s.title[l]} – ${t.services.exampleFilm}`}
+                    />
+                  </div>
+                </Reveal>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </Section>
 

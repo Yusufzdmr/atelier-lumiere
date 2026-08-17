@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Countdown from "./Countdown";
 import RsvpForm from "./RsvpForm";
 import { Sprig, Divider, CornerVine, WaxSeal } from "./invite/Ornaments";
+import { Scene, Backdrop } from "./invite/Scenes";
+import Rise from "./invite/Rise";
 import { getDict } from "@/lib/dict";
 import { dateBlocks, mapsUrl } from "@/lib/invite";
 import { parseVideo } from "@/lib/video";
@@ -29,6 +31,8 @@ export type InviteView = {
   sections: InviteSections;
   hashtag?: string;
   theme: string;
+  /** Eigenes Hintergrundbild statt der gezeichneten Szene */
+  backdrop?: string;
 };
 
 type Phase = "closed" | "video" | "opening" | "done";
@@ -38,18 +42,22 @@ export default function InviteCard({
   locale,
   origin,
   preview = false,
+  embedded = false,
 }: {
   invite: InviteView;
   locale: Locale;
   origin: string;
+  /** Vorschau: das RSVP-Formular nimmt keine echten Zusagen entgegen. */
   preview?: boolean;
+  /** In einen Rahmen eingebettet (Telefon-Vorschau) statt auf dem ganzen Bildschirm. */
+  embedded?: boolean;
 }) {
   const t = getDict(locale).invite;
   const th = themeById(invite.theme);
   const s = invite.sections;
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const [phase, setPhase] = useState<Phase>(preview ? "done" : "closed");
+  const [phase, setPhase] = useState<Phase>("closed");
   const [playing, setPlaying] = useState(false);
 
   const main = invite.events[0] ?? { name: "", date: "", time: "", venue: "", address: "" };
@@ -59,6 +67,15 @@ export default function InviteCard({
   const [hero, ...rest] = invite.photos ?? [];
   const done = phase === "done";
   const title = headline[invite.eventType]?.[locale] ?? t.weMarry;
+
+  // Blattgold-Verlauf der Namen. Als CSS-Variablen, damit .foil in globals.css
+  // dieselbe Regel fuer jedes Theme benutzen kann.
+  const foilVars = {
+    ["--foil-a" as string]: th.foil[0],
+    ["--foil-b" as string]: th.foil[1],
+    ["--foil-c" as string]: th.foil[2],
+    color: th.foil[1],
+  };
 
   /** Tippen auf das Siegel: Musik starten (Nutzergeste!), dann Video oder direkt öffnen. */
   function open() {
@@ -79,12 +96,13 @@ export default function InviteCard({
   }, [phase]);
 
   useEffect(() => {
-    if (preview) return;
+    // In der eingebetteten Vorschau darf die Seite darunter weiter scrollen.
+    if (embedded) return;
     document.body.style.overflow = done ? "" : "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [done, preview]);
+  }, [done, embedded]);
 
   function toggleMusic() {
     const a = audioRef.current;
@@ -99,10 +117,13 @@ export default function InviteCard({
 
   return (
     <div
-      data-standalone="invite"
-      className="relative min-h-screen overflow-hidden"
+      data-standalone={embedded ? undefined : "invite"}
+      className={`relative overflow-hidden ${embedded ? "min-h-full" : "min-h-screen"}`}
       style={{ background: th.bg, color: th.fg, backgroundImage: th.texture }}
     >
+      {/* ---------- Szene bzw. eigenes Bild ---------- */}
+      {invite.backdrop ? <Backdrop src={invite.backdrop} theme={th} /> : <Scene id={th.scene} theme={th} />}
+
       {s.music && invite.musicUrl && <audio ref={audioRef} src={invite.musicUrl} loop preload="none" />}
 
       {/* ---------- Video-Intro ---------- */}
@@ -138,9 +159,16 @@ export default function InviteCard({
       )}
 
       {/* ---------- Kuvert ---------- */}
-      {!preview && (
-        <div className="env-stage" data-done={done} style={{ background: th.bg, backgroundImage: th.texture }}>
-          <div className="flex flex-col items-center gap-10">
+      <div
+        className={`env-stage ${embedded ? "env-stage-embed" : ""}`}
+        data-done={done}
+        style={{ background: th.bg, backgroundImage: th.texture }}
+      >
+          {/* Die Szene liegt auch hinter dem Kuvert – sonst wirkt der Wechsel
+              zur Karte wie ein Sprung in eine andere Einladung. */}
+          {invite.backdrop ? <Backdrop src={invite.backdrop} theme={th} /> : <Scene id={th.scene} theme={th} />}
+
+          <div className="relative flex flex-col items-center gap-10">
             <button className="env" data-open={phase !== "closed"} onClick={open} aria-label={t.openInvite}>
               <div className="env-back" style={{ background: th.envelope, border: `1px solid ${th.envelopeEdge}` }} />
               <div className="env-card" style={{ background: th.paper, border: `1px solid ${th.paperEdge}` }}>
@@ -161,7 +189,7 @@ export default function InviteCard({
                 <div className="text-[0.6rem] uppercase tracking-[0.34em]" style={{ color: th.soft }}>
                   {title}
                 </div>
-                <div className="font-display mt-2 text-2xl font-light">
+                <div className="font-script mt-3 text-4xl leading-none foil" style={foilVars}>
                   {invite.bride} &amp; {invite.groom}
                 </div>
                 <div className="mt-4 text-[0.62rem] uppercase tracking-[0.28em]" style={{ color: th.accent }}>
@@ -170,18 +198,18 @@ export default function InviteCard({
               </div>
             )}
           </div>
-        </div>
-      )}
+      </div>
 
       {/* schwebende Blütenblätter */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {Array.from({ length: 12 }).map((_, i) => (
           <span
             key={i}
-            className="petal"
+            className={`petal petal-${th.particle}`}
             style={{
               left: `${(i * 8.4 + 3) % 96}%`,
               background: th.petal,
+              color: th.petal,
               opacity: 0.45,
               animationDuration: `${18 + (i % 5) * 5}s`,
               animationDelay: `${-i * 3}s`,
@@ -194,48 +222,48 @@ export default function InviteCard({
       {/* ---------- Karte ---------- */}
       <div className="relative mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-14">
         <article
-          className="relative overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20"
-          style={{ background: th.paper, border: `1px solid ${th.paperEdge}`, boxShadow: "0 40px 80px -50px rgba(0,0,0,.45)" }}
+          className="emboss relative overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20"
+          style={{ background: `${th.paper}F2`, border: `1px solid ${th.paperEdge}`, backdropFilter: "blur(2px)" }}
         >
           <CornerVine className="pointer-events-none absolute -left-1 -top-1 h-24 w-24 opacity-30" />
           <CornerVine className="pointer-events-none absolute -bottom-1 -right-1 h-24 w-24 rotate-180 opacity-30" />
 
           {done && (
             <>
-              <div className="rise" style={{ animationDelay: "0.05s", color: th.accent }}>
+              <Rise style={{ color: th.accent }}>
                 <Sprig className="mx-auto h-5 w-32 opacity-80" />
-              </div>
+              </Rise>
 
               {s.family && invite.families && (
-                <div
-                  className="rise mt-7 text-[0.68rem] uppercase tracking-[0.24em]"
-                  style={{ color: th.soft, animationDelay: "0.1s" }}
-                >
+                <Rise delay={0.06} className="mt-7 text-[0.68rem] uppercase tracking-[0.24em]" style={{ color: th.soft }}>
                   {invite.families.bride} &nbsp;·&nbsp; {invite.families.groom}
-                </div>
+                </Rise>
               )}
 
-              <div
-                className="rise mt-6 text-[0.6rem] uppercase tracking-[0.36em]"
-                style={{ color: th.soft, animationDelay: "0.15s" }}
-              >
+              <Rise delay={0.12} className="mt-6 text-[0.6rem] uppercase tracking-[0.36em]" style={{ color: th.soft }}>
                 {title}
-              </div>
+              </Rise>
 
-              <h1 className="rise mt-6 flex flex-col items-center" style={{ animationDelay: "0.3s" }}>
-                <span className="font-display text-4xl font-light leading-tight sm:text-6xl">{invite.bride}</span>
-                <span className="font-display my-2 text-2xl italic sm:text-3xl" style={{ color: th.accent }}>
+              {/* Die Namen werden geschrieben: Maske laeuft von links auf, danach
+                  wandert das Blattgold langsam durch die Buchstaben. */}
+              <h1 className="mt-7 flex flex-col items-center gap-1">
+                <span className="write font-script foil text-[3.2rem] leading-[1.05] sm:text-[4.6rem]" style={{ ...foilVars, ["--write-delay" as string]: ".45s" }}>
+                  {invite.bride}
+                </span>
+                <span className="font-display text-2xl italic sm:text-3xl" style={{ color: th.accent }}>
                   &amp;
                 </span>
-                <span className="font-display text-4xl font-light leading-tight sm:text-6xl">{invite.groom}</span>
+                <span className="write font-script foil text-[3.2rem] leading-[1.05] sm:text-[4.6rem]" style={{ ...foilVars, ["--write-delay" as string]: "1.1s" }}>
+                  {invite.groom}
+                </span>
               </h1>
 
-              <div className="rise mt-8" style={{ color: th.accent, animationDelay: "0.5s" }}>
+              <Rise variant="line" delay={0.2} className="mt-8" style={{ color: th.accent }}>
                 <Divider className="mx-auto h-4 w-52" />
-              </div>
+              </Rise>
 
               {/* Termine – eine oder zwei Feiern */}
-              <div className="rise mt-9 space-y-8" style={{ animationDelay: "0.6s" }}>
+              <Rise delay={0.28} className="mt-9 space-y-8">
                 {invite.events.map((ev, i) => {
                   const d = dateBlocks(ev.date, locale);
                   return (
@@ -266,33 +294,33 @@ export default function InviteCard({
                     </div>
                   );
                 })}
-              </div>
+              </Rise>
 
               {s.countdown && main.date && (
-                <div className="rise mt-10" style={{ animationDelay: "0.8s" }}>
+                <Rise variant="zoom" className="mt-10">
                   <Countdown date={main.date} time={main.time} locale={locale} />
-                </div>
+                </Rise>
               )}
 
               {hero && (
-                <div className="rise mt-12" style={{ animationDelay: "0.9s" }}>
+                <Rise variant="mask" className="mt-12">
                   <div className="relative mx-auto overflow-hidden" style={{ border: `1px solid ${th.paperEdge}` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- vom Paar hochgeladenes Bild (Data-URL) */}
                     <img src={hero} alt="" className="block h-auto w-full object-cover" />
                   </div>
-                </div>
+                </Rise>
               )}
 
               {invite.message && (
-                <div className="rise mt-12" style={{ animationDelay: "1s" }}>
+                <Rise className="mt-12">
                   <p className="font-display mx-auto max-w-lg whitespace-pre-line text-lg font-light leading-relaxed sm:text-xl">
                     {invite.message}
                   </p>
-                </div>
+                </Rise>
               )}
 
               {s.program && invite.program?.length > 0 && (
-                <div className="rise mt-14" style={{ animationDelay: "1.05s" }}>
+                <Rise className="mt-14">
                   <h2 className="text-[0.6rem] uppercase tracking-[0.3em]" style={{ color: th.accent }}>
                     {t.program}
                   </h2>
@@ -307,11 +335,11 @@ export default function InviteCard({
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Rise>
               )}
 
               {s.menu && invite.menu?.length > 0 && (
-                <div className="rise mt-14" style={{ animationDelay: "1.08s" }}>
+                <Rise className="mt-14">
                   <h2 className="text-[0.6rem] uppercase tracking-[0.3em]" style={{ color: th.accent }}>
                     {t.menuTitle}
                   </h2>
@@ -322,14 +350,14 @@ export default function InviteCard({
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Rise>
               )}
 
               {s.location && (
-                <div className="rise mt-14 space-y-10" style={{ animationDelay: "1.1s" }}>
+                <div className="mt-14 space-y-10">
                   {invite.events.map((ev, i) =>
                     ev.venue ? (
-                      <div key={i}>
+                      <Rise key={i} delay={i * 0.08}>
                         <h2 className="text-[0.6rem] uppercase tracking-[0.3em]" style={{ color: th.accent }}>
                           {invite.events.length > 1 && ev.name ? ev.name : t.venue}
                         </h2>
@@ -348,25 +376,25 @@ export default function InviteCard({
                         >
                           {t.directions}
                         </a>
-                      </div>
+                      </Rise>
                     ) : null
                   )}
                 </div>
               )}
 
               {rest.length > 0 && (
-                <div className="rise mt-14 grid grid-cols-2 gap-3" style={{ animationDelay: "1.15s" }}>
+                <div className="mt-14 grid grid-cols-2 gap-3">
                   {rest.map((src, i) => (
-                    <div key={i} className="overflow-hidden" style={{ border: `1px solid ${th.paperEdge}` }}>
+                    <Rise key={i} variant="mask" delay={i * 0.09} className="overflow-hidden" style={{ border: `1px solid ${th.paperEdge}` }}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- vom Paar hochgeladenes Bild (Data-URL) */}
                       <img src={src} alt="" className="block h-full w-full object-cover" />
-                    </div>
+                    </Rise>
                   ))}
                 </div>
               )}
 
               {s.rsvp && (
-                <div className="rise mt-16 text-left" style={{ animationDelay: "1.2s" }}>
+                <Rise className="mt-16 text-left">
                   <div className="text-center">
                     <h2 className="font-display text-2xl font-light sm:text-3xl">{t.rsvpTitle}</h2>
                     <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed" style={{ color: th.soft }}>
@@ -379,25 +407,22 @@ export default function InviteCard({
                     theme={{ fg: th.fg, accent: th.accent, soft: th.soft, frame: th.paperEdge }}
                     disabled={preview}
                   />
-                </div>
+                </Rise>
               )}
 
               {invite.closing && (
-                <p
-                  className="rise font-display mt-14 whitespace-pre-line text-lg font-light leading-relaxed"
-                  style={{ animationDelay: "1.22s" }}
-                >
-                  {invite.closing}
-                </p>
+                <Rise className="mt-14">
+                  <p className="font-display whitespace-pre-line text-lg font-light leading-relaxed">{invite.closing}</p>
+                </Rise>
               )}
 
               {invite.hashtag && (
-                <div className="rise mt-10 font-display text-xl" style={{ color: th.accent, animationDelay: "1.25s" }}>
+                <Rise className="font-script mt-10 text-3xl foil" style={foilVars}>
                   {invite.hashtag}
-                </div>
+                </Rise>
               )}
 
-              <div className="rise mt-12 flex flex-col items-center gap-6" style={{ animationDelay: "1.3s" }}>
+              <Rise className="mt-12 flex flex-col items-center gap-6">
                 <a
                   href={`https://wa.me/?text=${waText}`}
                   target="_blank"
@@ -411,7 +436,7 @@ export default function InviteCard({
                   {t.share}
                 </a>
                 <Sprig className="h-4 w-24 rotate-180 opacity-50" />
-              </div>
+              </Rise>
             </>
           )}
         </article>
@@ -426,7 +451,7 @@ export default function InviteCard({
         <button
           onClick={toggleMusic}
           aria-label={t.music}
-          className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105"
+          className={`${embedded ? "absolute" : "fixed"} bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105`}
           style={{ background: th.paper, border: `1px solid ${th.paperEdge}`, color: th.accent }}
         >
           {playing ? (

@@ -37,6 +37,13 @@ function cleanPhotos(input: unknown): string[] {
     .slice(0, MAX_PHOTOS);
 }
 
+/** Hintergrundbild: dieselben Regeln wie fuer Fotos, aber nur eines. */
+function cleanBackdrop(input: unknown): string[] {
+  if (typeof input !== "string") return [];
+  const ok = (input.startsWith("data:image/") || input.startsWith("https://")) && input.length <= MAX_PHOTO_CHARS;
+  return ok ? [input] : [];
+}
+
 function cleanProgram(input: unknown): ProgramItem[] {
   if (!Array.isArray(input)) return [];
   return input
@@ -117,6 +124,7 @@ export async function POST(req: Request) {
       closing: clean(body.closing, 300) || undefined,
       families,
       photos: await saveUploads(cleanPhotos(body.photos), `einladungen/${slug}`),
+      backdrop: (await saveUploads(cleanBackdrop(body.backdrop), `einladungen/${slug}`))[0],
       program: sections.program ? cleanProgram(body.program) : [],
       menu: sections.menu && Array.isArray(body.menu) ? body.menu.map((m: unknown) => clean(m, 80)).filter(Boolean).slice(0, 12) : [],
       musicUrl: sections.music ? cleanUrl(body.musicUrl) || undefined : undefined,

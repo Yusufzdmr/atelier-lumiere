@@ -9,6 +9,7 @@
 use function Atelier\e;
 use Atelier\I18n;
 use Atelier\Ui;
+use Atelier\Video;
 
 $p = static fn (string $to): string => I18n::path($to, $locale);
 ?>
@@ -20,10 +21,35 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
       ['name' => I18n::t('services.title')],
   ]) ?>
 
-  <div class="space-y-24">
+  <?php /* Kapitelleiste: was es gibt, ohne dass jemand dafuer scrollen muss. */ ?>
+  <nav class="sticky top-[4.5rem] z-20 -mx-5 mb-10 border-y border-sand-deep bg-cream/90 px-5 backdrop-blur sm:mx-0 sm:px-0">
+    <ul class="flex gap-6 overflow-x-auto py-3.5">
+      <?php foreach ($services as $i => $service) : ?>
+        <li class="shrink-0">
+          <a href="#<?= e((string) ($service['slug'] ?? '')) ?>" class="link-underline text-[0.68rem] uppercase tracking-[0.18em] text-muted hover:text-gold">
+            <span class="text-gold">0<?= $i + 1 ?></span> <?= e(I18n::pick($service['title'] ?? null, $locale)) ?>
+          </a>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+  </nav>
+
+  <div class="space-y-16 sm:space-y-20">
     <?php foreach ($services as $i => $service) : ?>
-      <div id="<?= e((string) ($service['slug'] ?? '')) ?>" class="scroll-mt-28">
-        <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-20 <?= $i % 2 ? 'lg:[&>*:first-child]:order-2' : '' ?>">
+      <?php
+      $slug = (string) ($service['slug'] ?? '');
+      // Beispiele: erst die eigenen Aufnahmen, sonst passende Platzhalter.
+      // Ein Abschnitt, der nur erzaehlt, beantwortet nicht die eine Frage,
+      // die der Gast wirklich hat: wie sieht das denn aus?
+      $shots = array_values(array_filter((array) ($service['uploads'] ?? []), 'is_string'));
+      if ($shots === []) {
+          $shots = ["svc-$slug-0", "svc-$slug-1", "svc-$slug-2", "svc-$slug-3"];
+      }
+      $shots = array_slice($shots, 0, 4);
+      $film = (string) ($service['videoUrl'] ?? '');
+      ?>
+      <div id="<?= e($slug) ?>" class="scroll-mt-28">
+        <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-20 <?= $i % 2 ? 'lg:[&>*:first-child]:order-2' : '' ?>">
           <?= Ui::revealOpen(0, '', true) ?>
             <?= Ui::photo(
                 (string) ($service['seed'] ?? ''),
@@ -45,6 +71,42 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
             <div class="mt-8"><?= Ui::btn($p('/preise'), I18n::t('nav.prices'), 'outline') ?></div>
           <?= Ui::revealClose() ?>
         </div>
+
+        <?php /* Beispielstrecke */ ?>
+        <div class="mt-10">
+          <?= Ui::revealOpen(0) ?>
+            <h3 class="text-[0.68rem] uppercase tracking-[0.22em] text-gold"><?= e(I18n::t('services.examples')) ?></h3>
+            <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              <?php foreach ($shots as $k => $shot) : ?>
+                <?= Ui::photo(
+                    (string) $shot,
+                    I18n::pick($service['title'] ?? null, $locale) . ' ' . ($k + 1),
+                    '4/5',
+                    '',
+                    '(max-width: 640px) 50vw, 25vw',
+                    600,
+                    750
+                ) ?>
+              <?php endforeach; ?>
+            </div>
+          <?= Ui::revealClose() ?>
+        </div>
+
+        <?php /* Beispielfilm - nur wenn einer hinterlegt ist */ ?>
+        <?php if ($film !== '' && Video::isSupported($film)) : ?>
+          <div class="mt-10">
+            <?= Ui::revealOpen(0) ?>
+              <h3 class="text-[0.68rem] uppercase tracking-[0.22em] text-gold"><?= e(I18n::t('services.exampleFilm')) ?></h3>
+              <div class="mt-5">
+                <?= Video::embedBox(
+                    $film,
+                    I18n::pick($service['title'] ?? null, $locale) . ' - ' . I18n::t('services.exampleFilm'),
+                    (string) ($shots[0] ?? '')
+                ) ?>
+              </div>
+            <?= Ui::revealClose() ?>
+          </div>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>

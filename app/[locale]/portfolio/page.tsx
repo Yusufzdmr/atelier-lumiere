@@ -34,7 +34,7 @@ export default async function PortfolioPage({ params }: { params: Promise<{ loca
       <Section>
         <Breadcrumbs items={[{ name: "Home", href: p("") }, { name: t.portfolio.title }]} />
 
-        <div className="space-y-20">
+        <div className="space-y-14 sm:space-y-16">
           {stories.map((s) => (
             <Reveal key={s.slug} delay={60}>
               <Link href={p(`/portfolio/${s.slug}`)} className="group block">

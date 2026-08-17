@@ -7,6 +7,7 @@ import {
   deleteProcessStep,
   resetSection,
 } from "@/lib/actions";
+import ImageField from "@/components/admin/ImageField";
 import { isLocale, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -102,8 +103,36 @@ export default async function AdminServices({ params }: { params: Promise<{ loca
               <input name={`s${i}_slug`} defaultValue={s.slug} className={input} />
             </div>
             <div>
-              <label className={label}>{de ? "Bild-Kennung" : "Görsel anahtarı"}</label>
-              <input name={`s${i}_seed`} defaultValue={s.seed} className={input} />
+              <label className={label}>{de ? "Beispielfilm (YouTube, Vimeo oder Datei-URL)" : "Örnek film (YouTube, Vimeo veya dosya URL)"}</label>
+              <input name={`s${i}_video`} defaultValue={s.videoUrl ?? ""} className={input} placeholder="https://youtu.be/…" />
+            </div>
+          </div>
+
+          {/* Hauptbild des Abschnitts */}
+          <div className="mt-8 border-t border-sand-deep pt-6">
+            <ImageField name={`s${i}_seed`} defaultValue={s.seed} folder={`inhalte/leistungen/${i}`} locale={l} />
+          </div>
+
+          {/* Beispielstrecke: vier Plaetze, leere bleiben einfach leer */}
+          <div className="mt-8 border-t border-sand-deep pt-6">
+            <h3 className="text-[0.66rem] uppercase tracking-[0.2em] text-gold">
+              {de ? "Beispielbilder" : "Örnek görseller"}
+            </h3>
+            <p className="mt-2 max-w-xl text-[0.76rem] leading-relaxed text-muted">
+              {de
+                ? "Diese Bilder stehen unter dem Text der Leistung. Bleiben alle vier leer, zeigt die Seite passende Bilder aus dem Bestand."
+                : "Bu görseller hizmet metninin altında görünür. Dördü de boşsa sayfa stoktan uygun görselleri gösterir."}
+            </p>
+            <div className="mt-5 grid gap-7 md:grid-cols-2">
+              {[0, 1, 2, 3].map((k) => (
+                <ImageField
+                  key={k}
+                  name={`s${i}_photo${k}`}
+                  defaultValue={s.photos?.[k] ?? ""}
+                  folder={`inhalte/leistungen/${i}/beispiel`}
+                  locale={l}
+                />
+              ))}
             </div>
           </div>
         </section>

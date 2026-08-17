@@ -35,6 +35,7 @@
 
 :root {
   --font-cormorant: "Cormorant Garamond";
+  --font-greatvibes: "Great Vibes";
   --font-jost: "Jost";
   --background: var(--color-cream);
   --foreground: var(--color-ink);
@@ -254,3 +255,154 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
 /* Das Gold des Betriebs ist auf hellem Papier gewaehlt; auf dem dunklen
    Schleier verschwindet es. Dort eine hellere Fassung derselben Farbe. */
 #site-header:not(.is-solid) .hdr-gold { color: #E4C79A; }
+
+/* ================================================================
+   Digitale Einladung – Szene, Kalligrafie, Bewegung
+   Die Farben kommen aus dem Themenblock (--t-…, siehe src/Themes.php).
+   ================================================================ */
+
+/* ---------- Kalligrafie ---------- */
+.t-script { font-family: var(--t-script, var(--font-greatvibes), cursive); font-weight: 400; }
+
+/* Blattgold: der Verlauf wandert langsam durch die Schrift, wie Licht über
+   echte Folie. Ohne background-clip fällt es auf die Grundfarbe zurück –
+   die Namen bleiben also immer lesbar. */
+.foil {
+  color: var(--t-foil-b, var(--t-accent));
+  background-image: linear-gradient(
+    100deg,
+    var(--t-foil-a) 0%,
+    var(--t-foil-b) 26%,
+    var(--t-foil-c) 42%,
+    var(--t-foil-b) 58%,
+    var(--t-foil-a) 100%
+  );
+  background-size: 260% 100%;
+  animation: foilSweep 9s ease-in-out infinite;
+}
+@supports (-webkit-background-clip: text) {
+  .foil { -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+@keyframes foilSweep {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* Der Name wird geschrieben: die Maske läuft von links auf, leicht schräg,
+   damit die Kante der Federführung folgt. */
+.write { clip-path: polygon(-25% -45%, -25% -45%, -32% 145%, -32% 145%); animation: writeOn 1.5s cubic-bezier(.55,.06,.3,1) var(--write-delay, 0s) both; }
+@keyframes writeOn { to { clip-path: polygon(-25% -45%, 145% -45%, 138% 145%, -32% 145%); } }
+
+/* Beides auf einem Element: erst wird geschrieben, danach wandert das Gold.
+   Zwei getrennte Regeln wuerden sich gegenseitig ueberschreiben – die zweite
+   gewaenne, und eine der beiden Bewegungen liefe nie. */
+.foil.write {
+  animation:
+    writeOn 1.5s cubic-bezier(.55,.06,.3,1) var(--write-delay, 0s) both,
+    foilSweep 9s ease-in-out calc(var(--write-delay, 0s) + 1.5s) infinite;
+}
+
+/* ---------- Abschnitte kommen beim Scrollen ---------- */
+.iv {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0);
+  transition: opacity .95s cubic-bezier(.16,1,.3,1), transform .95s cubic-bezier(.16,1,.3,1);
+  transition-delay: var(--iv-delay, 0s);
+}
+.iv[data-visible="true"] { opacity: 1; transform: none; }
+.iv-mask { opacity: 1; transform: none; clip-path: inset(0 0 100% 0); transition: clip-path 1.2s cubic-bezier(.16,1,.3,1); }
+.iv-mask[data-visible="true"] { clip-path: inset(0 0 0 0); }
+
+/* ---------- Szene ---------- */
+.scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+
+.scene-wash { position: absolute; border-radius: 50%; filter: blur(46px); animation: washDrift 26s ease-in-out infinite alternate; }
+.scene-wash-a { opacity: .3; width: 58vw; height: 58vw; max-width: 520px; max-height: 520px; left: -16%; top: -10%; }
+.scene-wash-b { opacity: .34; width: 52vw; height: 52vw; max-width: 460px; max-height: 460px; right: -14%; bottom: -8%; animation-delay: -9s; }
+@keyframes washDrift {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to   { transform: translate3d(3%, -4%, 0) scale(1.14); }
+}
+
+.scene-corner { position: absolute; animation: bouquetIn 1.6s cubic-bezier(.16,1,.3,1) both, bouquetSway 11s ease-in-out 1.6s infinite; }
+@keyframes bouquetIn {
+  from { opacity: 0; transform: translate3d(var(--from-x, -12%), var(--from-y, -10%), 0) scale(.86) rotate(var(--from-r, -6deg)); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes bouquetSway {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50%      { transform: rotate(1.1deg) translateY(-5px); }
+}
+
+/* Plätze der Motive. Die Breiten wachsen mit dem Bildschirm, bleiben aber
+   gedeckelt – auf dem Fernseher soll kein Zweig quer über die Karte laufen. */
+.scene-tl     { left: 0;   top: 0;    width: 38vw; max-width: 240px; }
+.scene-tr     { right: 0;  top: 0;    width: 38vw; max-width: 240px; }
+.scene-bl     { left: 0;   bottom: 0; width: 32vw; max-width: 200px; }
+.scene-br     { right: 0;  bottom: 0; width: 32vw; max-width: 200px; }
+.scene-left   { left: 0;   top: 6%;   width: 42vw; max-width: 280px; }
+.scene-ml     { left: 0;   top: 18%;  width: 20vw; max-width: 120px; }
+.scene-mr     { right: 4%; top: 30%;  width: 22vw; max-width: 130px; }
+.scene-top    { left: 0; right: 0; top: 0;    width: 100%; }
+.scene-bottom { left: 0; right: 0; bottom: 0; width: 100%; }
+.scene-wide   { width: 46vw; max-width: 290px; }
+
+/* Spiegelungen: dasselbe Motiv, andere Ecke – spart die Hälfte der Zeichnung. */
+.scene-flip   { rotate: 180deg; }
+.scene-mirror { scale: -1 1; }
+.scene-updown { scale: 1 -1; }
+
+/* ---------- Schwebende Blätter ---------- */
+.t-petals { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.t-petal {
+  position: absolute; bottom: -10vh; width: 10px; height: 14px;
+  border-radius: 60% 40% 55% 45%;
+  animation: floatUp linear infinite;
+}
+
+/* ---------- Kuvert ---------- */
+/* Das Kuvert atmet, solange es zu ist – ein Hinweis, dass man tippen darf. */
+.t-envelope { animation: envBreathe 4.2s ease-in-out infinite; }
+[data-open="true"] .t-envelope { animation: none; }
+@keyframes envBreathe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-7px) rotate(-.4deg); }
+}
+
+/* Das Siegel bricht: kurzer Ruck, dann fällt es nach vorn aus dem Bild. */
+[data-open="true"] .t-seal { animation: sealBreak .75s cubic-bezier(.3,1.2,.4,1) both; }
+@keyframes sealBreak {
+  0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+  22%  { transform: scale(1.14) rotate(-7deg); opacity: 1; }
+  100% { transform: translateY(38px) scale(1.55) rotate(-22deg); opacity: 0; }
+}
+
+/* Die Klappe schlägt auf, danach hebt sich die Karte heraus. */
+.t-flap {
+  position: absolute; left: 0; top: 0; width: 100%; height: 46%;
+  transform-origin: top center; backface-visibility: hidden; z-index: 4;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition: transform .95s cubic-bezier(.6,.05,.3,1) .2s;
+}
+[data-open="true"] .t-flap { transform: rotateX(-172deg); z-index: 1; }
+
+.t-sheet {
+  position: absolute; left: 6%; bottom: 6%; width: 88%; height: 88%; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 26px -14px rgba(0,0,0,.5);
+  transition: transform 1.05s cubic-bezier(.2,.85,.25,1) .7s;
+}
+[data-open="true"] .t-sheet { transform: translateY(-110%) rotate(1.2deg) scale(1.02); }
+
+.t-envelope-stage { perspective: 1400px; transition: opacity .7s ease, transform .9s cubic-bezier(.5,0,.75,0); }
+[data-open="true"].t-envelope-stage { transform: scale(1.3); }
+
+/* Hinweiszeile unter dem Kuvert */
+.t-hint { animation: hintFloat 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .foil, .scene-corner, .scene-wash, .t-envelope, .t-petal, .t-hint { animation: none !important; }
+  .write { clip-path: none !important; animation: none !important; }
+  .iv, .iv-mask { opacity: 1 !important; transform: none !important; clip-path: none !important; transition: none !important; }
+  .t-flap, .t-sheet, .t-envelope-stage { transition: none !important; }
+}

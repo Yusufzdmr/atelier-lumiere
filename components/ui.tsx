@@ -21,7 +21,7 @@ export function Section({
     ink: "bg-ink text-cream",
   } as const;
   return (
-    <section id={id} className={`${tones[tone]} px-5 py-20 sm:px-8 sm:py-28 ${className}`}>
+    <section id={id} className={`${tones[tone]} px-5 py-14 sm:px-8 sm:py-20 lg:py-24 ${className}`}>
       <div className="mx-auto max-w-7xl">{children}</div>
     </section>
   );

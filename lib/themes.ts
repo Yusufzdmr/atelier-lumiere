@@ -2,6 +2,9 @@ import type { L } from "./i18n";
 
 export type ThemeId = "elysee" | "sage" | "blush" | "noir" | "pearl" | "terra";
 
+/** Gezeichnete Hintergrundkunst des Themes – siehe components/invite/Scenes.tsx. */
+export type SceneId = "botanical" | "leafy" | "bouquet" | "deco" | "lace" | "pampas";
+
 export type InviteTheme = {
   id: ThemeId;
   name: string;
@@ -27,6 +30,12 @@ export type InviteTheme = {
   petal: string;
   /** dezente Papierstruktur */
   texture: string;
+  /** gezeichnete Hintergrundkunst */
+  scene: SceneId;
+  /** Blattgold-Verlauf der Namen: dunkel, mittel, Glanzlicht */
+  foil: [string, string, string];
+  /** Form der schwebenden Partikel */
+  particle: "leaf" | "round" | "spark";
 };
 
 /** Sehr dezente Papier-/Leinenstruktur als Inline-SVG (kein externer Request). */
@@ -54,6 +63,9 @@ export const themes: InviteTheme[] = [
     sealText: "#FBF6EE",
     petal: "#E2CFAF",
     texture: linen("#B08D57", 0.16),
+    scene: "botanical",
+    foil: ["#8A6A3A", "#B08D57", "#F0DCB4"],
+    particle: "leaf",
   },
   {
     id: "sage",
@@ -73,6 +85,9 @@ export const themes: InviteTheme[] = [
     sealText: "#F4F6F0",
     petal: "#BFCEB0",
     texture: linen("#6B7C5C", 0.14),
+    scene: "leafy",
+    foil: ["#4F5F41", "#6B7C5C", "#CBD9B8"],
+    particle: "leaf",
   },
   {
     id: "blush",
@@ -92,6 +107,9 @@ export const themes: InviteTheme[] = [
     sealText: "#FDF6F4",
     petal: "#EBC9C2",
     texture: linen("#B4796F", 0.13),
+    scene: "bouquet",
+    foil: ["#8E5449", "#B4796F", "#F2CFC5"],
+    particle: "round",
   },
   {
     id: "noir",
@@ -111,6 +129,9 @@ export const themes: InviteTheme[] = [
     sealText: "#15161B",
     petal: "#4A4126",
     texture: linen("#C9A24B", 0.1),
+    scene: "deco",
+    foil: ["#8C7233", "#C9A24B", "#F6E3A8"],
+    particle: "spark",
   },
   {
     id: "pearl",
@@ -130,6 +151,9 @@ export const themes: InviteTheme[] = [
     sealText: "#FCFBF9",
     petal: "#D6D0C6",
     texture: linen("#8C867C", 0.12),
+    scene: "lace",
+    foil: ["#6E695F", "#8C867C", "#E4DED2"],
+    particle: "round",
   },
   {
     id: "terra",
@@ -149,6 +173,9 @@ export const themes: InviteTheme[] = [
     sealText: "#FAF2E9",
     petal: "#DDBCA1",
     texture: linen("#A86544", 0.14),
+    scene: "pampas",
+    foil: ["#7E4A31", "#A86544", "#E7C3A2"],
+    particle: "leaf",
   },
 ];
 

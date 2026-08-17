@@ -174,7 +174,8 @@ final class Themes
             'css'            => '',
             // Ab hier: die modularen Bausteine
             'family'      => '',
-            'fonts'       => ['display' => 'cormorant', 'body' => 'jost', 'scale' => '100', 'tracking' => '0'],
+            'fonts'       => ['display' => 'cormorant', 'body' => 'jost', 'script' => 'greatvibes', 'scale' => '100', 'tracking' => '0'],
+            'scene'       => '',
             'decorations' => [],
             'version'     => 1,
             'updatedAt'   => '',
@@ -196,16 +197,70 @@ final class Themes
             $merged['family'] = (string) $merged['name'];
         }
 
+        // Bestehende Themen kennen das Feld noch nicht. Statt alle auf dasselbe
+        // Motiv zu setzen, bekommt jedes eins, das zu seiner Farbwelt passt –
+        // im Panel laesst sich das mit einem Griff aendern.
+        if (!in_array((string) $merged['scene'], self::SCENES, true) || (string) $merged['scene'] === '') {
+            $merged['scene'] = self::defaultScene((string) $merged['id']);
+        }
+
         return $merged;
+    }
+
+    /** Passendes Motiv fuer ein Thema, das noch keins gewaehlt hat. */
+    private static function defaultScene(string $id): string
+    {
+        return match ($id) {
+            'sage', 'foresta'       => 'leafy',
+            'blush', 'lavande'      => 'bouquet',
+            'noir', 'bordeaux'      => 'deco',
+            'pearl', 'marbre', 'azur' => 'lace',
+            'terra'                 => 'pampas',
+            default                 => 'botanical',
+        };
     }
 
     /* ------------------------------ Bausteine ------------------------------- */
 
     /** Die selbst gehosteten Schriften – mehr gibt es nicht, und das ist gut so. */
     public const FONTS = [
-        'cormorant' => ['label' => 'Cormorant Garamond', 'stack' => 'var(--font-cormorant), "Times New Roman", serif'],
-        'jost'      => ['label' => 'Jost', 'stack' => 'var(--font-jost), ui-sans-serif, system-ui, sans-serif'],
+        'cormorant'  => ['label' => 'Cormorant Garamond', 'stack' => 'var(--font-cormorant), "Times New Roman", serif'],
+        'jost'       => ['label' => 'Jost', 'stack' => 'var(--font-jost), ui-sans-serif, system-ui, sans-serif'],
+        'greatvibes' => ['label' => 'Great Vibes (Kalligrafie)', 'stack' => 'var(--font-greatvibes), "Apple Chancery", cursive'],
     ];
+
+    /**
+     * Gezeichnete Hintergrundkunst. Kostet keine Datei und nimmt die Farben
+     * des Themas an – im Unterschied zu einem hochgeladenen Bild, das bei
+     * jeder Farbaenderung neu gebaut werden muesste.
+     */
+    public const SCENES = ['none', 'botanical', 'leafy', 'bouquet', 'deco', 'lace', 'pampas'];
+
+    public static function sceneLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'none'      => 'Keine – nur Farbe',
+                'botanical' => 'Zweige in den Ecken',
+                'leafy'     => 'Grosser Blattzweig',
+                'bouquet'   => 'Blumenbouquet',
+                'deco'      => 'Art-déco-Faecher',
+                'lace'      => 'Spitzenbogen',
+                'pampas'    => 'Pampasgras',
+            ],
+            'tr' => [
+                'none'      => 'Yok – yalnızca renk',
+                'botanical' => 'Köşelerde dallar',
+                'leafy'     => 'Büyük yapraklı dal',
+                'bouquet'   => 'Çiçek buketi',
+                'deco'      => 'Art deco yelpaze',
+                'lace'      => 'Dantel kemer',
+                'pampas'    => 'Pampas otu',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
 
     /** Wo ein Schmuckelement sitzen kann. */
     public const SPOTS = [
@@ -467,8 +522,17 @@ final class Themes
         $fonts = is_array($theme['fonts'] ?? null) ? $theme['fonts'] : [];
         $display = self::FONTS[(string) ($fonts['display'] ?? '')] ?? self::FONTS['cormorant'];
         $body = self::FONTS[(string) ($fonts['body'] ?? '')] ?? self::FONTS['jost'];
+        $script = self::FONTS[(string) ($fonts['script'] ?? '')] ?? self::FONTS['greatvibes'];
         $vars[] = '--t-display: ' . $display['stack'] . ';';
         $vars[] = '--t-body: ' . $body['stack'] . ';';
+        $vars[] = '--t-script: ' . $script['stack'] . ';';
+
+        // Blattgold der Namen: aus dem Akzent gerechnet, damit jedes Thema es
+        // bekommt, ohne dass jemand drei weitere Farben pflegen muss.
+        [$foilA, $foilB, $foilC] = self::foil((string) $theme['accent']);
+        $vars[] = '--t-foil-a: ' . $foilA . ';';
+        $vars[] = '--t-foil-b: ' . $foilB . ';';
+        $vars[] = '--t-foil-c: ' . $foilC . ';';
         $vars[] = '--t-scale: ' . (max(60, min(160, (int) ($fonts['scale'] ?? 100))) / 100) . ';';
         $vars[] = '--t-tracking: ' . (max(-30, min(80, (int) ($fonts['tracking'] ?? 0))) / 1000) . 'em;';
 
@@ -514,6 +578,42 @@ final class Themes
      *
      * @param array<string,mixed> $theme
      */
+    /**
+     * Drei Stufen einer Farbe fuer den Goldverlauf: dunkel, wie sie ist, hell.
+     *
+     * Nur Hex-Werte lassen sich rechnen. Steht dort ein rgba() – bei den
+     * Kantenfarben ueblich –, bleibt es bei der Farbe selbst; der Verlauf ist
+     * dann flach, aber nichts sieht kaputt aus.
+     *
+     * @return array{0:string,1:string,2:string}
+     */
+    private static function foil(string $color): array
+    {
+        $hex = ltrim(trim($color), '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if (preg_match('/^[0-9a-f]{6}$/i', $hex) !== 1) {
+            return [$color, $color, $color];
+        }
+
+        $mix = static function (int $channel, float $amount): int {
+            // amount < 0 dunkelt ab, > 0 hellt auf
+            $target = $amount < 0 ? 0 : 255;
+            return (int) round($channel + ($target - $channel) * abs($amount));
+        };
+
+        $rgb = [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+        $shade = static fn (float $amount): string => sprintf(
+            '#%02X%02X%02X',
+            $mix((int) $rgb[0], $amount),
+            $mix((int) $rgb[1], $amount),
+            $mix((int) $rgb[2], $amount)
+        );
+
+        return [$shade(-0.32), '#' . strtoupper($hex), $shade(0.62)];
+    }
+
     private static function decorationCss(array $theme, string $scope): string
     {
         $css = '';

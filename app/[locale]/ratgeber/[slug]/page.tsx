@@ -118,7 +118,7 @@ export default async function PostPage({ params }: { params: Promise<{ locale: s
         </div>
 
         {post.faq && post.faq.length > 0 && (
-          <div className="mt-20 grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div className="mt-14 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
             <h2 className="headline text-3xl sm:text-4xl">{t.blog.faq}</h2>
             <Reveal delay={100}>
               <Accordion items={post.faq.map((f) => ({ q: f.q[l], a: f.a[l] }))} />

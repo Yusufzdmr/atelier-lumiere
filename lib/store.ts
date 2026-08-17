@@ -74,6 +74,8 @@ export type Invitation = {
   families?: { bride: string; groom: string };
   /** Hochgeladene Bilder als Data-URL (Demo) bzw. Blob-URL (Live) */
   photos: string[];
+  /** Eigenes Hintergrundbild statt der gezeichneten Theme-Szene */
+  backdrop?: string;
   program: ProgramItem[];
   menu: string[];
   musicUrl?: string;

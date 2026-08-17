@@ -13,6 +13,7 @@
 
   --font-display: var(--font-cormorant), "Times New Roman", serif;
   --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-greatvibes), "Apple Chancery", cursive;
 
   --animate-kenburns: kenburns 22s ease-out infinite alternate;
 
@@ -25,6 +26,7 @@
 :root {
   --font-cormorant: "Cormorant Garamond";
   --font-jost: "Jost";
+  --font-greatvibes: "Great Vibes";
   --background: var(--color-cream);
   --foreground: var(--color-ink);
 }
@@ -45,6 +47,7 @@ body {
 
 /* ---------- Typografie ---------- */
 .font-display { font-family: var(--font-display); }
+.font-script { font-family: var(--font-script); font-weight: 400; }
 
 .eyebrow {
   font-size: 0.72rem;
@@ -192,3 +195,190 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
   .env-flap, .env-card, .env-seal, .env-stage { transition: none !important; }
   .rise, .grow-line, .env-hint { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
+
+/* ================================================================
+   Digitale Einladung – Szene, Kalligrafie, Scroll-Animationen
+   ================================================================ */
+
+/* ---------- Kalligrafie ---------- */
+
+/* Blattgold: der Verlauf laeuft langsam durch die Schrift, wie Licht
+   ueber echte Folie. Ohne background-clip faellt es auf die Grundfarbe
+   zurueck, die Namen bleiben also immer lesbar. */
+.foil {
+  background-image: linear-gradient(
+    100deg,
+    var(--foil-a) 0%,
+    var(--foil-b) 26%,
+    var(--foil-c) 42%,
+    var(--foil-b) 58%,
+    var(--foil-a) 100%
+  );
+  background-size: 260% 100%;
+  animation: foilSweep 9s ease-in-out infinite;
+}
+@supports (-webkit-background-clip: text) {
+  .foil {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+@keyframes foilSweep {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* Der Name wird geschrieben: die Maske laeuft von links nach rechts auf.
+   Leicht schraeg, damit die Kante der Federfuehrung folgt. */
+.write {
+  clip-path: polygon(-25% -45%, -25% -45%, -32% 145%, -32% 145%);
+  animation: writeOn 1.5s cubic-bezier(.55,.06,.3,1) var(--write-delay, 0s) both;
+}
+@keyframes writeOn {
+  to { clip-path: polygon(-25% -45%, 145% -45%, 138% 145%, -32% 145%); }
+}
+
+/* Beides auf einem Element: erst schreiben, danach das Gold wandern lassen.
+   Zwei getrennte animation-Regeln ueberschreiben einander – die spaetere
+   gewaenne, und eine der Bewegungen liefe nie. */
+.foil.write {
+  animation:
+    writeOn 1.5s cubic-bezier(.55,.06,.3,1) var(--write-delay, 0s) both,
+    foilSweep 9s ease-in-out calc(var(--write-delay, 0s) + 1.5s) infinite;
+}
+
+/* ---------- Scroll-Reveal innerhalb der Einladung ---------- */
+/* Bisher liefen alle Abschnitte per animation-delay gleichzeitig los –
+   auch die weit unterhalb des Bildschirms. Jetzt startet jeder Abschnitt
+   erst, wenn der Gast ihn erreicht. */
+.iv {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0);
+  transition: opacity .95s cubic-bezier(.16,1,.3,1), transform .95s cubic-bezier(.16,1,.3,1);
+  transition-delay: var(--iv-delay, 0s);
+  will-change: opacity, transform;
+}
+.iv[data-visible="true"] { opacity: 1; transform: none; }
+
+.iv-zoom { transform: translate3d(0, 30px, 0) scale(.965); }
+.iv-zoom[data-visible="true"] { transform: none; }
+
+/* Bild schiebt sich unter einer Blende hervor */
+.iv-mask { opacity: 1; transform: none; clip-path: inset(0 0 100% 0); transition: clip-path 1.2s cubic-bezier(.16,1,.3,1); }
+.iv-mask[data-visible="true"] { clip-path: inset(0 0 0 0); }
+
+/* Linien zeichnen sich */
+.iv-line { opacity: 1; transform: scaleX(0); transform-origin: center; }
+.iv-line[data-visible="true"] { transform: scaleX(1); }
+
+/* ---------- Szene: Hintergrundkunst der Themes ---------- */
+.scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+/* Aquarell-Waschung: zwei weiche Farbwolken, die langsam atmen. */
+.scene-wash { position: absolute; border-radius: 50%; filter: blur(46px); animation: washDrift 26s ease-in-out infinite alternate; }
+@keyframes washDrift {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to   { transform: translate3d(3%, -4%, 0) scale(1.14); }
+}
+
+/* Eckbouquets kommen beim Oeffnen ins Bild und wiegen sich danach. */
+.scene-corner { position: absolute; animation: bouquetIn 1.6s cubic-bezier(.16,1,.3,1) both, bouquetSway 11s ease-in-out 1.6s infinite; }
+@keyframes bouquetIn {
+  from { opacity: 0; transform: translate3d(var(--from-x, -12%), var(--from-y, -10%), 0) scale(.86) rotate(var(--from-r, -6deg)); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes bouquetSway {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50%      { transform: rotate(1.1deg) translateY(-5px); }
+}
+
+/* Der Bogen ueber der Karte zeichnet sich einmal nach. */
+.scene-draw { stroke-dasharray: var(--len, 1200); stroke-dashoffset: var(--len, 1200); animation: drawStroke 2.6s cubic-bezier(.5,0,.2,1) .25s forwards; }
+@keyframes drawStroke { to { stroke-dashoffset: 0; } }
+
+/* Papierpraegung: heller Rand oben, Schatten unten – wirkt gestanzt. */
+.emboss { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(0,0,0,.06), 0 40px 80px -50px rgba(0,0,0,.45); }
+
+/* ---------- Schwebende Partikel ---------- */
+.petal-leaf   { border-radius: 0 70% 0 70%; }
+.petal-round  { border-radius: 50%; }
+.petal-spark  { border-radius: 50%; filter: blur(.4px); box-shadow: 0 0 6px currentColor; }
+
+/* ---------- Kuvert: Feinschliff ---------- */
+/* Das Kuvert atmet, solange es zu ist – ein Hinweis, dass man tippen darf. */
+.env { animation: envBreathe 4.2s ease-in-out infinite; }
+.env[data-open="true"] { animation: none; }
+@keyframes envBreathe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-7px) rotate(-.4deg); }
+}
+
+/* Die Karte kippt beim Herausziehen leicht mit, statt starr zu gleiten. */
+.env[data-open="true"] .env-card {
+  transform: translateY(-112%) rotate(1.2deg) scale(1.02);
+}
+
+/* Lichtschein, der beim Oeffnen ueber das Papier laeuft. */
+.env-card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.6) 50%, transparent 62%);
+  background-size: 300% 100%; background-position: -60% 0; opacity: 0;
+}
+.env[data-open="true"] .env-card::after { animation: cardSheen 1.5s ease-out 1.1s both; }
+@keyframes cardSheen {
+  from { opacity: .9; background-position: -60% 0; }
+  to   { opacity: 0;  background-position: 160% 0; }
+}
+
+/* Das Siegel bricht: kurzer Ruck, dann faellt es nach vorn aus dem Bild. */
+.env[data-open="true"] .env-seal { animation: sealBreak .75s cubic-bezier(.3,1.2,.4,1) both; }
+@keyframes sealBreak {
+  0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  22%  { transform: translate(-50%, -50%) scale(1.14) rotate(-7deg); opacity: 1; }
+  100% { transform: translate(-50%, 40%) scale(1.55) rotate(-22deg); opacity: 0; }
+}
+
+/* Wenn die Buehne verschwindet, zoomt sie sanft in die Karte hinein. */
+.env-stage { transition: opacity .9s ease, visibility .9s, transform .9s cubic-bezier(.5,0,.75,0); }
+.env-stage[data-done="true"] { transform: scale(1.35); }
+
+/* ---------- Telefon-Rahmen der Vorschau ---------- */
+.phone {
+  position: relative; border-radius: 2.6rem; padding: 10px;
+  background: linear-gradient(160deg, #3a3733, #14110f 42%, #26221e);
+  box-shadow: 0 40px 90px -40px rgba(20,17,15,.7), inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.phone-screen { position: relative; overflow: hidden; border-radius: 2rem; background: #fff; }
+/* Kerbe und Lautsprecher – ohne sie sieht der Rahmen wie ein Bilderrahmen aus. */
+.phone::before {
+  content: ""; position: absolute; z-index: 3; top: 16px; left: 50%; transform: translateX(-50%);
+  width: 34%; height: 20px; border-radius: 0 0 14px 14px; background: #14110f;
+}
+.phone-glare {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: 2rem;
+  background: linear-gradient(122deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 34%, rgba(255,255,255,0) 66%, rgba(255,255,255,.07) 100%);
+}
+
+/* ---------- Scroll-Hinweis am Fuss der ersten Seite ---------- */
+.scroll-cue { animation: cueBob 2.2s ease-in-out infinite; }
+@keyframes cueBob {
+  0%, 100% { transform: translateY(0); opacity: .55; }
+  50%      { transform: translateY(7px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil, .env, .scene-corner, .scene-wash, .scene-draw, .scroll-cue,
+  .env[data-open="true"] .env-seal, .env[data-open="true"] .env-card::after { animation: none !important; }
+  .write { clip-path: none !important; animation: none !important; }
+  .scene-draw { stroke-dashoffset: 0 !important; }
+  .iv, .iv-zoom, .iv-mask, .iv-line { opacity: 1 !important; transform: none !important; clip-path: none !important; transition: none !important; }
+  .env-stage[data-done="true"] { transform: none; }
+}
+
+/* Kuvert in der eingebetteten Vorschau: es fuellt den Telefonrahmen aus,
+   nicht den ganzen Bildschirm. */
+.env-stage-embed { position: absolute; perspective: 1100px; }
+.env-stage-embed .env { width: min(230px, 78%); }
+.env-stage-embed .env-seal svg { width: 58px; height: 58px; }
+.env-stage-embed[data-done="true"] { transform: scale(1.2); }

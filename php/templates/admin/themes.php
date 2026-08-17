@@ -241,6 +241,29 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                   <?php endforeach; ?>
                 </select>
               </div>
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Namen (Kalligrafie)' : 'İsimler (kaligrafi)' ?></label>
+                <select name="font_script" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::FONTS as $key => $font) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['fonts']['script'] ?? 'greatvibes') === $key ? 'selected' : '' ?>><?= e($font['label']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Hintergrundkunst' : 'Arka plan çizimi' ?></label>
+                <select name="scene" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::SCENES as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['scene'] ?? 'botanical') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::sceneLabel($key, $de ? 'de' : 'tr')) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+                <p class="mt-1.5 text-[0.7rem] leading-relaxed text-muted">
+                  <?= $de
+                      ? 'Wird gezeichnet, nicht hochgeladen – nimmt die Farben dieses Themas an.'
+                      : 'Yüklenmez, çizilir – bu temanın renklerini alır.' ?>
+                </p>
+              </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="<?= $label ?>"><?= $de ? 'Größe %' : 'Boyut %' ?></label>

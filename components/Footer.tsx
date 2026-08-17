@@ -12,7 +12,7 @@ export default async function Footer({ locale }: { locale: Locale }) {
   const p = (path: string) => `/${locale}${path}`;
 
   return (
-    <footer className="relative mt-24 bg-ink text-cream">
+    <footer className="relative bg-ink text-cream">
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-1">

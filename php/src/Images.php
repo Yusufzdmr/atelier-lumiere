@@ -55,6 +55,23 @@ final class Images
         if ($seed === 'about-portrait') {
             return 'portrait';
         }
+        // Beispielstrecke unter einer Leistung: svc-<anker>-<nummer>. Die
+        // Bildwelt richtet sich nach der Leistung, die Nummer streut sie.
+        if (preg_match('/^svc-(.+)-(\d+)$/', $seed, $m) === 1) {
+            $name = $m[1];
+            $n = (int) $m[2];
+            if (str_contains($name, 'video') || str_contains($name, 'film')) {
+                return ['party', 'couple', 'ceremony', 'prep'][$n % 4];
+            }
+            if (str_contains($name, 'standesamt')) {
+                return ['prep', 'ceremony', 'portrait', 'details'][$n % 4];
+            }
+            if (str_contains($name, 'after')) {
+                return ['couple', 'portrait', 'venue', 'couple'][$n % 4];
+            }
+            return ['ceremony', 'couple', 'details', 'party'][$n % 4];
+        }
+
         if (str_starts_with($seed, 'lum-service-')) {
             if (str_contains($seed, 'video')) {
                 return 'party';

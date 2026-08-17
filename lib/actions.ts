@@ -413,14 +413,20 @@ function readServices(fd: FormData, prev: Service[]): (Service | null)[] {
   return Array.from({ length: count }, (_, i) => {
     const titleDe = str(fd, `s${i}_title_de`);
     if (!titleDe) return null;
-    const before = prev[i];
     return {
       slug: slugify(str(fd, `s${i}_slug`) || titleDe),
-      seed: str(fd, `s${i}_seed`) || before?.seed || `lum-service-${i + 1}`,
+      // Leeres Feld heisst "kein eigenes Bild" und faellt auf das Demo-Bild
+      // zurueck. Frueher stand hier der alte Wert – damit liess sich ein
+      // hochgeladenes Bild ueber die Oberflaeche nie wieder entfernen.
+      seed: str(fd, `s${i}_seed`) || `lum-service-${i + 1}`,
       title: { de: titleDe, tr: str(fd, `s${i}_title_tr`) || titleDe },
       short: { de: str(fd, `s${i}_short_de`), tr: str(fd, `s${i}_short_tr`) },
       body: { de: paras(fd, `s${i}_body_de`), tr: paras(fd, `s${i}_body_tr`) },
       bullets: { de: lines(fd, `s${i}_bullets_de`), tr: lines(fd, `s${i}_bullets_tr`) },
+      // Vier feste Plaetze fuer Beispielbilder. Leere Plaetze fallen raus,
+      // damit die Seite auf die Demo-Strecke zurueckfaellt statt auf Luecken.
+      photos: [0, 1, 2, 3].map((k) => str(fd, `s${i}_photo${k}`)).filter(Boolean),
+      videoUrl: str(fd, `s${i}_video`) || undefined,
     };
   });
 }
@@ -448,6 +454,7 @@ const emptyService = (): Service => ({
   short: { de: "", tr: "" },
   body: { de: [], tr: [] },
   bullets: { de: [], tr: [] },
+  photos: [],
 });
 
 function applyServicesForm(fd: FormData, c: SiteContent) {
@@ -1070,4 +1077,26 @@ export async function removeDraft(formData: FormData) {
   await requireAdmin();
   await deleteDraft(str(formData, "token"));
   revalidatePath("/", "layout");
+}
+
+/* ----------------------- Bilder in Inhaltsfeldern ----------------------- */
+
+/**
+ * Laedt ein Bild hoch und gibt nur die URL zurueck – ohne den Inhalt zu
+ * speichern.
+ *
+ * Bewusst so herum: Die Leistungen liegen in einem einzigen grossen Formular.
+ * Wuerde der Upload den Inhalt gleich mitschreiben und die Seite neu laden,
+ * waeren alle noch nicht gespeicherten Textaenderungen weg. Stattdessen
+ * traegt das Feld die URL in das Formular ein, und der Kunde speichert wie
+ * gewohnt am Ende.
+ */
+export async function uploadContentImage(folder: string, photo: string): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+  if (typeof photo !== "string" || !photo.startsWith("data:image/")) return { error: "no-image" };
+  if (photo.length > 1_400_000) return { error: "too-large" };
+
+  const safeFolder = String(folder).replace(/[^a-z0-9/_-]/gi, "").slice(0, 60) || "inhalte";
+  const [url] = await saveUploads([photo], safeFolder);
+  return url ? { url } : { error: "upload-failed" };
 }

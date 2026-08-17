@@ -33,6 +33,18 @@ function bucketFor(seed: string): Bucket {
     if (seed.includes("after")) return "couple";
     return "ceremony";
   }
+  // Beispielstrecke unter einer Leistung: svc-<anker>-<nummer>. Die Bildwelt
+  // richtet sich nach der Leistung, die Nummer sorgt fuer Abwechslung.
+  const svc = /^svc-(.+)-(\d+)$/.exec(seed);
+  if (svc) {
+    const [, name, n] = svc;
+    const idx = Number(n);
+    if (name.includes("video") || name.includes("film")) return (["party", "couple", "ceremony", "prep"] as Bucket[])[idx % 4];
+    if (name.includes("standesamt")) return (["prep", "ceremony", "portrait", "details"] as Bucket[])[idx % 4];
+    if (name.includes("after")) return (["couple", "portrait", "venue", "couple"] as Bucket[])[idx % 4];
+    return (["ceremony", "couple", "details", "party"] as Bucket[])[idx % 4];
+  }
+
   if (seed === "lumiere-tool-gallery") return "details";
   if (seed === "lumiere-tool-invite") return "details";
   if (seed === "invite-hero" || seed === "prices-hero") return "details";

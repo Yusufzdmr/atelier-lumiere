@@ -247,9 +247,13 @@ final class AdminController
             $next['css'] = Themes::safeCss((string) ($_POST['css'] ?? ''));
 
             $next['family'] = Security::clean($_POST['family'] ?? '', 60);
+            $next['scene'] = in_array((string) ($_POST['scene'] ?? ''), Themes::SCENES, true)
+                ? (string) $_POST['scene']
+                : 'botanical';
             $next['fonts'] = [
                 'display'  => array_key_exists((string) ($_POST['font_display'] ?? ''), Themes::FONTS) ? (string) $_POST['font_display'] : 'cormorant',
                 'body'     => array_key_exists((string) ($_POST['font_body'] ?? ''), Themes::FONTS) ? (string) $_POST['font_body'] : 'jost',
+                'script'   => array_key_exists((string) ($_POST['font_script'] ?? ''), Themes::FONTS) ? (string) $_POST['font_script'] : 'greatvibes',
                 'scale'    => (string) max(60, min(160, (int) ($_POST['font_scale'] ?? 100))),
                 'tracking' => (string) max(-30, min(80, (int) ($_POST['font_tracking'] ?? 0))),
             ];

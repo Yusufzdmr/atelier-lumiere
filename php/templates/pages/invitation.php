@@ -19,6 +19,7 @@
 
 use function Atelier\e;
 use Atelier\I18n;
+use Atelier\Scenes;
 use Atelier\Video;
 
 $de = $locale === 'de';
@@ -31,6 +32,9 @@ $groom = (string) ($invitation['groom'] ?? '');
 $initials = mb_strtoupper(mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1));
 // Persönliche Fassung: „Liebe Familie Müller“ steht über allem anderen.
 $guestName = (string) (($guest ?? null)['name'] ?? '');
+// Gezeichnete Hintergrundkunst des Themas – leer, wenn das Thema keine will.
+$scene = Scenes::html((string) ($theme['scene'] ?? 'botanical'), $theme);
+$occasion = \Atelier\Invitations::occasionLine((string) ($invitation['eventType'] ?? ''), $locale);
 
 /**
  * Die Schmuckelemente eines Ortes ausgeben.
@@ -85,21 +89,48 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
     </div>
   </div>
 <?php endif; ?>
+<?= $scene ?>
+
+  <?php /* Schwebende Blaetter in der Blattfarbe des Themas. Rein zierend,
+           deshalb ohne Beschriftung und ohne Klickflaeche. */ ?>
+  <div class="t-petals" aria-hidden="true">
+    <?php for ($i = 0; $i < 12; $i++) : ?>
+      <span class="t-petal" style="left: <?= ($i * 8.4 + 3) % 96 ?>%; background: <?= e((string) $theme['petal']) ?>; opacity: .45;
+                                   animation-duration: <?= 18 + ($i % 5) * 5 ?>s; animation-delay: -<?= $i * 3 ?>s;
+                                   transform: scale(<?= 0.7 + ($i % 4) * 0.22 ?>)"></span>
+    <?php endfor; ?>
+  </div>
+
 <?= $decorations('page') ?>
-  <?php /* Umschlag – verschwindet nach dem Antippen */ ?>
-  <div class="fixed inset-0 z-50 flex items-center justify-center px-6 transition-opacity duration-700"
+  <?php /* Umschlag – verschwindet nach dem Antippen.
+           Klappe, Karte und Siegel sind einzelne Flaechen: erst bricht das
+           Siegel, dann schlaegt die Klappe auf, dann hebt sich die Karte
+           heraus. Vorher war es ein Rechteck, das ausblendete. */ ?>
+  <div class="t-envelope-stage fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
        style="background: <?= e((string) $theme['bg']) ?>">
-    <button type="button" data-envelope-open class="t-envelope relative flex h-56 w-full max-w-sm items-center justify-center border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
-            style="background: <?= e((string) $theme['envelope']) ?>; border-color: <?= e((string) $theme['envelopeEdge']) ?>"
+    <?= $scene ?>
+
+    <button type="button" data-envelope-open
+            class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
+            style="aspect-ratio: 8 / 5; background: <?= e((string) $theme['envelope']) ?>; border-color: <?= e((string) $theme['envelopeEdge']) ?>"
             aria-label="<?= $de ? 'Einladung öffnen' : 'Open invitation' ?>">
-      <span class="t-seal flex h-16 w-16 items-center justify-center rounded-full font-display text-lg"
+      <span class="t-sheet" style="background: <?= e((string) $theme['paper']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
+        <span class="font-display text-2xl font-light tracking-[0.14em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e($initials) ?></span>
+      </span>
+      <span class="t-flap" style="background: <?= e((string) $theme['envelopeFlap']) ?>"></span>
+      <span class="t-seal absolute left-1/2 top-[46%] z-[6] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-lg"
             style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
       <?= $decorations('envelope') ?>
-      <span class="absolute bottom-5 text-[0.6rem] uppercase tracking-[0.28em]" style="color: <?= e((string) $theme['soft']) ?>">
-        <?= $de ? 'Tippen zum Öffnen' : 'Tap to open' ?>
-      </span>
     </button>
+
+    <div class="t-hint relative text-center">
+      <div class="text-[0.6rem] uppercase tracking-[0.34em]" style="color: <?= e((string) $theme['soft']) ?>"><?= e($occasion) ?></div>
+      <div class="t-script foil mt-3 text-4xl leading-none"><?= e($bride) ?> &amp; <?= e($groom) ?></div>
+      <div class="mt-4 text-[0.62rem] uppercase tracking-[0.28em]" style="color: <?= e((string) $theme['accent']) ?>">
+        <?= $de ? 'Tippen zum Öffnen' : 'Tap to open' ?>
+      </div>
+    </div>
   </div>
 
   <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
@@ -122,16 +153,18 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
           <?= e(\Atelier\Invitations::occasionLine((string) ($invitation['eventType'] ?? ''), $locale)) ?>
         </div>
 
-        <h1 class="t-name font-display mt-6 flex flex-col leading-tight">
-          <span class="text-4xl font-light sm:text-5xl"><?= e($bride) ?></span>
-          <span class="my-1 text-2xl italic" style="color: <?= e((string) $theme['accent']) ?>">&amp;</span>
-          <span class="text-4xl font-light sm:text-5xl"><?= e($groom) ?></span>
+        <?php /* Die Namen werden geschrieben: die Maske laeuft von links auf,
+                 danach wandert das Blattgold langsam durch die Buchstaben. */ ?>
+        <h1 class="t-name mt-7 flex flex-col items-center gap-1">
+          <span class="t-script foil write text-[3.1rem] leading-[1.05] sm:text-[4.4rem]" style="--write-delay: .45s"><?= e($bride) ?></span>
+          <span class="font-display text-2xl italic sm:text-3xl" style="color: <?= e((string) $theme['accent']) ?>">&amp;</span>
+          <span class="t-script foil write text-[3.1rem] leading-[1.05] sm:text-[4.4rem]" style="--write-delay: 1.1s"><?= e($groom) ?></span>
         </h1>
 
         <div class="mx-auto mt-8 h-px w-28" style="background: <?= e((string) $theme['accent']) ?>"></div>
 
         <?php foreach ($events as $i => $event) : ?>
-          <div class="<?= $i > 0 ? 'mt-8 border-t pt-8' : 'mt-8' ?>" style="<?= $i > 0 ? 'border-color:' . e((string) $theme['paperEdge']) : '' ?>">
+          <div class="iv <?= $i > 0 ? 'mt-8 border-t pt-8' : 'mt-8' ?>" style="<?= $i > 0 ? 'border-color:' . e((string) $theme['paperEdge']) : '' ?>">
             <?php if (count($events) > 1 && ($event['name'] ?? '') !== '') : ?>
               <div class="text-[0.6rem] uppercase tracking-[0.24em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e((string) $event['name']) ?></div>
             <?php endif; ?>
@@ -158,13 +191,13 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endforeach; ?>
 
         <?php if (($invitation['message'] ?? '') !== '') : ?>
-          <p class="mx-auto mt-10 max-w-md text-[0.98rem] leading-relaxed" style="color: <?= e((string) $theme['soft']) ?>">
+          <p class="iv mx-auto mt-10 max-w-md text-[0.98rem] leading-relaxed" style="color: <?= e((string) $theme['soft']) ?>">
             <?= e((string) $invitation['message']) ?>
           </p>
         <?php endif; ?>
 
         <?php if (!empty($sections['countdown']) && ($first['date'] ?? '') !== '') : ?>
-          <div class="mt-10 flex justify-center gap-6" data-countdown="<?= e((string) $first['date'] . 'T' . ((string) ($first['time'] ?? '12:00'))) ?>">
+          <div class="iv mt-10 flex justify-center gap-6" data-countdown="<?= e((string) $first['date'] . 'T' . ((string) ($first['time'] ?? '12:00'))) ?>">
             <?php foreach (['days' => 'countdownDays', 'hours' => 'countdownHours', 'minutes' => 'countdownMin', 'seconds' => 'countdownSec'] as $key => $dictKey) : ?>
               <div>
                 <div class="font-display text-3xl font-light" data-<?= e($key) ?>>00</div>
@@ -175,13 +208,13 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <?php if (!empty($sections['family']) && !empty($invitation['families'])) : ?>
-          <div class="mt-10 text-[0.8rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>">
+          <div class="iv mt-10 text-[0.8rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>">
             <?= e((string) ($invitation['families']['bride'] ?? '')) ?> · <?= e((string) ($invitation['families']['groom'] ?? '')) ?>
           </div>
         <?php endif; ?>
 
         <?php if ($photos !== []) : ?>
-          <div class="mt-12 grid grid-cols-2 gap-3">
+          <div class="iv iv-mask mt-12 grid grid-cols-2 gap-3">
             <?php foreach (array_slice($photos, 0, 4) as $i => $photo) : ?>
               <img src="<?= e((string) $photo) ?>" alt="<?= e($bride . ' & ' . $groom) ?>" loading="lazy" decoding="async"
                    class="h-full w-full object-cover" style="aspect-ratio: <?= $i % 3 === 0 ? '3/4' : '1/1' ?>">
@@ -190,7 +223,7 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <?php if (!empty($sections['program']) && ($invitation['program'] ?? []) !== []) : ?>
-          <div class="mt-12 text-left">
+          <div class="iv mt-12 text-left">
             <div class="text-center text-[0.6rem] uppercase tracking-[0.24em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e(I18n::t('invite.programTitle')) ?></div>
             <ol class="mx-auto mt-6 max-w-sm space-y-4">
               <?php foreach ((array) $invitation['program'] as $item) : ?>
@@ -204,7 +237,7 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <?php if (!empty($sections['menu']) && ($invitation['menu'] ?? []) !== []) : ?>
-          <div class="mt-12">
+          <div class="iv mt-12">
             <div class="text-[0.6rem] uppercase tracking-[0.24em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e(I18n::t('invite.menuTitle')) ?></div>
             <ul class="mt-5 space-y-2 text-[0.92rem]">
               <?php foreach ((array) $invitation['menu'] as $dish) : ?>
@@ -215,11 +248,11 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <?php if (!empty($sections['video']) && Video::isSupported((string) ($invitation['videoUrl'] ?? ''))) : ?>
-          <div class="mt-12"><?= Video::embedBox((string) $invitation['videoUrl'], $bride . ' & ' . $groom, (string) ($photos[0] ?? '')) ?></div>
+          <div class="iv mt-12"><?= Video::embedBox((string) $invitation['videoUrl'], $bride . ' & ' . $groom, (string) ($photos[0] ?? '')) ?></div>
         <?php endif; ?>
 
         <?php if (!empty($sections['rsvp'])) : ?>
-          <div class="mt-14 border-t pt-10" style="border-color: <?= e((string) $theme['paperEdge']) ?>">
+          <div class="iv mt-14 border-t pt-10" style="border-color: <?= e((string) $theme['paperEdge']) ?>">
             <div class="text-[0.6rem] uppercase tracking-[0.24em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e(I18n::t('invite.rsvpTitle')) ?></div>
 
             <?php if ($sent) : ?>
@@ -277,11 +310,11 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <?php endif; ?>
 
         <?php if (($invitation['closing'] ?? '') !== '') : ?>
-          <p class="mt-12 font-display text-lg italic"><?= e((string) $invitation['closing']) ?></p>
+          <p class="iv mt-12 font-display text-lg italic"><?= e((string) $invitation['closing']) ?></p>
         <?php endif; ?>
 
         <?php if (($invitation['hashtag'] ?? '') !== '') : ?>
-          <div class="mt-6 text-[0.72rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e((string) $invitation['hashtag']) ?></div>
+          <div class="iv t-script foil mt-8 text-3xl"><?= e((string) $invitation['hashtag']) ?></div>
         <?php endif; ?>
       </div>
     </div>

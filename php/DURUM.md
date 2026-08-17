@@ -577,6 +577,73 @@ Yani „Sevgili Yılmaz ailesi" bugün hiçbir kartta çıkmıyor. Davetiyenin �
 bir dili olmalı mı, sorusu açık; kod tarafı hazır (sözlükte `tr` zaten var,
 `salutation` yalnız `de`/`en` ayrımı yapıyor).
 
+## 18 Ağustos — hizmet bölümleri örnek alıyor, davetiye görselleşiyor
+
+Müşteri iki şey söyledi. Birincisi: „videoya basıyorsun, ne yaptığımızı yazıyor
+ama **örnek video yok**; resim çekiyoruz yazıyor, **örnek resim yok**." İkincisi:
+„sayfalarda çok boşluk var." Üçüncü olarak da davetiyenin „adam akıllı,
+animasyonlu" olmasını istedi ve örnek olarak in-vitely.com'u gösterdi.
+
+### Hizmet bölümleri (`/leistungen`)
+
+Her hizmetin altında artık **dört örnek görsel** ve isteğe bağlı bir **örnek
+film** var.
+
+| Nerede | Ne değişti |
+|---|---|
+| `templates/pages/services.php` | Metnin altına „Beispiele" şeridi (4 kare) ve varsa „Beispielfilm" (iki tıklamalı `Video::embedBox`) |
+| `Controllers/ListAdminController.php` | Hizmet sekmesine `photos` bloğu (yükle/sil/kapak yap — liste düzenleyicisinin hazır mekanizması) ve `videoUrl` alanı |
+| `src/Images.php` | `svc-<anker>-<n>` anahtarları hizmete göre eşleniyor: video→parti, standesamt→hazırlık, after→çift, diğerleri→tören |
+
+Kendi fotoğrafı yüklenmediği sürece hizmete **uygun** temsili görseller çıkıyor;
+bir kare bile yüklenince temsili olanlar tamamen kayboluyor (portfolyodaki
+davranışın aynısı).
+
+Ayrıca bölümlerin üstüne **yapışkan bir kapitel şeridi** kondu (01 Fotoğraf,
+02 Video, 03 Standesamt, 04 After-Wedding). Müşteri „insan ne kadar az tıklarsa
+o kadar iyi" dedi — o yüzden bölümler ayrı sayfalara **bölünmedi**; tek sayfa
+kaldı, ama artık ne olduğu görünüyor ve çapaya atlanabiliyor.
+
+### Boşluk
+
+`Ui::sectionOpen` masaüstünde `sm:py-28` (112 px) idi → `sm:py-20 lg:py-24`.
+İki bölüm arasında 224 px boşluk oluyordu. Telefonda `py-14` zaten daha önce
+düşürülmüştü, ona dokunulmadı. `Ui::pageHero` 52vh/380px → 46vh/330px, alt
+boşluğu 56 → 40 px. Hizmet blokları arası 96 → 64/80 px.
+
+### Davetiye
+
+| Ne | Nerede |
+|---|---|
+| **Kaligrafi fontu** | Great Vibes, self-hosted (`public/fonts/greatvibes-*.woff2`, `assets/fonts.css`). OFL lisanslı, latin + latin-ext (Türkçe ç ğ ş İ dahil). `Themes::FONTS`'a girdi, tema başına „Namen (Kalligrafie)" olarak seçiliyor |
+| **Blattgold** | `--t-foil-a/b/c`, temanın **accent renginden hesaplanıyor** (`Themes::foil()`). Üç ayrı renk alanı açmadık; her tema kendiliğinden alıyor. Hex olmayan değerlerde (rgba) düz renge düşüyor |
+| **İsimler yazılıyor** | `.write` maskesi soldan açılıyor, bitince `.foil` altını yürütüyor. **Dikkat:** ikisi ayrı `animation` kuralı olursa sonraki öncekini eziyor — bu yüzden `.foil.write` diye birleşik bir kural var |
+| **Zarf** | Artık dikdörtgen değil: `.t-flap` (kapak), `.t-sheet` (kart), `.t-seal` (mühür). Sıra: mühür kırılır → kapak açılır → kart yukarı çıkar. `invitation.js` `data-open="true"` koyuyor ve gizlemeyi 700 ms'den 2600 ms'ye aldı, yoksa animasyon oynuyordu ama kimse görmüyordu |
+| **Sahneler** | `src/Scenes.php` — çizilen SVG: botanical, leafy, bouquet, deco, lace, pampas. Temanın renklerini alıyor, dosya yüklemiyor. Panelde „Hintergrundkunst" seçimi. Alanı olmayan eski temalar id'sine göre uygun sahneyi alıyor (`Themes::defaultScene`) |
+| **Scroll ile geliş** | Kartın 11 bölümü `.iv` sınıfıyla; `invitation.js` IntersectionObserver ile açıyor. **Zarf açılmadan başlatılmıyor** — yoksa gözlemci bölümleri hâlâ zarfın arkasındayken „görüldü" sayıyor ve kart açıldığında her şey hareketsiz duruyor |
+| **Yapraklar** | 12 parça, temanın `petal` rengiyle süzülüyor |
+| Sihirbaz önizlemesi | İsimler orada da kaligrafi (`invite-wizard.php`) |
+
+Tuzak: SVG'de `rotate(a)` **başlangıç noktası etrafında** döndürür. Yaprakları
+elipsle çizip `rotate(-28)` deyince zeytin dalı değil, ilmek zinciri çıktı.
+Şimdi yapraklar iki yaydan oluşan sivri oval ve sapın o noktadaki yönüne göre
+duruyorlar (`rotate(açı x y)` ile).
+
+Great Vibes'ın büyük harflerinde (J, M) **ayrık süs kıvrımı** var — kırpma
+sanılıp maske genişletildi, sonra düz bir div'de yazdırılıp fontun kendi
+tasarımı olduğu görüldü. Maske geniş kaldı, zararı yok.
+
+`npx @tailwindcss/cli -i php/assets/app.css -o php/public/assets/style.css --minify`
+**çalıştırıldı** — yeni sınıflar olmadan hiçbiri görünmez. 73.9 KB → 81.9 KB.
+
+### Next.js tarafı
+
+Aynı işler `../components/InviteCard.tsx`, `../components/invite/Scenes.tsx`,
+`../components/invite/Rise.tsx` ve `../app/globals.css` içinde de yapıldı;
+Next sürümünde ayrıca builder'ın önizlemesi gerçek telefon çerçevesinde
+**açılabilir** hale geldi. Ama canlı olan bu taraf — orası referans olarak
+duruyor, oradan buraya bir aktarım **yok**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

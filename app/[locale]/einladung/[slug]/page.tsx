@@ -56,6 +56,7 @@ export default async function InvitePage({ params }: { params: Promise<{ locale:
         closing: inv.closing,
         families: inv.families,
         photos: inv.photos ?? [],
+        backdrop: inv.backdrop,
         program: inv.program ?? [],
         menu: inv.menu ?? [],
         musicUrl: inv.musicUrl,

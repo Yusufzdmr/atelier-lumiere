@@ -492,10 +492,15 @@ $steps = $de
               <div class="mt-5 text-[0.5rem] uppercase tracking-[0.32em]" data-preview-soft data-preview-occasion
                    style="color: <?= e((string) $themes[0]['soft']) ?>"><?= e(Invitations::occasionLine($old('eventType', 'wedding'), $locale)) ?></div>
 
-              <div class="font-display mt-4 flex flex-col leading-tight">
-                <span class="text-2xl font-light" data-preview-bride-out>Ayşe</span>
-                <span class="my-0.5 text-lg italic" data-preview-accent style="color: <?= e((string) $themes[0]['accent']) ?>">&amp;</span>
-                <span class="text-2xl font-light" data-preview-groom-out>Mehmet</span>
+              <?php /* Dieselbe Kalligrafie wie auf der fertigen Einladung. Die Farbe
+                       setzt das Skript beim Themenwechsel (data-preview-accent). */ ?>
+              <div class="mt-4 flex flex-col leading-none">
+                <span class="t-script text-4xl" data-preview-bride-out data-preview-accent
+                      style="color: <?= e((string) $themes[0]['accent']) ?>">Ayşe</span>
+                <span class="font-display my-1 text-lg italic" data-preview-accent
+                      style="color: <?= e((string) $themes[0]['accent']) ?>">&amp;</span>
+                <span class="t-script text-4xl" data-preview-groom-out data-preview-accent
+                      style="color: <?= e((string) $themes[0]['accent']) ?>">Mehmet</span>
               </div>
 
               <div class="mx-auto mt-4 h-px w-24" data-preview-line style="background: <?= e((string) $themes[0]['accent']) ?>"></div>

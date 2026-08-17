@@ -76,6 +76,14 @@ final class ListAdminController
                 'label'   => $de ? 'Diese Leistung löschen' : 'Bu hizmeti sil',
                 'confirm' => $de ? 'Diese Leistung wirklich löschen?' : 'Bu hizmet silinsin mi?',
             ],
+            // Beispielaufnahmen der Leistung. Ohne sie erzaehlt der Abschnitt
+            // nur, was wir tun – zu sehen ist es nirgends.
+            'photos' => fn (array $item): array => [
+                'hint' => $de
+                    ? 'Diese Bilder stehen unter dem Text der Leistung. Mehrere auf einmal möglich; die ersten vier erscheinen auf der Seite. Ohne eigene Bilder zeigt die Seite Platzhalter.'
+                    : 'Bu görseller hizmet metninin altında görünür. Aynı anda birden çok seçebilirsiniz; sayfada ilk dördü çıkar. Kendi görseliniz yoksa temsili görseller gösterilir.',
+                'list' => $this->serviceShots($item),
+            ],
             'sections' => fn (int $i): array => [[
                 'fields' => [
                     ['path' => "services.$i.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
@@ -87,7 +95,13 @@ final class ListAdminController
                     ['path' => "services.$i.bullets.de", 'label' => $de ? 'Enthalten (DE) – eine Zeile je Punkt' : 'İçerik (DE) – her satıra bir madde', 'type' => 'lines', 'rows' => 5],
                     ['path' => "services.$i.bullets.en", 'label' => $de ? 'Enthalten (EN)' : 'İçerik (EN)', 'type' => 'lines', 'rows' => 5],
                     ['path' => "services.$i.slug", 'label' => $de ? 'Anker (URL-Teil)' : 'Bağlantı adı (URL)', 'hint' => $de ? 'Ändern macht alte Links auf diesen Abschnitt ungültig.' : 'Değiştirmek bu bölüme giden eski bağlantıları bozar.'],
-                    ['path' => "services.$i.seed", 'label' => $de ? 'Bild-Kennung' : 'Görsel anahtarı', 'hint' => $de ? 'Platzhalter-Name oder eine Bildadresse.' : 'Temsili görsel adı ya da bir görsel adresi.'],
+                    ['path' => "services.$i.seed", 'label' => $de ? 'Bild-Kennung (grosses Bild oben)' : 'Görsel anahtarı (üstteki büyük görsel)', 'hint' => $de ? 'Platzhalter-Name oder eine Bildadresse.' : 'Temsili görsel adı ya da bir görsel adresi.'],
+                    [
+                        'path' => "services.$i.videoUrl", 'label' => $de ? 'Beispielfilm (YouTube / Vimeo)' : 'Örnek film (YouTube / Vimeo)', 'wide' => true,
+                        'hint' => $de
+                            ? 'Link einfügen – der Film erscheint unter den Beispielbildern. Leer lassen, wenn es keinen gibt.'
+                            : 'Bağlantıyı yapıştırın – film örnek görsellerin altında görünür. Yoksa boş bırakın.',
+                    ],
                 ],
             ]],
             'add' => [
@@ -916,6 +930,33 @@ final class ListAdminController
             }
         }
 
+        return $photos;
+    }
+
+    /**
+     * Beispielbilder einer Leistung fuer den Panel-Streifen.
+     *
+     * Ohne eigene Aufnahmen stehen dort dieselben vier Platzhalter, die auch
+     * die Seite zeigt – sonst sieht der Kunde im Panel etwas anderes als
+     * seine Besucher.
+     *
+     * @param array<string,mixed> $item
+     * @return list<array{src:string,upload:bool,index:int}>
+     */
+    private function serviceShots(array $item): array
+    {
+        $photos = [];
+        foreach (array_values(array_filter((array) ($item['uploads'] ?? []), 'is_string')) as $i => $url) {
+            $photos[] = ['src' => $url, 'upload' => true, 'index' => $i];
+        }
+        if ($photos !== []) {
+            return $photos;
+        }
+
+        $slug = (string) ($item['slug'] ?? '');
+        for ($k = 0; $k < 4; $k++) {
+            $photos[] = ['src' => Images::img("svc-$slug-$k", 400, 520), 'upload' => false, 'index' => -1];
+        }
         return $photos;
     }
 

@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Sprig, Divider, WaxSeal } from "./invite/Ornaments";
+import { Sprig, WaxSeal } from "./invite/Ornaments";
+import InviteCard, { type InviteView } from "./InviteCard";
 import { getDict } from "@/lib/dict";
 import { track } from "@/lib/track";
-import { slugify, resizeImage, dateBlocks, defaultSections } from "@/lib/invite";
+import { slugify, resizeImage, defaultSections } from "@/lib/invite";
 import { themes, themeById } from "@/lib/themes";
-import { eventTypes, eventTypeById, headline } from "@/lib/events";
+import { eventTypes, eventTypeById } from "@/lib/events";
 import { SECTION_PRICES, priceLines, totals, euro } from "@/lib/pricing";
 import type { EventType, InviteEvent, InviteSections, ProgramItem } from "@/lib/store";
 import type { Locale } from "@/lib/i18n";
@@ -32,6 +33,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
   const [done, setDone] = useState<{ url: string; path: string; slug: string; price: number } | null>(null);
   const [payState, setPayState] = useState<"idle" | "loading" | "unconfigured">("idle");
   const fileRef = useRef<HTMLInputElement>(null);
+  const backdropRef = useRef<HTMLInputElement>(null);
 
   const [f, setF] = useState({
     eventType: "wedding" as EventType,
@@ -59,6 +61,9 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
   ]);
   const [menu, setMenu] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [backdrop, setBackdrop] = useState("");
+  /** Zaehler zum Neu-Einhaengen der Vorschau – so laeuft die Oeffnung erneut. */
+  const [replay, setReplay] = useState(0);
 
   /** Gutschein: geprüft wird auf dem Server, nie im Browser. */
   const [coupon, setCoupon] = useState<{ checking: boolean; ok: boolean; reason?: string }>({
@@ -86,6 +91,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
     program?: ProgramItem[];
     menu?: string[];
     photos?: string[];
+    backdrop?: string;
     step?: number;
   };
 
@@ -97,6 +103,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
     if (Array.isArray(data.program)) setProgram(data.program);
     if (Array.isArray(data.menu)) setMenu(data.menu);
     if (Array.isArray(data.photos)) setPhotos(data.photos);
+    if (typeof data.backdrop === "string") setBackdrop(data.backdrop);
     if (typeof data.step === "number") setStep(Math.max(0, Math.min(data.step, LAST)));
   }
 
@@ -175,7 +182,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
         body: JSON.stringify({
           token: draft?.token,
           label: `${f.bride} & ${f.groom}`.trim() === "&" ? "" : `${f.bride} & ${f.groom}`,
-          data: { f, events, sections, program, menu, photos, step },
+          data: { f, events, sections, program, menu, photos, backdrop, step },
         }),
       });
       const json = await res.json();
@@ -198,7 +205,27 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
   const autoSlug = useMemo(() => f.slug || slugify(`${f.bride}-${f.groom}`) || "einladung", [f.slug, f.bride, f.groom]);
   const isFree = coupon.ok;
   const initials = `${f.bride.charAt(0) || "A"}${f.groom.charAt(0) || "M"}`.toUpperCase();
-  const title = headline[f.eventType]?.[locale] ?? t.weMarry;
+
+  /** Der Formularstand als Einladung, wie die Gaeste sie sehen. */
+  const previewInvite: InviteView = {
+    slug: autoSlug,
+    bride: f.bride || "Ayşe",
+    groom: f.groom || "Mehmet",
+    eventType: f.eventType,
+    events,
+    message: f.message,
+    closing: f.closing || undefined,
+    families: sections.family ? { bride: f.familyBride, groom: f.familyGroom } : undefined,
+    photos,
+    program,
+    menu: menu.filter(Boolean),
+    musicUrl: f.musicUrl || undefined,
+    videoUrl: f.videoUrl || undefined,
+    sections,
+    hashtag: f.hashtag || undefined,
+    theme: f.theme,
+    backdrop: backdrop || undefined,
+  };
 
   const steps = [t.stepEvent, t.stepTheme, t.stepCouple, t.stepPlace, t.stepSections, t.stepPhotos, t.stepFinish];
   const LAST = steps.length - 1;
@@ -229,6 +256,20 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
     }
   }
 
+  async function onBackdrop(list: FileList | null) {
+    const file = list?.[0];
+    if (!file?.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      setBackdrop(await resizeImage(file, 1600, 0.8));
+    } catch {
+      setError(de ? "Bild konnte nicht gelesen werden." : "Görsel okunamadı.");
+    } finally {
+      setUploading(false);
+      if (backdropRef.current) backdropRef.current.value = "";
+    }
+  }
+
   async function create() {
     setBusy(true);
     setError("");
@@ -242,6 +283,7 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
         program,
         menu,
         photos,
+        backdrop,
         locale,
       };
       const res = await fetch("/api/einladung", {
@@ -644,9 +686,12 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
                   )}
                   <button
                     onClick={() => setPhotos((p) => p.filter((_, k) => k !== i))}
-                    className="absolute inset-x-0 bottom-0 bg-ink/80 py-2 text-[0.6rem] uppercase tracking-[0.16em] text-cream opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label={t.photoRemove}
+                    className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-ink/85 text-cream transition-colors hover:bg-red-700"
                   >
-                    {t.photoRemove}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
                   </button>
                 </div>
               ))}
@@ -668,6 +713,38 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => onFiles(e.target.files)} className="hidden" />
+
+            {/* Eigener Hintergrund. Wer keinen waehlt, bekommt die gezeichnete
+                Szene des Themes – deshalb ist das Feld bewusst optional. */}
+            <div className="mt-10 border-t border-sand-deep pt-8">
+              <h3 className="text-[0.66rem] uppercase tracking-[0.2em] text-gold">{t.backdropTitle}</h3>
+              <p className="mt-2 max-w-md text-[0.8rem] leading-relaxed text-muted">{t.backdropHint}</p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-4">
+                {backdrop && (
+                  <div className="relative h-24 w-20 overflow-hidden border border-sand-deep">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- lokale Vorschau */}
+                    <img src={backdrop} alt="" className="h-full w-full object-cover" />
+                    <button
+                      onClick={() => setBackdrop("")}
+                      aria-label={t.photoRemove}
+                      className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-ink/85 text-cream transition-colors hover:bg-red-700"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                        <path d="M6 6l12 12M18 6L6 18" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => backdropRef.current?.click()}
+                  className="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream"
+                >
+                  {uploading ? t.photoWorking : t.backdropAdd}
+                </button>
+              </div>
+              <input ref={backdropRef} type="file" accept="image/*" onChange={(e) => onBackdrop(e.target.files)} className="hidden" />
+            </div>
           </div>
         )}
 
@@ -906,116 +983,28 @@ export default function InviteBuilder({ locale }: { locale: Locale }) {
       </div>
 
       {/* ---------- Live-Vorschau ---------- */}
+      {/* Kein Nachbau mehr, sondern die echte Einladung im Telefonrahmen:
+          dieselbe Komponente, die die Gaeste spaeter oeffnen. Was hier steht,
+          steht spaeter genauso auf dem Handy. */}
       <aside className="lg:sticky lg:top-28 lg:self-start">
-        <div className="text-[0.64rem] uppercase tracking-[0.2em] text-muted">{t.preview}</div>
-        <div className="mt-4 overflow-hidden rounded-[2.2rem] border-[9px] border-ink shadow-[0_30px_70px_-30px_rgba(20,17,15,.55)]">
-          <div
-            className="flex min-h-[540px] flex-col items-center px-6 py-10 text-center"
-            style={{ background: th.paper, backgroundImage: th.texture, color: th.fg }}
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-[0.64rem] uppercase tracking-[0.2em] text-muted">{t.preview}</span>
+          <button
+            onClick={() => setReplay((n) => n + 1)}
+            className="text-[0.62rem] uppercase tracking-[0.16em] text-muted underline-offset-4 transition-colors hover:text-gold hover:underline"
           >
-            <span style={{ color: th.accent }}>
-              <Sprig className="h-4 w-24 opacity-80" />
-            </span>
-
-            {sections.family && (f.familyBride || f.familyGroom) && (
-              <div className="mt-4 text-[0.52rem] uppercase tracking-[0.2em]" style={{ color: th.soft }}>
-                {f.familyBride || "…"} · {f.familyGroom || "…"}
-              </div>
-            )}
-
-            <div className="mt-4 text-[0.52rem] uppercase tracking-[0.32em]" style={{ color: th.soft }}>
-              {title}
-            </div>
-
-            <div className="font-display mt-4 flex flex-col leading-tight">
-              <span className="text-2xl font-light">{f.bride || "Ayşe"}</span>
-              <span className="my-0.5 text-lg italic" style={{ color: th.accent }}>
-                &amp;
-              </span>
-              <span className="text-2xl font-light">{f.groom || "Mehmet"}</span>
-            </div>
-
-            <span className="mt-4" style={{ color: th.accent }}>
-              <Divider className="h-3 w-36" />
-            </span>
-
-            {events.map((ev, i) => {
-              const d = ev.date ? dateBlocks(ev.date, locale) : null;
-              return (
-                <div key={i} className="mt-4">
-                  {events.length > 1 && ev.name && (
-                    <div className="text-[0.5rem] uppercase tracking-[0.22em]" style={{ color: th.accent }}>
-                      {ev.name}
-                    </div>
-                  )}
-                  <div className="mt-1 flex items-center justify-center gap-3">
-                    <span className="text-[0.5rem] uppercase tracking-[0.16em]" style={{ color: th.soft }}>
-                      {d ? d.weekday : "—"}
-                    </span>
-                    <span className="font-display text-xl font-light">{d ? d.day : "··"}</span>
-                    <span className="text-[0.5rem] uppercase tracking-[0.16em]" style={{ color: th.soft }}>
-                      {d ? `${d.month} ${d.year}` : ""} {ev.time && `· ${ev.time}`}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {photos[0] && (
-              // eslint-disable-next-line @next/next/no-img-element -- lokale Vorschau
-              <img src={photos[0]} alt="" className="mt-5 h-28 w-full object-cover" style={{ border: `1px solid ${th.paperEdge}` }} />
-            )}
-
-            {f.message && (
-              <p className="mt-5 max-w-[15rem] text-[0.7rem] leading-relaxed" style={{ color: th.soft }}>
-                {f.message}
-              </p>
-            )}
-
-            {sections.program && program.filter((p) => p.title).length > 0 && (
-              <ul className="mt-5 w-full max-w-[13rem] space-y-1.5">
-                {program
-                  .filter((p) => p.title)
-                  .slice(0, 4)
-                  .map((p, i) => (
-                    <li key={i} className="flex items-baseline justify-between gap-3 text-[0.62rem]">
-                      <span className="font-display text-sm">{p.time}</span>
-                      <span className="h-px flex-1" style={{ background: th.accentSoft, opacity: 0.6 }} />
-                      <span style={{ color: th.soft }}>{p.title}</span>
-                    </li>
-                  ))}
-              </ul>
-            )}
-
-            {sections.menu && menu.filter(Boolean).length > 0 && (
-              <ul className="mt-5 space-y-1">
-                {menu.filter(Boolean).slice(0, 4).map((m, i) => (
-                  <li key={i} className="font-display text-[0.8rem]">
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {sections.location && events[0]?.venue && (
-              <div className="font-display mt-5 text-base" style={{ color: th.fg }}>
-                {events[0].venue}
-              </div>
-            )}
-
-            {sections.rsvp && (
-              <div className="mt-6 border px-5 py-2 text-[0.52rem] uppercase tracking-[0.24em]" style={{ borderColor: th.accent, color: th.accent }}>
-                RSVP
-              </div>
-            )}
-
-            {f.hashtag && (
-              <div className="font-display mt-5 text-sm" style={{ color: th.accent }}>
-                {f.hashtag}
-              </div>
-            )}
-          </div>
+            {t.previewReplay}
+          </button>
         </div>
+
+        <div className="phone mt-4">
+          <div className="phone-screen h-[560px] overflow-y-auto overscroll-contain">
+            <InviteCard key={replay} invite={previewInvite} locale={locale} origin="" preview embedded />
+          </div>
+          <span className="phone-glare" />
+        </div>
+
+        <p className="mt-4 text-center text-[0.72rem] leading-relaxed text-muted">{t.previewHint}</p>
       </aside>
     </div>
   );

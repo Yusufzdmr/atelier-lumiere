@@ -11,6 +11,10 @@ export type Service = {
   body: L<string[]>;
   bullets: L<string[]>;
   seed: string;
+  /** Beispielaufnahmen des Abschnitts. Leer = Demo-Bilder aus dem Bestand. */
+  photos?: string[];
+  /** Beispielfilm (YouTube, Vimeo oder Datei) */
+  videoUrl?: string;
 };
 
 export const services: Service[] = [

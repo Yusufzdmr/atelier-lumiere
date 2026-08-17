@@ -24,7 +24,7 @@ final class Ui
         $toneClass = $tones[$tone] ?? $tones['cream'];
         $idAttr = $id !== '' ? ' id="' . e($id) . '"' : '';
 
-        return '<section' . $idAttr . ' class="' . $toneClass . ' px-5 py-14 sm:px-8 sm:py-28 ' . e($class) . '">'
+        return '<section' . $idAttr . ' class="' . $toneClass . ' px-5 py-14 sm:px-8 sm:py-20 lg:py-24 ' . e($class) . '">'
             . '<div class="mx-auto max-w-7xl">';
     }
 
@@ -104,13 +104,13 @@ final class Ui
     /** Kopfbild einer Unterseite. */
     public static function pageHero(string $seed, string $title, string $eyebrow = '', string $text = '', string $height = 'md'): string
     {
-        $box = $height === 'lg' ? 'h-[68vh] min-h-[520px]' : 'h-[52vh] min-h-[380px]';
+        $box = $height === 'lg' ? 'h-[60vh] min-h-[440px]' : 'h-[46vh] min-h-[330px]';
 
         $html = '<section class="relative ' . $box . ' w-full overflow-hidden">'
             . '<img src="' . e(Images::img($seed, 1920, 1200)) . '" alt="' . e($title) . '"'
             . ' class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" decoding="async">'
             . '<div class="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/45 to-ink/70"></div>'
-            . '<div class="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-5 pb-14 sm:px-8 sm:pb-20">';
+            . '<div class="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-5 pb-10 sm:px-8 sm:pb-14">';
 
         if ($eyebrow !== '') {
             $html .= '<div class="eyebrow text-gold-soft">' . e($eyebrow) . '</div>';
