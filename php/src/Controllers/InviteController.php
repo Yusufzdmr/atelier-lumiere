@@ -63,6 +63,24 @@ final class InviteController
         $draft = $token !== '' ? Invitations::draft($token) : null;
         $values = is_array($draft['data'] ?? null) ? $draft['data'] : [];
 
+        /*
+         * Von der Designseite kommt das gewaehlte Thema mit: /einladung?design=…
+         *
+         * Geprueft wird gegen die vorhandenen Themen, nicht uebernommen wie
+         * geliefert - sonst stuende eine fremde Angabe im Formular. Ein
+         * gespeicherter Entwurf hat Vorrang: wer weitermacht, soll nicht
+         * ploetzlich ein anderes Design haben.
+         */
+        $wunsch = Security::clean($_GET['design'] ?? '', 60);
+        if ($wunsch !== '' && !isset($values['theme'])) {
+            foreach (Themes::all() as $thema) {
+                if ((string) ($thema['id'] ?? '') === $wunsch) {
+                    $values['theme'] = $wunsch;
+                    break;
+                }
+            }
+        }
+
         View::page('pages/invite-wizard', [
             'locale'   => $locale,
             'path'     => I18n::path('/einladung'),

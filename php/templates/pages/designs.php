@@ -86,6 +86,11 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
             </span>
           </div>
         </a>
+
+        <a href="<?= e($p('/einladung')) ?>?design=<?= e($id) ?>"
+           class="mt-3 block border border-ink px-4 py-2.5 text-center text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
+          <?= e(I18n::t('invite.useDesign')) ?>
+        </a>
       </article>
     <?php endforeach; ?>
   </div>

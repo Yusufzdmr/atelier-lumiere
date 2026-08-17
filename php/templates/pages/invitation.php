@@ -62,7 +62,30 @@ foreach ($rsvps as $rsvp) {
 <style><?= $style ?></style>
 
 <div class="theme-<?= e((string) $theme['id']) ?> relative min-h-screen overflow-hidden" style="background: <?= e((string) $theme['bg']) ?>">
-  <?= $decorations('page') ?>
+  <?php
+/*
+ * Nur in der Designvorschau: der Weg von „gefaellt mir" zu „dann nehme ich
+ * das". Die Vorschau ist eine echte Einladung mit Beispieldaten, erkennbar
+ * am Slug.
+ */
+if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
+  <div class="fixed inset-x-0 bottom-0 z-50 border-t border-sand-deep bg-cream/95 px-5 py-3 backdrop-blur">
+    <div class="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
+      <span class="text-[0.72rem] uppercase tracking-[0.18em] text-muted"><?= e((string) ($theme['name'] ?? '')) ?></span>
+      <div class="flex items-center gap-3">
+        <a href="<?= e(\Atelier\I18n::path('/designs', $locale)) ?>"
+           class="text-[0.68rem] uppercase tracking-[0.16em] text-muted hover:text-gold">
+          <?= $de ? 'Alle Designs' : 'All designs' ?>
+        </a>
+        <a href="<?= e(\Atelier\I18n::path('/einladung', $locale)) ?>?design=<?= e((string) ($theme['id'] ?? '')) ?>"
+           class="bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+          <?= e(\Atelier\I18n::t('invite.useDesign')) ?>
+        </a>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+<?= $decorations('page') ?>
   <?php /* Umschlag – verschwindet nach dem Antippen */ ?>
   <div class="fixed inset-0 z-50 flex items-center justify-center px-6 transition-opacity duration-700"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
