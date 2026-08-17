@@ -579,6 +579,42 @@ bir dili olmalı mı, sorusu açık; kod tarafı hazır (sözlükte `tr` zaten v
 
 ## Sıradaki oturum buradan başlasın
 
+### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
+
+Her şey commit'li ve push'lu (`0dd145e`), **demo sunucusu HEAD ile birebir**,
+aynı makinedeki `gidonla.com` 200. Yerelde MariaDB ve PHP sunucusu açık
+bırakıldı — kapatmak yeter, veri diskte.
+
+Bu turda yapılanlar, her biri kendi bölümünde ayrıntılı:
+
+| Ne | Nerede yazılı |
+|---|---|
+| Yükleme çubuğunun CSS'i eksik gidiyordu (Tailwind `upload.js`'i taramıyordu) | „çubuğun görünmeme sebebi" |
+| Kapak seçimi uçtan uca doğrulandı | aynı bölüm |
+| Mobilde boşluk: bölüm dolgusu 160→112 px, alt bilgideki krem şerit kaldırıldı | „mobilde boşluk, ve iki kaldıraç" |
+| Bütün sayfalar telefon genişliğinde tarandı (`bin/probe.html`) | „Genel tarama" |
+| TR panelde siteye giden **35 bağlantının 35'i** 404 veriyordu → `I18n::sitePath()` | „TR panelde her bağlantı 404" |
+| Doğum günü davetiyesi „Evleniyoruz" diyordu → `Invitations::occasionLine()` | „doğum günü davetiyesi…" |
+| Hitap satır satır tanınıyor, listede görünüyor, tek tıkla düzeliyor | „hitap: Sevgili Yılmaz değil" |
+
+**Doğrulanmayan tek şey, ilk iş o olsun:** yükleme çubuğu **tarayıcıda gözle
+görülmedi**. CSS'i artık sunucudan doğru geliyor ve kodu lint'ten geçti, ama
+panele girmek parola yazmak demek. Sahibi „Anmelden"e bir kez basınca dosya
+seçip çubuğu izlemek bir dakikalık iş.
+
+**Bu turda çıkan, kararı müşteride olan iki yeni şey:**
+- Düğün dışı vesilelerde `Gelin` / `Damat` ve iki aile etiketi hâlâ düğün
+  kelimesi. **Doğum günü muhtemelen tek isim istiyor, iki değil** — formu
+  değiştirmek demek
+- **Davetiye kartı Türkçe konuşmuyor.** Ayhan örneklerini Türkçe verdi;
+  gerekçesiyle birlikte „hitap" bölümünün sonunda yazılı
+
+Eski, hâlâ bekleyenler değişmedi: alan adı · marka değişikliği (site hâlâ
+„Atelier Lumière", Impressum'da uydurma „Julian Roth") · adres ve telefon ·
+60 km mi 80 km mi · ALL-INKL (kapsam dışı: sistem tamamlanmadan geçilmiyor).
+
+### Kod tarafında elle alınabilecekler
+
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
 bekliyor. Sıralaması aşağıda „Kalan — bu sırayla“ başlığında. Kod tarafında
 elle alınabilecekler:
