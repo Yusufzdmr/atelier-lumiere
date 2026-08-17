@@ -211,6 +211,17 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
               </div>
 
               <div>
+                <label class="<?= $label ?>"><?= $de ? 'Geschlossenes Kuvert wartet' : 'Kapalı zarf beklerken' ?></label>
+                <select name="idle" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::IDLES as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['idle'] ?? 'breathe') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::idleLabel($key, $de ? 'de' : 'tr')) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div>
                 <label class="<?= $label ?>"><?= $de ? 'Karte kommt herein' : 'Kart nasıl gelsin' ?></label>
                 <select name="animation" class="<?= $input ?>" data-theme-animation>
                   <?php foreach (Themes::ANIMATIONS as $option) : ?>

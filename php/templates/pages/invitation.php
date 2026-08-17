@@ -55,6 +55,11 @@ if (!in_array($introKind, \Atelier\Themes::INTROS, true)) {
 $introHtml = Intro::html($introKind, $theme);
 $introMs = \Atelier\Themes::introDuration($introKind);
 
+$idleKind = (string) ($theme['idle'] ?? 'breathe');
+if (!in_array($idleKind, \Atelier\Themes::IDLES, true)) {
+    $idleKind = 'breathe';
+}
+
 $revealKind = (string) ($theme['reveal'] ?? 'up');
 if (!in_array($revealKind, \Atelier\Themes::REVEALS, true)) {
     $revealKind = 'up';
@@ -174,7 +179,7 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
            heraus. Vorher war es ein Rechteck, das ausblendete. */ ?>
   <?= $introHtml ?>
 
-  <div class="t-envelope-stage fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
+  <div class="t-envelope-stage idle-<?= e($idleKind) ?> fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
        data-intro-ms="<?= (int) $introMs ?>"
        style="background: <?= e((string) $theme['bg']) ?>">
@@ -188,8 +193,14 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
         <span class="font-display text-2xl font-light tracking-[0.14em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e($initials) ?></span>
       </span>
       <span class="t-flap" style="background: <?= e((string) $theme['envelopeFlap']) ?>"></span>
-      <span class="t-seal absolute left-1/2 top-[46%] z-[6] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-lg"
-            style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
+      <?php /* Zwei Ebenen mit Absicht: aussen sitzt die Mitte (Tailwind setzt
+               dafuer translate), innen bewegt sich das Siegel. In einem
+               Element wuerde jede Animation mit transform die Zentrierung
+               ueberschreiben und das Siegel spraenge in die Ecke. */ ?>
+      <span class="absolute left-1/2 top-[46%] z-[6] -translate-x-1/2 -translate-y-1/2">
+        <span class="t-seal relative flex h-16 w-16 items-center justify-center rounded-full font-display text-lg"
+              style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
+      </span>
       <?= $decorations('envelope') ?>
     </button>
 

@@ -75,6 +75,43 @@ final class Themes
         return $labels[$locale][$key] ?? $key;
     }
 
+    /**
+     * Wie das geschlossene Kuvert wartet.
+     *
+     * Das ist das Erste, was ein Gast sieht – und das Einzige, was ihm sagt,
+     * dass hier etwas zum Antippen ist. Deshalb hat es eine eigene Achse und
+     * nicht nur eine feste Bewegung für alle Themen.
+     */
+    public const IDLES = ['breathe', 'ring', 'sheen', 'pulse', 'heartbeat', 'glow', 'tilt', 'none'];
+
+    public static function idleLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'breathe'   => 'Atmet ruhig auf und ab',
+                'ring'      => 'Ring läuft um das Siegel',
+                'sheen'     => 'Licht wandert über das Kuvert',
+                'pulse'     => 'Siegel pulsiert',
+                'heartbeat' => 'Herzschlag (zwei Schläge)',
+                'glow'      => 'Sanftes Leuchten hinter dem Siegel',
+                'tilt'      => 'Neigt sich leicht',
+                'none'      => 'Steht still',
+            ],
+            'tr' => [
+                'breathe'   => 'Sakince inip kalkar',
+                'ring'      => 'Mühürün çevresinde halka döner',
+                'sheen'     => 'Zarfın üzerinden ışık geçer',
+                'pulse'     => 'Mühür nabız gibi atar',
+                'heartbeat' => 'Kalp atışı (çift vuruş)',
+                'glow'      => 'Mühürün ardında yumuşak parıltı',
+                'tilt'      => 'Hafifçe eğilir',
+                'none'      => 'Hareketsiz durur',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
     /** Wie die Namen erscheinen. */
     public const NAME_ANIMATIONS = ['write', 'fade', 'rise', 'glow', 'letters', 'none'];
 
@@ -323,6 +360,7 @@ final class Themes
             'envelopeImage'  => '',
             'animation'      => '',
             'intro'          => '',
+            'idle'           => '',
             'nameAnimation'  => '',
             'particle'       => '',
             'reveal'         => '',
@@ -366,7 +404,7 @@ final class Themes
         $moves = self::defaultMoves((string) $merged['id']);
         foreach (['animation' => self::ANIMATIONS, 'nameAnimation' => self::NAME_ANIMATIONS,
                   'particle' => self::PARTICLES, 'reveal' => self::REVEALS,
-                  'intro' => self::INTROS] as $field => $allowed) {
+                  'intro' => self::INTROS, 'idle' => self::IDLES] as $field => $allowed) {
             if (!in_array((string) $merged[$field], $allowed, true) || (string) $merged[$field] === '') {
                 $merged[$field] = $moves[$field];
             }
@@ -378,28 +416,29 @@ final class Themes
     /**
      * Passende Bewegungen fuer ein Thema, das noch keine gewaehlt hat.
      *
-     * @return array{animation:string,nameAnimation:string,particle:string,reveal:string,intro:string}
+     * @return array{animation:string,nameAnimation:string,particle:string,reveal:string,intro:string,idle:string}
      */
     private static function defaultMoves(string $id): array
     {
         $sets = [
-            'elysee'    => ['seal',       'write',   'petal',    'up',   'sealLight'],
-            'sage'      => ['rise',       'write',   'leaf',     'up',   'focus'],
-            'foresta'   => ['rise',       'write',   'leaf',     'up',   'focus'],
-            'blush'     => ['fade',       'write',   'petal',    'mask', 'darkroom'],
-            'lavande'   => ['blur',       'rise',    'petal',    'mask', 'focus'],
-            'noir'      => ['flip',       'letters', 'spark',    'side', 'darkroom'],
-            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom', 'sealLight'],
-            'pearl'     => ['curtain',    'fade',    'round',    'mask', 'focus'],
-            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom', 'sealLight'],
-            'azur'      => ['slideRight', 'fade',    'snow',     'side', 'focus'],
-            'terra'     => ['unfold',     'rise',    'leaf',     'up',   'darkroom'],
-            'safran'    => ['zoom',       'write',   'confetti', 'up',   'party'],
-            'rubis'     => ['slideLeft',  'letters', 'spark',    'side', 'party'],
-            'moderne'   => ['fade',       'fade',    'none',     'up',   'none'],
+            'elysee'    => ['seal',       'write',   'petal',    'up',   'sealLight', 'sheen'],
+            'sage'      => ['rise',       'write',   'leaf',     'up',   'focus',     'breathe'],
+            'foresta'   => ['rise',       'write',   'leaf',     'up',   'focus',     'breathe'],
+            'blush'     => ['fade',       'write',   'petal',    'mask', 'darkroom',  'glow'],
+            'lavande'   => ['blur',       'rise',    'petal',    'mask', 'focus',     'glow'],
+            'noir'      => ['flip',       'letters', 'spark',    'side', 'darkroom',  'pulse'],
+            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom', 'sealLight', 'pulse'],
+            'pearl'     => ['curtain',    'fade',    'round',    'mask', 'focus',     'ring'],
+            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom', 'sealLight', 'ring'],
+            'azur'      => ['slideRight', 'fade',    'snow',     'side', 'focus',     'tilt'],
+            'terra'     => ['unfold',     'rise',    'leaf',     'up',   'darkroom',  'breathe'],
+            'safran'    => ['zoom',       'write',   'confetti', 'up',   'party',     'heartbeat'],
+            'rubis'     => ['slideLeft',  'letters', 'spark',    'side', 'party',     'heartbeat'],
+            'moderne'   => ['fade',       'fade',    'none',     'up',   'none',      'none'],
         ];
 
-        [$animation, $name, $particle, $reveal, $intro] = $sets[$id] ?? ['seal', 'write', 'petal', 'up', 'sealLight'];
+        [$animation, $name, $particle, $reveal, $intro, $idle] =
+            $sets[$id] ?? ['seal', 'write', 'petal', 'up', 'sealLight', 'breathe'];
 
         return [
             'animation'     => $animation,
@@ -407,6 +446,7 @@ final class Themes
             'particle'      => $particle,
             'reveal'        => $reveal,
             'intro'         => $intro,
+            'idle'          => $idle,
         ];
     }
 

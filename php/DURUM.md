@@ -768,6 +768,46 @@ Bu görünürlükten bağımsız çalışıyor ve istediğiniz anı yakalıyor.
 
 CSS: 83.8 → **89.3 KB**.
 
+## 18 Ağustos, dördüncü tur — kapalı zarfın bekleme hareketi
+
+in-vitely'de her temanın **kendi bekleme hareketi** var (`lacyTapRing`,
+`blushTapSheen`, `luxuryTapPulse`, `pearlGoldSheen`, `kinaHeartbeat`). Bizde
+hepsi aynı `envBreathe` idi. Misafirin ilk gördüğü ve „buraya dokunulur"
+diyen tek şey orası olduğu için altıncı eksen olarak ayrıldı.
+
+`Themes::IDLES` — 8 seçenek, tema başına panelden (`Kapalı zarf beklerken`):
+
+| Seçenek | Ne yapıyor |
+|---|---|
+| `breathe` | Sakince inip kalkar (eski davranış, varsayılan) |
+| `ring` | Mühürden dışa doğru halka açılır |
+| `sheen` | Zarfın üzerinden ışık şeridi geçer |
+| `pulse` | Mühür nabız gibi atar |
+| `heartbeat` | Çift vuruş, sonra duraklama |
+| `glow` | Mühürün ardında yumuşak parıltı |
+| `tilt` | Hafif 3B eğilme |
+| `none` | Hareketsiz |
+
+Dağıtım: Élysée → sheen, Pearl/Marbre → ring, Blush/Lavande → glow,
+Noir/Bordeaux → pulse, Safran/Rubis → heartbeat, Azur → tilt, Moderne → yok.
+
+### Yol açtığı gerçek düzeltme
+
+Mühür Tailwind ile ortalanıyordu (`-translate-x-1/2 -translate-y-1/2`).
+`transform` kullanan **her** animasyon bu ortalamayı siliyor ve mühür köşeye
+sıçrıyor. Bu yalnız yeni hareketleri değil, **zaten var olan `sealBreak`'i de**
+etkiliyordu — açılışta mühür kırılırken yerinden zıplıyordu; solup gittiği
+için fark edilmemişti.
+
+Çözüm iki katman: dışta konum (`absolute … -translate-*`), içte hareket
+(`.t-seal`). Şablonda böyle duruyor, bir daha tek elemana indirmeyin.
+
+Bir de: `currentColor` mühürde **yazı** rengidir. Halka ve parıltı onunla
+çizilince Pearl gibi açık temalarda beyaz üstüne beyaz oluyordu. Artık
+`var(--t-seal)` kullanıyorlar — o değişken `styleBlock()` zaten üretiyor.
+
+CSS: 89.3 → **91 KB**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

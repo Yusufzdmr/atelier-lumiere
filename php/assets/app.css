@@ -609,3 +609,87 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
      gar nicht erst sehen – und vor allem nicht darauf warten müssen. */
   .t-intro { display: none !important; }
 }
+
+/* ================================================================
+   Wie das geschlossene Kuvert wartet (Themes::IDLES)
+   Die Klasse sitzt auf der Bühne, damit auch das Siegel und ein
+   Leuchten dahinter mitspielen können – nicht nur das Kuvert selbst.
+   ================================================================ */
+
+/* Die Grundregel weiter oben lässt jedes Kuvert atmen. Hier wird sie je
+   nach Wahl überschrieben – sonst liefen zwei Bewegungen gegeneinander. */
+.idle-none .t-envelope,
+.idle-ring .t-envelope,
+.idle-sheen .t-envelope,
+.idle-pulse .t-envelope,
+.idle-glow .t-envelope,
+.idle-heartbeat .t-envelope { animation: none; }
+
+.idle-tilt .t-envelope { animation: envTilt 6s ease-in-out infinite; }
+@keyframes envTilt {
+  0%, 100% { transform: perspective(900px) rotateY(0deg) rotateX(0deg); }
+  33%      { transform: perspective(900px) rotateY(3.5deg) rotateX(1.5deg); }
+  66%      { transform: perspective(900px) rotateY(-3.5deg) rotateX(-1deg); }
+}
+
+/* Ring, der aus dem Siegel herauswandert */
+.idle-ring .t-seal::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  border: 1px solid var(--t-seal, currentColor); opacity: 0;
+  animation: sealRing 2.8s ease-out infinite;
+}
+@keyframes sealRing {
+  0%   { transform: scale(.9); opacity: .55; }
+  70%  { opacity: 0; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+
+/* Licht, das einmal quer über das Kuvert läuft */
+.idle-sheen .t-envelope::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: linear-gradient(112deg, transparent 40%, rgba(255,255,255,.55) 50%, transparent 60%);
+  background-size: 280% 100%;
+  animation: envSheen 5.5s ease-in-out infinite;
+}
+@keyframes envSheen {
+  0%       { background-position: -70% 0; opacity: 0; }
+  12%      { opacity: 1; }
+  55%      { background-position: 170% 0; opacity: 0; }
+  100%     { background-position: 170% 0; opacity: 0; }
+}
+
+/* Siegel pulsiert */
+.idle-pulse .t-seal { animation: sealPulse 2.6s ease-in-out infinite; }
+@keyframes sealPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.09); }
+}
+
+/* Zwei Schläge, dann Pause – wie ein Puls, nicht wie ein Blinken */
+.idle-heartbeat .t-seal { animation: sealBeat 2.4s ease-in-out infinite; }
+@keyframes sealBeat {
+  0%, 60%, 100% { transform: scale(1); }
+  12%           { transform: scale(1.13); }
+  24%           { transform: scale(1); }
+  36%           { transform: scale(1.09); }
+}
+
+/* Leuchten hinter dem Siegel */
+.idle-glow .t-seal::before {
+  content: ""; position: absolute; inset: -60%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, var(--t-seal, currentColor) 0%, transparent 68%);
+  opacity: 0; animation: sealGlow 3.4s ease-in-out infinite;
+}
+@keyframes sealGlow {
+  0%, 100% { opacity: .12; transform: scale(.85); }
+  50%      { opacity: .38; transform: scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idle-tilt .t-envelope,
+  .idle-ring .t-seal::after,
+  .idle-sheen .t-envelope::after,
+  .idle-pulse .t-seal,
+  .idle-heartbeat .t-seal,
+  .idle-glow .t-seal::before { animation: none !important; }
+}

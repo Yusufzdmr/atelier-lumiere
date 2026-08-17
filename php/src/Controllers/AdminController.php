@@ -248,6 +248,9 @@ final class AdminController
             $next['intro'] = in_array((string) ($_POST['intro'] ?? ''), Themes::INTROS, true)
                 ? (string) $_POST['intro']
                 : 'none';
+            $next['idle'] = in_array((string) ($_POST['idle'] ?? ''), Themes::IDLES, true)
+                ? (string) $_POST['idle']
+                : 'breathe';
             $next['nameAnimation'] = in_array((string) ($_POST['nameAnimation'] ?? ''), Themes::NAME_ANIMATIONS, true)
                 ? (string) $_POST['nameAnimation']
                 : 'write';
