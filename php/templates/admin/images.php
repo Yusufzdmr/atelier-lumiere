@@ -33,7 +33,7 @@ $de = $locale === 'de';
     <?php foreach ($slots as $slot => $label) : ?>
       <?php
       $eigen = (string) ($own[$slot] ?? '');
-      $seite = \Atelier\I18n::path(Images::SLOT_PAGES[$slot] ?? '', $locale);
+      $seite = \Atelier\I18n::sitePath(Images::SLOT_PAGES[$slot] ?? '', $locale);
       ?>
       <div class="border border-sand-deep p-5">
         <div class="flex items-baseline justify-between gap-3">
@@ -70,7 +70,7 @@ $de = $locale === 'de';
     <button class="bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $de ? 'Speichern' : 'Kaydet' ?>
     </button>
-    <a href="<?= e(\Atelier\I18n::path('', $locale)) ?>" target="_blank" rel="noopener"
+    <a href="<?= e(\Atelier\I18n::sitePath('', $locale)) ?>" target="_blank" rel="noopener"
        class="text-[0.68rem] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold">
       <?= $de ? 'Startseite ansehen' : 'Ana sayfayı gör' ?> ↗
     </a>

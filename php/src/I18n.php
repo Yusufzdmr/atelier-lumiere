@@ -168,4 +168,32 @@ final class I18n
         $path = $path === '/' ? '' : $path;
         return '/' . $locale . $path;
     }
+
+    /**
+     * Die Sprache, in der es die Website wirklich gibt.
+     *
+     * Die beiden Sätze überschneiden sich nur in Deutsch: der Betrieb pflegt
+     * auf Türkisch, die Website spricht Deutsch und Englisch. Türkisch ist
+     * deshalb keine Adresse, sondern eine Arbeitssprache.
+     */
+    public static function siteLocale(?string $locale = null): string
+    {
+        $locale = $locale ?? self::$locale;
+
+        return self::isLocale($locale) ? $locale : self::DEFAULT;
+    }
+
+    /**
+     * Pfad zu einer Seite der Website – auch wenn er im Adminbereich entsteht.
+     *
+     * Wer den Adminbereich auf Türkisch bedient, bekam mit path() Adressen wie
+     * /tr/designs, und die Website hat kein /tr. Jeder „Seite ansehen"-Verweis
+     * lief in die eigene 404-Seite. Überall, wo aus der Verwaltung heraus auf
+     * die öffentliche Seite gezeigt wird, gehört diese Methode hin und nicht
+     * path() – auch bei Adressen, die in einer E-Mail landen.
+     */
+    public static function sitePath(string $path = '', ?string $locale = null): string
+    {
+        return self::path($path, self::siteLocale($locale));
+    }
 }

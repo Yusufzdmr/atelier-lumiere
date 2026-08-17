@@ -228,7 +228,7 @@ $eventNames = [
               <div class="text-[0.88rem] text-ink"><?= e((string) ($draft['label'] ?? '—')) ?></div>
               <div class="mt-1 break-all text-[0.72rem] text-muted">
                 <?= e(Dates::short((string) ($draft['updatedAt'] ?? ''))) ?> ·
-                <a href="<?= e(I18n::path('/einladung', $locale)) ?>?taslak=<?= e((string) ($draft['token'] ?? '')) ?>"
+                <a href="<?= e(I18n::sitePath('/einladung', $locale)) ?>?taslak=<?= e((string) ($draft['token'] ?? '')) ?>"
                    class="text-gold underline-offset-4 hover:underline">
                   <?= $de ? 'Entwurf öffnen' : 'Taslağı aç' ?>
                 </a>

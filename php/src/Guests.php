@@ -325,6 +325,6 @@ final class Guests
     /** Öffentliche Adresse eines persönlichen Links. */
     public static function url(string $slug, string $token, ?string $locale = null): string
     {
-        return Config::url() . I18n::path('/einladung/' . Invitations::slug($slug) . '/' . self::token($token), $locale);
+        return Config::url() . I18n::sitePath('/einladung/' . Invitations::slug($slug) . '/' . self::token($token), $locale);
     }
 }

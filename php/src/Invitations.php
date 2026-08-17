@@ -188,7 +188,7 @@ final class Invitations
     public static function manageUrl(array $invitation, ?string $locale = null): string
     {
         return Config::url()
-            . I18n::path('/einladung/' . (string) ($invitation['slug'] ?? '') . '/verwalten', $locale)
+            . I18n::sitePath('/einladung/' . (string) ($invitation['slug'] ?? '') . '/verwalten', $locale)
             . '?schluessel=' . self::manageKey($invitation);
     }
 

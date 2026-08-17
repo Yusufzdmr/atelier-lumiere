@@ -99,7 +99,7 @@ final class InviteAdminController
                 'personal'   => $personal,
                 'manage'     => Invitations::manageUrl($invitation, (string) ($invitation['locale'] ?? $this->locale)),
                 'slug'       => $slug,
-                'url'        => Config::url() . I18n::path('/einladung/' . $slug, (string) ($invitation['locale'] ?? $this->locale)),
+                'url'        => Config::url() . I18n::sitePath('/einladung/' . $slug, (string) ($invitation['locale'] ?? $this->locale)),
                 'theme'      => $themes[(string) ($invitation['theme'] ?? '')] ?? (string) ($invitation['theme'] ?? ''),
                 'rsvps'      => $rsvps,
                 'yes'        => $yes,

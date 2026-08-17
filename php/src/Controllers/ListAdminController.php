@@ -71,7 +71,7 @@ final class ListAdminController
                 : 'Hizmetler sayfasında ve ana sayfada kutucuk olarak görünür.',
             'heading' => fn (array $item): string => $this->pick($item, 'title', $de ? 'Leistung' : 'Hizmet'),
             'note'    => fn (array $item): string => '#' . (string) ($item['slug'] ?? ''),
-            'view'    => fn (array $item): string => I18n::path('/leistungen', $this->locale) . '#' . (string) ($item['slug'] ?? ''),
+            'view'    => fn (array $item): string => I18n::sitePath('/leistungen', $this->locale) . '#' . (string) ($item['slug'] ?? ''),
             'delete'  => [
                 'label'   => $de ? 'Diese Leistung löschen' : 'Bu hizmeti sil',
                 'confirm' => $de ? 'Diese Leistung wirklich löschen?' : 'Bu hizmet silinsin mi?',
@@ -181,7 +181,7 @@ final class ListAdminController
             'key'     => 'cities',
             'heading' => fn (array $item): string => (string) ($item['name'] ?? ''),
             'note'    => fn (array $item): string => '/' . $this->locale . '/hochzeitsfotograf/' . (string) ($item['slug'] ?? '') . $this->hidden($item),
-            'view'    => fn (array $item): string => I18n::path('/hochzeitsfotograf/' . (string) ($item['slug'] ?? ''), $this->locale),
+            'view'    => fn (array $item): string => I18n::sitePath('/hochzeitsfotograf/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete'  => [
                 'label'   => $de ? 'Diese Stadtseite löschen' : 'Bu şehir sayfasını sil',
                 'confirm' => $de ? 'Stadtseite wirklich löschen? Die Adresse ist danach nicht mehr erreichbar.' : 'Şehir sayfası silinsin mi? Adres artık açılmaz.',
@@ -309,7 +309,7 @@ final class ListAdminController
             'key'     => 'venues',
             'heading' => fn (array $item): string => (string) ($item['name'] ?? ''),
             'note'    => fn (array $item): string => (string) ($item['city'] ?? '') . ' · /' . (string) ($item['slug'] ?? '') . $this->hidden($item),
-            'view'    => fn (array $item): string => I18n::path('/hochzeitslocations/' . (string) ($item['slug'] ?? ''), $this->locale),
+            'view'    => fn (array $item): string => I18n::sitePath('/hochzeitslocations/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete'  => [
                 'label'   => $de ? 'Diese Location löschen' : 'Bu mekânı sil',
                 'confirm' => $de ? 'Location wirklich löschen?' : 'Mekân silinsin mi?',
@@ -465,7 +465,7 @@ final class ListAdminController
                         ? $uploads . ' ' . ($de ? 'eigene Bilder' : 'kendi fotoğrafınız')
                         : ($de ? 'Platzhalter' : 'temsili görsel'));
             },
-            'view'   => fn (array $item): string => I18n::path('/portfolio/' . (string) ($item['slug'] ?? ''), $this->locale),
+            'view'   => fn (array $item): string => I18n::sitePath('/portfolio/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete' => [
                 'label'   => $de ? 'Diese Reportage löschen' : 'Bu çekimi sil',
                 'confirm' => $de ? 'Reportage samt hochgeladenen Bildern löschen?' : 'Çekim, yüklenen fotoğraflarla birlikte silinsin mi?',
@@ -565,7 +565,7 @@ final class ListAdminController
             'key'     => 'posts',
             'heading' => fn (array $item): string => $this->pick($item, 'title', $de ? 'Beitrag' : 'Yazı'),
             'note'    => fn (array $item): string => (string) ($item['date'] ?? ''),
-            'view'    => fn (array $item): string => I18n::path('/ratgeber/' . (string) ($item['slug'] ?? ''), $this->locale),
+            'view'    => fn (array $item): string => I18n::sitePath('/ratgeber/' . (string) ($item['slug'] ?? ''), $this->locale),
             'delete'  => [
                 'label'   => $de ? 'Diesen Beitrag löschen' : 'Bu yazıyı sil',
                 'confirm' => $de ? 'Beitrag wirklich löschen?' : 'Yazı silinsin mi?',

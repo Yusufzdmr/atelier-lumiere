@@ -40,7 +40,7 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
     </div>
 
     <div class="flex flex-wrap gap-3">
-      <a href="<?= e(I18n::path('/galerie/' . $customer['code'], $locale)) ?>" target="_blank" rel="noopener"
+      <a href="<?= e(I18n::sitePath('/galerie/' . $customer['code'], $locale)) ?>" target="_blank" rel="noopener"
          class="border border-ink px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
         <?= $de ? 'Galerie ansehen' : 'Galeriyi gör' ?> ↗
       </a>
@@ -142,14 +142,14 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
                   </button>
                 </form>
               <?php else : ?>
-                <?php $shareUrl = \Atelier\Config::url() . \Atelier\I18n::path('/auswahl/' . (string) $share['token'], $locale); ?>
+                <?php $shareUrl = \Atelier\Config::url() . \Atelier\I18n::sitePath('/auswahl/' . (string) $share['token'], $locale); ?>
                 <div class="mt-3 flex flex-wrap items-center gap-3">
                   <code class="min-w-0 flex-1 break-all border border-sand-deep bg-cream px-4 py-3 text-[0.76rem] text-ink"><?= e($shareUrl) ?></code>
                   <button type="button" data-copy="<?= e($shareUrl) ?>"
                           class="border border-ink px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
                     <?= $de ? 'Kopieren' : 'Kopyala' ?>
                   </button>
-                  <a href="<?= e(\Atelier\I18n::path('/auswahl/' . (string) $share['token'] . '/zip', $locale)) ?>"
+                  <a href="<?= e(\Atelier\I18n::sitePath('/auswahl/' . (string) $share['token'] . '/zip', $locale)) ?>"
                      class="border border-gold px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold hover:text-white">
                     ZIP
                   </a>
@@ -305,7 +305,7 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
             <ul class="mt-2 space-y-1.5">
               <?php foreach ($usedFor as $use) : ?>
                 <li class="text-[0.78rem]">
-                  <a href="<?= e(I18n::path('/einladung/' . $use['slug'], $locale)) ?>" target="_blank" rel="noopener"
+                  <a href="<?= e(I18n::sitePath('/einladung/' . $use['slug'], $locale)) ?>" target="_blank" rel="noopener"
                      class="text-gold underline-offset-4 hover:underline">/<?= e($use['slug']) ?></a>
                   <span class="ml-2 text-muted">
                     <?= e(Dates::short($use['at'])) ?><?php

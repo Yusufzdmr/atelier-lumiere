@@ -330,7 +330,7 @@ final class ContentAdminController
             'originals' => Content::original(),
             'reset'     => '',
             // Neben dem Speichern der Weg zur Seite, die dieser Reiter fuellt.
-            'view'      => $view === '' ? '' : I18n::path($view, $this->locale),
+            'view'      => $view === '' ? '' : I18n::sitePath($view, $this->locale),
         ]);
     }
 }
