@@ -873,6 +873,32 @@ yazarken aynı tuzağa dikkat.
 
 CSS: 91,4 → **93,4 KB**.
 
+## 18 Ağustos — hizmet örnekleri elle seçildi
+
+Örnek kareleri bir hash seçiyordu: `svc-<anker>-<n>` bir bildik topa düşüyor,
+oradan rastgele bir kare geliyordu. Havuzda 256 kare var ama içinde **çardak,
+park bankı, bina cephesi** de var — „Beispiele" başlığının altında hizmetle
+alakasız şeyler duruyordu.
+
+`Images::CURATED` — hizmet başına **dört kare elle seçildi**, alt metinlerine
+bakılarak: bir an, bir duygu, bir detay, bir sahne. Hiçbiri iki hizmette
+tekrar etmiyor.
+
+| Hizmet | Ne kondu |
+|---|---|
+| Hochzeitsfotografie | Koridorda öpücük · siyah-beyaz yüzük anı · avizeli tören · misafirler arasında çift |
+| Hochzeitsfilm & Video | Resepsiyonda dans (×3) · kalabalığın içinde çift |
+| Standesamt | Kâğıt üstünde iki alyans · yüzüğü takarken · buket · ahşap duvarda çift |
+| After-Wedding | Tarlada yürüyen çift · gün batımında öpücük · kır yürüyüşü · buketiyle gelin |
+
+Listede olmayan bir anker (yeni açılan hizmet) eskisi gibi bildik topa
+düşüyor — yeni bir hizmet görselsiz kalmasın diye.
+
+**Bunlar hâlâ başkasının çekimleri.** Bir fotoğrafçının sitesinde „Örnekler"
+başlığı altında durunca onun işi gibi okunuyor; müşteriye bu söylendi. Panelden
+tek bir kare yüklendiği anda bu dördü tamamen kayboluyor (portfolyodaki
+davranışın aynısı).
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

@@ -47,6 +47,46 @@ final class Images
         return abs($h);
     }
 
+    /**
+     * Handverlesene Beispielbilder je Leistung.
+     *
+     * Vorher entschied ein Hash, welches Bild aus einem Bildtopf kommt. Der
+     * Topf enthaelt aber auch Pavillons, Parkbaenke und Hausfassaden – unter
+     * „Beispiele" stand dann Zeug, das mit der Leistung nichts zu tun hat.
+     * Diese vier pro Leistung sind ausgesucht: ein Moment, eine Emotion, ein
+     * Detail, eine Szene. Kein Bild kommt zweimal vor.
+     *
+     * Es bleiben Fremdaufnahmen. Sobald der Betrieb eigene hochlaedt
+     * (Panel → Leistungen), verschwinden sie vollstaendig.
+     */
+    private const CURATED = [
+        'hochzeitsfotografie' => ['Jzvb59vRVWs', 'cpa3-3UPfC8', 'SI3oKGfzMjk', '4BQPUDJxMe8'],
+        'hochzeitsvideo'      => ['q5FNF6EEE30', 'MT-ZVJfJD_I', 'yrwZZjer070', 'rqL9iNe6UPI'],
+        'standesamt'          => ['YeJWDWeIZho', 'LVfRmw5yZeo', '8cCfjxR8KTw', 'JFAPl7brL6U'],
+        'after-wedding'       => ['SiniLJkXhMc', '5d4XBj7GYeo', 'PuXtB1B4zL8', 'mUYjrnQLrSA'],
+    ];
+
+    /**
+     * Ein Bild ueber seine Kennung finden – ueber alle Bildtoepfe hinweg.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function byId(string $id): ?array
+    {
+        foreach (self::photos() as $list) {
+            if (!is_array($list)) {
+                continue;
+            }
+            foreach ($list as $entry) {
+                if (is_array($entry) && (string) ($entry['id'] ?? '') === $id) {
+                    return $entry;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static function bucketFor(string $seed): string
     {
         if (str_starts_with($seed, 'venue-') || $seed === 'venues-index') {
@@ -105,6 +145,19 @@ final class Images
     /** @return array<string,mixed>|null */
     private static function pick(string $seed): ?array
     {
+        // Beispielstrecke einer Leistung: erst die handverlesene Liste fragen.
+        // Nur wenn dort nichts steht, faellt es auf den Bildtopf zurueck –
+        // eine neu angelegte Leistung soll nicht ohne Bilder dastehen.
+        if (preg_match('/^svc-(.+)-(\d+)$/', $seed, $m) === 1) {
+            $chosen = self::CURATED[$m[1]][(int) $m[2]] ?? '';
+            if ($chosen !== '') {
+                $entry = self::byId($chosen);
+                if ($entry !== null) {
+                    return $entry;
+                }
+            }
+        }
+
         $photos = self::photos();
         $bucket = self::bucketFor($seed);
         $list = $photos[$bucket] ?? [];
