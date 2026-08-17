@@ -464,6 +464,39 @@ hâlâ bilinmiyor; ekran görüntüsü gelirse tek tek o noktaya bakılır.
 > 1920'de kalıyor: **mobil genişlik taklit edilemiyor.** Site kendini iframe'e
 > de aldırmıyor (CSP `frame-src`), o yol da kapalı.
 
+## 17 Ağustos, akşam — TR panelde her bağlantı 404 veriyordu
+
+Ayhan „designs sayfası 404" dedi. Sayfa sağlamdı, **adres** yanlıştı: site
+`de`+`en`, panel `de`+`tr` konuşuyor ve iki küme yalnız Almanca'da kesişiyor.
+`I18n::path('/designs','tr')` → `/tr/designs`, ve o rotayı hiçbir şey
+karşılamıyor.
+
+Tek bağlantı değildi. **TR panelden siteye giden 35 bağlantı ölçüldü, 35'i de
+ölüydü** (düzeltme geçici olarak kaldırılıp sayıldı): şehirler, mekânlar,
+portfolyo, rehber yazıları, sekiz görsel yuvası, müşterinin galerisi, davetiye
+taslakları. Yani Türkçe çalışan biri için panelin **her kapısı** 404'e açılıyordu
+— „kaydettim ama değişmedi" hissinin bir kaynağı da bu: kontrol etmenin yolu
+kırık kapıydı.
+
+İkisi tıklama kaybından fazlasıydı: `Guests::url` ve `Invitations::manageUrl`
+**insanlara giden** adresler üretiyor (misafirin kişisel bağlantısı, çiftin
+misafir listesi). Site dili olmayan bir dil oraya düşse üçüncü kişilere ölü
+bağlantı gönderilecekti.
+
+Çözüm 35 yerde değil, bir yerde: **`I18n::sitePath()`** — site dili olmayan
+her şeyi Almanca'ya çevirip `path()`'e devrediyor. `path()` olduğu gibi kaldı,
+çünkü `/tr/admin` gerçek bir adres ve panelin dil değiştiricisi ona muhtaç.
+
+> Zaten çalışan tek bağlantı, düzendeki „Zur Website", elle `I18n::DEFAULT`
+> yazılmıştı. **O geçici çözüm, sorunun sistemik olduğunun işaretiydi** — bir
+> yerde elle atlanan şey, ötekilerde atlanmamış demektir. Bir daha böyle bir
+> „elle düzeltilmiş tek yer" görülürse, aynı hatanın kaç kardeşi var diye
+> sayılsın.
+
+Kontrol: 35/35 cevap veriyor, **Almanca panel değişmedi**, `sitePath('en')`
+hâlâ `/en` veriyor (İngilizce sayfaya bağlantı hâlâ mümkün), ve sunucuda da
+doğrulandı: `tr → /de/designs`.
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
