@@ -43,7 +43,20 @@ if (str_starts_with($stand, 'plus')) {
     $message = $de ? 'Der Name ist entfernt. Sein Link führt jetzt auf die Einladung ohne Anrede.' : 'The name is gone. Its link now leads to the invitation without a greeting.';
 } elseif ($stand === 'vorschau') {
     $message = $de ? 'Das Vorschaubild ist gespeichert.' : 'The preview picture is saved.';
+} elseif ($stand === 'anrede') {
+    $message = $de ? 'Die Anrede ist geändert.' : 'The greeting is changed.';
 }
+
+/**
+ * Die vier Anreden – einmal hier, gebraucht an zwei Stellen: beim Eintragen
+ * und in der Liste, wo eine falsch geratene Zeile geradegezogen wird.
+ */
+$kinds = [
+    'family' => [$de ? 'Familie' : 'Family',  $de ? 'Liebe Familie Yılmaz' : 'Dear Yılmaz family'],
+    'male'   => [$de ? 'Herr' : 'Mr',         $de ? 'Lieber Yusuf' : 'Dear Yusuf'],
+    'female' => [$de ? 'Frau' : 'Ms',         $de ? 'Liebe Ayşe' : 'Dear Ayşe'],
+    'people' => [$de ? 'Mehrere' : 'Several', $de ? 'Liebe Anna & Thomas' : 'Dear Anna & Thomas'],
+];
 
 /**
  * WhatsApp-Link mit fertigem Text – ein Antippen, und die Nachricht steht.
@@ -228,34 +241,47 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
       /*
        * Die Anrede steht oben auf der Karte, und „Liebe yilmaz“ hat dort schon
        * einmal gestanden. Eine Familie wird anders angesprochen als eine
-       * Person, und im Deutschen ein Mann anders als eine Frau – das kann nur
-       * sagen, wer die Gäste kennt. Es gilt für alle Namen dieses Durchgangs;
-       * für gemischte Listen trägt man sie in zwei Durchgängen ein.
+       * Person, und im Deutschen ein Mann anders als eine Frau.
+       *
+       * Vorher galt eine Wahl für den ganzen Durchgang, mit „Familie“ als
+       * Vorgabe – und weil eine Liste in einem Zug hineinkopiert wird, wurde
+       * aus jeder einzelnen Person eine Familie. Jetzt liest „Erkennen“ jede
+       * Zeile für sich; die drei anderen setzen weiter alle Namen dieses
+       * Durchgangs auf dasselbe, für den Fall, dass man es besser weiss.
        */
-      $kinds = [
-          'family' => [$de ? 'Familie' : 'Family',    $de ? 'Liebe Familie Yılmaz' : 'Dear Yılmaz family'],
-          'male'   => [$de ? 'Herr' : 'Mr',           $de ? 'Lieber Yusuf' : 'Dear Yusuf'],
-          'female' => [$de ? 'Frau' : 'Ms',           $de ? 'Liebe Ayşe' : 'Dear Ayşe'],
-      ];
       ?>
       <div class="mb-6">
         <span class="<?= $label ?>"><?= $de ? 'Anrede für diese Namen' : 'Greeting for these names' ?></span>
-        <div class="mt-3 grid gap-2 sm:grid-cols-3">
+        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+          <label class="cursor-pointer border border-sand-deep px-4 py-3 transition-colors hover:border-muted has-[:checked]:border-gold">
+            <input type="radio" name="art" value="auto" class="sr-only" checked>
+            <span class="block text-[0.85rem] text-ink"><?= $de ? 'Erkennen' : 'Detect' ?></span>
+            <span class="mt-1 block text-[0.72rem] italic text-muted">
+              <?= $de
+                ? '„Yılmaz Ailesi“ → Familie, „Yusuf Demir“ → Person'
+                : '&bdquo;Yılmaz family&ldquo; → family, &bdquo;Yusuf Demir&ldquo; → person' ?>
+            </span>
+          </label>
           <?php foreach ($kinds as $value => [$title, $example]) : ?>
             <label class="cursor-pointer border border-sand-deep px-4 py-3 transition-colors hover:border-muted has-[:checked]:border-gold">
-              <input type="radio" name="art" value="<?= e($value) ?>" class="sr-only" <?= $value === 'family' ? 'checked' : '' ?>>
+              <input type="radio" name="art" value="<?= e($value) ?>" class="sr-only">
               <span class="block text-[0.85rem] text-ink"><?= e($title) ?></span>
               <span class="mt-1 block text-[0.72rem] italic text-muted"><?= e($example) ?></span>
             </label>
           <?php endforeach; ?>
         </div>
+        <p class="mt-3 text-[0.72rem] leading-relaxed text-muted">
+          <?= $de
+            ? 'Jede Anrede steht unten in der Liste, so wie sie auf der Karte erscheint – falsch geraten ist dort mit einem Griff geändert.'
+            : 'Every greeting appears in the list below, exactly as it will read on the card – a wrong guess is one click to fix there.' ?>
+        </p>
       </div>
 
       <label class="<?= $label ?>" for="namen"><?= $de ? 'Namen' : 'Names' ?></label>
       <textarea id="namen" name="namen" rows="7" class="<?= $field ?> resize-y"
                 placeholder="<?= $de
-                  ? 'Familie Müller&#10;Familie Oxford&#10;Anna &amp; Thomas&#10;Familie Yılmaz'
-                  : 'Müller family&#10;Oxford family&#10;Anna &amp; Thomas&#10;Yılmaz family' ?>"></textarea>
+                  ? 'Familie Müller&#10;Yılmaz Ailesi&#10;Anna &amp; Thomas&#10;Yusuf Demir'
+                  : 'Müller family&#10;Yılmaz family&#10;Anna &amp; Thomas&#10;Yusuf Demir' ?>"></textarea>
 
       <div class="mt-6">
         <label class="<?= $label ?>" for="liste"><?= $de ? 'Oder eine Datei (.txt oder .csv)' : 'Or a file (.txt or .csv)' ?></label>
@@ -306,6 +332,27 @@ $whatsapp = static function (string $url, array $guest = []) use ($de, $names, $
                 <button data-confirm="<?= $de ? 'Diesen Namen entfernen?' : 'Remove this name?' ?>"
                         class="text-[0.66rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-red-800">
                   <?= $de ? 'Entfernen' : 'Remove' ?>
+                </button>
+              </form>
+            </div>
+
+            <?php /* Wie die Karte diesen Gast anredet – hier zu sehen, bevor er es sieht. */ ?>
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span class="text-[0.8rem] italic text-muted">
+                &bdquo;<?= e(\Atelier\Guests::salutation($guest, $locale)) ?>&ldquo;
+              </span>
+              <form method="post" class="flex items-center gap-2">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <input type="hidden" name="schluessel" value="<?= e($key) ?>">
+                <input type="hidden" name="was" value="anrede">
+                <input type="hidden" name="token" value="<?= e((string) $guest['token']) ?>">
+                <select name="art" class="border border-sand-deep bg-transparent px-2 py-1 text-[0.72rem] text-ink outline-none focus:border-gold">
+                  <?php foreach ($kinds as $value => [$title, $example]) : ?>
+                    <option value="<?= e($value) ?>" <?= ($guest['kind'] ?? 'family') === $value ? 'selected' : '' ?>><?= e($title) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <button class="border border-sand-deep px-3 py-1 text-[0.62rem] uppercase tracking-[0.14em] text-muted transition-colors hover:border-gold hover:text-gold">
+                  <?= $de ? 'Ändern' : 'Change' ?>
                 </button>
               </form>
             </div>

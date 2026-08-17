@@ -51,7 +51,7 @@ final class Guests
     /* ------------------------------- Schreiben ------------------------------ */
 
     /** Wie jemand angeredet wird. Steht oben auf der Karte. */
-    public const KINDS = ['family', 'male', 'female'];
+    public const KINDS = ['family', 'male', 'female', 'people'];
 
     /**
      * „Liebe yilmaz“ stand auf einer echten Einladung – klein geschrieben und
@@ -81,12 +81,90 @@ final class Guests
             return match ($kind) {
                 'family' => 'Liebe Familie ' . $name,
                 'male'   => 'Lieber ' . $name,
+                // Frau und Mehrzahl fallen im Deutschen zusammen: „Liebe Ayşe“,
+                // „Liebe Anna & Thomas“.
                 default  => 'Liebe ' . $name,
             };
         }
 
         // Englisch kennt die Unterscheidung nicht; nur die Familie hängt an.
         return $kind === 'family' ? 'Dear ' . $name . ' family' : 'Dear ' . $name;
+    }
+
+    /**
+     * Was eine Zeile über sich selbst verrät.
+     *
+     * „Lieber Yılmaz“ ist falsch, „Liebe Familie Yılmaz“ richtig – und bei
+     * einer einzelnen Person ist es umgekehrt. Das kann keine Vorlage wissen,
+     * aber die Zeile weiss viel davon selbst:
+     *
+     *   Familie Yılmaz · Yılmaz Ailesi · Yılmaz family  → eine Familie,
+     *                                                     das Wort fällt weg
+     *   Anna & Thomas · Ayşe ve Mehmet · Anna, Thomas   → mehrere Menschen
+     *   Yılmaz                                          → eine Familie
+     *   Yusuf Demir                                     → eine Person
+     *
+     * Ein einzelnes Wort als Familie zu lesen ist eine Entscheidung, keine
+     * Erkenntnis: in einer Gästeliste steht ein Nachname allein häufiger als
+     * ein Vorname allein. Falsch geratene Zeilen stehen deshalb mit ihrer
+     * Anrede in der Liste und sind dort mit einem Griff zu ändern.
+     *
+     * @return array{0:string,1:string} Art und der Name ohne Familienwort
+     */
+    public static function guessKind(string $name): array
+    {
+        $name = trim($name);
+        $flach = self::flat($name);
+
+        // Das Familienwort davor oder dahinter – und dann weg damit, sonst
+        // steht „Liebe Familie Familie Yılmaz“ auf der Karte.
+        foreach (['familie ', 'fam. ', 'fam ', 'family ', 'aile '] as $vorne) {
+            if (str_starts_with($flach, $vorne)) {
+                return ['family', trim(mb_substr($name, mb_strlen($vorne)))];
+            }
+        }
+        foreach ([' ailesi', ' aile', ' family', ' familie'] as $hinten) {
+            if (str_ends_with($flach, $hinten)) {
+                return ['family', trim(mb_substr($name, 0, mb_strlen($name) - mb_strlen($hinten)))];
+            }
+        }
+
+        // Mehrere Menschen, kein Familienname: das Bindewort verrät sie.
+        if (preg_match('/(\s[&+]\s|,|\sund\s|\sand\s|\sve\s)/u', ' ' . $flach . ' ') === 1) {
+            return ['people', $name];
+        }
+
+        // Ein Wort allein ist ein Nachname, zwei Wörter sind ein Mensch.
+        return [count(preg_split('/\s+/u', $flach) ?: []) === 1 ? 'family' : 'people', $name];
+    }
+
+    /**
+     * Kleingeschrieben und ohne türkisches Punkt-I – nur zum Vergleichen.
+     *
+     * mb_strtolower macht aus „İ“ ein „i“ mit eigenem Punkt darüber, das dann
+     * auf kein Wort mehr passt. isHeading braucht dasselbe und ruft hier an –
+     * es stand vorher zweimal da.
+     */
+    private static function flat(string $value): string
+    {
+        $value = str_replace(['İ', 'I', 'ı'], 'i', $value);
+
+        return str_replace("\u{0307}", '', mb_strtolower($value));
+    }
+
+    /** Die Anrede eines einzelnen Gastes ändern. */
+    public static function setKind(string $slug, string $token, string $kind): void
+    {
+        $guest = self::find(Invitations::slug($slug), $token);
+        if ($guest === null || !in_array($kind, self::KINDS, true)) {
+            return;
+        }
+
+        $guest['kind'] = $kind;
+        Db::run(
+            'UPDATE invite_guests SET data = ? WHERE slug = ? AND token = ?',
+            [Db::encode($guest), (string) $guest['slug'], (string) $guest['token']]
+        );
     }
 
     /**
@@ -114,12 +192,15 @@ final class Guests
      *
      * @return array<string,mixed>|null
      */
-    public static function add(string $slug, string $name, string $kind = 'family'): ?array
+    public static function add(string $slug, string $name, string $kind = 'auto'): ?array
     {
         $slug = Invitations::slug($slug);
         $name = self::properCase(Security::clean($name, 80));
+
+        // 'auto' heisst: die Zeile fragen. Alles Unbekannte auch – lieber
+        // erkennen als stillschweigend jeden zur Familie machen.
         if (!in_array($kind, self::KINDS, true)) {
-            $kind = 'family';
+            [$kind, $name] = self::guessKind($name);
         }
 
         if ($name === '' || self::count($slug) >= self::MAX) {
@@ -158,7 +239,7 @@ final class Guests
      * @param list<string> $names
      * @return array{added:int,skipped:int,guests:list<array<string,mixed>>}
      */
-    public static function addMany(string $slug, array $names, string $kind = 'family'): array
+    public static function addMany(string $slug, array $names, string $kind = 'auto'): array
     {
         $added = 0;
         $skipped = 0;
@@ -287,12 +368,7 @@ final class Guests
         // Bei einer CSV zählt nur die erste Spalte der Kopfzeile.
         $cell = trim(preg_split('/[;\t]/', $line)[0] ?? $line, "\"' ");
 
-        // Das türkische I zuerst: mb_strtolower macht aus „İ“ ein „i“ mit
-        // eigenem Punkt darüber, das dann auf kein Wort mehr passt.
-        $cell = str_replace(['İ', 'I', 'ı'], 'i', $cell);
-        $cell = str_replace("\u{0307}", '', mb_strtolower($cell));
-
-        return in_array($cell, $headings, true);
+        return in_array(self::flat($cell), $headings, true);
     }
 
     public static function token(string $value): string

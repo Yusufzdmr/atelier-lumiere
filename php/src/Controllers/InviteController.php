@@ -565,6 +565,15 @@ final class InviteController
                 Guests::delete($slug, Security::clean($_POST['token'] ?? '', 96));
                 return 'geloescht';
             })(),
+            // Eine falsch geratene Anrede in der Liste geradeziehen.
+            'anrede' => (static function () use ($slug): string {
+                Guests::setKind(
+                    $slug,
+                    Security::clean($_POST['token'] ?? '', 96),
+                    Security::clean($_POST['art'] ?? '', 10)
+                );
+                return 'anrede';
+            })(),
             'vorschau' => $this->savePreview($slug, $invitation),
             default => '',
         };
@@ -582,7 +591,8 @@ final class InviteController
             return 'leer';
         }
 
-        // Familie, Herr oder Frau – davon haengt die Anrede auf der Karte ab.
+        // Erkennen, Familie, Herr oder Frau – davon haengt die Anrede auf der
+        // Karte ab. Was nicht in KINDS steht, laesst Guests je Zeile erkennen.
         $kind = Security::clean($_POST['art'] ?? '', 10);
         $result = Guests::addMany($slug, $names, $kind);
 
