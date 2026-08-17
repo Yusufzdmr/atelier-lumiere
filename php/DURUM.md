@@ -934,6 +934,24 @@ Etiket yardımcıları yalnız `de`/`tr` biliyordu (panel dilleri). Site `de`/`e
 olduğu için sihirbazda İngilizce tarafta ham anahtarlar („darkroom") çıkardı.
 Altı yardımcıya da `en` seti eklendi.
 
+## 18 Ağustos — hareket seçimi kendi adımı oldu
+
+Bir önceki turda sihirbaza eklemiştim ama **tasarım kutularının altına**
+koymuştum. Ölçtüm: blok sayfanın **2286. pikselinde**, 16 tasarımın arkasında.
+Teknik olarak oradaydı, akışta yoktu — müşteri „yok" derken haklıydı.
+
+Sihirbaz 5 adımdan **6 adıma** çıktı; „Bewegung / Movement" ikinci adım:
+
+1. Anlass & Design → 2. **Bewegung** → 3. Eure Angaben → 4. Feier →
+5. Abschnitte → 6. Fotos & Link
+
+Doğrulama (alanların hangi adımda olduğu):
+`0: 16 tema · 1: 6 hareket + önizleme · 2-5: boş`
+
+Dikkat: `data-step` numaraları **geriye doğru** kaydırıldı (4→5, 3→4, 2→3,
+1→2), yoksa 1→2 hemen ardından gelen 2'yi eziyor. Araya yeni bir adım
+eklerken aynı sırayı izleyin.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

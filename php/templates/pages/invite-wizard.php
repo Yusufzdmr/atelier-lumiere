@@ -52,8 +52,8 @@ $sectionLabels = [
 ];
 
 $steps = $de
-    ? ['Anlass & Design', 'Eure Angaben', 'Feier', 'Abschnitte', 'Fotos & Link']
-    : ['Occasion & design', 'Your details', 'Celebration', 'Sections', 'Photos & link'];
+    ? ['Anlass & Design', 'Bewegung', 'Eure Angaben', 'Feier', 'Abschnitte', 'Fotos & Link']
+    : ['Occasion & design', 'Movement', 'Your details', 'Celebration', 'Sections', 'Photos & link'];
 ?>
 <?= Ui::pageHero('invite-hero', I18n::t('invite.title'), I18n::t('nav.invitation'), I18n::t('invite.lead')) ?>
 
@@ -255,7 +255,12 @@ $steps = $de
                 ['anim_reveal',   $de ? 'Abschnitte' : 'The sections',              \Atelier\Themes::REVEALS,         'revealLabel'],
             ];
             ?>
-            <div class="mt-10 border-t border-sand-deep pt-8">
+          </div>
+        </fieldset>
+
+        <!-- 2 – Bewegung -->
+        <fieldset data-step="1" class="space-y-8">
+            <div>
               <div class="<?= $label ?>"><?= $de ? 'Bewegung' : 'Movement' ?></div>
               <p class="mt-2 max-w-xl text-[0.8rem] leading-relaxed text-muted">
                 <?= $de
@@ -286,12 +291,12 @@ $steps = $de
                 </svg>
                 <?= $de ? 'So ansehen' : 'Watch it' ?>
               </a>
-            </div>
-          </div>
         </fieldset>
 
+
+
         <!-- 2 – Angaben -->
-        <fieldset data-step="1" class="space-y-8">
+        <fieldset data-step="2" class="space-y-8">
           <div class="grid gap-7 sm:grid-cols-2">
             <div>
               <label class="<?= $label ?>" for="bride"><?= e(I18n::t('invite.bride')) ?> *</label>
@@ -340,7 +345,7 @@ $steps = $de
         </fieldset>
 
         <!-- 3 – Feier(n) -->
-        <fieldset data-step="2" class="space-y-10">
+        <fieldset data-step="3" class="space-y-10">
           <?php for ($i = 0; $i < 2; $i++) : ?>
             <div class="<?= $i === 1 ? 'border-t border-sand-deep pt-8' : '' ?>" <?= $i === 1 ? 'data-second-event' : '' ?>>
               <div class="eyebrow"><?= $i === 0 ? ($de ? 'Feier' : 'Celebration') : ($de ? 'Zweite Feier' : 'Second celebration') ?></div>
@@ -372,7 +377,7 @@ $steps = $de
         </fieldset>
 
         <!-- 4 – Abschnitte -->
-        <fieldset data-step="3" class="space-y-8">
+        <fieldset data-step="4" class="space-y-8">
           <div class="grid gap-4 sm:grid-cols-2">
             <?php foreach (Pricing::SECTION_KEYS as $key) : ?>
               <?php
@@ -456,7 +461,7 @@ $steps = $de
         </fieldset>
 
         <!-- 5 – Fotos & Link -->
-        <fieldset data-step="4" class="space-y-8">
+        <fieldset data-step="5" class="space-y-8">
           <div>
             <label class="<?= $label ?>"><?= $de ? 'Fotos (bis zu vier)' : 'Photos (up to four)' ?></label>
             <input type="file" name="photos[]" accept="image/*" multiple class="mt-2 w-full text-[0.85rem] text-muted">
