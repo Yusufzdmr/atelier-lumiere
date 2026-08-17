@@ -111,19 +111,29 @@ final class SitemapController
             return;
         }
 
-        // Kundenbereich, Einladungen und Verwaltung gehören nicht in den Index.
-        echo implode("\n", [
-            'User-agent: *',
-            'Allow: /',
-            'Disallow: /de/admin',
-            'Disallow: /tr/admin',
-            'Disallow: /de/galerie/',
-            'Disallow: /tr/galerie/',
-            'Disallow: /de/einladung/',
-            'Disallow: /tr/einladung/',
-            '',
-            'Sitemap: ' . Config::url() . '/sitemap.xml',
-            '',
-        ]);
+        /*
+         * Die Sprachen kommen aus I18n, nicht aus einer Liste von Hand. Hier
+         * standen /de/ und /tr/ – geschrieben, als die Seite türkisch sprach.
+         * Seit sie englisch spricht, sperrte die Datei zwei Adressen, die es
+         * nicht gibt, und ließ /en/galerie/ und /en/einladung/ offen. Die
+         * Seiten selbst tragen noindex, es ist also nichts passiert – aber
+         * eine Liste, die beim nächsten Sprachwechsel wieder falsch wird,
+         * gehört nicht in den Code.
+         */
+        $zeilen = ['User-agent: *', 'Allow: /'];
+
+        foreach (array_unique(array_merge(I18n::LOCALES, I18n::ADMIN_LOCALES)) as $locale) {
+            $zeilen[] = 'Disallow: /' . $locale . '/admin';
+        }
+        foreach (I18n::LOCALES as $locale) {
+            $zeilen[] = 'Disallow: /' . $locale . '/galerie/';
+            $zeilen[] = 'Disallow: /' . $locale . '/einladung/';
+        }
+
+        $zeilen[] = '';
+        $zeilen[] = 'Sitemap: ' . Config::url() . '/sitemap.xml';
+        $zeilen[] = '';
+
+        echo implode("\n", $zeilen);
     }
 }
