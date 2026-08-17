@@ -497,6 +497,40 @@ Kontrol: 35/35 cevap veriyor, **Almanca panel değişmedi**, `sitePath('en')`
 hâlâ `/en` veriyor (İngilizce sayfaya bağlantı hâlâ mümkün), ve sunucuda da
 doğrulandı: `tr → /de/designs`.
 
+## 17 Ağustos, akşam — doğum günü davetiyesi „Evleniyoruz" diyordu
+
+Ayhan ekran görüntüsü attı: sihirbazda **Occasion = Birthday** seçili, sağdaki
+önizleme hâlâ „WE ARE GETTING MARRIED". „Tıklayınca değişmiyor" dediği buydu.
+
+Sihirbaz **yedi vesile** sunuyor, kart **birini** biliyordu: o satır hem
+sihirbazda hem **yayınlanan davetiyede** (`invitation.php`) sabit
+`I18n::t('invite.weMarry')`'di. Yani bugüne kadar kurulmuş her kına, nişan,
+sünnet, doğum günü ve firma davetiyesi bir düğün ilanı taşıyordu — önizlemenin
+başka bir şey göstermesi de mümkün değildi.
+
+**Çözüm:** `Invitations::occasionLine()` yedi vesileyi birer sözlük anahtarına
+bağlıyor. Beş yeni anahtar `invite` grubunda, yani **„Sayfa metinleri"
+sekmesinden Ayhan kendisi yeniden yazabilir** — bir kutlamanın nasıl ilan
+edildiği onun sözü, benim değil.
+
+Önizleme betiğe tablo koymadan takip ediyor: **her `<option>` kendi satırını
+`data-line`'da taşıyor**, `paintEvents` onu kopyalıyor. Satır içi betik yok,
+yani CSP'ye eklenecek bir şey de yok, ve metin zaten çeviren yoldan geçiyor.
+
+Kontrol: yedi vesile üç dilde; yayınlanan sayfa `wedding` · `multi` ·
+`birthday` için DE ve EN'de (biri geçici olarak birthday yapılıp geri alındı);
+„birden çok feier"in hâlâ tek başına ikinci tarihi açtığı.
+
+**Bilerek dokunulmadı** — ürün kararı bekliyor:
+- `invite.bride` / `invite.groom` („Gelin" / „Damat") ve iki aile etiketi hâlâ
+  düğün kelimeleri. **Doğum günü muhtemelen tek isim istiyor, iki değil** —
+  bu bir alan değişikliği, sözlük değişikliği değil
+- `invite.title` („Dijital düğün davetiyesi"), `secProgramD` („Nikâh, yemek…"),
+  `freeNote` („düğün çiftlerimize ücretsiz") aynı sınıftan
+- `shareText` sözlükte duruyor ama **hiçbir yerde kullanılmıyor** — Next.js
+  sürümünden kalmış. WhatsApp önizlemesi `kindLabel` üzerinden zaten vesileyi
+  doğru veriyor, orada hata yoktu
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
