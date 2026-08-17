@@ -121,6 +121,24 @@ final class Images
         'designs-hero'      => ['de' => 'Designs, Kopfbild', 'tr' => 'Tasarımlar, üst görsel'],
     ];
 
+    /**
+     * Auf welcher Seite ein Platz vorkommt - fuer den Blick nach dem Speichern.
+     *
+     * Steht bewusst neben SLOTS und nicht darin: SLOTS wird an mehreren
+     * Stellen durchlaufen, und ein zweites Feld haette dort jede Schleife
+     * angefasst.
+     */
+    public const SLOT_PAGES = [
+        'lumiere-hero-main' => '',
+        'lumiere-intro'     => '',
+        'about-hero'        => '/ueber-mich',
+        'about-portrait'    => '/ueber-mich',
+        'services-hero'     => '/leistungen',
+        'prices-hero'       => '/preise',
+        'contact-hero'      => '/kontakt',
+        'designs-hero'      => '/designs',
+    ];
+
     /** Gesetzte Bilder aus dem Adminbereich. Einmal je Anfrage gelesen. */
     private static ?array $own = null;
 

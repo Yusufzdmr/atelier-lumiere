@@ -31,10 +31,19 @@ $de = $locale === 'de';
 
   <div class="grid gap-6 sm:grid-cols-2">
     <?php foreach ($slots as $slot => $label) : ?>
-      <?php $eigen = (string) ($own[$slot] ?? ''); ?>
+      <?php
+      $eigen = (string) ($own[$slot] ?? '');
+      $seite = \Atelier\I18n::path(Images::SLOT_PAGES[$slot] ?? '', $locale);
+      ?>
       <div class="border border-sand-deep p-5">
         <div class="flex items-baseline justify-between gap-3">
-          <h3 class="text-[0.82rem] text-ink"><?= e($label[$locale] ?? $label['de']) ?></h3>
+          <h3 class="text-[0.82rem] text-ink">
+            <?= e($label[$locale] ?? $label['de']) ?>
+            <a href="<?= e($seite) ?>" target="_blank" rel="noopener"
+               class="ml-1 whitespace-nowrap text-[0.6rem] uppercase tracking-[0.14em] text-muted transition-colors hover:text-gold">
+              <?= $de ? 'Seite ansehen' : 'Sayfayı gör' ?> ↗
+            </a>
+          </h3>
           <span class="text-[0.6rem] uppercase tracking-[0.16em] <?= $eigen !== '' ? 'text-gold' : 'text-muted' ?>">
             <?= $eigen !== '' ? ($de ? 'eigenes Bild' : 'kendi görseliniz') : ($de ? 'Platzhalter' : 'temsili') ?>
           </span>
