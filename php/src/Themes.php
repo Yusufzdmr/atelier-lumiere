@@ -16,25 +16,131 @@ namespace Atelier;
  */
 final class Themes
 {
-    /** Eingebaute Öffnungsanimationen. */
-    public const ANIMATIONS = ['seal', 'fade', 'curtain', 'petals', 'none'];
+    /**
+     * Wie die Karte hereinkommt, nachdem das Kuvert offen ist.
+     *
+     * Die Namen sind Schlüssel für `invitation.js`; dort steht, was jede
+     * Bewegung tatsächlich tut. Ein Eintrag ohne Gegenstück dort fällt
+     * auf `rise` zurück, statt die Karte unsichtbar zu lassen.
+     */
+    public const ANIMATIONS = [
+        'seal', 'fade', 'rise', 'zoom', 'zoomOut', 'curtain', 'unfold',
+        'flip', 'slideLeft', 'slideRight', 'blur', 'petals', 'none',
+    ];
+
+    /** Wie die Namen erscheinen. */
+    public const NAME_ANIMATIONS = ['write', 'fade', 'rise', 'glow', 'letters', 'none'];
+
+    /** Was im Hintergrund schwebt. */
+    public const PARTICLES = ['petal', 'leaf', 'round', 'spark', 'confetti', 'snow', 'none'];
+
+    /** Wie die Abschnitte der Karte beim Scrollen kommen. */
+    public const REVEALS = ['up', 'mask', 'zoom', 'side', 'none'];
 
     public static function animationLabel(string $key, string $locale): string
     {
         $labels = [
             'de' => [
-                'seal'    => 'Siegel hebt sich, Kuvert öffnet sich',
-                'fade'    => 'Weiches Einblenden',
-                'curtain' => 'Vorhang öffnet sich',
-                'petals'  => 'Blätter rieseln',
+                'seal'       => 'Siegel bricht, Karte steigt auf',
+                'fade'       => 'Weiches Einblenden',
+                'rise'       => 'Steigt von unten auf',
+                'zoom'       => 'Wächst heran',
+                'zoomOut'    => 'Kommt von vorn zur Ruhe',
+                'curtain'    => 'Vorhang öffnet sich',
+                'unfold'     => 'Klappt auf',
+                'flip'       => 'Dreht sich herein',
+                'slideLeft'  => 'Schiebt von rechts herein',
+                'slideRight' => 'Schiebt von links herein',
+                'blur'       => 'Wird scharf',
+                'petals'     => 'Legt sich leicht schräg hin',
+                'none'       => 'Ohne Animation',
+            ],
+            'tr' => [
+                'seal'       => 'Mühür kırılır, kart yükselir',
+                'fade'       => 'Yumuşak belirir',
+                'rise'       => 'Aşağıdan yükselir',
+                'zoom'       => 'Büyüyerek gelir',
+                'zoomOut'    => 'Önden gelip yerine oturur',
+                'curtain'    => 'Perde açılır',
+                'unfold'     => 'Açılarak gelir',
+                'flip'       => 'Dönerek gelir',
+                'slideLeft'  => 'Sağdan kayar',
+                'slideRight' => 'Soldan kayar',
+                'blur'       => 'Netleşir',
+                'petals'     => 'Hafif eğik oturur',
+                'none'       => 'Animasyonsuz',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
+    public static function nameAnimationLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'write'   => 'Wird geschrieben (von links)',
+                'fade'    => 'Blendet ein',
+                'rise'    => 'Steigt auf',
+                'glow'    => 'Nur Goldschimmer',
+                'letters' => 'Buchstabe für Buchstabe',
                 'none'    => 'Ohne Animation',
             ],
             'tr' => [
-                'seal'    => 'Mühür kalkar, zarf açılır',
-                'fade'    => 'Yumuşak beliriş',
-                'curtain' => 'Perde açılır',
-                'petals'  => 'Yapraklar süzülür',
+                'write'   => 'Yazılarak gelir (soldan sağa)',
+                'fade'    => 'Belirir',
+                'rise'    => 'Yükselir',
+                'glow'    => 'Yalnızca altın parıltısı',
+                'letters' => 'Harf harf',
                 'none'    => 'Animasyonsuz',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
+    public static function particleLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'petal'    => 'Blütenblätter',
+                'leaf'     => 'Blätter',
+                'round'    => 'Runde Punkte',
+                'spark'    => 'Funken (leuchtend)',
+                'confetti' => 'Konfetti',
+                'snow'     => 'Schnee',
+                'none'     => 'Nichts',
+            ],
+            'tr' => [
+                'petal'    => 'Çiçek yaprakları',
+                'leaf'     => 'Yapraklar',
+                'round'    => 'Yuvarlak noktalar',
+                'spark'    => 'Kıvılcım (parlayan)',
+                'confetti' => 'Konfeti',
+                'snow'     => 'Kar',
+                'none'     => 'Yok',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
+    public static function revealLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'up'   => 'Von unten herein',
+                'mask' => 'Unter einer Blende hervor',
+                'zoom' => 'Leicht heranwachsend',
+                'side' => 'Abwechselnd von den Seiten',
+                'none' => 'Alles steht sofort da',
+            ],
+            'tr' => [
+                'up'   => 'Aşağıdan gelir',
+                'mask' => 'Perde altından çıkar',
+                'zoom' => 'Hafifçe büyüyerek',
+                'side' => 'Dönüşümlü olarak yanlardan',
+                'none' => 'Hepsi hazır durur',
             ],
         ];
 
@@ -168,7 +274,10 @@ final class Themes
             'imageMode'      => 'cover',
             'imageOpacity'   => '100',
             'envelopeImage'  => '',
-            'animation'      => 'seal',
+            'animation'      => '',
+            'nameAnimation'  => '',
+            'particle'       => '',
+            'reveal'         => '',
             'animationSpeed' => '1200',
             'animationDelay' => '0',
             'css'            => '',
@@ -204,7 +313,51 @@ final class Themes
             $merged['scene'] = self::defaultScene((string) $merged['id']);
         }
 
+        // Dasselbe fuer die vier Bewegungen. Alle Themen auf dieselbe Antwort
+        // zu setzen waere das Gegenteil von dem, wozu die Auswahl da ist.
+        $moves = self::defaultMoves((string) $merged['id']);
+        foreach (['animation' => self::ANIMATIONS, 'nameAnimation' => self::NAME_ANIMATIONS,
+                  'particle' => self::PARTICLES, 'reveal' => self::REVEALS] as $field => $allowed) {
+            if (!in_array((string) $merged[$field], $allowed, true) || (string) $merged[$field] === '') {
+                $merged[$field] = $moves[$field];
+            }
+        }
+
         return $merged;
+    }
+
+    /**
+     * Passende Bewegungen fuer ein Thema, das noch keine gewaehlt hat.
+     *
+     * @return array{animation:string,nameAnimation:string,particle:string,reveal:string}
+     */
+    private static function defaultMoves(string $id): array
+    {
+        $sets = [
+            'elysee'    => ['seal',       'write',   'petal',    'up'],
+            'sage'      => ['rise',       'write',   'leaf',     'up'],
+            'foresta'   => ['rise',       'write',   'leaf',     'up'],
+            'blush'     => ['fade',       'write',   'petal',    'mask'],
+            'lavande'   => ['blur',       'rise',    'petal',    'mask'],
+            'noir'      => ['flip',       'letters', 'spark',    'side'],
+            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom'],
+            'pearl'     => ['curtain',    'fade',    'round',    'mask'],
+            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom'],
+            'azur'      => ['slideRight', 'fade',    'snow',     'side'],
+            'terra'     => ['unfold',     'rise',    'leaf',     'up'],
+            'safran'    => ['zoom',       'write',   'confetti', 'up'],
+            'rubis'     => ['slideLeft',  'letters', 'spark',    'side'],
+            'moderne'   => ['fade',       'fade',    'none',     'up'],
+        ];
+
+        [$animation, $name, $particle, $reveal] = $sets[$id] ?? ['seal', 'write', 'petal', 'up'];
+
+        return [
+            'animation'     => $animation,
+            'nameAnimation' => $name,
+            'particle'      => $particle,
+            'reveal'        => $reveal,
+        ];
     }
 
     /** Passendes Motiv fuer ein Thema, das noch keins gewaehlt hat. */

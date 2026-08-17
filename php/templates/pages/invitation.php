@@ -34,6 +34,59 @@ $initials = mb_strtoupper(mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1));
 $guestName = (string) (($guest ?? null)['name'] ?? '');
 // Gezeichnete Hintergrundkunst des Themas – leer, wenn das Thema keine will.
 $scene = Scenes::html((string) ($theme['scene'] ?? 'botanical'), $theme);
+
+// Die vier wählbaren Bewegungen. Jede kommt aus dem Panel; unbekannte Werte
+// fallen auf die Voreinstellung zurück, damit ein alter Datensatz die Karte
+// nicht ohne Bewegung – oder schlimmer: unsichtbar – stehen lässt.
+$nameAnim = (string) ($theme['nameAnimation'] ?? 'write');
+if (!in_array($nameAnim, \Atelier\Themes::NAME_ANIMATIONS, true)) {
+    $nameAnim = 'write';
+}
+$particle = (string) ($theme['particle'] ?? 'petal');
+if (!in_array($particle, \Atelier\Themes::PARTICLES, true)) {
+    $particle = 'petal';
+}
+$revealKind = (string) ($theme['reveal'] ?? 'up');
+if (!in_array($revealKind, \Atelier\Themes::REVEALS, true)) {
+    $revealKind = 'up';
+}
+
+/**
+ * Einen Namen ausgeben – je nach gewählter Bewegung als ganzes Wort oder
+ * Buchstabe für Buchstabe.
+ *
+ * Beim Buchstabenlauf bekommt jedes Zeichen seinen eigenen Versatz (--i).
+ * Leerzeichen bleiben Zeichen, sonst rutschen die Wörter zusammen.
+ */
+$writeName = static function (string $name, string $kind, float $delay): string {
+    // Beim Buchstabenlauf traegt jedes Zeichen eine eigene Bewegung; der
+    // Goldverlauf der Umhuellung erreicht sie dann nicht mehr (siehe
+    // .t-name-solid im Stylesheet), also volle Farbe statt Verlauf.
+    $classes = $kind === 'letters' ? 't-script t-name-solid' : 't-script foil';
+    if ($kind === 'write') {
+        $classes .= ' write';
+    } elseif ($kind === 'fade') {
+        $classes .= ' t-name-fade';
+    } elseif ($kind === 'rise') {
+        $classes .= ' t-name-rise';
+    }
+    // 'glow' und 'none' bekommen keine Eingangsbewegung; 'glow' behält das
+    // wandernde Gold, das in .foil ohnehin steckt.
+
+    $style = ' style="--write-delay: ' . $delay . 's"';
+    $size = ' text-[3.1rem] leading-[1.05] sm:text-[4.4rem]';
+
+    if ($kind !== 'letters') {
+        return '<span class="' . $classes . $size . '"' . $style . '>' . e($name) . '</span>';
+    }
+
+    $out = '<span class="' . $classes . $size . '"' . $style . '>';
+    $chars = preg_split('//u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    foreach ($chars as $i => $char) {
+        $out .= '<span class="t-letter" style="--i: ' . $i . '">' . e($char) . '</span>';
+    }
+    return $out . '</span>';
+};
 $occasion = \Atelier\Invitations::occasionLine((string) ($invitation['eventType'] ?? ''), $locale);
 
 /**
@@ -91,15 +144,19 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
 <?php endif; ?>
 <?= $scene ?>
 
-  <?php /* Schwebende Blaetter in der Blattfarbe des Themas. Rein zierend,
-           deshalb ohne Beschriftung und ohne Klickflaeche. */ ?>
-  <div class="t-petals" aria-hidden="true">
-    <?php for ($i = 0; $i < 12; $i++) : ?>
-      <span class="t-petal" style="left: <?= ($i * 8.4 + 3) % 96 ?>%; background: <?= e((string) $theme['petal']) ?>; opacity: .45;
-                                   animation-duration: <?= 18 + ($i % 5) * 5 ?>s; animation-delay: -<?= $i * 3 ?>s;
-                                   transform: scale(<?= 0.7 + ($i % 4) * 0.22 ?>)"></span>
-    <?php endfor; ?>
-  </div>
+  <?php /* Schwebende Teilchen in der Blattfarbe des Themas. Rein zierend,
+           deshalb ohne Beschriftung und ohne Klickfläche. Form kommt aus
+           dem Thema; bei „nichts" wird gar nichts erst gezeichnet. */ ?>
+  <?php if ($particle !== 'none') : ?>
+    <div class="t-petals" aria-hidden="true">
+      <?php for ($i = 0; $i < 12; $i++) : ?>
+        <span class="t-petal t-petal-<?= e($particle) ?>"
+              style="left: <?= ($i * 8.4 + 3) % 96 ?>%; background: <?= e((string) $theme['petal']) ?>; color: <?= e((string) $theme['petal']) ?>; opacity: .45;
+                     animation-duration: <?= 18 + ($i % 5) * 5 ?>s; animation-delay: -<?= $i * 3 ?>s;
+                     transform: scale(<?= 0.7 + ($i % 4) * 0.22 ?>)"></span>
+      <?php endfor; ?>
+    </div>
+  <?php endif; ?>
 
 <?= $decorations('page') ?>
   <?php /* Umschlag – verschwindet nach dem Antippen.
@@ -134,7 +191,8 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
   </div>
 
   <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
-    <div class="t-card relative overflow-hidden px-6 py-14 text-center sm:px-12"
+    <div class="t-card rv-<?= e($revealKind) ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
+         data-speed="<?= (int) ($theme['animationSpeed'] ?? 1200) ?>"
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
 
       <?= $decorations('card') ?>
@@ -153,12 +211,12 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
           <?= e(\Atelier\Invitations::occasionLine((string) ($invitation['eventType'] ?? ''), $locale)) ?>
         </div>
 
-        <?php /* Die Namen werden geschrieben: die Maske laeuft von links auf,
-                 danach wandert das Blattgold langsam durch die Buchstaben. */ ?>
+        <?php /* Wie die Namen kommen, steht im Thema – geschrieben, blendend,
+                 aufsteigend, Buchstabe für Buchstabe oder ohne Bewegung. */ ?>
         <h1 class="t-name mt-7 flex flex-col items-center gap-1">
-          <span class="t-script foil write text-[3.1rem] leading-[1.05] sm:text-[4.4rem]" style="--write-delay: .45s"><?= e($bride) ?></span>
+          <?= $writeName($bride, $nameAnim, 0.45) ?>
           <span class="font-display text-2xl italic sm:text-3xl" style="color: <?= e((string) $theme['accent']) ?>">&amp;</span>
-          <span class="t-script foil write text-[3.1rem] leading-[1.05] sm:text-[4.4rem]" style="--write-delay: 1.1s"><?= e($groom) ?></span>
+          <?= $writeName($groom, $nameAnim, 1.1) ?>
         </h1>
 
         <div class="mx-auto mt-8 h-px w-28" style="background: <?= e((string) $theme['accent']) ?>"></div>

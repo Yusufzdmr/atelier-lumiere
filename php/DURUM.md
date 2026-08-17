@@ -644,6 +644,68 @@ Next sürümünde ayrıca builder'ın önizlemesi gerçek telefon çerçevesinde
 **açılabilir** hale geldi. Ama canlı olan bu taraf — orası referans olarak
 duruyor, oradan buraya bir aktarım **yok**.
 
+## 18 Ağustos, ikinci tur — leere Flächen ve bir sürü animasyon
+
+Müşteri iki şey bildirdi: `/leistungen#hochzeitsvideo` gibi bir çapayla girince
+**yazının yanı boş** kalıyor; ve davetiyede **tek animasyon** seçilebiliyor,
+oysa bir sürü isteniyor — hepsi de panelden ayarlanabilsin.
+
+### Boş kalan yan: reveal bir daha açılmıyordu
+
+`.reveal` / `.reveal-mask` öğeleri **başlangıçta görünmez**; `.reveal-mask`
+`clip-path: inset(0 0 100% 0)` ile tamamen kesik. Görünür yapan tek şey
+`app.js`'teki IntersectionObserver. Çapayla girildiğinde bazı öğeler hiç
+işaretlenmiyordu: tarayıcıda ölçüldü, görünüm alanının içinde **iki öğe**
+`data-visible="false"` kalmış, 750 px yer kaplayıp hiçbir şey göstermiyordu.
+Kaydırmak da düzeltmiyordu.
+
+Kök sebebi kovalamak yerine deseni sağlamlaştırdım — çünkü asıl kusur şu:
+**içerik varsayılan olarak görünmezse, bir aksama onu kalıcı olarak yok eder.**
+Gözlemci artık yalnızca hızlı yol; altında kendini iptal edemeyen bir tarama
+var (`sweep`): görünüm alanına giren her şey açılır. `scroll`, `resize`,
+`hashchange` ve `load` olaylarına bağlı, rAF ile kısıtlı. Aynı ağ
+`invitation.js` içindeki `.iv` bölümlerine de kondu.
+
+Ölçüm: çapayla giriş sonrası `stuckInViewport` **2 → 0**.
+
+### Bir sürü animasyon
+
+Tek liste yerine **dört bağımsız eksen**, hepsi tema başına panelden:
+
+| Eksen | Alan | Seçenek | Nerede çalışıyor |
+|---|---|---|---|
+| Kartın gelişi | `animation` | 13 | `invitation.js` içindeki `frames` haritası |
+| İsimler | `nameAnimation` | 6 | `.write` / `.t-name-*` sınıfları |
+| Uçuşan parçacıklar | `particle` | 7 | `.t-petal-*` sınıfları |
+| Bölümler | `reveal` | 5 | Kartın üstündeki `.rv-*` sınıfı |
+
+13 × 6 × 7 × 5 = **2730 birleşim**. Bilinmeyen bir değer varsayılana çekilir
+(`rise` / `write` / `petal` / `up`) — kartın hareketsiz değil, **görünmez**
+kalması ihtimali kapalı.
+
+Alanı olmayan eski temalar id'sine göre uygun bir set alıyor
+(`Themes::defaultMoves`): Noir → `flip / letters / spark / side`, Pearl →
+`curtain / fade / round / mask`, Azur → `slideRight / fade / snow / side`…
+Böylece panelde çeşitlilik hazır duruyor, hepsi aynı `seal` değil.
+
+### İki tuzak
+
+**`background-clip: text` çocuğun `transform`'unu geçmiyor.** „Harf harf"
+seçeneğinde her harf ayrı `<span>` ve kendi `transform`'u var; üstteki
+`.foil` altın verlaufunu kendi metnine boyuyor ama dönüşümlü çocuklara
+ulaşmıyor — harfler `color: transparent` olduğu için **isimler tamamen
+kayboldu**. Tarayıcıda görüldü. O yüzden `letters` varyantı `.foil` yerine
+`.t-name-solid` alıyor: düz altın renk, yürüyen parıltı yok.
+
+**Yerelde test için `Themes::save()` çağırmak tehlikeli:** `all()` önce
+`complete()` ile bütün varsayılanları doldurur, `save()` de onları diske
+yazar. Bir temayı denemek için çağırdığımda **bütün temalara** o günkü
+varsayılanlar (`write`/`petal`/`up`) yazıldı ve `defaultMoves` bir daha
+devreye girmedi. Alanları `Content::save()` ile silip doğruladım. Sunucuda
+bu alanlar hiç yazılmadığı için orada sorun yok.
+
+CSS yeniden derlendi: 81.8 → **83.8 KB**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

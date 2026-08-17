@@ -65,16 +65,48 @@
   /* --------------------- Einblenden beim Scrollen --------------------- */
   // Dieselben Klassen wie in der bisherigen Fassung: .reveal / .reveal-mask
   // werden über data-visible geschaltet, das Stylesheet bleibt unverändert.
-  var reveals = document.querySelectorAll(".reveal, .reveal-mask");
+  //
+  // WICHTIG: Diese Elemente sind vorher unsichtbar (.reveal-mask ist sogar
+  // ganz weggeschnitten). Wenn das Aufdecken einmal ausbleibt, steht dort
+  // dauerhaft eine leere Fläche in voller Höhe – genau das ist auf
+  // /leistungen passiert, wenn man mit einem Anker (#hochzeitsvideo) direkt
+  // in die Seite gesprungen ist. Deshalb ist der Beobachter nur noch der
+  // schnelle Weg; darunter liegt eine Prüfung, die sich nicht abmelden kann.
+  var reveals = [].slice.call(document.querySelectorAll(".reveal, .reveal-mask"));
+
   if (reveals.length) {
-    if (!("IntersectionObserver" in window)) {
-      reveals.forEach(function (el) { el.setAttribute("data-visible", "true"); });
-    } else {
+    var show = function (el) {
+      if (el.getAttribute("data-visible") !== "true") el.setAttribute("data-visible", "true");
+    };
+
+    // Sicherheitsnetz: was im Bild steht, wird sichtbar – egal was der
+    // Beobachter gemeldet hat oder ob es ihn überhaupt gibt.
+    var sweeping = false;
+    var sweep = function () {
+      sweeping = false;
+      var height = window.innerHeight || document.documentElement.clientHeight;
+      reveals = reveals.filter(function (el) {
+        if (el.getAttribute("data-visible") === "true") return false;
+        var box = el.getBoundingClientRect();
+        if (box.top < height - 40 && box.bottom > 0) {
+          show(el);
+          return false;
+        }
+        return true;
+      });
+    };
+    var planSweep = function () {
+      if (sweeping) return;
+      sweeping = true;
+      window.requestAnimationFrame(sweep);
+    };
+
+    if ("IntersectionObserver" in window) {
       var observer = new IntersectionObserver(
         function (entries) {
           entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
-            entry.target.setAttribute("data-visible", "true");
+            show(entry.target);
             observer.unobserve(entry.target);
           });
         },
@@ -82,6 +114,13 @@
       );
       reveals.forEach(function (el) { observer.observe(el); });
     }
+
+    window.addEventListener("scroll", planSweep, { passive: true });
+    window.addEventListener("resize", planSweep, { passive: true });
+    window.addEventListener("hashchange", planSweep);
+    // Bilder verschieben das Layout; nach dem Laden noch einmal nachsehen.
+    window.addEventListener("load", planSweep);
+    planSweep();
   }
 
   /* --------------------------- Aufklappen --------------------------- */

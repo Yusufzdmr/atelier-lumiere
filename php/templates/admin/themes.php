@@ -189,7 +189,12 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
 
           <!-- Animation -->
           <div class="border-t border-sand-deep pt-6">
-            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Öffnungsanimation' : 'Açılış animasyonu' ?></div>
+            <div class="text-[0.66rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Bewegung' : 'Hareket' ?></div>
+            <p class="mt-2 max-w-2xl text-[0.76rem] leading-relaxed text-muted">
+              <?= $de
+                  ? 'Vier Achsen, frei kombinierbar: wie die Karte hereinkommt, wie die Namen erscheinen, was im Hintergrund schwebt und wie die Abschnitte beim Scrollen kommen.'
+                  : 'Dört ayrı eksen, istediğiniz gibi birleşir: kart nasıl gelsin, isimler nasıl belirsin, arkada ne uçuşsun ve kaydırınca bölümler nasıl gelsin.' ?>
+            </p>
             <div class="mt-5 grid gap-7 md:grid-cols-3">
               <div>
                 <label class="<?= $label ?>"><?= $de ? 'Art' : 'Tür' ?></label>
@@ -197,6 +202,39 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                   <?php foreach (Themes::ANIMATIONS as $option) : ?>
                     <option value="<?= e($option) ?>" <?= $theme['animation'] === $option ? 'selected' : '' ?>>
                       <?= e(Themes::animationLabel($option, $locale)) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Namen' : 'İsimler' ?></label>
+                <select name="nameAnimation" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::NAME_ANIMATIONS as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['nameAnimation'] ?? 'write') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::nameAnimationLabel($key, $de ? 'de' : 'tr')) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Schwebende Teilchen' : 'Uçuşan parçacıklar' ?></label>
+                <select name="particle" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::PARTICLES as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['particle'] ?? 'petal') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::particleLabel($key, $de ? 'de' : 'tr')) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div>
+                <label class="<?= $label ?>"><?= $de ? 'Abschnitte beim Scrollen' : 'Kaydırınca bölümler' ?></label>
+                <select name="reveal" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::REVEALS as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['reveal'] ?? 'up') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::revealLabel($key, $de ? 'de' : 'tr')) ?>
                     </option>
                   <?php endforeach; ?>
                 </select>

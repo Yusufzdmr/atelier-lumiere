@@ -242,6 +242,18 @@ final class AdminController
             $next['animation'] = in_array((string) ($_POST['animation'] ?? ''), Themes::ANIMATIONS, true)
                 ? (string) $_POST['animation']
                 : 'seal';
+            // Die drei uebrigen Bewegungsachsen. Ein unbekannter Wert wird auf
+            // die Voreinstellung gezogen, nicht durchgereicht – sonst stuende
+            // im Datensatz etwas, das die Vorlage nicht kennt.
+            $next['nameAnimation'] = in_array((string) ($_POST['nameAnimation'] ?? ''), Themes::NAME_ANIMATIONS, true)
+                ? (string) $_POST['nameAnimation']
+                : 'write';
+            $next['particle'] = in_array((string) ($_POST['particle'] ?? ''), Themes::PARTICLES, true)
+                ? (string) $_POST['particle']
+                : 'petal';
+            $next['reveal'] = in_array((string) ($_POST['reveal'] ?? ''), Themes::REVEALS, true)
+                ? (string) $_POST['reveal']
+                : 'up';
             $next['animationSpeed'] = (string) max(0, min(8000, (int) ($_POST['animationSpeed'] ?? 1200)));
             $next['animationDelay'] = (string) max(0, min(8000, (int) ($_POST['animationDelay'] ?? 0)));
             $next['css'] = Themes::safeCss((string) ($_POST['css'] ?? ''));
