@@ -234,14 +234,15 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
       <span class="t-sheet" style="background: <?= e((string) $theme['paper']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
         <span class="font-display text-2xl font-light tracking-[0.14em]" style="color: <?= e((string) $theme['accent']) ?>"><?= e($initials) ?></span>
       </span>
+      <?= Scenes::envelopeArt((string) ($theme['scene'] ?? ''), $theme) ?>
       <span class="t-flap" style="background: <?= e((string) $theme['envelopeFlap']) ?>"></span>
       <?php /* Zwei Ebenen mit Absicht: aussen sitzt die Mitte (Tailwind setzt
                dafuer translate), innen bewegt sich das Siegel. In einem
                Element wuerde jede Animation mit transform die Zentrierung
                ueberschreiben und das Siegel spraenge in die Ecke. */ ?>
       <span class="absolute left-1/2 top-[46%] z-[6] -translate-x-1/2 -translate-y-1/2">
-        <span class="t-seal relative flex h-16 w-16 items-center justify-center rounded-full font-display text-lg"
-              style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
+        <span class="t-seal relative flex h-16 w-16 items-center justify-center font-display text-lg"
+              style="background-color: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>"><?= e($initials) ?></span>
       </span>
       <?= $decorations('envelope') ?>
     </button>

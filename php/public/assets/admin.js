@@ -92,7 +92,9 @@
         card.style.borderColor = value("paperEdge");
       }
       if (seal) {
-        seal.style.background = value("seal");
+        // background (Kurzform) statt backgroundColor wuerde das Wachsrelief
+        // aus dem Stylesheet mitloeschen – es steckt in background-image.
+        seal.style.backgroundColor = value("seal");
         seal.style.color = value("sealText");
       }
       if (amp) amp.style.color = value("accent");

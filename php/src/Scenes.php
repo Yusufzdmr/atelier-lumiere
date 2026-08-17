@@ -45,6 +45,54 @@ final class Scenes
         return $html . '</div>';
     }
 
+    /**
+     * Prägung auf dem Kuvert: eine Naht in der Mitte, Motiv links und rechts.
+     *
+     * Das ersetzt kein Foto von geprägtem Papier – aber ein flaches Rechteck
+     * sieht nach Farbfläche aus, und ein Kuvert soll nach Papier aussehen.
+     * Gezeichnet wird nur die Kontur; die Tiefe macht das Stylesheet mit
+     * einem hellen Schlagschatten nach unten (.t-emboss).
+     *
+     * @param array<string,mixed> $theme
+     */
+    public static function envelopeArt(string $sceneId, array $theme): string
+    {
+        $line = (string) ($theme['envelopeEdge'] ?? 'rgba(0,0,0,.25)');
+        $motif = (string) ($theme['accentSoft'] ?? $theme['accent'] ?? '#B08D57');
+
+        $body = match ($sceneId) {
+            // Art déco: Fächer in den unteren Ecken, strenge Linien
+            'deco' => '<g transform="translate(6 34) scale(.34)">' . self::decoFan($motif, 0.5) . '</g>'
+                . '<g transform="translate(154 34) scale(-.34,.34)">' . self::decoFan($motif, 0.5) . '</g>',
+
+            // Spitze: ein Bogen über die ganze Breite
+            'lace' => '<g transform="translate(0 74) scale(.4)">' . self::laceEdge($motif, 16, 400.0) . '</g>',
+
+            // Pampas: zwei Rispen, die an der Naht hochstehen
+            'pampas' => self::plume(62, 96, 46, $motif, 0.45) . self::plume(98, 96, 40, $motif, 0.45),
+
+            // Blüten neben der Naht
+            'bouquet' => '<g transform="translate(30 88) scale(.42) rotate(-14)">'
+                    . self::leafSpray($motif, 5, 'M4 96 C 20 66, 44 34, 96 8', 'none', 0.5) . '</g>'
+                . '<g transform="translate(130 88) scale(-.42,.42) rotate(14)">'
+                    . self::leafSpray($motif, 5, 'M4 96 C 20 66, 44 34, 96 8', 'none', 0.5) . '</g>'
+                . self::blossom(44, 62, 9, $motif, $motif, 0.4)
+                . self::blossom(116, 62, 8, $motif, $motif, 0.35),
+
+            // Standard: Blätter, die zur Naht hin wachsen
+            default => '<g transform="translate(22 92) scale(.56) rotate(-8)">'
+                    . self::leafSpray($motif, 6, 'M4 96 C 20 66, 44 34, 96 8', 'none', 0.7) . '</g>'
+                . '<g transform="translate(138 92) scale(-.56,.56) rotate(8)">'
+                    . self::leafSpray($motif, 6, 'M4 96 C 20 66, 44 34, 96 8', 'none', 0.7) . '</g>',
+        };
+
+        // Die Naht läuft von der Spitze der Klappe nach unten.
+        $seam = '<path d="M80 46 V 96" stroke="' . e($line) . '" stroke-width="0.7" opacity="0.65"/>';
+
+        return '<svg class="t-emboss" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true">'
+            . $seam . $body . '</svg>';
+    }
+
     /* --------------------------- Bausteine --------------------------- */
 
     /**

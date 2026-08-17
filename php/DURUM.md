@@ -846,6 +846,33 @@ Bir yeri değiştirirken diğerini unutmayın: süre **iki yerde** yazılı —
 `.ti-darkroom` blokları. İkisi ayrışırsa ya kart sahne bitmeden gelir ya da
 bitmiş sahnenin üstünde boşuna beklenir.
 
+## 18 Ağustos — kâğıt ve mühür (tema görselleri)
+
+Invitely'nin zarfları kabartmalı kâğıt fotoğrafı. Fotoğraf üretemem, ama asıl
+fark oradan değil oradan **önce** geliyordu: bizim mühür düz bir daire, zarf
+düz bir dikdörtgendi.
+
+**Yükleme yolu zaten tamdı** — Temalar sekmesinde kart görseli ve kuvert
+görseli, mod/opaklık, yükle ve sil. Gerçek fotoğraflar geldiğinde doğrudan
+giriyor, kod değişikliği gerekmiyor. Aşağıdakiler o gelene kadar (ve altında)
+duran taban.
+
+| Ne | Nasıl |
+|---|---|
+| **Mühür** | `border-radius` ile düzensiz kenar (dökülen mumun daire olmaması), sol üstte ışık / sağ altta gölge radial gradient'i, içeride bastırılmış halka, harflerde kabartma `text-shadow` |
+| **Zarf** | Üstte ışık kenarı, altta gölge, kâğıt için `inset` gölgeler |
+| **Kabartma motif** | `Scenes::envelopeArt()` — ortada dikey dikiş + sahneye göre motif (dal, dantel kemeri, art deco yelpaze, pampas, çiçek). Yalnız kontur; derinliği aşağı doğru **açık renk** `drop-shadow` veriyor, ışığın basılı çizgiye düşmesi gibi |
+
+### Bir tuzak, iki yerde
+
+`style.background` **kısa yazımdır** ve `background-image`'ı `none`'a çeker.
+Mühürün mum reliefi `background-image` içinde durduğu için, hem şablondaki
+`style="background: …"` hem de `admin.js`'teki `seal.style.background = …`
+onu siliyordu. İkisi de `background-color`'a çevrildi. Yeni bir yere renk
+yazarken aynı tuzağa dikkat.
+
+CSS: 91,4 → **93,4 KB**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
