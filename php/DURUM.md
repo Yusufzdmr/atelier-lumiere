@@ -228,13 +228,26 @@ elle alınabilecekler:
   seçiyor (`templates/pages/gallery.php`, `$i % 5` / `$i % 3`). Müşteri “şimdilik
   sorun değil” dedi, ama kesilen kare şikâyeti gelirse sebebi bu.
 - Müşteriyle **mesajlaşma paneli** — istendi, kapsamı konuşulmadı.
-- **SEO metinleri hâlâ Stuttgart diyor.** Çeviri sırasında görüldü: ana sayfa,
-  fiyatlar, iletişim, bölgeler ve portfolyo başlık/açıklamalarında „Stuttgart,
-  Ludwigsburg, Esslingen“ geçiyor, oysa işletme Krumbach'a taşındı. Almanca
-  metnin kendisi öyle olduğu için **çeviri de öyle** — sadakat tercihi, hata
-  değil. Panelden SEO & meta sekmesinden düzeltilmeli, sonra İngilizcesi
-  peşinden gider. Aynı şey `about.lead` („Fotograf aus Stuttgart") ve
-  `venues` içeriği (Stuttgart demo verisi) için de geçerli.
+- **Stuttgart → Krumbach geçişi yarım kalmıştı, tamamlandı (17 Ağustos).**
+  Taradım: 40 alanda eski bölge geçiyordu. Üçe ayırdım:
+  - **Düzeltildi (17 alan, DE + EN):** ana sayfa/fiyatlar/iletişim/bölgeler/
+    hizmetler SEO başlık ve açıklamaları, `about.lead` („Fotograf aus
+    Stuttgart“ → Krumbach), rehber yazısındaki „Baden-Württemberg“ → Bayerisch-
+    Schwaben. Bunlar işletme hakkında **yanlış bilgi** veriyordu
+  - **⚠️ Düzeltildi ama teyit ister:** Impressum'da „Handwerkskammer Region
+    Stuttgart“ → **Handwerkskammer für Schwaben, Augsburg**; Datenschutz'ta
+    denetim makamı Baden-Württemberg → **BayLDA, Ansbach**. Krumbach Bavyera'da,
+    Baden-Württemberg'de değil — eskisi kesinlikle yanlıştı, yenisi büyük
+    olasılıkla doğru ama **avukat teyidi gerekir** (belgenin kendi notu da
+    zaten bunu söylüyor)
+  - **Bilerek dokunulmadı:** portfolyo, mekânlar, yorumlar ve Stuttgart şehir
+    sayfası. Bunların içeriği **gerçekten** Stuttgart — değiştirmek metni
+    yalancı yapardı. Gerçek Krumbach çekimleri gelince beraber değişecekler
+- **Tutarsızlık, karar müşterinin: 60 km mi 80 km mi?** Müşterinin kendi
+  yazdığı ana sayfa metni „Krumbach ve **80 km** çevresi yol ücretsiz“ diyor;
+  SEO açıklaması ve ek hizmet listesi **60 km** diyor. Para konusu olduğu için
+  tahmin etmedim, ikisi de olduğu gibi duruyor. Doğrusu hangisiyse üç dilde
+  birden düzeltilmeli
 - `Seo.php`'deki `areaServed` **bütün** şehirleri sayıyor (`Content::list`).
   100 şehirde 100 satırlık JSON-LD olur. Zararsız ama saçma; `listed`'e
   bağlanabilir. Bilerek dokunulmadı.
