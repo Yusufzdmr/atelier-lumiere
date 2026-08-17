@@ -24,7 +24,7 @@ final class Ui
         $toneClass = $tones[$tone] ?? $tones['cream'];
         $idAttr = $id !== '' ? ' id="' . e($id) . '"' : '';
 
-        return '<section' . $idAttr . ' class="' . $toneClass . ' px-5 py-20 sm:px-8 sm:py-28 ' . e($class) . '">'
+        return '<section' . $idAttr . ' class="' . $toneClass . ' px-5 py-14 sm:px-8 sm:py-28 ' . e($class) . '">'
             . '<div class="mx-auto max-w-7xl">';
     }
 

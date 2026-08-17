@@ -45,7 +45,7 @@ $navLinks = [
     [$p('/kontakt'), I18n::t('nav.contact')],
 ];
 ?>
-<footer class="relative mt-24 bg-ink text-cream">
+<footer class="relative bg-ink text-cream">
   <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
     <div class="grid gap-12 md:grid-cols-3">
       <div class="md:col-span-1">
