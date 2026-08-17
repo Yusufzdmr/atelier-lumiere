@@ -415,12 +415,36 @@ Sunucudan doğru CSS geldiği ölçülebildi, çubuğun kendisi ölçülemedi.
 geçilmiyor. Bölüm 2'deki üç adım (veritabanı, `config.php`, alan adı) olduğu
 gibi duruyor, sadece sırası gelmedi.
 
-### Ayhan'ın yeni bildirdiği — mobilde boşluk
+### Ayhan'ın bildirdiği — mobilde boşluk, ve iki kaldıraç
 
-„Kaydırınca çok boş alan oluyor." Ertelendi, mobil turuna bırakıldı (kendi
-sözü: *sonra yapalım o zaman mobile göre*). **Hangi sayfa olduğu belli değil**
-— ekran görüntüsü sohbete düşmedi, tahmin edilmedi. Mobil turu başlarken ilk
-soru bu olsun.
+„Kaydırınca çok boş alan oluyor." **Hangi sayfa olduğu hâlâ belli değil** —
+ekran görüntüsü sohbete düşmedi. Ama boşluğu üreten iki yer sayıyla bulundu,
+ikisi de tek satır:
+
+1. **Her bölüm** `Ui::sectionOpen`'dan `px-5 py-20 sm:px-8 sm:py-28` alıyor.
+   Telefonda komşu iki bloğun içeriği arasında **160 px hiçlik** kalıyor.
+   Telefon değeri `py-14` oldu; `sm:` **dokunulmadı**, yani tasarımın çizildiği
+   masaüstü ritmi olduğu gibi duruyor
+2. **Alt bilgi** `mt-24` taşıyordu, bir önceki bölümün kendi dolgusunun üstüne.
+   Krem bölümle biten sayfalarda bu görünmez, sadece hava; **ama ana sayfa ink
+   bölümle bitiyor** → iki koyu bloğun arasında **96 px krem şerit** duruyordu
+   ve bozuk gibi görünüyordu. Havayı bölüm dolgusu veriyor, marj yalnız dikiş
+   yeri üretiyordu
+
+Ana sayfa telefonda ~576 px, masaüstünde 96 px boşluk kaybetti. **Gözle
+doğrulanmadı**: bu ortam mobil viewport taklit edemiyor (aşağıdaki tuzak),
+sayılar şablonlardan çıktı. Gerçek telefonda bakılmalı.
+
+> **Tuzak — tarayıcı otomasyonundaki sekme arka planda olabilir.** Bir kez
+> „sayfanın bütün içeriği görünmüyor" teşhisi koydum: 40 `reveal` bloğunun
+> hepsi `data-visible="false"` kalıyordu ve ekran görüntüsü bomboş krem
+> geliyordu. Sebebi sitede değildi: `document.visibilityState === "hidden"`,
+> yani Chrome o sekmeyi hiç boyamıyor, dolayısıyla `IntersectionObserver` hiç
+> tetiklenmiyor. Kendi kurduğum test gözlemcisi de tek callback almadı — teşhisi
+> çürüten şey o oldu. **Yerleşim (getBoundingClientRect) ölçülebiliyor, boyama
+> ve IO ölçülemiyor.** Ayrıca `resize_window` başarı diyor ama `innerWidth`
+> 1920'de kalıyor: **mobil genişlik taklit edilemiyor.** Site kendini iframe'e
+> de aldırmıyor (CSP `frame-src`), o yol da kapalı.
 
 ## Sıradaki oturum buradan başlasın
 
