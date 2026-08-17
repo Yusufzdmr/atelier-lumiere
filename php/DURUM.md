@@ -368,9 +368,59 @@ her yuvanın kendi „Sayfayı gör" bağlantısı var (`Images::SLOT_PAGES` —
   yanlış teşhis koydum
 - Demo sunucusuna kod atmak: `tar czf … | scp` → `tar xzf`. `rsync` Windows'ta
   çalışmıyor. Ardından `chown -R www-data:www-data`
-- **Kapak seçimi ve yükleme çubuğu tarayıcıda gözle doğrulanmadı** (oturum
-  düşmüştü). Kod lint'ten geçti ve çalışan „Sil" düğmesinin aynı kalıbı, ama
-  müşteri bakmadıysa ilk iş o
+- **Kapak seçimi doğrulandı** (17 Ağustos akşamı, aşağıdaki bölüm).
+  **Yükleme çubuğu hâlâ gözle görülmedi** — panele parola yazarak girmiyorum;
+  o tıklama sahibinden gelecek
+
+## 17 Ağustos, akşam — doğrulama, ve çubuğun görünmeme sebebi
+
+Bu turun işi yeni bir özellik değildi: bir önceki turun „doğrulanmadı" dediği
+iki şeye bakmak. İkisinden biri sağlam çıktı, öteki yayında **çalışmıyordu** —
+ve sebebi koda değil derlemeye bakıyordu.
+
+**Kapak seçimi — uçtan uca doğru.** `stories[4]` (3 yüklü fotoğraf) üzerinde:
+panelde foto 0'da düğme yerine „Kapak" etiketi, ötekilerde düğme; `photo-cover`
+POST'u 303 veriyor; dizi `[a,b,c]` → `[c,a,b]` oluyor, silme yok; çekim
+sayfasının kapağı **ve** portfolyo kartındaki büyük görsel yeni fotoğrafa
+dönüyor, kartın yanındaki küçük kare `uploads[1]`'i gösteriyor. İki
+`makeCover` ile eski sıraya geri getirildi, veri ilk hâlinde.
+
+**Yükleme çubuğunun yüksekliği yoktu.** `style.css` commit'liydi ama çubuk
+eklendikten sonra Tailwind **yeniden derlenmemişti**: derlenmiş dosyada
+`h-1.5` ve `duration-150` yoktu. Yani çubuk yayında bir piksellik hiçlik
+olarak duracaktı — tam da önlemek için yazıldığı şey.
+
+Yeniden derlemek bugünü kurtarırdı, sebebi kurtarmazdı: çubuğun HTML'i
+`public/assets/upload.js` **içinde** kuruluyor, `app.css` ise `@source` ile
+yalnız `app.js`'i gösteriyordu. Artık `public/assets` klasörünün tamamı
+taranıyor. Sınıflar bugüne kadar Tailwind'in **otomatik** taramasıyla
+bulunuyordu; o tarama komutun çalıştığı klasöre göre kök seçiyor, yani üstüne
+bina edilecek bir söz değil.
+
+> Kural: **tarayıcıda çizen bir JS yazdıysan, sınıfları derlemeye giriyor mu
+> diye bak.** Şablona sınıf eklemek zaten biliniyordu (tuzaklar bölümü);
+> eksik olan, JS'in de bir şablon olduğuydu.
+
+**Demo sunucusuna yayın (HEAD).** `tar` + `scp` + `tar xzf`, ardından
+`chown -R www-data:www-data`. `config.php` tarball'da yok, `uploads/` silinmiyor
+— ikisi de yerinde kaldı. Öncesi ve sonrası kontrol edildi: **gidonla.com 200**
+(aynı makinede canlı), demoda 8 adres 200, `style.css` artık 73 896 bayt ve
+`h-1.5` içinde.
+
+**Çubuk yine de gözle görülmedi.** Panele girmek parola yazmak demek, onu
+yapmıyorum; sahibi bir kez „Anmelden"e bassın, kalanı bir dakikalık iş.
+Sunucudan doğru CSS geldiği ölçülebildi, çubuğun kendisi ölçülemedi.
+
+**ALL-INKL bu turda kapsam dışı** — proje kararı: sistem tamamlanmadan oraya
+geçilmiyor. Bölüm 2'deki üç adım (veritabanı, `config.php`, alan adı) olduğu
+gibi duruyor, sadece sırası gelmedi.
+
+### Ayhan'ın yeni bildirdiği — mobilde boşluk
+
+„Kaydırınca çok boş alan oluyor." Ertelendi, mobil turuna bırakıldı (kendi
+sözü: *sonra yapalım o zaman mobile göre*). **Hangi sayfa olduğu belli değil**
+— ekran görüntüsü sohbete düşmedi, tahmin edilmedi. Mobil turu başlarken ilk
+soru bu olsun.
 
 ## Sıradaki oturum buradan başlasın
 
