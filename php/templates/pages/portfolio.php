@@ -22,7 +22,11 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
 
   <div class="space-y-20">
     <?php foreach ($stories as $story) : ?>
-      <?php $seeds = (array) ($story['seeds'] ?? []); ?>
+      <?php
+      // Eigene Bilder gehen vor - sonst zeigt die Uebersicht Platzhalter,
+      // obwohl die Reportage schon Fotos hat.
+      $seeds = ((array) ($story['uploads'] ?? [])) ?: ((array) ($story['seeds'] ?? []));
+      ?>
       <?= Ui::revealOpen(60) ?>
         <a href="<?= e($p('/portfolio/' . (string) ($story['slug'] ?? ''))) ?>" class="group block">
           <div class="grid gap-4 sm:grid-cols-3">

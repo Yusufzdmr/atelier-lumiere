@@ -20,9 +20,16 @@ $seeds = (array) ($story['seeds'] ?? []);
 $uploads = (array) ($story['uploads'] ?? []);
 $couple = (string) ($story['couple'] ?? '');
 $gallery = $uploads !== [] ? $uploads : $seeds;
+
+/*
+ * Dasselbe fuer das Titelbild: erst das eigene Foto, dann der Platzhalter.
+ * Stand hier seeds[0], blieb oben der Platzhalter stehen, waehrend unten
+ * schon die eigenen Bilder lagen.
+ */
+$titelbild = (string) ($gallery[0] ?? '');
 ?>
 <?= Ui::pageHero(
-    (string) ($seeds[0] ?? ''),
+    $titelbild,
     $couple,
     I18n::pick($story['venue'] ?? null, $locale) . ' · ' . I18n::pick($story['month'] ?? null, $locale),
     I18n::pick($story['intro'] ?? null, $locale),
@@ -123,7 +130,7 @@ $gallery = $uploads !== [] ? $uploads : $seeds;
         <?= Ui::revealOpen($i * 80) ?>
           <a href="<?= e($p('/portfolio/' . (string) ($other['slug'] ?? ''))) ?>" class="group block">
             <?= Ui::photo(
-                (string) (((array) ($other['seeds'] ?? []))[0] ?? ''),
+                (string) ((((array) ($other['uploads'] ?? [])) ?: ((array) ($other['seeds'] ?? [])))[0] ?? ''),
                 (string) ($other['couple'] ?? ''),
                 '4/3',
                 '',
