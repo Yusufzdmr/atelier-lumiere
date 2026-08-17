@@ -921,7 +921,11 @@ final class ListAdminController
     /** @return array<string,string> */
     private function cityOptions(): array
     {
-        $options = [];
+        // Wie bei den Locations eine leere Wahl: nicht jede Reportage und nicht
+        // jede Location gehoert zu einer Stadtseite. Ohne diesen Eintrag stand
+        // immer die erste Stadt da, und ein Datensatz liess sich nicht mehr
+        // davon loesen.
+        $options = ['' => '—'];
         foreach (Content::list('cities') as $city) {
             $options[(string) ($city['slug'] ?? '')] = (string) ($city['name'] ?? '');
         }
