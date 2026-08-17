@@ -216,7 +216,14 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(22, 18, 14, .55), rgba(22, 18, 14, .18) 60%, transparent);
+  /*
+   * Der Verlauf endet unterhalb des Kopfes, nicht an seiner Unterkante.
+   * Vorher lief er dort schon auf durchsichtig aus – genau auf der Hoehe der
+   * zweiten Zeile („Hochzeitsfotografie · Krumbach“). Auf einem hellen Foto
+   * stand sie damit bei 1.3:1 und war schlicht nicht zu sehen.
+   */
+  bottom: -3rem;
+  background: linear-gradient(to bottom, rgba(22, 18, 14, .72), rgba(22, 18, 14, .52) 55%, transparent);
   opacity: 1;
   transition: opacity .5s;
   pointer-events: none;
@@ -226,7 +233,15 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
 /* Über dem Bild hell, im Balken wieder dunkel. */
 #site-header:not(.is-solid) .hdr-name,
 #site-header:not(.is-solid) .hdr-link { color: #FBF6EE; }
-#site-header:not(.is-solid) .hdr-sub { color: rgba(251, 246, 238, .72); }
+#site-header:not(.is-solid) .hdr-sub { color: rgba(251, 246, 238, .9); }
+
+/*
+ * Ein Schleier allein reicht bei duenner heller Schrift nicht: er dunkelt das
+ * ganze Bild, um zwei Zeilen zu retten. Der Schatten wirkt nur dort, wo die
+ * Schrift steht, und traegt den Rest.
+ */
+#site-header:not(.is-solid) .hdr-name,
+#site-header:not(.is-solid) .hdr-sub { text-shadow: 0 1px 3px rgba(22, 18, 14, .6); }
 #site-header:not(.is-solid) .hdr-cta { color: #FBF6EE; border-color: rgba(251, 246, 238, .7); }
 #site-header:not(.is-solid) .hdr-cta:hover { background: #FBF6EE; color: #221C16; }
 #site-header:not(.is-solid) .hdr-bar { background: rgba(251, 246, 238, .4); }

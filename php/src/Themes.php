@@ -284,6 +284,134 @@ final class Themes
     }
 
     /** Kennung aus einem Namen: nur Kleinbuchstaben, Ziffern und Bindestrich. */
+    /* ------------------------------ Lesbarkeit ------------------------------ */
+
+    /**
+     * Welche Farbe steht worauf.
+     *
+     * Wichtig ist das Papier, nicht der Seitenhintergrund: der Text der Karte
+     * liegt auf `paper`, und nur dort entscheidet sich, ob man ihn lesen kann.
+     *
+     * Die Schwellen sind nicht überall gleich. Fließtext folgt der WCAG-Grenze
+     * von 4.5:1. Für Akzentlinien und das „&“ wäre dieselbe Grenze falsch –
+     * gedecktes Gold auf Creme ist bei einer Hochzeitseinladung Absicht und
+     * kein Fehler. Deshalb schlägt der Akzent erst sehr spät an: eine Warnung,
+     * die bei jedem Thema erscheint, liest nach dem dritten Mal niemand mehr.
+     *
+     * @var array<int,array{0:string,1:string,2:float,3:array<string,string>}>
+     */
+    private const READABLE = [
+        ['fg',       'paper', 4.5, ['de' => 'Schrift auf der Karte', 'tr' => 'Karttaki yazı']],
+        ['soft',     'paper', 3.0, ['de' => 'Gedämpfte Schrift (Datum, Zusätze)', 'tr' => 'İkincil yazı (tarih, notlar)']],
+        ['sealText', 'seal',  3.0, ['de' => 'Initialen im Siegel', 'tr' => 'Mühürdeki harfler']],
+        ['accent',   'paper', 1.8, ['de' => 'Akzent (Linien, „&“)', 'tr' => 'Vurgu (çizgi, „&“)']],
+    ];
+
+    /**
+     * Was an diesem Thema schwer zu lesen ist.
+     *
+     * Leere Liste heißt: alles in Ordnung. Sonst je Eintrag der Name des
+     * Feldes, das gemessene Verhältnis und der Satz dazu.
+     *
+     * @param array<string,mixed> $theme
+     * @return list<array{key:string,label:string,ratio:float,needed:float}>
+     */
+    public static function readability(array $theme, string $locale = 'de'): array
+    {
+        $out = [];
+
+        foreach (self::READABLE as [$vorn, $hinten, $grenze, $namen]) {
+            $ratio = self::contrast(
+                (string) ($theme[$vorn] ?? ''),
+                (string) ($theme[$hinten] ?? '')
+            );
+
+            if ($ratio === null || $ratio >= $grenze) {
+                continue;
+            }
+
+            $out[] = [
+                'key'    => $vorn,
+                'label'  => $namen[$locale] ?? $namen['de'],
+                'ratio'  => $ratio,
+                'needed' => $grenze,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Kontrastverhältnis nach WCAG: 1.0 heißt gleiche Farbe, 21.0 ist
+     * Schwarz auf Weiß. Null, wenn eine der Farben nicht lesbar war.
+     */
+    public static function contrast(string $vorn, string $hinten): ?float
+    {
+        $b = self::rgb($hinten);
+        $v = self::rgb($vorn);
+        if ($b === null || $v === null) {
+            return null;
+        }
+
+        // Halbdurchsichtige Schrift (soft steht als rgba da) zuerst auf den
+        // Hintergrund rechnen – sonst misst man eine Farbe, die nie zu sehen ist.
+        if ($v[3] < 1.0) {
+            foreach ([0, 1, 2] as $i) {
+                $v[$i] = $v[$i] * $v[3] + $b[$i] * (1 - $v[3]);
+            }
+        }
+
+        $lv = self::luminance($v);
+        $lb = self::luminance($b);
+
+        return (max($lv, $lb) + 0.05) / (min($lv, $lb) + 0.05);
+    }
+
+    /** @return array{0:float,1:float,2:float,3:float}|null r,g,b (0-255) und Alpha */
+    private static function rgb(string $value): ?array
+    {
+        $value = trim($value);
+
+        if (preg_match('/^rgba?\(([^)]+)\)$/i', $value, $m) === 1) {
+            $teile = array_map('trim', explode(',', $m[1]));
+            if (count($teile) < 3) {
+                return null;
+            }
+            return [
+                (float) $teile[0],
+                (float) $teile[1],
+                (float) $teile[2],
+                isset($teile[3]) ? (float) $teile[3] : 1.0,
+            ];
+        }
+
+        $hex = ltrim($value, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if (preg_match('/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/', $hex) !== 1) {
+            return null;
+        }
+
+        return [
+            (float) hexdec(substr($hex, 0, 2)),
+            (float) hexdec(substr($hex, 2, 2)),
+            (float) hexdec(substr($hex, 4, 2)),
+            strlen($hex) === 8 ? hexdec(substr($hex, 6, 2)) / 255 : 1.0,
+        ];
+    }
+
+    /** @param array{0:float,1:float,2:float,3:float} $rgb */
+    private static function luminance(array $rgb): float
+    {
+        $lin = static function (float $v): float {
+            $v /= 255;
+            return $v <= 0.03928 ? $v / 12.92 : pow(($v + 0.055) / 1.055, 2.4);
+        };
+
+        return 0.2126 * $lin($rgb[0]) + 0.7152 * $lin($rgb[1]) + 0.0722 * $lin($rgb[2]);
+    }
+
     public static function slug(string $value): string
     {
         $value = strtolower(trim($value));

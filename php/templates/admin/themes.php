@@ -99,6 +99,39 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                 </div>
               <?php endforeach; ?>
             </div>
+
+            <?php
+            /*
+             * Was der Betrieb hier einstellt, sieht er im Vorschaukästchen
+             * daneben – klein, hell und in einer Schriftgröße, in der eine
+             * knapp lesbare Farbe noch lesbar aussieht. Auf der Einladung
+             * eines Gastes ist sie es dann nicht mehr. Deshalb wird gerechnet
+             * und nicht geschaut.
+             */
+            $lesbarkeit = Themes::readability($theme, $locale);
+            ?>
+            <?php if ($lesbarkeit !== []) : ?>
+              <div class="mt-6 border-l-2 border-[#9C4A3C] bg-[#9C4A3C]/5 px-4 py-3">
+                <div class="text-[0.66rem] uppercase tracking-[0.18em] text-[#9C4A3C]">
+                  <?= $de ? 'Schwer zu lesen' : 'Okunması zor' ?>
+                </div>
+                <ul class="mt-2 space-y-1 text-[0.82rem] leading-relaxed text-ink">
+                  <?php foreach ($lesbarkeit as $warnung) : ?>
+                    <li>
+                      <strong><?= e($warnung['label']) ?></strong> —
+                      <?= $de
+                        ? 'Kontrast ' . number_format($warnung['ratio'], 1) . ':1, nötig sind ' . number_format($warnung['needed'], 1) . ':1.'
+                        : 'Kontrast ' . number_format($warnung['ratio'], 1) . ':1, gereken ' . number_format($warnung['needed'], 1) . ':1.' ?>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+                <p class="mt-2 text-[0.74rem] leading-relaxed text-muted">
+                  <?= $de
+                    ? 'Entweder die Schriftfarbe dunkler oder den Untergrund heller. Das Vorschaubild rechts täuscht: dort ist die Schrift klein und der Bildschirm hell.'
+                    : 'Ya yazı rengini koyulaştırın ya da altını açın. Sağdaki önizleme yanıltır: orada yazı küçük ve ekran parlak.' ?>
+                </p>
+              </div>
+            <?php endif; ?>
           </div>
 
           <!-- Bilder -->
