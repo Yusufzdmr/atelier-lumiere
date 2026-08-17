@@ -829,6 +829,25 @@ final class InviteController
             return;
         }
 
+        // Aus dem Panel darf man eine noch nicht gespeicherte Kombination
+        // ausprobieren: die sechs Bewegungsachsen kommen dann als Parameter
+        // herein. Nur bekannte Werte werden uebernommen – was nicht in der
+        // Liste steht, bleibt beim Stand des Themas.
+        foreach ([
+            'intro'         => Themes::INTROS,
+            'idle'          => Themes::IDLES,
+            'animation'     => Themes::ANIMATIONS,
+            'nameAnimation' => Themes::NAME_ANIMATIONS,
+            'particle'      => Themes::PARTICLES,
+            'reveal'        => Themes::REVEALS,
+            'scene'         => Themes::SCENES,
+        ] as $field => $allowed) {
+            $value = (string) ($_GET[$field] ?? '');
+            if ($value !== '' && in_array($value, $allowed, true)) {
+                $theme[$field] = $value;
+            }
+        }
+
         $locale = I18n::locale();
         $invitation = $this->demoInvitation($theme, $locale);
         $date = (string) ($invitation['events'][0]['date'] ?? '');

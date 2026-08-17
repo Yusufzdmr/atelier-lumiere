@@ -43,6 +43,29 @@
   /* ------------------------- Themen: Vorschau ------------------------- */
   // Farbe ändern und sofort sehen, was das Paar später sieht – sonst müsste
   // man für jede Nuance speichern und neu laden.
+  /*
+   * „Mit diesen Bewegungen ansehen": baut die Adresse der Designvorschau aus
+   * den gerade eingestellten Listen. Die Vorschau nimmt die sechs Achsen als
+   * Parameter entgegen, also braucht es kein Speichern, um etwas auszuprobieren
+   * – und ein Fehlgriff kostet kein gespeichertes Thema.
+   */
+  document.querySelectorAll("[data-theme-try]").forEach(function (link) {
+    var id = link.getAttribute("data-theme-try");
+    var form = document.querySelector('[data-theme-form][data-theme-id="' + id + '"]');
+    if (!form) return;
+
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      var parts = [];
+      ["intro", "idle", "animation", "nameAnimation", "particle", "reveal", "scene"].forEach(function (name) {
+        var field = form.querySelector('[name="' + name + '"]');
+        if (field && field.value) parts.push(name + "=" + encodeURIComponent(field.value));
+      });
+      var base = link.getAttribute("data-base") || "/de/designs/" + id;
+      window.open(base + (parts.length ? "?" + parts.join("&") : ""), "_blank", "noopener");
+    });
+  });
+
   document.querySelectorAll("[data-theme-form]").forEach(function (form) {
     var id = form.getAttribute("data-theme-id");
     var preview = document.querySelector('[data-theme-preview="' + id + '"]');

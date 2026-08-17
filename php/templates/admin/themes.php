@@ -264,6 +264,26 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                   <?php endforeach; ?>
                 </select>
               </div>
+              <div class="md:col-span-3">
+                <?php /* Die Listen sagen nur, wie etwas heisst. Der Knopf zeigt, was es tut –
+                         mit der gerade gewaehlten Kombination, auch ungespeichert. */ ?>
+                <a href="<?= e(\Atelier\I18n::sitePath('/designs/' . $id, $locale)) ?>"
+                   data-theme-try="<?= e($id) ?>"
+                   data-base="<?= e(\Atelier\I18n::sitePath('/designs/' . $id, $locale)) ?>"
+                   target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 border border-ink px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/>
+                  </svg>
+                  <?= $de ? 'Mit diesen Bewegungen ansehen' : 'Bu hareketlerle önizle' ?>
+                </a>
+                <p class="mt-2 text-[0.7rem] leading-relaxed text-muted">
+                  <?= $de
+                      ? 'Öffnet die vollständige Einladung in einem neuen Tab – mit der Auswahl von hier, auch wenn sie noch nicht gespeichert ist. Unten steht, welche Bewegung gerade läuft.'
+                      : 'Davetiyenin tamamını yeni sekmede açar – buradaki seçimle, henüz kaydetmemiş olsanız bile. Altta hangi hareketin oynadığı yazar.' ?>
+                </p>
+              </div>
+
               <div>
                 <label class="<?= $label ?>"><?= $de ? 'Dauer (ms)' : 'Süre (ms)' ?></label>
                 <input type="number" min="0" max="8000" step="50" name="animationSpeed" value="<?= e((string) $theme['animationSpeed']) ?>" class="<?= $input ?>" data-theme-speed>

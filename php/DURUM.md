@@ -808,6 +808,32 @@ Bir de: `currentColor` mühürde **yazı** rengidir. Halka ve parıltı onunla
 
 CSS: 89.3 → **91 KB**.
 
+## 18 Ağustos, beşinci tur — „neyin ne olduğu" görünsün
+
+Panelde altı açılır liste vardı ama hiçbiri ne yaptığını göstermiyordu.
+„Dunkelkammer" ya da „Halka" seçen kişi ancak kaydedip siteye bakarak
+anlıyordu — ve yanlışsa gerçek temayı bozmuş oluyordu.
+
+**Tasarım önizlemesi artık parametre alıyor.** `designPreview()` altı ekseni
+(+ sahne) `$_GET`'ten okuyor, yalnızca listede olan değerleri kabul ediyor:
+
+```
+/de/designs/elysee?intro=party&idle=heartbeat&animation=flip&particle=confetti&reveal=side&nameAnimation=letters
+```
+
+Panelde her temanın altında **„Bu hareketlerle önizle"** düğmesi var; formdaki
+seçimleri okuyup bu adresi yeni sekmede açıyor. **Kaydetmek gerekmiyor** —
+denemenin gerçek temaya bir maliyeti yok.
+
+**Önizleme çubuğu artık ne olduğunu yazıyor:** Sahne / Beklerken / Kart /
+İsimler / Parçacık / Bölümler, her biri okunur adıyla. Yanında „Tekrar oynat"
+— aynı adrese bir bağlantı, sayfayı baştan yükleyip diziyi sıfırlıyor
+(betik gerekmiyor, CSP zaten HTML'de handler'a izin vermiyor).
+
+Çubuk `z-50` idi ve **kapalı zarf onu örtüyordu**; ancak zarf açıldıktan sonra
+görünüyordu. Oysa asıl gerektiği an, daha hiçbir şey açılmamışken. `z-[70]`
+oldu — kuvertin (50) ve sahnenin (60) üstünde.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

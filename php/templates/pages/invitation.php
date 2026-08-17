@@ -140,19 +140,61 @@ foreach ($rsvps as $rsvp) {
  * am Slug.
  */
 if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
-  <div class="fixed inset-x-0 bottom-0 z-50 border-t border-sand-deep bg-cream/95 px-5 py-3 backdrop-blur">
-    <div class="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
-      <span class="text-[0.72rem] uppercase tracking-[0.18em] text-muted"><?= e((string) ($theme['name'] ?? '')) ?></span>
-      <div class="flex items-center gap-3">
-        <a href="<?= e(\Atelier\I18n::path('/designs', $locale)) ?>"
-           class="text-[0.68rem] uppercase tracking-[0.16em] text-muted hover:text-gold">
-          <?= $de ? 'Alle Designs' : 'All designs' ?>
-        </a>
-        <a href="<?= e(\Atelier\I18n::path('/einladung', $locale)) ?>?design=<?= e((string) ($theme['id'] ?? '')) ?>"
-           class="bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
-          <?= e(\Atelier\I18n::t('invite.useDesign')) ?>
-        </a>
+  <?php
+  /*
+   * Die Leiste sagt nicht nur „Vorschau", sondern welche sechs Bewegungen
+   * gerade laufen. Im Panel stehen dafuer nur Auswahllisten mit Namen –
+   * ohne diese Zeile weiss niemand, was „Dunkelkammer" oder „Halka" tut.
+   */
+  $tl = $de ? 'de' : 'tr';
+  $moves = [
+      [$de ? 'Szene' : 'Sahne',        \Atelier\Themes::introLabel($introKind, $tl)],
+      [$de ? 'Wartet' : 'Beklerken',   \Atelier\Themes::idleLabel($idleKind, $tl)],
+      [$de ? 'Karte' : 'Kart',         \Atelier\Themes::animationLabel((string) $theme['animation'], $tl)],
+      [$de ? 'Namen' : 'İsimler',      \Atelier\Themes::nameAnimationLabel($nameAnim, $tl)],
+      [$de ? 'Teilchen' : 'Parçacık',  \Atelier\Themes::particleLabel($particle, $tl)],
+      [$de ? 'Abschnitte' : 'Bölümler', \Atelier\Themes::revealLabel($revealKind, $tl)],
+  ];
+  // „Nochmal ansehen" ist bewusst ein Link auf dieselbe Adresse: das
+  // Neuladen setzt die ganze Abfolge zurueck, ohne eine Zeile Skript –
+  // und die Inhaltsrichtlinie verbietet Handler im HTML ohnehin.
+  $again = \Atelier\I18n::path('/designs/' . (string) ($theme['id'] ?? ''), $locale);
+  $query = array_filter([
+      'intro' => $introKind, 'idle' => $idleKind, 'animation' => (string) $theme['animation'],
+      'nameAnimation' => $nameAnim, 'particle' => $particle, 'reveal' => $revealKind,
+      'scene' => (string) ($theme['scene'] ?? ''),
+  ], static fn (string $v): bool => $v !== '');
+  ?>
+  <?php /* Ueber Kuvert (z-50) und Szene (z-60): in der Vorschau soll man die
+           Angaben auch dann lesen koennen, wenn noch nichts geoeffnet ist. */ ?>
+  <div class="fixed inset-x-0 bottom-0 z-[70] border-t border-sand-deep bg-cream/95 px-5 py-3 backdrop-blur">
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span class="text-[0.72rem] uppercase tracking-[0.18em] text-muted"><?= e((string) ($theme['name'] ?? '')) ?></span>
+        <div class="flex items-center gap-3">
+          <a href="<?= e($again . '?' . http_build_query($query)) ?>"
+             class="border border-sand-deep px-4 py-2 text-[0.66rem] uppercase tracking-[0.16em] text-muted transition-colors hover:border-gold hover:text-gold">
+            <?= $de ? 'Nochmal ansehen' : 'Tekrar oynat' ?>
+          </a>
+          <a href="<?= e(\Atelier\I18n::path('/designs', $locale)) ?>"
+             class="text-[0.68rem] uppercase tracking-[0.16em] text-muted hover:text-gold">
+            <?= $de ? 'Alle Designs' : 'All designs' ?>
+          </a>
+          <a href="<?= e(\Atelier\I18n::path('/einladung', $locale)) ?>?design=<?= e((string) ($theme['id'] ?? '')) ?>"
+             class="bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+            <?= e(\Atelier\I18n::t('invite.useDesign')) ?>
+          </a>
+        </div>
       </div>
+
+      <dl class="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[0.68rem] leading-relaxed">
+        <?php foreach ($moves as [$key, $value]) : ?>
+          <div class="flex gap-1.5">
+            <dt class="uppercase tracking-[0.14em] text-gold"><?= e($key) ?></dt>
+            <dd class="text-muted"><?= e($value) ?></dd>
+          </div>
+        <?php endforeach; ?>
+      </dl>
     </div>
   </div>
 <?php endif; ?>
