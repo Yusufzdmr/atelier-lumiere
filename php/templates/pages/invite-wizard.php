@@ -237,6 +237,56 @@ $steps = $de
                 </label>
               <?php endforeach; ?>
             </div>
+
+            <?php
+            /*
+             * Die Bewegungen gehoeren dem Paar, nicht nur dem Betrieb.
+             * Im Panel stellt der Betrieb ein, was ein Design mitbringt;
+             * hier darf das Paar davon abweichen. Leer heisst „so wie das
+             * Design es vorsieht" – niemand muss sich damit befassen.
+             */
+            $tl = $locale === 'de' ? 'de' : 'en';
+            $axes = [
+                ['anim_intro',    $de ? 'Eröffnungsszene' : 'Opening scene',        \Atelier\Themes::INTROS,          'introLabel'],
+                ['anim_idle',     $de ? 'Geschlossenes Kuvert' : 'Closed envelope', \Atelier\Themes::IDLES,           'idleLabel'],
+                ['anim_card',     $de ? 'Karte kommt herein' : 'The card arrives',  \Atelier\Themes::ANIMATIONS,      'animationLabel'],
+                ['anim_name',     $de ? 'Eure Namen' : 'Your names',                \Atelier\Themes::NAME_ANIMATIONS, 'nameAnimationLabel'],
+                ['anim_particle', $de ? 'Was schwebt' : 'What drifts',              \Atelier\Themes::PARTICLES,       'particleLabel'],
+                ['anim_reveal',   $de ? 'Abschnitte' : 'The sections',              \Atelier\Themes::REVEALS,         'revealLabel'],
+            ];
+            ?>
+            <div class="mt-10 border-t border-sand-deep pt-8">
+              <div class="<?= $label ?>"><?= $de ? 'Bewegung' : 'Movement' ?></div>
+              <p class="mt-2 max-w-xl text-[0.8rem] leading-relaxed text-muted">
+                <?= $de
+                    ? 'Jedes Design bringt seine eigene Bewegung mit. Wer mag, stellt sie hier selbst zusammen – und sieht sie sich vorher an.'
+                    : 'Every design comes with its own movement. Change any of it here if you like — and watch it first.' ?>
+              </p>
+
+              <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <?php foreach ($axes as [$name, $title, $options, $fn]) : ?>
+                  <div>
+                    <label class="<?= $label ?>" for="<?= e($name) ?>"><?= e($title) ?></label>
+                    <select id="<?= e($name) ?>" name="<?= e($name) ?>" class="<?= $field ?>" data-anim="<?= e($name) ?>">
+                      <option value=""><?= $de ? '— wie im Design —' : '— as the design has it —' ?></option>
+                      <?php foreach ($options as $key) : ?>
+                        <option value="<?= e($key) ?>" <?= $old($name) === $key ? 'selected' : '' ?>>
+                          <?= e(\Atelier\Themes::$fn($key, $tl)) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+
+              <a href="<?= e(I18n::path('/designs', $locale)) ?>" target="_blank" rel="noopener" data-anim-preview
+                 class="mt-6 inline-flex items-center gap-2 border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/>
+                </svg>
+                <?= $de ? 'So ansehen' : 'Watch it' ?>
+              </a>
+            </div>
           </div>
         </fieldset>
 

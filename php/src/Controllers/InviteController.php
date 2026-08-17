@@ -177,7 +177,25 @@ final class InviteController
             'theme'     => $theme,
             // Die Kopie des Themas, wie es in diesem Moment aussieht. Was der
             // Betrieb spaeter am Thema aendert, laesst diese Karte in Ruhe.
-            'themeSnapshot' => Themes::complete(Themes::find($theme) ?? []),
+            // Die Kopie traegt die Wahl des Paares. Leer heisst „so wie das
+            // Design es vorsieht" – dann bleibt der Stand des Themas stehen.
+            'themeSnapshot' => (static function () use ($theme): array {
+                $snapshot = Themes::complete(Themes::find($theme) ?? []);
+                foreach ([
+                    'anim_intro'    => ['intro', Themes::INTROS],
+                    'anim_idle'     => ['idle', Themes::IDLES],
+                    'anim_card'     => ['animation', Themes::ANIMATIONS],
+                    'anim_name'     => ['nameAnimation', Themes::NAME_ANIMATIONS],
+                    'anim_particle' => ['particle', Themes::PARTICLES],
+                    'anim_reveal'   => ['reveal', Themes::REVEALS],
+                ] as $field => [$key, $allowed]) {
+                    $value = Security::clean($_POST[$field] ?? '', 20);
+                    if ($value !== '' && in_array($value, $allowed, true)) {
+                        $snapshot[$key] = $value;
+                    }
+                }
+                return $snapshot;
+            })(),
             'locale'    => I18n::locale(),
             'paid'      => $free,
             'price'     => Pricing::total($sections, count($events) > 1, $free),

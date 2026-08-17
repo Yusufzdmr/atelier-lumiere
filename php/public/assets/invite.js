@@ -40,6 +40,33 @@
   if (next) next.addEventListener("click", function () { show(current + 1); });
   show(0);
 
+  /*
+   * „So ansehen": oeffnet die Designvorschau mit dem gerade gewaehlten
+   * Design UND den gewaehlten Bewegungen. Nichts davon ist gespeichert –
+   * das Paar soll ausprobieren duerfen, bevor es sich entscheidet.
+   */
+  var animPreview = form.querySelector("[data-anim-preview]");
+  if (animPreview) {
+    animPreview.addEventListener("click", function (event) {
+      event.preventDefault();
+      var chosen = form.querySelector('[name="theme"]:checked');
+      var base = animPreview.getAttribute("href").replace(/\/$/, "");
+      if (chosen) base += "/" + chosen.value;
+
+      var map = {
+        anim_intro: "intro", anim_idle: "idle", anim_card: "animation",
+        anim_name: "nameAnimation", anim_particle: "particle", anim_reveal: "reveal",
+      };
+      var parts = [];
+      Object.keys(map).forEach(function (name) {
+        var field = form.querySelector('[data-anim="' + name + '"]');
+        if (field && field.value) parts.push(map[name] + "=" + encodeURIComponent(field.value));
+      });
+
+      window.open(base + (parts.length ? "?" + parts.join("&") : ""), "_blank", "noopener");
+    });
+  }
+
   /* ---------------------------- Vorschau ---------------------------- */
 
   var stage = form.querySelector("[data-preview-stage]");

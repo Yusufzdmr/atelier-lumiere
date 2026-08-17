@@ -899,6 +899,41 @@ başlığı altında durunca onun işi gibi okunuyor; müşteriye bu söylendi. 
 tek bir kare yüklendiği anda bu dördü tamamen kayboluyor (portfolyodaki
 davranışın aynısı).
 
+## 18 Ağustos — animasyonu artık ÇİFT seçiyor (sihirbazda)
+
+Yanlış yere koymuşum: altı ekseni **panele** eklemiştim, yani işletmenin
+ayarına. Müşterinin kastı ise davetiyeyi yaptıran çiftin kendisinin seçmesiydi
+(„müşteri tek tek seçsin baksın"). Sihirbazda yalnızca renk teması vardı.
+
+**Sihirbaza „Bewegung / Movement" bölümü eklendi** (1. adım, tasarım
+kutularının altında): altı açılır liste + **„So ansehen / Watch it"** düğmesi.
+Düğme seçilen tasarımı ve seçilen altı hareketi alıp tasarım önizlemesini yeni
+sekmede açıyor:
+
+```
+/de/designs/noir?intro=…&idle=…&animation=…&nameAnimation=…&particle=…&reveal=…
+```
+
+Yani çift **kaydetmeden, sipariş vermeden** deneyip bakabiliyor. Bu adres zaten
+bir önceki turda parametre alır hale gelmişti; sihirbaz onu kullanıyor.
+
+Her listenin ilk seçeneği **„— tasarımdaki gibi —" (boş)**. Kimse bu bölümle
+uğraşmak zorunda değil; dokunulmazsa temanın kendi hareketi geçerli.
+
+### Nerede saklanıyor
+
+`themeSnapshot` içinde. Davetiye oluşturulurken temanın anlık kopyası
+alınıyordu; çiftin seçtikleri o kopyanın üstüne yazılıyor. Böylece:
+- Davetiye sayfası zaten `$theme`'den okuduğu için **ek kod gerekmedi**
+- İşletme temayı sonradan değiştirse bile gönderilmiş davetiye değişmiyor
+  (versiyonlama mantığı korunuyor)
+
+### Yan iş: İngilizce etiketler
+
+Etiket yardımcıları yalnız `de`/`tr` biliyordu (panel dilleri). Site `de`/`en`
+olduğu için sihirbazda İngilizce tarafta ham anahtarlar („darkroom") çıkardı.
+Altı yardımcıya da `en` seti eklendi.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
