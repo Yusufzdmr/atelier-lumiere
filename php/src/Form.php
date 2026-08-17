@@ -117,6 +117,16 @@ final class Form
          * schmaler Streifen an der Seite genügt, um sie auseinanderzuhalten.
          */
         $englisch = str_ends_with((string) $field['path'], '.en');
+
+        /*
+         * Steht das Feld in einem Sprachpaar, trägt die Spalte darüber schon
+         * „DE“ oder „EN“. Dann hier keinen zweiten Hinweis: kein roter Streifen
+         * und keine eigene Beschriftung, sonst steht dasselbe dreimal.
+         */
+        if (!empty($field['paired'])) {
+            return '<div>' . $control . self::originalNote($field, $value, $originals) . '</div>';
+        }
+
         $rahmen = $englisch ? ' class="border-l-2 border-[#9C4A3C]/40 pl-4"' : '';
 
         // Beim Kästchen steckt die Beschriftung schon im Steuerelement.
@@ -182,11 +192,75 @@ final class Form
     public static function fields(array $fields, array $data, string $grid = 'md:grid-cols-2', array $originals = []): string
     {
         $html = '<div class="grid gap-7 ' . e($grid) . '">';
-        foreach ($fields as $field) {
+
+        $anzahl = count($fields);
+        for ($i = 0; $i < $anzahl; $i++) {
+            $field = $fields[$i];
+            $partner = $fields[$i + 1] ?? null;
+
+            // Deutsch und Englisch desselben Feldes stehen im Formular
+            // hintereinander. Erkannt wird das am Pfad, nicht an der Reihenfolge.
+            if ($partner !== null && self::isPair((string) $field['path'], (string) $partner['path'])) {
+                $html .= self::pair($field, $partner, $data, $originals);
+                $i++;
+                continue;
+            }
+
             $span = !empty($field['wide']) ? ' class="md:col-span-2"' : '';
             $html .= '<div' . $span . '>' . self::field($field, $data, $originals) . '</div>';
         }
+
         return $html . '</div>';
+    }
+
+    /** Zwei Pfade, die sich nur in der Sprache unterscheiden. */
+    private static function isPair(string $a, string $b): bool
+    {
+        return str_ends_with($a, '.de')
+            && str_ends_with($b, '.en')
+            && substr($a, 0, -3) === substr($b, 0, -3);
+    }
+
+    /**
+     * Ein Sprachpaar als eine Zeile mit zwei Spalten.
+     *
+     * Vorher standen die beiden Sprachen untereinander und sahen gleich aus;
+     * unterschieden hat sie ein schmaler roter Streifen am englischen Feld.
+     * Wer schnell etwas ändert, übersieht den. Nebeneinander mit „DE“ und „EN“
+     * darüber muss man nicht mehr hinsehen, um es zu wissen.
+     *
+     * @param array<string,mixed> $de
+     * @param array<string,mixed> $en
+     * @param array<string,mixed> $data
+     * @param array<string,mixed> $originals
+     */
+    private static function pair(array $de, array $en, array $data, array $originals): string
+    {
+        /*
+         * „Einleitung (DE)“ und „Einleitung (EN)“ tragen denselben Namen. Das
+         * Sprachkürzel steht nicht immer am Ende – „Fließtext (DE) – Leerzeile
+         * trennt Absätze“ hat es in der Mitte, deshalb wird es überall entfernt
+         * und nicht nur hinten.
+         */
+        $label = (string) preg_replace('/\s*\((?:DE|EN)\)/u', '', (string) ($de['label'] ?? ''));
+        $label = trim((string) preg_replace('/\s{2,}/u', ' ', $label));
+        $hint = isset($de['hint'])
+            ? '<p class="mt-2 text-[0.72rem] leading-relaxed text-muted">' . e((string) $de['hint']) . '</p>'
+            : '';
+
+        $spalte = static fn (string $text, string $farbe): string =>
+            '<div class="mb-2 text-[0.6rem] uppercase tracking-[0.18em] ' . $farbe . '">' . e($text) . '</div>';
+
+        $de['paired'] = true;
+        $en['paired'] = true;
+
+        return '<div class="col-span-full">'
+            . '<div class="' . self::LABEL . '">' . e($label) . '</div>'
+            . '<div class="mt-3 grid gap-x-6 gap-y-5 md:grid-cols-2">'
+            . '<div>' . $spalte('Deutsch', 'text-muted') . self::field($de, $data, $originals) . '</div>'
+            . '<div class="md:border-l md:border-[#9C4A3C]/25 md:pl-6">'
+            . $spalte('English', 'text-[#9C4A3C]') . self::field($en, $data, $originals) . '</div>'
+            . '</div>' . $hint . '</div>';
     }
 
     private static function textarea(string $name, string $value, int $rows): string

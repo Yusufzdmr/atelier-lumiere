@@ -162,8 +162,13 @@ yerde okunmuyor — ölü veri.
 onu `data/inhalte.sql`'e döküyor ve o dosya git'te. Yani çeviriyi taşımak için
 elle bir şey girmek gerekmiyor.
 
-Panelde İngilizce alanlar **kiremit kırmızısı** çizgi ve etiketle ayrılıyor
-(`src/Form.php`), Almanca cümleyi yanlış kutuya yazmayı zorlaştırmak için.
+Panelde Almanca ve İngilizce **yan yana iki sütunda** duruyor: alan adı bir kez
+yazılıyor, altında solda „Deutsch“ sağda „English“ (`src/Form.php`, `pair()`).
+Eskiden alt alta duruyorlar ve İngilizce olanı ince bir kırmızı çizgi ayırıyordu
+— akşam hızlıca bir metni değiştiren o çizgiye bakmıyor ve Almanca cümleyi
+İngilizce kutuya yazıyordu. Eşleşme **yoldan** tanınıyor (`.de`/`.en` ile biten
+ardışık iki alan), o yüzden bütün sekmelerde birden geçerli; kontrolörlerde
+hiçbir şey değişmedi.
 
 ## Panel düzeni — aynı tarihte değişti
 
@@ -219,8 +224,6 @@ Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şey
 bekliyor. Sıralaması aşağıda „Kalan — bu sırayla“ başlığında. Kod tarafında
 elle alınabilecekler:
 
-- Panelde iletişim talebinin **mesaj metni görünmüyor** (ad/e-posta/telefon var).
-  `templates/admin/overview.php`
 - Galeri ızgarası en-boy oranını fotoğrafın gerçek ölçüsünden değil **sıradan**
   seçiyor (`templates/pages/gallery.php`, `$i % 5` / `$i % 3`). Müşteri “şimdilik
   sorun değil” dedi, ama kesilen kare şikâyeti gelirse sebebi bu.
