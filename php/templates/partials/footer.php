@@ -1,7 +1,9 @@
 <?php
 /**
- * Fußbereich mit Anschrift und den ersten acht Stadtseiten – die interne
- * Verlinkung, die den lokalen Suchergebnissen zugutekommt.
+ * Fußbereich mit Anschrift, Seitenliste und Rechtstexten.
+ *
+ * Die Stadtseiten stehen hier bewusst nicht mehr; sie werden über /regionen
+ * verteilt. Siehe die Notiz weiter unten.
  *
  * @var string $locale
  */
@@ -12,7 +14,14 @@ use Atelier\I18n;
 
 $p = static fn (string $to): string => I18n::path($to, $locale);
 $c = Content::get('contact');
-$cities = array_slice(Content::listed('cities'), 0, 8);
+/*
+ * Hier standen acht Stadtseiten untereinander – auf jeder Seite dieselben.
+ * Sie sind raus, und das kostet nichts: Fußzeilen sind Beiwerk, das Google
+ * ohnehin gering gewichtet, und die Städte hängen weiter an /regionen (unten
+ * in „Seiten“) und an der sitemap.xml. Bei hundert Stadtseiten wäre dieselbe
+ * Liste sogar ein Risiko gewesen – site-weite Ortslisten im Fuß sind genau
+ * das Muster, das als Doorway-Verlinkung auffällt.
+ */
 
 /*
  * Kurze Beschriftungen für die Rechtstexte – nicht die Seitentitel selbst.
@@ -38,7 +47,7 @@ $navLinks = [
 ?>
 <footer class="relative mt-24 bg-ink text-cream">
   <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-    <div class="grid gap-12 md:grid-cols-4">
+    <div class="grid gap-12 md:grid-cols-3">
       <div class="md:col-span-1">
         <div class="font-display text-2xl font-light tracking-[0.16em]">ATELIER LUMIÈRE</div>
         <p class="mt-4 max-w-xs text-sm leading-relaxed text-cream/60"><?= e(I18n::t('footer.tagline')) ?></p>
@@ -53,17 +62,6 @@ $navLinks = [
         <ul class="mt-5 space-y-2.5 text-sm text-cream/70">
           <?php foreach ($navLinks as [$href, $label]) : ?>
             <li><a href="<?= e($href) ?>" class="hover:text-gold"><?= e($label) ?></a></li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
-
-      <div>
-        <h3 class="text-[0.7rem] uppercase tracking-[0.24em] text-gold"><?= e(I18n::t('footer.regions')) ?></h3>
-        <ul class="mt-5 grid grid-cols-1 gap-2.5 text-sm text-cream/70 sm:grid-cols-2 md:grid-cols-1">
-          <?php foreach ($cities as $city) : ?>
-            <li>
-              <a href="<?= e($p('/hochzeitsfotograf/' . (string) ($city['slug'] ?? ''))) ?>" class="hover:text-gold"><?= e((string) ($city['name'] ?? '')) ?></a>
-            </li>
           <?php endforeach; ?>
         </ul>
       </div>
