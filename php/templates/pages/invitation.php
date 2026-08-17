@@ -181,15 +181,18 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
             <?= $de ? 'Alle Designs' : 'All designs' ?>
           </a>
           <a href="<?= e(\Atelier\I18n::path('/einladung', $locale)) ?>?design=<?= e((string) ($theme['id'] ?? '')) ?>"
-             class="bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+             class="bg-ink px-4 py-2.5 text-[0.62rem] uppercase tracking-[0.12em] text-cream transition-colors hover:bg-gold sm:px-5 sm:text-[0.68rem] sm:tracking-[0.16em]">
             <?= e(\Atelier\I18n::t('invite.useDesign')) ?>
           </a>
         </div>
       </div>
 
-      <dl class="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[0.68rem] leading-relaxed">
+      <?php /* Auf dem Telefon zog sich diese Liste ueber fuenf Zeilen und die
+               Leiste nahm die halbe Seite. Dort laeuft sie jetzt in einer
+               Zeile und wird geschoben; ab sm bricht sie wieder um. */ ?>
+      <dl class="mt-2.5 flex gap-x-5 gap-y-1 overflow-x-auto text-[0.68rem] leading-relaxed sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <?php foreach ($moves as [$key, $value]) : ?>
-          <div class="flex gap-1.5">
+          <div class="flex shrink-0 gap-1.5 whitespace-nowrap sm:whitespace-normal">
             <dt class="uppercase tracking-[0.14em] text-gold"><?= e($key) ?></dt>
             <dd class="text-muted"><?= e($value) ?></dd>
           </div>
