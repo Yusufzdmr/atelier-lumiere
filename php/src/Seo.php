@@ -93,15 +93,16 @@ final class Seo
     public static function localBusiness(): array
     {
         $c = Content::get('contact');
-        $stats = Content::get('stats');
         $url = Config::url();
 
-        $rating = str_replace(',', '.', (string) ($stats['rating'] ?? '4.9'));
-        $rating = preg_replace('/[^\d.]/', '', $rating) ?: '4.9';
-
-        return [
+        $daten = [
             '@context'    => 'https://schema.org',
-            '@type'       => ['LocalBusiness', 'Photograph'],
+            /*
+             * PhotographyBusiness ist ein echter Untertyp von LocalBusiness.
+             * Hier stand 'Photograph' – das ist im Vokabular ein einzelnes
+             * Lichtbild, kein Betrieb.
+             */
+            '@type'       => 'PhotographyBusiness',
             '@id'         => $url . '/#business',
             'name'        => 'Atelier Lumière',
             'legalName'   => 'Atelier Lumière Hochzeitsfotografie',
@@ -122,12 +123,46 @@ final class Seo
                 Content::list('cities')
             ),
             'knowsLanguage' => ['de', 'tr', 'en'],
-            'aggregateRating' => [
-                '@type'       => 'AggregateRating',
-                'ratingValue' => $rating,
-                'reviewCount' => '87',
-            ],
         ];
+
+        /*
+         * Kein aggregateRating.
+         *
+         * Hier standen 4,9 Sterne aus 87 Bewertungen – beides fest im Code, aus
+         * der Demo. Erfundene Bewertungssterne sind kein kleiner Schönheitsfehler:
+         * Google zählt sie zu Rich-Result-Spam, und die Strafe dafür trifft die
+         * Domain, nicht das Snippet. Wer besser gefunden werden will, darf sie
+         * gerade deshalb nicht mitliefern.
+         *
+         * Wenn es echte Bewertungen gibt – Google-Profil, Rezensionen mit Datum
+         * und Verfasser –, gehören sie hier hinein, aber dann mit den echten
+         * Zahlen und nachprüfbar.
+         */
+
+        // Leere Angaben lieber weglassen als leer behaupten: Adresse und
+        // Telefon fehlen noch, und ein leerer String ist eine Aussage.
+        $daten['address'] = array_filter($daten['address'], static fn ($v): bool => $v !== '');
+        if (count($daten['address']) < 3) {
+            unset($daten['address']);
+        }
+
+        foreach (['telephone', 'email', 'image'] as $feld) {
+            if (($daten[$feld] ?? '') === '') {
+                unset($daten[$feld]);
+            }
+        }
+
+        // Profile, die denselben Betrieb belegen – hilft der Zuordnung.
+        $sameAs = array_values(array_filter([
+            (string) ($c['instagram'] ?? ''),
+            (string) ($c['vimeo'] ?? ''),
+            (string) ($c['facebook'] ?? ''),
+        ], static fn (string $v): bool => str_starts_with($v, 'http')));
+        if ($sameAs !== []) {
+            $daten['sameAs'] = $sameAs;
+        }
+
+        return $daten;
     }
 
     /**
