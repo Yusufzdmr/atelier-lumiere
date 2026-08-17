@@ -6,10 +6,25 @@ onun yerine geçmez, önüne geçer.
 
 | | |
 |---|---|
-| Hedef | Kendi VPS'iniz, root erişimi |
-| Gereken | PHP **8.1+**, MariaDB/MySQL, Apache (tercih) veya nginx |
+| Hedef | Kendi VPS'iniz (45.147.46.177), root erişimi |
+| Sunucuda hâlihazırda | **nginx 1.18 / Ubuntu — ve canlı bir site: `gidonla.com`** |
+| Gereken | PHP **8.1+** FPM, MariaDB/MySQL |
 | PHP eklentileri | `pdo_mysql`, `mbstring`, `json`, `curl`, `fileinfo`, `zip` + **GD** |
 | Yüklenecek | `atelier-php.tar.gz` — 6.3 MB, 155 dosya, içinde `config.php` **yok** |
+
+> **⚠ Bu makinede yayında bir site var.** Kurulumdan önce dışarıdan baktım:
+> 80 ve 443 açık, nginx cevap veriyor ve `gidonla.com`'a yönlendiriyor. Yani
+> buradaki her adım **eklemeli** olmalı:
+>
+> - **`apache2` kurmayın.** 80. portu nginx tutuyor; Apache kurulumu ya
+>   başlamaz ya da çakışır. Bu belgenin ilk hâli Apache öneriyordu — o öneri
+>   boş bir sunucu içindi, burada canlı siteyi düşürürdü
+> - Mevcut `sites-enabled` dosyalarına **dokunmayın**, yalnızca yeni bir tane
+>   ekleyin
+> - `certbot`'u yalnızca yeni alan adıyla çalıştırın (`-d demo...`), çıplak
+>   `certbot --nginx` mevcut sertifikalara da karışır
+> - `systemctl reload nginx` kullanın, `restart` değil — yeniden başlatmak
+>   canlı siteyi birkaç saniye düşürür, `reload` düşürmez
 
 > **Parola uyarısı — `YAYIN.md`'dekiyle aynı, burada daha da önemli:**
 > Sunucu parolasını, veritabanı parolasını ya da panel parolasını **sohbete
@@ -46,22 +61,31 @@ systemctl reload ssh
 
 ## 2. Sunucu paketleri
 
-Apache öneriyorum, nginx değil — **sebebi somut**: depoda iki `.htaccess`
-dosyası var ve biri güvenlik için. `public/uploads/.htaccess` o klasörde PHP
-motorunu kapatıyor, yani yüklenen bir dosya bir gün programa dönüşemesin diye
-ikinci sıra savunma. nginx `.htaccess` okumaz; nginx'e geçilecekse o kural
-elle yazılmalı (aşağıda 6b).
+**Önce ne olduğuna bakın, sonra kurun.** Sunucuda zaten nginx ve bir site var;
+PHP ile veritabanı da kurulu olabilir:
+
+```bash
+nginx -v
+php -v 2>/dev/null || echo "PHP yok"
+mysql --version 2>/dev/null || echo "MySQL/MariaDB yok"
+ls /etc/nginx/sites-enabled/
+```
+
+Eksik olanları kurun — **`apache2` listede yok, bilerek**:
 
 ```bash
 apt update
-apt install -y apache2 mariadb-server \
-  php php-fpm php-mysql php-mbstring php-curl php-zip php-gd php-xml
-a2enmod rewrite headers
+apt install -y mariadb-server php-fpm php-mysql php-mbstring \
+  php-curl php-zip php-gd php-xml
 ```
 
-**Kontrol:** `php -v` → 8.1 veya üstü. `php -m | grep -E 'gd|zip|curl'` → üçü de
+PHP zaten kuruluysa yalnız eksik eklentileri ekleyin; sürüm 8.1'in altındaysa
+mevcut siteyi de etkileyeceği için sürüm yükseltmeye **girmeyin**, onun yerine
+yan yana kurulum (`php8.3-fpm`) yapıp yalnız bu siteyi ona bağlayın.
+
+**Kontrol:** `php -v` → 8.1+. `php -m | grep -E 'gd|zip|curl|mysql'` → dördü de
 listede. GD yoksa görseller küçültülmeden saklanır (hata vermez ama 6000 px
-dosyalar birikir).
+dosyalar birikir). `systemctl status php*-fpm` → çalışıyor olmalı.
 
 ## 3. Veritabanı
 
@@ -100,46 +124,57 @@ kullanıyor.
 
 **Kontrol:** `mysql atelier -e "SELECT COUNT(*) FROM site_content;"` → 2 satır.
 
-## 6. Alan adı `public/` klasörüne bakmalı
+## 6. nginx: yeni bir site bloğu
 
-### 6a. Apache
+Mevcut dosyalara dokunmadan **yeni** bir tane:
 
-```apache
-<VirtualHost *:80>
-    ServerName demo.alan-adiniz.de
-    DocumentRoot /var/www/atelier/public
-
-    <Directory /var/www/atelier/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
+```bash
+nano /etc/nginx/sites-available/atelier
 ```
-
-`AllowOverride All` şart — yoksa depodaki iki `.htaccess` yok sayılır ve
-yüklenen dosyalar için PHP motoru kapanmaz.
-
-### 6b. nginx kullanılacaksa
-
-`.htaccess` okunmadığı için o iki dosyanın işini elle yapmak gerekir:
 
 ```nginx
-root /var/www/atelier/public;
-index index.php;
+server {
+    listen 80;
+    server_name demo.alan-adiniz.de;   # ya da: atelier.gidonla.com
 
-location / { try_files $uri $uri/ /index.php?$query_string; }
+    root /var/www/atelier/public;
+    index index.php;
 
-location ~ \.php$ {
-    include snippets/fastcgi-php.conf;
-    fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-}
+    location / { try_files $uri $uri/ /index.php?$query_string; }
 
-# public/uploads/.htaccess'in karşılığı — bu blok atlanırsa
-# yüklenen bir dosya çalıştırılabilir hâle gelir.
-location ^~ /uploads/ {
-    location ~ \.php$ { return 403; }
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;   # sürümü kendinizinkiyle değiştirin
+    }
+
+    # public/uploads/.htaccess'in karşılığı.
+    #
+    # Depoda o klasörde PHP motorunu kapatan bir .htaccess var: yüklenen bir
+    # dosya bir gün programa dönüşemesin diye ikinci sıra savunma. nginx
+    # .htaccess okumaz, yani bu blok atlanırsa o savunma yok demektir.
+    location ^~ /uploads/ {
+        location ~ \.php$ { return 403; }
+    }
+
+    # Gizli dosyalar (.git, .env) hiç servis edilmesin.
+    location ~ /\. { deny all; }
 }
 ```
+
+Etkinleştirin ve **düşürmeden** yeniden yükleyin:
+
+```bash
+ln -s /etc/nginx/sites-available/atelier /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
+
+**Kontrol:** `nginx -t` „syntax is ok“ demeli. Demeden `reload` yapmayın —
+bozuk yapılandırmayla nginx yeniden yüklenmez ve canlı site de etkilenir.
+
+**Alan adı yoksa:** DNS uğraşmadan bakılacaksa `listen 80;` yerine
+`listen 8080;` yazıp `server_name _;` yapın; adres `http://45.147.46.177:8080`
+olur. Mevcut siteye hiç dokunmaz. SSL olmadığı için panele ve galeriye böyle
+bir adresten girmeyin.
 
 ## 7. `config.php`
 
@@ -185,9 +220,13 @@ chmod -R 755 /var/www/atelier/public/uploads
 ## 9. SSL
 
 ```bash
-apt install -y certbot python3-certbot-apache
-certbot --apache -d demo.alan-adiniz.de
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d demo.alan-adiniz.de
 ```
+
+**Yalnız yeni alan adını verin** (`-d demo...`). Çıplak `certbot --nginx`
+sunucudaki bütün alan adlarını tarar ve canlı sitenin sertifikasına da
+karışabilir.
 
 Alan adı yoksa ve IP ile bakılacaksa SSL kurulamaz. O hâlde site `http://IP`
 üzerinden açılır; giriş yapılan sayfaları (panel, galeri) böyle bir adreste
