@@ -325,6 +325,53 @@ Sıralamayı belirleyecek olanlar kod değil:
    işaretlemeden çıkarıldı ama metin duruyor, müşteri kararı
 6. Gerçek alan adına geçince `noindex` → `false`
 
+## 17 Ağustos, öğleden sonra — müşterinin bildirdiği dört şey
+
+Dördü de müşteri kullanırken çıktı. Hepsi yayında (demo sunucusu) ve commit'li.
+
+**1. Yüklenen fotoğraf kapak olmuyordu.** „Resimler değişmiyor" diye bildirdi;
+aslında değişiyordu ama baktığı yerde değil. Çekim sayfasının **galeri şeridi**
+`$uploads ?: $seeds` ile doğru çalışıyordu, ama **kapak** (sayfanın üstündeki
+büyük görsel), **portfolyo listesindeki kartlar** ve **„diğer çekimler"**
+doğrudan `seeds[0]` okuyordu. Üç fotoğraf yükle, aşağıda gör, yukarıda hâlâ
+stok fotoğraf. Üçü de artık galerinin kuralını kullanıyor
+(`templates/pages/story.php`, `portfolio.php`).
+
+**2. Kapak seçilebiliyor.** Kapak = `uploads[0]` olduğu için „kapak yap" =
+**başa al** (`Lists::makeCover`). Yeni alan yok, göç yok, ve `[0]` okuyan her
+yerde birden geçerli. Panelde her fotoğrafın üstünde düğme; kapak olanda düğme
+yerine altın „Kapak" etiketi. Tarifi müşteriden: *100 fotoğraf yükleyip ilki
+kötüyse hepsini silmek zorunda kalmayayım.*
+
+**3. Yükleme yüzdesi** (`public/assets/upload.js`, panel düzeninde yükleniyor).
+Sorun şuydu: bastı, bir şey görmedi, ekranı kapattı, yükleme iptal oldu. Artık
+dosya seçili **her** panel formunda çubuk + yüzde çıkıyor, sayfayı kapatmaya
+kalkarsa uyarı veriyor. %100'de „kaydediliyor" yazısına dönüyor — sunucu o an
+görselleri küçültüyor, donmuş çubuk yalan olurdu. XHR/FormData yoksa sessizce
+normal form gönderimine düşüyor.
+
+> İki tuzak: eylem gizli `was` alanında gidiyor **ama** bazı sekmelerde
+> düğmenin kendi `name="was"`'ı var („geri al" ile „kaydet" yan yana). Bu yüzden
+> basılan düğme `event.submitter` ile okunuyor, ilk düğme tahmin edilmiyor.
+
+**4. Görsel yuvaları yanlış sayfaya götürüyordu.** Görseller sekmesinde sekiz
+yuva var, **altı ayrı sayfaya** ait — ama altta tek bir bağlantı vardı ve hep
+ana sayfaya gidiyordu. „Designs, Kopfbild"i düzenleyip kontrol etmek isteyen
+ana sayfada olmayan bir fotoğrafı arıyordu; kaydetme hatası sanılıyordu. Artık
+her yuvanın kendi „Sayfayı gör" bağlantısı var (`Images::SLOT_PAGES` — bilerek
+`SLOTS`'un içine değil yanına: `SLOTS` birkaç yerde döngüye giriyor).
+
+### Sonraki oturum için not
+
+- **Panel oturumu 4 saatte düşüyor** (kasıtlı). `curl` ile panel kontrol
+  ederken çıktılar aniden 0 veriyorsa önce oturuma bak, koda değil — bir kez
+  yanlış teşhis koydum
+- Demo sunucusuna kod atmak: `tar czf … | scp` → `tar xzf`. `rsync` Windows'ta
+  çalışmıyor. Ardından `chown -R www-data:www-data`
+- **Kapak seçimi ve yükleme çubuğu tarayıcıda gözle doğrulanmadı** (oturum
+  düşmüştü). Kod lint'ten geçti ve çalışan „Sil" düğmesinin aynı kalıbı, ama
+  müşteri bakmadıysa ilk iş o
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
