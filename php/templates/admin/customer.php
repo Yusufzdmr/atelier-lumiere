@@ -187,7 +187,7 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
                 <input type="hidden" name="was" value="foto-loeschen">
                 <input type="hidden" name="foto" value="<?= $i ?>">
                 <button data-confirm="<?= $de ? 'Dieses Bild löschen?' : 'Bu fotoğraf silinsin mi?' ?>"
-                        class="w-full bg-ink/80 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover:opacity-100">
+                        class="w-full bg-ink/80 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-90 transition-opacity group-hover:opacity-100">
                   <?= $de ? 'Löschen' : 'Sil' ?>
                 </button>
               </form>

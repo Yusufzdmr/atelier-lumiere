@@ -107,7 +107,7 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
                             <?= $hidden('photo-delete', $key, $i) ?>
                             <input type="hidden" name="foto" value="<?= (int) $photo['index'] ?>">
                             <button data-confirm="<?= $de ? 'Dieses Bild löschen?' : 'Bu fotoğraf silinsin mi?' ?>"
-                                    class="w-full bg-ink/80 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover/ph:opacity-100">
+                                    class="w-full bg-ink/80 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-90 transition-opacity group-hover/ph:opacity-100">
                               <?= $de ? 'Löschen' : 'Sil' ?>
                             </button>
                           </form>
