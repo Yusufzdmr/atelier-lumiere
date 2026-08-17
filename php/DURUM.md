@@ -435,6 +435,24 @@ Ana sayfa telefonda ~576 px, masaüstünde 96 px boşluk kaybetti. **Gözle
 doğrulanmadı**: bu ortam mobil viewport taklit edemiyor (aşağıdaki tuzak),
 sayılar şablonlardan çıktı. Gerçek telefonda bakılmalı.
 
+**Genel tarama (17 Ağustos akşamı).** „Hangi sayfa" sorusu cevapsız kaldığı
+için bütün sayfalar telefon genişliğinde ölçüldü. Alet `bin/probe.html`:
+headless Chrome içinde **390 px genişliğinde bir iframe**, içerik kutularını
+birleştirip metin/görsel bulunmayan bantları çıkarıyor. Girişin arkasındaki
+sekmeler için HTML oturumlu `curl` ile alınıp `<base href="/">` ile geçici
+statik dosya olarak ölçüldü (sonra silindi — içinde CSRF izi var).
+
+| Nerede | Ölçüm |
+|---|---|
+| Site, 12 sayfa tipi (ana, hizmetler, fiyatlar, portfolyo, çekim, bölgeler, rehber, yazı, hakkımda, iletişim, galeri, Impressum) | En geniş boş bant **~150 px** — bir bölüm sınırı. Patolojik boşluk yok |
+| Panel, 7 sekme | Neredeyse hiç boşluk yok (`docH` 1 320 – 3 437 px, `emptyPx` 0 – 339) |
+| `/de/designs` | Metrik **%41 boş** dedi → **göz kararına bakıldı, tasarım doğru**: o boşluk davetiye kartının paspartusu ve kartın kendi içi. Metrik yanlış sayıyor, dokunulmadı |
+| `/de/einladung` | 179 px'lik bant telefon maketinin içi, örnek davetiyenin kendi boşluğu. Dokunulmadı |
+
+Yani sistemik sebep yukarıdaki iki kaldıraçtı ve düzeltildi; başka bir yerde
+ekran boyunda boşluk üreten şey **bulunamadı**. Ayhan'ın „burası" dediği yer
+hâlâ bilinmiyor; ekran görüntüsü gelirse tek tek o noktaya bakılır.
+
 > **Tuzak — tarayıcı otomasyonundaki sekme arka planda olabilir.** Bir kez
 > „sayfanın bütün içeriği görünmüyor" teşhisi koydum: 40 `reveal` bloğunun
 > hepsi `data-visible="false"` kalıyordu ve ekran görüntüsü bomboş krem
