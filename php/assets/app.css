@@ -537,13 +537,18 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
 /* Herzschlag */
 .ti-beat { opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255,160,120,.4), transparent 55%); }
 
-/* ---------- 1. Dunkelkammer (4200 ms) ---------- */
-.t-intro.ti-darkroom[data-playing="true"] .ti-dark     { animation: tiDark 4.2s ease both; }
-.t-intro.ti-darkroom[data-playing="true"] .ti-flash    { animation: tiFlash .55s ease-out .45s both; }
-.t-intro.ti-darkroom[data-playing="true"] .ti-grain    { animation: tiGrain 2.6s ease-in-out .9s both; }
-.t-intro.ti-darkroom[data-playing="true"] .ti-wash     { animation: tiWash 1.7s ease-out 1.5s both; }
-.t-intro.ti-darkroom[data-playing="true"] .ti-leak     { animation: tiLeak 1.4s ease-in-out 2.3s both; }
-.t-intro.ti-darkroom[data-playing="true"] .ti-vignette { animation: tiVignette 1.5s ease-in 2.7s both; }
+/* ---------- 1. Dunkelkammer (2800 ms) ---------- */
+/* War 4200 ms. Die Abfolge bleibt dieselbe, nur enger getaktet – bis zur
+   Karte vergingen sonst rund sieben Sekunden, und so lange wartet niemand
+   auf eine Einladung. Alle Schichten sind mit demselben Faktor gekuerzt,
+   damit Blitz, Korn und Lichtleck weiter in dieser Reihenfolge kommen.
+   Wer hier etwas aendert: Themes::introDuration() muss dazu passen. */
+.t-intro.ti-darkroom[data-playing="true"] .ti-dark     { animation: tiDark 2.8s ease both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-flash    { animation: tiFlash .4s ease-out .3s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-grain    { animation: tiGrain 1.7s ease-in-out .6s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-wash     { animation: tiWash 1.15s ease-out 1s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-leak     { animation: tiLeak .95s ease-in-out 1.5s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-vignette { animation: tiVignette 1s ease-in 1.8s both; }
 
 @keyframes tiDark   { 0% { opacity: 0; } 8% { opacity: 1; } 72% { opacity: .86; } 100% { opacity: 0; } }
 @keyframes tiFlash  { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }

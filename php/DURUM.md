@@ -834,6 +834,18 @@ denemenin gerçek temaya bir maliyeti yok.
 görünüyordu. Oysa asıl gerektiği an, daha hiçbir şey açılmamışken. `z-[70]`
 oldu — kuvertin (50) ve sahnenin (60) üstünde.
 
+## 18 Ağustos — karanlık oda kısaltıldı
+
+4200 → **2800 ms**. Karta kadar ölçülen süre ~7 sn idi, ~5,6 sn oldu
+(2,8 sahne + 1,7 zarf + 1,1 kart). Adımların sırası korunsun diye bütün
+katmanlar **aynı oranla** (0,667) sıkıştırıldı: flaş .45→.3, gren .9→.6,
+banyo 1,5→1,0, ışık sızıntısı 2,3→1,5, vinyet 2,7→1,8.
+
+Bir yeri değiştirirken diğerini unutmayın: süre **iki yerde** yazılı —
+`Themes::introDuration()` (JS bu kadar bekliyor) ve `app.css` içindeki
+`.ti-darkroom` blokları. İkisi ayrışırsa ya kart sahne bitmeden gelir ya da
+bitmiş sahnenin üstünde boşuna beklenir.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

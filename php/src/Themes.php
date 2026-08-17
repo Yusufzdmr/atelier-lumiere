@@ -42,7 +42,7 @@ final class Themes
     public static function introDuration(string $intro): int
     {
         return match ($intro) {
-            'darkroom'  => 4200,
+            'darkroom'  => 2800,
             'focus'     => 2600,
             'henna'     => 3800,
             'party'     => 3200,
