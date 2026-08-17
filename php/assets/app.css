@@ -6,7 +6,11 @@
    Klassen im PHP-Quelltext statt in einer Vorlage – src gehört mit dazu. */
 @source "../templates";
 @source "../src";
-@source "../public/assets/app.js";
+/* Auch die Skripte im public-Ordner: upload.js baut den Fortschrittsbalken
+   im Browser zusammen, seine Klassen stehen nur dort. Ohne diese Zeile
+   haengt es an Tailwinds automatischer Suche, und die richtet sich nach
+   dem Arbeitsverzeichnis des Aufrufs – der Balken fehlte schon einmal. */
+@source "../public/assets";
 
 @theme {
   --color-ink: #14110F;
