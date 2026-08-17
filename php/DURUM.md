@@ -250,6 +250,81 @@ kâğıdın üstünde duruyor, sayfa arkasının değil), ve `soft` rengi `rgba(
 olduğu için saydamlık önce arka planla harmanlanıyor — yoksa hiç görünmeyen bir
 renk ölçülmüş olurdu. Şu an 16 temanın 4'ünde uyarı var, hepsi mühür harflerinde.
 
+## Demo sunucusu (17 Ağustos)
+
+**https://45-147-46-177.sslip.io** — müşterinin bakması için, geçici.
+
+| | |
+|---|---|
+| Sunucu | VPS 45.147.46.177, Ubuntu 22.04, nginx 1.18, PHP 8.3, MySQL 8 |
+| Erişim | `ssh atelier-vps` — anahtarla, parolasız (`~/.ssh/config`) |
+| Klasör | `/var/www/atelier` |
+| Adres | `sslip.io` IP'yi alan adına çeviriyor → Let's Encrypt sertifikası çıktı, **DNS kaydı gerekmedi** |
+| Parolalar | Sunucuda üretildi, sohbetten geçmedi: `/root/.atelier-dbpw`, `/root/.atelier-adminpw`. Panel parolasını değiştirmek için `/root/atelier-parola` |
+
+> **Aynı makinede `gidonla.com` canlı yayında.** Her adım eklemeli yapıldı:
+> ayrı nginx bloğu (mevcut dosyaya dokunulmadı), `reload` (restart değil),
+> güvenlik duvarına dokunulmadı, certbot yalnız yeni ada verildi. Kurulumdan
+> sonra da kontrol edildi: gidonla 200.
+
+Çıplak IP **gönderilmemeli**: Chrome `http`'yi `https`'e yükseltiyor ve 443'te
+gidonla'nın sertifikası duruyor → sertifika uyarısı. `sslip.io` adresi bu yüzden.
+
+Demoda `noindex` **açık**, `robots.txt` her şeyi kapatıyor. Müşteri verisi
+taşınmadı (`bin/export.php` bilerek atlıyor); yerine uydurma bir örnek müşteri
+var: galeri `beispiel-demo`.
+
+Kod güncellemesi: `tar czf … | scp` → sunucuda `tar xzf`.
+**msys2'nin `rsync`'i Windows'ta `ssh` açamıyor** (`dup() in/out/err failed`).
+
+## 17 Ağustos — kullanım kolaylığı ve SEO
+
+Hepsi „sahibi teknik değil, telefondan yönetecek" ölçütüyle yapıldı.
+
+- **Panelde DE/EN yan yana iki sütun** (`Form::pair()`). Eskiden alt alta
+  duruyorlardı ve İngilizceyi ince bir kırmızı çizgi ayırıyordu — akşam hızlıca
+  bir metni değiştiren ona bakmıyor. Eşleşme **yoldan** tanınıyor, o yüzden
+  bütün sekmelerde birden geçerli
+- **Fotoğraf silme düğmesi telefonda görünmüyordu.** `opacity-0` + `group-hover`
+  ile yazılmıştı; telefonda hover yok, yani düğme sahibinin kullandığı cihazda
+  hiç yoktu. İki yerdeydi (`list.php`, `customer.php`), ikisi de düzeldi.
+  **Yeni bir gizli kontrol yazarken bunu hatırla**
+- **Bölge seçimi zorunluydu.** Mekân seçiminde „—" vardı, şehirde yoktu; her
+  kayıt listedeki ilk şehre bağlanıyor ve koparılamıyordu (`cityOptions()`)
+- **Kilit düğmesi** sağ üstte → panele giriş. Site DE+EN, panel DE+TR: `/en/admin`
+  yok, o yüzden hedef hesaplanıyor (`I18n::isAdminLocale`)
+- **Tasarım akışı ters çevrildi.** Artık: tasarımlara bak → „Bu tasarımla
+  oluştur" → sihirbaz o tasarım seçili açılıyor (`?design=`, doğrulanarak;
+  kayıtlı taslak öncelikli). Önizlemenin altında da aynı düğme, yalnız
+  önizlemede (slug `vorschau`)
+- **Formların yanına veri koruma cümlesi** (`contact.dataNote`,
+  `invite.rsvpDataNote`, `invite.guestsDataNote`). Geçerli mevzuat **DSGVO**,
+  KVKK değil — işletme Almanya'da
+
+### SEO — yapılan ve kalan
+
+**Kaldırıldı: uydurma değerlendirme.** `Seo.php` Google'a „4,9 puan, 87
+değerlendirme" diyordu; ikisi de koda sabit yazılmış demo verisiydi. Sahte
+değerlendirme işaretlemesi rich-result spam sayılıyor ve ceza **alan adına**
+iniyor. Ayrıca tip `Photograph`'tı (sözlükte: tek bir fotoğraf) →
+`PhotographyBusiness`. Boş alanlar artık gönderilmiyor.
+
+Zaten doğru olan, dokunulmadı: canonical, hreflang (de/en/x-default), Open
+Graph + Twitter card, rehberde `BlogPosting`+`FAQPage`+`BreadcrumbList`,
+80 adresli sitemap, boş `alt` metni yok. **133 adres tarandı: kırık bağlantı
+yok, PHP uyarısı yok.** 17 panel sekmesi de temiz.
+
+Sıralamayı belirleyecek olanlar kod değil:
+
+1. **Adres + telefon** — müşteri panelden girecek (17 Ağustos kararı). Yerel
+   aramada en belirleyici veri; Google profiliyle harfi harfine aynı olmalı
+2. **Google Business Profile + Search Console** kurulmadı
+3. `og:image` hâlâ Unsplash'ten temsili görsel
+4. Mekânlar ve portfolyo hâlâ Stuttgart demo verisi
+5. Ana sayfadaki **„4,9 Google puanı" kutusu** hâlâ sayfada yazıyor —
+   işaretlemeden çıkarıldı ama metin duruyor, müşteri kararı
+6. Gerçek alan adına geçince `noindex` → `false`
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
