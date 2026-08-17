@@ -28,6 +28,53 @@ final class Themes
         'flip', 'slideLeft', 'slideRight', 'blur', 'petals', 'none',
     ];
 
+    /**
+     * Die Eröffnungsszene: eine gespielte Abfolge, bevor die Karte kommt.
+     *
+     * Im Unterschied zu ANIMATIONS (eine Bewegung für die Karte) ist das hier
+     * eine Szene aus mehreren Schichten mit eigenem Takt – Dunkelheit, Blitz,
+     * Korn, Lichtleck. Die Dauer steht in `introDuration()`; `invitation.js`
+     * wartet sie ab, bevor es die Karte freigibt.
+     */
+    public const INTROS = ['none', 'darkroom', 'focus', 'henna', 'party', 'sealLight'];
+
+    /** Wie lange eine Szene läuft (ms). Muss zum Stylesheet passen. */
+    public static function introDuration(string $intro): int
+    {
+        return match ($intro) {
+            'darkroom'  => 4200,
+            'focus'     => 2600,
+            'henna'     => 3800,
+            'party'     => 3200,
+            'sealLight' => 2400,
+            default     => 0,
+        };
+    }
+
+    public static function introLabel(string $key, string $locale): string
+    {
+        $labels = [
+            'de' => [
+                'none'      => 'Keine Szene – Kuvert öffnet direkt',
+                'darkroom'  => 'Dunkelkammer: Blitz, Korn, das Bild entwickelt sich',
+                'focus'     => 'Schärfe zieht nach: unscharf, dann klar',
+                'henna'     => 'Henna: die Linie zeichnet sich, Herzschlag',
+                'party'     => 'Fest: Lichtstrahlen und Konfetti',
+                'sealLight' => 'Siegel & Licht: Wachs bricht, Gold läuft durch',
+            ],
+            'tr' => [
+                'none'      => 'Sahne yok – zarf doğrudan açılır',
+                'darkroom'  => 'Karanlık oda: flaş, gren, görüntü banyodan çıkar',
+                'focus'     => 'Odak kayması: bulanıktan nete',
+                'henna'     => 'Kına: desen çizilir, kalp atışı',
+                'party'     => 'Kutlama: ışık huzmeleri ve konfeti',
+                'sealLight' => 'Mühür & ışık: mum kırılır, altın geçer',
+            ],
+        ];
+
+        return $labels[$locale][$key] ?? $key;
+    }
+
     /** Wie die Namen erscheinen. */
     public const NAME_ANIMATIONS = ['write', 'fade', 'rise', 'glow', 'letters', 'none'];
 
@@ -275,6 +322,7 @@ final class Themes
             'imageOpacity'   => '100',
             'envelopeImage'  => '',
             'animation'      => '',
+            'intro'          => '',
             'nameAnimation'  => '',
             'particle'       => '',
             'reveal'         => '',
@@ -317,7 +365,8 @@ final class Themes
         // zu setzen waere das Gegenteil von dem, wozu die Auswahl da ist.
         $moves = self::defaultMoves((string) $merged['id']);
         foreach (['animation' => self::ANIMATIONS, 'nameAnimation' => self::NAME_ANIMATIONS,
-                  'particle' => self::PARTICLES, 'reveal' => self::REVEALS] as $field => $allowed) {
+                  'particle' => self::PARTICLES, 'reveal' => self::REVEALS,
+                  'intro' => self::INTROS] as $field => $allowed) {
             if (!in_array((string) $merged[$field], $allowed, true) || (string) $merged[$field] === '') {
                 $merged[$field] = $moves[$field];
             }
@@ -329,34 +378,35 @@ final class Themes
     /**
      * Passende Bewegungen fuer ein Thema, das noch keine gewaehlt hat.
      *
-     * @return array{animation:string,nameAnimation:string,particle:string,reveal:string}
+     * @return array{animation:string,nameAnimation:string,particle:string,reveal:string,intro:string}
      */
     private static function defaultMoves(string $id): array
     {
         $sets = [
-            'elysee'    => ['seal',       'write',   'petal',    'up'],
-            'sage'      => ['rise',       'write',   'leaf',     'up'],
-            'foresta'   => ['rise',       'write',   'leaf',     'up'],
-            'blush'     => ['fade',       'write',   'petal',    'mask'],
-            'lavande'   => ['blur',       'rise',    'petal',    'mask'],
-            'noir'      => ['flip',       'letters', 'spark',    'side'],
-            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom'],
-            'pearl'     => ['curtain',    'fade',    'round',    'mask'],
-            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom'],
-            'azur'      => ['slideRight', 'fade',    'snow',     'side'],
-            'terra'     => ['unfold',     'rise',    'leaf',     'up'],
-            'safran'    => ['zoom',       'write',   'confetti', 'up'],
-            'rubis'     => ['slideLeft',  'letters', 'spark',    'side'],
-            'moderne'   => ['fade',       'fade',    'none',     'up'],
+            'elysee'    => ['seal',       'write',   'petal',    'up',   'sealLight'],
+            'sage'      => ['rise',       'write',   'leaf',     'up',   'focus'],
+            'foresta'   => ['rise',       'write',   'leaf',     'up',   'focus'],
+            'blush'     => ['fade',       'write',   'petal',    'mask', 'darkroom'],
+            'lavande'   => ['blur',       'rise',    'petal',    'mask', 'focus'],
+            'noir'      => ['flip',       'letters', 'spark',    'side', 'darkroom'],
+            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom', 'sealLight'],
+            'pearl'     => ['curtain',    'fade',    'round',    'mask', 'focus'],
+            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom', 'sealLight'],
+            'azur'      => ['slideRight', 'fade',    'snow',     'side', 'focus'],
+            'terra'     => ['unfold',     'rise',    'leaf',     'up',   'darkroom'],
+            'safran'    => ['zoom',       'write',   'confetti', 'up',   'party'],
+            'rubis'     => ['slideLeft',  'letters', 'spark',    'side', 'party'],
+            'moderne'   => ['fade',       'fade',    'none',     'up',   'none'],
         ];
 
-        [$animation, $name, $particle, $reveal] = $sets[$id] ?? ['seal', 'write', 'petal', 'up'];
+        [$animation, $name, $particle, $reveal, $intro] = $sets[$id] ?? ['seal', 'write', 'petal', 'up', 'sealLight'];
 
         return [
             'animation'     => $animation,
             'nameAnimation' => $name,
             'particle'      => $particle,
             'reveal'        => $reveal,
+            'intro'         => $intro,
         ];
     }
 

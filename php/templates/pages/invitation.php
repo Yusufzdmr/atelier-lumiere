@@ -19,6 +19,7 @@
 
 use function Atelier\e;
 use Atelier\I18n;
+use Atelier\Intro;
 use Atelier\Scenes;
 use Atelier\Video;
 
@@ -46,6 +47,14 @@ $particle = (string) ($theme['particle'] ?? 'petal');
 if (!in_array($particle, \Atelier\Themes::PARTICLES, true)) {
     $particle = 'petal';
 }
+// Eröffnungsszene: die gespielte Abfolge vor der Karte.
+$introKind = (string) ($theme['intro'] ?? 'none');
+if (!in_array($introKind, \Atelier\Themes::INTROS, true)) {
+    $introKind = 'none';
+}
+$introHtml = Intro::html($introKind, $theme);
+$introMs = \Atelier\Themes::introDuration($introKind);
+
 $revealKind = (string) ($theme['reveal'] ?? 'up');
 if (!in_array($revealKind, \Atelier\Themes::REVEALS, true)) {
     $revealKind = 'up';
@@ -163,8 +172,11 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
            Klappe, Karte und Siegel sind einzelne Flaechen: erst bricht das
            Siegel, dann schlaegt die Klappe auf, dann hebt sich die Karte
            heraus. Vorher war es ein Rechteck, das ausblendete. */ ?>
+  <?= $introHtml ?>
+
   <div class="t-envelope-stage fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
+       data-intro-ms="<?= (int) $introMs ?>"
        style="background: <?= e((string) $theme['bg']) ?>">
     <?= $scene ?>
 

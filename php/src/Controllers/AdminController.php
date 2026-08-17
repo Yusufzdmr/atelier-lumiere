@@ -245,6 +245,9 @@ final class AdminController
             // Die drei uebrigen Bewegungsachsen. Ein unbekannter Wert wird auf
             // die Voreinstellung gezogen, nicht durchgereicht – sonst stuende
             // im Datensatz etwas, das die Vorlage nicht kennt.
+            $next['intro'] = in_array((string) ($_POST['intro'] ?? ''), Themes::INTROS, true)
+                ? (string) $_POST['intro']
+                : 'none';
             $next['nameAnimation'] = in_array((string) ($_POST['nameAnimation'] ?? ''), Themes::NAME_ANIMATIONS, true)
                 ? (string) $_POST['nameAnimation']
                 : 'write';

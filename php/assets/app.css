@@ -472,3 +472,140 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
   .foil.t-name-fade, .foil.t-name-rise { animation: none !important; opacity: 1 !important; transform: none !important; }
   .rv-mask .iv, .rv-zoom .iv, .rv-side .iv { opacity: 1 !important; transform: none !important; clip-path: none !important; transition: none !important; }
 }
+
+/* ================================================================
+   Eröffnungsszenen (src/Intro.php)
+   Jede Szene ist eine Abfolge: die Schichten liegen übereinander und
+   laufen zeitversetzt. Erst wenn [data-playing] gesetzt ist, startet
+   etwas – vorher ist die Bühne still und unsichtbar.
+   ================================================================ */
+
+.t-intro { position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0; }
+.t-intro[data-playing="true"] { opacity: 1; }
+.t-intro > * { position: absolute; inset: 0; display: block; }
+
+/* ---------- Bausteine ---------- */
+
+/* Dunkelheit, die sich am Ende wieder verzieht */
+.ti-dark { background: #05040a; opacity: 0; }
+.ti-dark-soft { background: #0a0710; }
+
+/* Der Blitz: kurz, hart, und wieder weg */
+.ti-flash { background: radial-gradient(circle at 50% 45%, #fff 0%, rgba(255,255,255,.65) 26%, transparent 62%); opacity: 0; }
+
+/* Korn, wie auf Film */
+.ti-grain {
+  opacity: 0; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* Die Schale: eine Welle, die von unten durchs Bild zieht */
+.ti-wash { opacity: 0; background: linear-gradient(0deg, rgba(255,255,255,.5) 0%, transparent 45%); }
+
+/* Lichtleck am Rand, wie bei einer undichten Kamera */
+.ti-leak { opacity: 0; background: linear-gradient(115deg, transparent 42%, rgba(255,196,120,.75) 52%, transparent 64%); }
+
+/* Vignette, die sich zum Schluss öffnet */
+.ti-vignette { opacity: 0; background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0,0,0,.72) 100%); }
+
+/* Unschärfe für den Schärfezug */
+.ti-blur { opacity: 0; backdrop-filter: blur(16px); background: rgba(255,255,255,.06); }
+
+/* Sucherring */
+.ti-ring { opacity: 0; }
+.ti-ring::before {
+  content: ""; position: absolute; left: 50%; top: 46%; width: 22vmin; height: 22vmin;
+  transform: translate(-50%, -50%); border: 1px solid rgba(255,255,255,.75); border-radius: 4px;
+}
+
+/* Warmes Aufglühen */
+.ti-warm { opacity: 0; background: radial-gradient(circle at 50% 55%, rgba(255,214,150,.55), transparent 66%); }
+
+/* Goldstreifen, der einmal durchläuft */
+.ti-sweep { opacity: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,226,168,.85) 50%, transparent 60%); background-size: 260% 100%; }
+
+/* Lichtstrahlen. Weich und schmal – ohne Unschaerfe und Maske wird daraus
+   eine harte Sonnenscheibe, die die Karte erschlaegt statt sie anzukuendigen. */
+.ti-beams {
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 18%, rgba(255,232,180,.16) 0deg 2.2deg, transparent 2.2deg 13deg);
+  filter: blur(7px);
+  -webkit-mask-image: radial-gradient(circle at 50% 18%, #000 0%, rgba(0,0,0,.45) 42%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 18%, #000 0%, rgba(0,0,0,.45) 42%, transparent 72%);
+}
+
+/* Herzschlag */
+.ti-beat { opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255,160,120,.4), transparent 55%); }
+
+/* ---------- 1. Dunkelkammer (4200 ms) ---------- */
+.t-intro.ti-darkroom[data-playing="true"] .ti-dark     { animation: tiDark 4.2s ease both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-flash    { animation: tiFlash .55s ease-out .45s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-grain    { animation: tiGrain 2.6s ease-in-out .9s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-wash     { animation: tiWash 1.7s ease-out 1.5s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-leak     { animation: tiLeak 1.4s ease-in-out 2.3s both; }
+.t-intro.ti-darkroom[data-playing="true"] .ti-vignette { animation: tiVignette 1.5s ease-in 2.7s both; }
+
+@keyframes tiDark   { 0% { opacity: 0; } 8% { opacity: 1; } 72% { opacity: .86; } 100% { opacity: 0; } }
+@keyframes tiFlash  { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tiGrain  { 0% { opacity: 0; } 40% { opacity: .85; } 100% { opacity: 0; } }
+@keyframes tiWash   { from { opacity: .7; transform: translateY(30%); } to { opacity: 0; transform: translateY(-100%); } }
+@keyframes tiLeak   { 0% { opacity: 0; transform: translateX(-30%); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateX(30%); } }
+@keyframes tiVignette { 0% { opacity: .95; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+
+/* ---------- 2. Schärfe zieht nach (2600 ms) ---------- */
+.t-intro.ti-focus[data-playing="true"] .ti-blur     { animation: tiBlur 2.2s cubic-bezier(.4,0,.2,1) both; }
+.t-intro.ti-focus[data-playing="true"] .ti-ring     { animation: tiRing 1.6s ease-out .2s both; }
+.t-intro.ti-focus[data-playing="true"] .ti-vignette { animation: tiVignette 1.2s ease-in 1.4s both; }
+
+@keyframes tiBlur { 0% { opacity: 1; } 70% { opacity: .55; } 100% { opacity: 0; } }
+@keyframes tiRing { 0% { opacity: 0; transform: scale(1.5); } 25% { opacity: .9; } 70% { opacity: .7; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
+
+/* ---------- 3. Henna (3800 ms) ---------- */
+.t-intro.ti-henna[data-playing="true"] .ti-warm { animation: tiWarm 3.8s ease-in-out both; }
+.t-intro.ti-henna[data-playing="true"] .ti-beat { animation: tiBeat 1.1s ease-in-out 1.6s 2 both; }
+.t-intro.ti-henna .ti-draw {
+  position: absolute; left: 50%; top: 50%; width: 46vmin; height: 46vmin;
+  transform: translate(-50%, -50%); opacity: 0;
+}
+.t-intro.ti-henna[data-playing="true"] .ti-draw { animation: tiDrawFade 3.8s ease-in-out both; }
+.t-intro.ti-henna .ti-draw path { stroke-dasharray: 240; stroke-dashoffset: 240; }
+.t-intro.ti-henna[data-playing="true"] .ti-draw path {
+  animation: tiDrawLine 1.5s cubic-bezier(.5,0,.3,1) both;
+  animation-delay: calc(.25s + var(--n, 0) * .22s);
+}
+
+@keyframes tiWarm     { 0% { opacity: 0; } 25% { opacity: 1; } 78% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes tiBeat     { 0%, 100% { opacity: 0; transform: scale(.9); } 45% { opacity: .8; transform: scale(1.06); } }
+@keyframes tiDrawFade { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tiDrawLine { to { stroke-dashoffset: 0; } }
+
+/* ---------- 4. Fest (3200 ms) ---------- */
+.t-intro.ti-party[data-playing="true"] .ti-dark  { animation: tiPartyDark 3.2s ease both; }
+.t-intro.ti-party[data-playing="true"] .ti-beams { animation: tiBeams 3.2s ease-in-out both; }
+.t-intro.ti-party .ti-confetti { inset: 0; }
+.t-intro.ti-party .ti-confetti i {
+  position: absolute; top: -8vh; left: var(--x, 50%);
+  width: 7px; height: 12px; border-radius: 1px; opacity: 0;
+}
+.t-intro.ti-party[data-playing="true"] .ti-confetti i {
+  animation: tiConfetti 2.4s cubic-bezier(.3,.1,.5,1) both;
+  animation-delay: calc(.5s + var(--n, 0) * .055s);
+}
+
+@keyframes tiPartyDark { 0% { opacity: 0; } 10% { opacity: .92; } 70% { opacity: .7; } 100% { opacity: 0; } }
+@keyframes tiBeams     { 0% { opacity: 0; transform: scale(.7) rotate(-8deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3) rotate(8deg); } }
+@keyframes tiConfetti  { 0% { opacity: 0; transform: translateY(0) rotate(0deg); } 12% { opacity: 1; } 100% { opacity: 0; transform: translateY(115vh) rotate(520deg); } }
+
+/* ---------- 5. Siegel & Licht (2400 ms) ---------- */
+.t-intro.ti-sealLight[data-playing="true"] .ti-warm     { animation: tiWarmShort 2.4s ease-in-out both; }
+.t-intro.ti-sealLight[data-playing="true"] .ti-sweep    { animation: tiSweep 1.6s cubic-bezier(.4,0,.2,1) .35s both; }
+.t-intro.ti-sealLight[data-playing="true"] .ti-vignette { animation: tiVignette 1.1s ease-in 1.3s both; }
+
+@keyframes tiWarmShort { 0% { opacity: 0; } 22% { opacity: .95; } 70% { opacity: .6; } 100% { opacity: 0; } }
+@keyframes tiSweep     { 0% { opacity: 0; background-position: -60% 0; } 20% { opacity: 1; } 100% { opacity: 0; background-position: 160% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Eine Szene ist reine Inszenierung. Wer Bewegung abbestellt hat, soll sie
+     gar nicht erst sehen – und vor allem nicht darauf warten müssen. */
+  .t-intro { display: none !important; }
+}

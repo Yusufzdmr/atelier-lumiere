@@ -196,8 +196,22 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                   : 'Dört ayrı eksen, istediğiniz gibi birleşir: kart nasıl gelsin, isimler nasıl belirsin, arkada ne uçuşsun ve kaydırınca bölümler nasıl gelsin.' ?>
             </p>
             <div class="mt-5 grid gap-7 md:grid-cols-3">
+              <div class="md:col-span-3">
+                <label class="<?= $label ?>"><?= $de ? 'Eröffnungsszene (läuft vor dem Kuvert)' : 'Açılış sahnesi (zarftan önce oynar)' ?></label>
+                <select name="intro" class="<?= $input ?>">
+                  <?php foreach (\Atelier\Themes::INTROS as $key) : ?>
+                    <option value="<?= e($key) ?>" <?= ($theme['intro'] ?? 'none') === $key ? 'selected' : '' ?>>
+                      <?= e(\Atelier\Themes::introLabel($key, $de ? 'de' : 'tr')) ?>
+                      <?php if (\Atelier\Themes::introDuration($key) > 0) : ?>
+                        · <?= number_format(\Atelier\Themes::introDuration($key) / 1000, 1) ?> s
+                      <?php endif; ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
               <div>
-                <label class="<?= $label ?>"><?= $de ? 'Art' : 'Tür' ?></label>
+                <label class="<?= $label ?>"><?= $de ? 'Karte kommt herein' : 'Kart nasıl gelsin' ?></label>
                 <select name="animation" class="<?= $input ?>" data-theme-animation>
                   <?php foreach (Themes::ANIMATIONS as $option) : ?>
                     <option value="<?= e($option) ?>" <?= $theme['animation'] === $option ? 'selected' : '' ?>>

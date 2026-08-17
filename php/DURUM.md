@@ -706,6 +706,68 @@ bu alanlar hiç yazılmadığı için orada sorun yok.
 
 CSS yeniden derlendi: 81.8 → **83.8 KB**.
 
+## 18 Ağustos, üçüncü tur — açılış sahneleri
+
+Müşteri in-vitely.com'u gösterip „aynı öyle animasyonlar" istedi. Önizleme
+iframe'inin stil tablosunu okudum: **99 keyframe**. Fark sayıda değil kurguda —
+onlarınki tek efekt değil, **hikâyesi olan sahneler**: `dynamicFlashDarkroom →
+Burst → Grain → LatentBloom → DevelopWash → LightLeak → VignetteExit` gibi 16
+adımlı bir dizi, kına için `kiDrawStroke` + `kinaHeartbeat`, doğum günü için
+`ld-intro-beams-in` + `ld-confetti-fall`. Ayrıca her temanın **kendi bekleme
+hareketi** var (`lacyTapRing`, `blushTapSheen`, `luxuryTapPulse`…).
+
+Not: teknikte referans alındı, **kod kopyalanmadı**.
+
+### Ne yapıldı
+
+`src/Intro.php` + `.t-intro` / `.ti-*` bloğu: beş sahne, tema başına panelden
+seçilir (`Açılış sahnesi`).
+
+| Sahne | Süre | Katmanlar |
+|---|---|---|
+| `darkroom` | 4200 ms | karartma → flaş → gren → banyo dalgası → ışık sızıntısı → vinyet açılır |
+| `focus` | 2600 ms | bulanıklık → vizör halkası → vinyet |
+| `henna` | 3800 ms | sıcak parıltı + kendini çizen kına deseni (6 yol, sırayla) + kalp atışı |
+| `party` | 3200 ms | karartma → ışık huzmeleri → 22 konfeti |
+| `sealLight` | 2400 ms | sıcak parıltı → altın şerit geçer → vinyet |
+
+Sıra: **sahne → zarf → kart → bölümler.** `invitation.js` sahnenin süresini
+`data-intro-ms` üzerinden okuyup her şeyi o kadar öteliyor. Ölçüldü (noir,
+darkroom): 0–4.2 s sahne, 4.2 s'de zarf açılır, ~6.8 s'de zarf gizlenir.
+Yani karta kadar ~7 sn — sinematik ama uzun; kısaltmak istenirse
+`Themes::introDuration()` tek yer.
+
+`prefers-reduced-motion` açıksa sahne **hiç çizilmiyor** (`display:none`) ve JS
+beklemeyi de sıfırlıyor — yoksa hareket istemeyen kişi boş ekrana bakardı.
+
+Alanı olmayan temalar id'sine göre sahne alıyor: Noir/Blush/Terra → darkroom,
+Sage/Pearl/Azur → focus, Élysée/Bordeaux/Marbre → sealLight, Safran/Rubis →
+party, Moderne → yok.
+
+### Test ortamı tuzağı (bunu bir daha yaşamayın)
+
+**Arka plandaki sekmede CSS animasyonları ilerlemiyor.** `document.hidden`
+true iken `animation-play-state` „running" görünür ama `currentTime` 0'da
+kalır; ekran görüntüsü de bomboş çıkar. Yarım saat „sahne çalışmıyor" diye
+aradım, halbuki çalışıyordu. Ayrıca `requestAnimationFrame` gizli sekmede
+**hiç ateşlenmiyor** — içinde `await rAF` olan bir betik CDP zaman aşımına
+düşürüyor.
+
+Çözüm: sahneyi elle sarmak.
+```js
+el.getAnimations().forEach(a => { a.pause(); a.currentTime = 1600; });
+```
+Bu görünürlükten bağımsız çalışıyor ve istediğiniz anı yakalıyor.
+
+### Düzeltilen iki görsel kusur
+
+- Işık huzmeleri `repeating-conic-gradient` ile sert bir güneş diski gibi
+  çıkıyordu. `blur(7px)` + radial `mask-image` + daha ince açı ile yumuşadı.
+- Konfetinin x'i `i * 4.6` idi; parçalar soldan sağa **sırayla** düşüyordu,
+  liste gibi. Adım `i * 37.3` yapıldı, artık dağılıyor.
+
+CSS: 83.8 → **89.3 KB**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
