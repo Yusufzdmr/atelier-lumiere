@@ -13,6 +13,14 @@ use Atelier\I18n;
 $p = static fn (string $to): string => I18n::path($to, $locale);
 
 /*
+ * Das Schloss oben rechts führt in die Verwaltung. Die spricht Deutsch und
+ * Türkisch, die Website Deutsch und Englisch – von /en/ aus gibt es also kein
+ * /en/admin. Dann nach /de/admin; den Umschalter auf Türkisch findet der
+ * Betrieb dort oben rechts wieder.
+ */
+$adminPath = '/' . (I18n::isAdminLocale($locale) ? $locale : 'de') . '/admin';
+
+/*
  * Oben steht nur, wofuer jemand herkommt. Leistungen, Locations und Regionen
  * sind Seiten fuer die Suche, nicht fuer die Leiste: sie stehen in der
  * Fusszeile und sind von Startseite, Regionen-, Stadt- und Locationseiten
@@ -82,6 +90,16 @@ $otherPath = static function (string $to) use ($path): string {
         <?php endforeach; ?>
       </div>
 
+      <a href="<?= e($adminPath) ?>" rel="nofollow"
+         title="<?= e(I18n::t('nav.admin')) ?>" aria-label="<?= e(I18n::t('nav.admin')) ?>"
+         class="hdr-link hidden items-center p-1.5 text-muted transition-colors hover:text-gold sm:flex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" class="h-[15px] w-[15px]" aria-hidden="true">
+          <rect x="4.5" y="10.5" width="15" height="10" rx="1.6"></rect>
+          <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path>
+        </svg>
+      </a>
+
       <a href="<?= e($p('/kontakt')) ?>" class="hdr-cta hidden whitespace-nowrap border border-ink px-5 py-2.5 text-[0.7rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream md:inline-block"><?= e(I18n::t('nav.cta')) ?></a>
 
       <button id="menu-toggle" type="button" aria-label="<?= e(I18n::t('nav.menu')) ?>" aria-expanded="false"
@@ -109,7 +127,18 @@ $otherPath = static function (string $to) use ($path): string {
           <a href="<?= e($otherPath($l)) ?>" class="text-xs uppercase tracking-[0.22em] <?= $l === $locale ? 'text-gold' : 'text-muted' ?>"><?= $l === 'de' ? 'Deutsch' : 'English' ?></a>
         <?php endforeach; ?>
       </div>
-      <a href="<?= e($p('/kontakt')) ?>" class="bg-ink px-6 py-3 text-[0.72rem] uppercase tracking-[0.2em] text-cream"><?= e(I18n::t('nav.cta')) ?></a>
+      <div class="flex items-center gap-4">
+        <a href="<?= e($adminPath) ?>" rel="nofollow"
+           title="<?= e(I18n::t('nav.admin')) ?>" aria-label="<?= e(I18n::t('nav.admin')) ?>"
+           class="flex items-center p-1.5 text-muted transition-colors hover:text-gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round" class="h-[15px] w-[15px]" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="1.6"></rect>
+            <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path>
+          </svg>
+        </a>
+        <a href="<?= e($p('/kontakt')) ?>" class="bg-ink px-6 py-3 text-[0.72rem] uppercase tracking-[0.2em] text-cream"><?= e(I18n::t('nav.cta')) ?></a>
+      </div>
     </div>
   </div>
 </div>

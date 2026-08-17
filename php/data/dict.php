@@ -8,6 +8,7 @@ return [
     'de' => [
         'nav' => [
             'services' => 'Leistungen',
+            'admin' => 'Verwaltung',
             'portfolio' => 'Portfolio',
             'locations' => 'Locations',
             'cities' => 'Regionen',
@@ -364,6 +365,7 @@ Wir fotografieren euch.',
     'en' => [
         'nav' => [
             'services' => 'Services',
+            'admin' => 'Admin area',
             'portfolio' => 'Portfolio',
             'locations' => 'Venues',
             'cities' => 'Regions',
@@ -720,6 +722,7 @@ We photograph you.',
     'tr' => [
         'nav' => [
             'services' => 'Hizmetler',
+            'admin' => 'Yönetim',
             'portfolio' => 'Portfolyo',
             'locations' => 'Mekânlar',
             'cities' => 'Bölgeler',
