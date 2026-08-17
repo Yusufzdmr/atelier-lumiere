@@ -218,6 +218,38 @@ ayırt edilemiyor.
 > fazla benziyorsa içe aktarmayı **reddediyor**. Anahtarlar bu korumayı
 > kaldırmaz.
 
+### Okunabilirlik — 17 Ağustos
+
+**Ana sayfa başlığı fotoğrafın üstünde kayboluyordu.** Müşteri bildirdi, ölçtüm:
+başlığın arkasındaki perde üstte %55'ten başlayıp başlığın **alt kenarında**
+şeffafa iniyordu — yani „ATELIER LUMIÈRE“nin altındaki satır tam perdenin
+bittiği yerde duruyordu. Beyaz bir fotoğrafta kontrastı **1.3:1**, yani soluk
+değil, yok.
+
+Düzeltme (`assets/app.css`): perde başlığın 3rem altında bitiyor
+(`bottom: -3rem`), %72'den %52'ye iniyor, alt satırın kendi saydamlığı
+%72 → %90, ve iki satıra `text-shadow` eklendi. Gölge şart: perdeyi tek başına
+yeterince koyulaştırmak, iki satırı kurtarmak için **bütün fotoğrafı**
+karartmak demekti. En kötü hâlde (bembeyaz fotoğraf) isim 3.7:1 → **6.7:1**,
+alt satır 1.3:1 → **3.1:1**.
+
+**Tasarım editöründe kontrast uyarısı.** Müşterinin ilk fikri „her yazının
+yanına renk kodu“ydu; kod girmesi gerekmeyen hâli yapıldı.
+`Themes::readability()` dört çifti ölçüyor, okunmuyorsa panelde kırmızı kutu
+çıkıyor (DE + TR):
+
+| Çift | Sınır | Neden |
+|---|---|---|
+| `fg` / `paper` | 4.5:1 | Kartın gövde yazısı — WCAG sınırı |
+| `soft` / `paper` | 3.0:1 | İkincil yazı (tarih, notlar) |
+| `sealText` / `seal` | 3.0:1 | Mühürdeki harfler — küçük ama yazı |
+| `accent` / `paper` | **1.8:1** | Çizgi ve „&“ — süs. Burada 4.5 istemek yanlış olurdu: soluk altın bir düğün davetiyesinde **kasıt**, hata değil. Her temada çıkan uyarıyı üçüncüden sonra kimse okumaz |
+
+İki ayrıntı: karşılaştırma `bg` ile değil **`paper`** ile yapılıyor (kart yazısı
+kâğıdın üstünde duruyor, sayfa arkasının değil), ve `soft` rengi `rgba(...)`
+olduğu için saydamlık önce arka planla harmanlanıyor — yoksa hiç görünmeyen bir
+renk ölçülmüş olurdu. Şu an 16 temanın 4'ünde uyarı var, hepsi mühür harflerinde.
+
 ## Sıradaki oturum buradan başlasın
 
 Büyük bir iş kalmadı; kalanlar ya küçük, ya müşteriden gelecek bir şeyi
