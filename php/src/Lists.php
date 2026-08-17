@@ -157,6 +157,32 @@ final class Lists
         self::update($key, $index, [$field => array_slice(array_merge($uploads, $urls), 0, 60)]);
     }
 
+    /**
+     * Ein Bild zum Titelbild machen: an den Anfang stellen.
+     *
+     * Wer hundert Fotos hochlaedt, kann das erste nicht vorher wissen. Ohne
+     * diesen Griff blieb nur, alles zu loeschen und in anderer Reihenfolge neu
+     * hochzuladen.
+     */
+    public static function makeCover(string $key, int $index, int $photo, string $field = 'uploads'): void
+    {
+        $item = self::item($key, $index);
+        if ($item === null) {
+            return;
+        }
+
+        $uploads = array_values(array_filter((array) ($item[$field] ?? []), 'is_string'));
+        if (!isset($uploads[$photo]) || $photo === 0) {
+            return;
+        }
+
+        $gewaehlt = $uploads[$photo];
+        unset($uploads[$photo]);
+        array_unshift($uploads, $gewaehlt);
+
+        self::update($key, $index, [$field => array_values($uploads)]);
+    }
+
     /** Ein hochgeladenes Bild eines Eintrags entfernen – Datei inbegriffen. */
     public static function removeUpload(string $key, int $index, int $photo, string $field = 'uploads'): void
     {

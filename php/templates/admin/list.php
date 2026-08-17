@@ -103,6 +103,17 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
                       <div class="group/ph relative aspect-[3/4] overflow-hidden border border-sand-deep">
                         <img src="<?= e((string) $photo['src']) ?>" alt="" loading="lazy" class="h-full w-full object-cover">
                         <?php if (!empty($photo['upload'])) : ?>
+                          <?php /* Titelbild ist das erste Bild - oben auf der Seite und in
+                                   der Uebersicht. Deshalb hier der Griff dazu. */ ?>
+                          <?php if ((int) $photo['index'] === 0) : ?>
+                            <span class="absolute inset-x-0 top-0 bg-gold/90 py-1 text-center text-[0.55rem] uppercase tracking-[0.14em] text-cream"><?= $de ? 'Titelbild' : 'Kapak' ?></span>
+                          <?php else : ?>
+                            <form method="post" class="absolute inset-x-0 top-0">
+                              <?= $hidden('photo-cover', $key, $i) ?>
+                              <input type="hidden" name="foto" value="<?= (int) $photo['index'] ?>">
+                              <button class="w-full bg-ink/70 py-1 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-90 transition-colors hover:bg-gold"><?= $de ? 'Als Titelbild' : 'Kapak yap' ?></button>
+                            </form>
+                          <?php endif; ?>
                           <form method="post" class="absolute inset-x-0 bottom-0">
                             <?= $hidden('photo-delete', $key, $i) ?>
                             <input type="hidden" name="foto" value="<?= (int) $photo['index'] ?>">

@@ -787,6 +787,7 @@ final class ListAdminController
             'delete' => $this->delete($key, $index),
             'photos-add' => Lists::addUploads($key, $index, Media::storeMany('fotos', $this->folder($key, $index), 40)),
             'photo-delete' => Lists::removeUpload($key, $index, (int) Security::clean($_POST['foto'] ?? '', 6)),
+            'photo-cover' => Lists::makeCover($key, $index, (int) Security::clean($_POST['foto'] ?? '', 6)),
             default => null,
         };
 
