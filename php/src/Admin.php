@@ -365,6 +365,37 @@ final class Admin
         return true;
     }
 
+    /**
+     * Parolayı doğrula — session açmaz, sadece "doğru mu" cevabını verir.
+     *
+     * Rangfolge: veri tabanında hash varsa sadece o geçerli. Yoksa
+     * config.php'deki `admin_key` (hash veya düz metin, mevcut mantık) —
+     * bootstrap için, ilk giriş bu yoldan yapılır.
+     */
+    public static function verify(string $password): bool
+    {
+        $password = trim($password);
+        if ($password === '') {
+            return false;
+        }
+
+        $dbHash = Integrations::adminPasswordHash();
+        if ($dbHash !== '') {
+            return password_verify($password, $dbHash);
+        }
+
+        $expected = Config::str('admin_key', 'demo');
+        if ($expected === '') {
+            return false;
+        }
+
+        // Steht in der config.php ein Hash, wird er geprueft; sonst der
+        // Klartext, zeitkonstant. Bootstrap-Weg — DB hash gesetzt = Vorrang.
+        return str_starts_with($expected, '$2y$') || str_starts_with($expected, '$argon2')
+            ? password_verify($password, $expected)
+            : hash_equals($expected, $password);
+    }
+
     /** @return bool true bei erfolgreicher Anmeldung */
     public static function login(string $password): bool
     {
@@ -372,21 +403,7 @@ final class Admin
             return false;
         }
 
-        $expected = Config::str('admin_key', 'demo');
-        $password = trim($password);
-
-        if ($expected === '' || $password === '') {
-            return false;
-        }
-
-        // Steht in der config.php ein Hash (password_hash), wird er geprueft;
-        // sonst der Klartext, zeitkonstant. So laesst sich ein bestehender
-        // Zugang umstellen, ohne dass jemand ausgesperrt wird.
-        $ok = str_starts_with($expected, '$2y$') || str_starts_with($expected, '$argon2')
-            ? password_verify($password, $expected)
-            : hash_equals($expected, $password);
-
-        if (!$ok) {
+        if (!self::verify($password)) {
             return false;
         }
 
