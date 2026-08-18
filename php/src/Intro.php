@@ -141,12 +141,17 @@ final class Intro
             // Streifen stehen. .t-cardbg bleibt jetzt transparent (statt
             // #0b0906), damit ausserhalb des Videobereichs keine dunkle
             // Flaeche aufblitzt, wenn der Browser Layoutspruenge macht.
-            . '.t-card--backdrop{min-height:70vh;text-shadow:0 1px 3px rgba(0,0,0,.55),0 0 12px rgba(0,0,0,.35)}'
+            . '.t-card--backdrop{min-height:70vh;text-shadow:0 1px 4px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.55)}'
             . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:transparent;contain:paint;transform:translateZ(0)}'
-            . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;transform:translateZ(0)}'
-            // Wash deutlich leichter, gleichmaessig – vorher wurden die Raender
-            // fast schwarz und der Nutzer las das als „Streifen um das Video".
-            . '.t-cardbg-wash{position:absolute;inset:0;background:rgba(11,9,6,.32)}'
+            // Video zusaetzlich leicht weichgezeichnet: als Motiv verstaerkt es
+            // die Stimmung, Text darueber verliert weniger Kontrast an den
+            // hellen Reflexionen. Kein Kunststueck – dieselbe Idee wie eine
+            // Ebene Milchglas hinter Untertiteln.
+            . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;filter:blur(3px) brightness(.75) saturate(1.05);transform:translateZ(0) scale(1.05)}'
+            // Uniformer, kraeftigerer Wash: sichere Lesbarkeit fuer alle
+            // Textblöcke, egal welche Stelle des Films gerade laeuft. Zu
+            // hell war 0.32 – dunkle Buchstaben verschwanden im Wasser.
+            . '.t-cardbg-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,.55) 0%,rgba(11,9,6,.6) 45%,rgba(11,9,6,.7) 100%)}'
             . '</style>';
 
         return $style
