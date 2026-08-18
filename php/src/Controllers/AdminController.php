@@ -42,14 +42,25 @@ final class AdminController
         $invitations = Db::jsonList('SELECT data FROM invitations ORDER BY created_at DESC');
         $rsvps = Db::jsonList('SELECT data FROM rsvps ORDER BY at DESC');
         $customers = Db::jsonList('SELECT data FROM customers ORDER BY created_at DESC');
+        $leads = Leads::all(30);
+
+        $pending = Admin::pendingWork(
+            $this->locale,
+            $leads,
+            $selections,
+            $invitations,
+            $customers,
+            $galleries
+        );
 
         $this->render('admin/overview', '', [
-            'leads'       => Leads::all(30),
+            'leads'       => $leads,
             'selections'  => $selections,
             'galleries'   => $galleries,
             'invitations' => $invitations,
             'rsvps'       => $rsvps,
             'customers'   => $customers,
+            'pending'     => $pending,
         ]);
     }
 
