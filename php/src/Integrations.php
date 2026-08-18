@@ -44,6 +44,7 @@ final class Integrations
                 'mapsKey'       => '',
             ],
             'meta'      => ['pixelId' => ''],
+            'admin'     => ['passwordHash' => ''],
             'extras'    => [],
             'updatedAt' => '',
         ];
@@ -62,7 +63,7 @@ final class Integrations
         // Fehlende Felder älterer Stände auffüllen, damit ein neues Feld die
         // Oberfläche nicht mit Warnungen überzieht.
         $merged = $defaults;
-        foreach (['paypal', 'google', 'meta'] as $group) {
+        foreach (['paypal', 'google', 'meta', 'admin'] as $group) {
             if (isset($stored[$group]) && is_array($stored[$group])) {
                 $merged[$group] = array_merge($defaults[$group], $stored[$group]);
             }
@@ -165,6 +166,23 @@ final class Integrations
             }
         }
         return trim(Config::str(strtolower($name)));
+    }
+
+    /* -------------------------------- Admin -------------------------------- */
+
+    /** Panelden belirlenmiş parola hash'i. Boşsa config bootstrap devreye girer. */
+    public static function adminPasswordHash(): string
+    {
+        $admin = self::all()['admin'] ?? [];
+        return trim((string) ($admin['passwordHash'] ?? ''));
+    }
+
+    /** Yeni hash'i JSON'a yaz. `$hash` = `password_hash(..., PASSWORD_DEFAULT)` sonucu. */
+    public static function saveAdminPasswordHash(string $hash): void
+    {
+        $settings = self::all();
+        $settings['admin']['passwordHash'] = $hash;
+        self::save($settings);
     }
 
     /** Geheimnisse im Formular nur andeuten: die letzten vier Zeichen genügen. */
