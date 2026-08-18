@@ -244,6 +244,21 @@
     var query = params.toString();
     history.replaceState({}, "", location.pathname + (query ? "?" + query : ""));
   })();
+
+  /* --------------------- Sidebar „daha fazla" hafıza --------------------- */
+  var more = document.getElementById("admin-more");
+  if (more) {
+    if (localStorage.getItem("admin.moreOpen") === "1") {
+      more.open = true;
+    }
+    more.addEventListener("toggle", function () {
+      if (more.open) {
+        localStorage.setItem("admin.moreOpen", "1");
+      } else {
+        localStorage.removeItem("admin.moreOpen");
+      }
+    });
+  }
 })();
 
 /* ---------------------- Themen: Vorschau in Gerätebreiten ---------------- */
