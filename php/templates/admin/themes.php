@@ -194,10 +194,42 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
               <div class="md:col-span-2 border-t border-sand-deep pt-6">
                 <label class="<?= $label ?>"><?= $de ? 'Kartenhintergrund (Video)' : 'Kart arka plan videosu' ?></label>
                 <p class="<?= $hint ?>">
+                  <?php /*
+                    Warum die Vorgaben so streng klingen: Die Karte ist ein
+                    hoher, schmaler Kasten. Landscape-Videos werden auf beiden
+                    Seiten stark beschnitten, alles unter 720 px Hoehe muss der
+                    Browser hochskalieren – dann kommt das Bild matschig raus.
+                  */ ?>
                   <?= $de
-                      ? 'mp4/webm/mov bis 100 MB. Läuft hinter dem Karteninhalt in einer Schleife; darüber liegt ein dunkler Wash, damit der Text lesbar bleibt. Kurze Clips (5–10 s) reichen aus.'
-                      : 'mp4/webm/mov, en fazla 100 MB. Kart içinde döngü halinde oynar; üzerine koyu bir tabaka biner, yazı okunur kalır. Kısa klipler (5–10 s) yeterlidir.' ?>
+                      ? 'mp4 oder webm bis 100 MB. Läuft hinter dem Karteninhalt in einer Schleife; darüber liegt ein dunkler Wash, damit der Text lesbar bleibt.'
+                      : 'mp4 veya webm, en fazla 100 MB. Kart içinde döngü halinde oynar; üzerine koyu bir tabaka biner, yazı okunur kalır.' ?>
                 </p>
+                <ul class="mt-2 space-y-1 text-[0.72rem] leading-relaxed text-muted">
+                  <li>
+                    <span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Format' : 'Oran' ?>:</span>
+                    <?= $de
+                        ? 'hochkant 9:16 (Handy) oder 3:4 – z. B. 1080 × 1920 bzw. 1080 × 1440. Querformat wird an den Rändern abgeschnitten.'
+                        : 'dikey 9:16 (telefon) veya 3:4 – örn. 1080 × 1920 ya da 1080 × 1440. Yatay video kenarlardan kırpılır.' ?>
+                  </li>
+                  <li>
+                    <span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Auflösung' : 'Çözünürlük' ?>:</span>
+                    <?= $de
+                        ? 'mindestens 720 × 1280, besser 1080 × 1920. Kleinere Dateien werden vom Browser hochgerechnet und wirken unscharf.'
+                        : 'en az 720 × 1280, tercihen 1080 × 1920. Daha küçük dosyalar tarayıcı tarafından büyütülür ve bulanık görünür.' ?>
+                  </li>
+                  <li>
+                    <span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Länge' : 'Süre' ?>:</span>
+                    <?= $de
+                        ? '4–10 s reichen (läuft als Schleife). Länger = schwerere Datei ohne sichtbaren Gewinn.'
+                        : '4–10 s yeterli (döngü olur). Daha uzun = gereksiz büyük dosya.' ?>
+                  </li>
+                  <li>
+                    <span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Inhalt' : 'İçerik' ?>:</span>
+                    <?= $de
+                        ? 'ruhige, langsame Bewegung. Kein Text, kein Logo, keine Gesichter im Bild.'
+                        : 'yavaş, sakin hareket. Yazı, logo veya insan yüzü olmamalı.' ?>
+                  </li>
+                </ul>
                 <div class="mt-3 flex flex-wrap items-center gap-3">
                   <?php if ((string) ($theme['backdropVideo'] ?? '') !== '') : ?>
                     <video src="<?= e((string) $theme['backdropVideo']) ?>" muted preload="metadata"
