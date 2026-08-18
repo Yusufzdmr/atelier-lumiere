@@ -181,33 +181,86 @@ final class Images
      * @return array<string,array{de:string,tr:string}>
      */
     public const SLOTS = [
-        'lumiere-hero-main' => ['de' => 'Startseite, großes Bild', 'tr' => 'Ana sayfa, büyük görsel'],
-        'lumiere-intro'     => ['de' => 'Startseite, Bild im Text', 'tr' => 'Ana sayfa, metindeki görsel'],
-        'about-hero'        => ['de' => 'Über mich, Kopfbild', 'tr' => 'Hakkımda, üst görsel'],
-        'about-portrait'    => ['de' => 'Über mich, Porträt', 'tr' => 'Hakkımda, portre'],
-        'services-hero'     => ['de' => 'Leistungen, Kopfbild', 'tr' => 'Hizmetler, üst görsel'],
-        'prices-hero'       => ['de' => 'Preise, Kopfbild', 'tr' => 'Fiyatlar, üst görsel'],
-        'contact-hero'      => ['de' => 'Kontakt, Kopfbild', 'tr' => 'İletişim, üst görsel'],
-        'designs-hero'      => ['de' => 'Designs, Kopfbild', 'tr' => 'Tasarımlar, üst görsel'],
+        // Ana sayfa
+        'lumiere-hero-main' => ['de' => 'Großes Titelbild',       'tr' => 'Büyük başlık görseli', 'group' => 'home'],
+        'lumiere-intro'     => ['de' => 'Bild im Fließtext',      'tr' => 'Metin içi görsel',      'group' => 'home'],
+        // Hakkımda
+        'about-hero'        => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'about'],
+        'about-portrait'    => ['de' => 'Porträt',                'tr' => 'Portre',                'group' => 'about'],
+        // Hizmetler
+        'services-hero'     => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'services'],
+        // Fiyatlar
+        'prices-hero'       => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'prices'],
+        // Portfolyo
+        'portfolio-hero'    => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'portfolio'],
+        // Rehber
+        'lum-blog-hero'     => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'blog'],
+        // Bölgeler
+        'regions-index'     => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'regions'],
+        'venues-index'      => ['de' => 'Locations, Kopfbild',    'tr' => 'Mekânlar, üst görsel',  'group' => 'regions'],
+        // Tasarımlar
+        'designs-hero'      => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'designs'],
+        // Davetiye
+        'invite-hero'       => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'invite'],
+        // İletişim
+        'contact-hero'      => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'contact'],
+        // Galeri girişi
+        'gallery-hero'      => ['de' => 'Kopfbild (Login)',       'tr' => 'Üst görsel (giriş)',    'group' => 'gallery'],
     ];
 
     /**
-     * Auf welcher Seite ein Platz vorkommt - fuer den Blick nach dem Speichern.
+     * Seitenweise Gruppierung fuer den Bilder-Adminbereich.
      *
-     * Steht bewusst neben SLOTS und nicht darin: SLOTS wird an mehreren
-     * Stellen durchlaufen, und ein zweites Feld haette dort jede Schleife
-     * angefasst.
+     * Reihenfolge folgt der Website: was oben in der Navigation steht, steht
+     * hier oben. „path" ist der Basis-Pfad ohne Sprachpraefix – I18n::sitePath
+     * setzt de/tr davor.
      */
-    public const SLOT_PAGES = [
-        'lumiere-hero-main' => '',
-        'lumiere-intro'     => '',
-        'about-hero'        => '/ueber-mich',
-        'about-portrait'    => '/ueber-mich',
-        'services-hero'     => '/leistungen',
-        'prices-hero'       => '/preise',
-        'contact-hero'      => '/kontakt',
-        'designs-hero'      => '/designs',
+    public const GROUPS = [
+        'home'      => ['de' => 'Startseite',    'tr' => 'Ana sayfa',   'path' => ''],
+        'about'     => ['de' => 'Über mich',     'tr' => 'Hakkımda',    'path' => '/ueber-mich'],
+        'services'  => ['de' => 'Leistungen',    'tr' => 'Hizmetler',   'path' => '/leistungen'],
+        'prices'    => ['de' => 'Preise',        'tr' => 'Fiyatlar',    'path' => '/preise'],
+        'portfolio' => ['de' => 'Portfolio',     'tr' => 'Portfolyo',   'path' => '/portfolio'],
+        'blog'      => ['de' => 'Ratgeber',      'tr' => 'Rehber',      'path' => '/ratgeber'],
+        'regions'   => ['de' => 'Regionen',      'tr' => 'Bölgeler',    'path' => '/regionen'],
+        'designs'   => ['de' => 'Designs',       'tr' => 'Tasarımlar',  'path' => '/designs'],
+        'invite'    => ['de' => 'Einladung',     'tr' => 'Davetiye',    'path' => '/einladung'],
+        'contact'   => ['de' => 'Kontakt',       'tr' => 'İletişim',    'path' => '/kontakt'],
+        'gallery'   => ['de' => 'Galerie-Login', 'tr' => 'Galeri girişi','path' => '/galerie'],
     ];
+
+    /**
+     * Auf welcher Seite ein Platz vorkommt – fuer den Blick nach dem Speichern.
+     *
+     * Wird aus SLOTS + GROUPS abgeleitet, damit ein neuer Slot nur einmal
+     * eingetragen wird (unter „group") und der Pfad automatisch mitkommt.
+     */
+    public static function slotPage(string $slot): string
+    {
+        $group = self::SLOTS[$slot]['group'] ?? null;
+        if ($group === null) return '';
+        return (string) (self::GROUPS[$group]['path'] ?? '');
+    }
+
+    /**
+     * SLOTS in Gruppen aufgeteilt – Reihenfolge der GROUPS bleibt erhalten.
+     *
+     * @return array<string,array<string,array{de:string,tr:string,group:string}>>
+     */
+    public static function slotsByGroup(): array
+    {
+        $out = [];
+        foreach (array_keys(self::GROUPS) as $group) {
+            $out[$group] = [];
+        }
+        foreach (self::SLOTS as $key => $meta) {
+            $group = (string) ($meta['group'] ?? '');
+            if (!isset($out[$group])) continue;
+            $out[$group][$key] = $meta;
+        }
+        // Leere Gruppen wegwerfen, sonst haetten wir Ueberschriften ohne Kaesten.
+        return array_filter($out, static fn (array $items): bool => $items !== []);
+    }
 
     /** Gesetzte Bilder aus dem Adminbereich. Einmal je Anfrage gelesen. */
     private static ?array $own = null;

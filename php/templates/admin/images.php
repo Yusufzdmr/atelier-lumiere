@@ -1,9 +1,11 @@
 <?php
 /**
- * Die festen Bildplätze der Website.
+ * Die festen Bildplätze der Website – seitenweise gruppiert.
  *
- * Ein Kasten je Platz: was gerade dort steht, ein Feld zum Tauschen und –
- * wenn ein eigenes Bild gesetzt ist – der Weg zurück zum Platzhalter.
+ * Fuer jede Seite eine Ueberschrift und der Link „Sayfayı gör"; darunter die
+ * Plaetze, die dort vorkommen. Wer „Ana sayfa" sucht, findet zwei Plaetze,
+ * wer „Hakkımda" oeffnet, sieht Kopfbild und Portraet zusammen – nicht mehr
+ * ueber die halbe Liste hinweg zerstreut.
  *
  * @var string $locale
  * @var array<string,array{de:string,tr:string}> $slots
@@ -13,11 +15,13 @@
  */
 
 use function Atelier\e;
+use Atelier\I18n;
 use Atelier\Images;
 
 $de = $locale === 'de';
+$grouped = Images::slotsByGroup();
 ?>
-<form method="post" enctype="multipart/form-data" class="space-y-8">
+<form method="post" enctype="multipart/form-data" class="space-y-10">
   <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
 
   <div>
@@ -29,48 +33,67 @@ $de = $locale === 'de';
     </p>
   </div>
 
-  <div class="grid gap-6 sm:grid-cols-2">
-    <?php foreach ($slots as $slot => $label) : ?>
-      <?php
-      $eigen = (string) ($own[$slot] ?? '');
-      $seite = \Atelier\I18n::sitePath(Images::SLOT_PAGES[$slot] ?? '', $locale);
-      ?>
-      <div class="border border-sand-deep p-5">
-        <div class="flex items-baseline justify-between gap-3">
-          <h3 class="text-[0.82rem] text-ink">
-            <?= e($label[$locale] ?? $label['de']) ?>
-            <a href="<?= e($seite) ?>" target="_blank" rel="noopener"
-               class="ml-1 whitespace-nowrap text-[0.6rem] uppercase tracking-[0.14em] text-muted transition-colors hover:text-gold">
-              <?= $de ? 'Seite ansehen' : 'Sayfayı gör' ?> ↗
-            </a>
-          </h3>
-          <span class="text-[0.6rem] uppercase tracking-[0.16em] <?= $eigen !== '' ? 'text-gold' : 'text-muted' ?>">
-            <?= $eigen !== '' ? ($de ? 'eigenes Bild' : 'kendi görseliniz') : ($de ? 'Platzhalter' : 'temsili') ?>
+  <?php foreach ($grouped as $groupKey => $items) :
+      $group = Images::GROUPS[$groupKey] ?? null;
+      if ($group === null) continue;
+      $groupTitle = (string) ($group[$locale] ?? $group['de']);
+      $pagePath = I18n::sitePath((string) ($group['path'] ?? ''), $locale);
+      $filled = 0;
+      foreach ($items as $slot => $_) {
+          if (($own[$slot] ?? '') !== '') $filled++;
+      }
+      $count = count($items);
+  ?>
+    <section class="border-t border-sand-deep pt-8">
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <h3 class="font-display text-lg text-ink">
+          <?= e($groupTitle) ?>
+          <span class="ml-2 text-[0.66rem] uppercase tracking-[0.16em] <?= $filled > 0 ? 'text-gold' : 'text-muted' ?>">
+            <?= $filled ?>/<?= $count ?> <?= $de ? 'eigen' : 'kendi' ?>
           </span>
-        </div>
-
-        <div class="mt-4 aspect-[3/2] overflow-hidden border border-sand-deep bg-sand">
-          <img src="<?= e(Images::img($slot, 800, 534)) ?>" alt="" loading="lazy" class="h-full w-full object-cover">
-        </div>
-
-        <input type="file" name="bild[<?= e($slot) ?>]" accept="image/*"
-               class="mt-4 w-full text-[0.78rem] text-muted file:mr-3 file:border file:border-sand-deep file:bg-transparent file:px-3 file:py-1.5 file:text-[0.62rem] file:uppercase file:tracking-[0.14em] file:text-ink">
-
-        <?php if ($eigen !== '') : ?>
-          <label class="mt-3 flex cursor-pointer items-center gap-2 text-[0.72rem] text-muted hover:text-ink">
-            <input type="checkbox" name="weg[<?= e($slot) ?>]" value="1" class="h-3.5 w-3.5 accent-[#B08D57]">
-            <?= $de ? 'Entfernen und Platzhalter zeigen' : 'Kaldır ve temsili görseli göster' ?>
-          </label>
-        <?php endif; ?>
+        </h3>
+        <a href="<?= e($pagePath) ?>" target="_blank" rel="noopener"
+           class="text-[0.66rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-gold">
+          <?= $de ? 'Seite ansehen' : 'Sayfayı gör' ?> ↗
+        </a>
       </div>
-    <?php endforeach; ?>
-  </div>
+
+      <div class="mt-5 grid gap-6 sm:grid-cols-2">
+        <?php foreach ($items as $slot => $label) :
+            $eigen = (string) ($own[$slot] ?? '');
+        ?>
+          <div class="border border-sand-deep p-5">
+            <div class="flex items-baseline justify-between gap-3">
+              <h4 class="text-[0.82rem] text-ink"><?= e($label[$locale] ?? $label['de']) ?></h4>
+              <span class="text-[0.6rem] uppercase tracking-[0.16em] <?= $eigen !== '' ? 'text-gold' : 'text-muted' ?>">
+                <?= $eigen !== '' ? ($de ? 'eigenes Bild' : 'kendi görseliniz') : ($de ? 'Platzhalter' : 'temsili') ?>
+              </span>
+            </div>
+
+            <div class="mt-4 aspect-[3/2] overflow-hidden border border-sand-deep bg-sand">
+              <img src="<?= e(Images::img($slot, 800, 534)) ?>" alt="" loading="lazy" class="h-full w-full object-cover">
+            </div>
+
+            <input type="file" name="bild[<?= e($slot) ?>]" accept="image/*"
+                   class="mt-4 w-full text-[0.78rem] text-muted file:mr-3 file:border file:border-sand-deep file:bg-transparent file:px-3 file:py-1.5 file:text-[0.62rem] file:uppercase file:tracking-[0.14em] file:text-ink">
+
+            <?php if ($eigen !== '') : ?>
+              <label class="mt-3 flex cursor-pointer items-center gap-2 text-[0.72rem] text-muted hover:text-ink">
+                <input type="checkbox" name="weg[<?= e($slot) ?>]" value="1" class="h-3.5 w-3.5 accent-[#B08D57]">
+                <?= $de ? 'Entfernen und Platzhalter zeigen' : 'Kaldır ve temsili görseli göster' ?>
+              </label>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endforeach; ?>
 
   <div class="sticky bottom-0 -mb-8 flex flex-wrap items-center gap-4 border-t border-sand-deep bg-cream/95 py-4 backdrop-blur lg:-mb-10">
     <button class="bg-ink px-9 py-4 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $de ? 'Speichern' : 'Kaydet' ?>
     </button>
-    <a href="<?= e(\Atelier\I18n::sitePath('', $locale)) ?>" target="_blank" rel="noopener"
+    <a href="<?= e(I18n::sitePath('', $locale)) ?>" target="_blank" rel="noopener"
        class="text-[0.68rem] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold">
       <?= $de ? 'Startseite ansehen' : 'Ana sayfayı gör' ?> ↗
     </a>
