@@ -214,7 +214,16 @@ $steps = $de
 
             <div class="mt-5 grid gap-4 sm:grid-cols-3">
               <?php foreach ($themes as $i => $theme) : ?>
-                <?php $checked = $old('theme', (string) $themes[0]['id']) === (string) $theme['id']; ?>
+                <?php
+                  $checked = $old('theme', (string) $themes[0]['id']) === (string) $theme['id'];
+                  // Backdrop-Video ist eine Themen-Eigenschaft. Wenn eines
+                  // gesetzt ist, zeigt die Kachel den Posterframe statt der
+                  // Papiervorschau — damit im Assistenten sichtbar wird,
+                  // welche Themen mit lebender Flaeche kommen.
+                  $bdVideo  = (string) ($theme['backdropVideo'] ?? '');
+                  $bdPoster = (string) ($theme['backdropPoster'] ?? '');
+                  $hasVideo = $bdVideo !== '';
+                ?>
                 <label class="block cursor-pointer border p-4 transition-colors <?= $checked ? 'border-gold' : 'border-sand-deep hover:border-muted' ?>"
                        data-theme-option="<?= e((string) $theme['id']) ?>">
                   <input type="radio" name="theme" value="<?= e((string) $theme['id']) ?>" class="sr-only" <?= $checked ? 'checked' : '' ?>
@@ -230,8 +239,21 @@ $steps = $de
                              'sealText' => $theme['sealText'],
                              'image'  => $theme['image'],
                          ], JSON_UNESCAPED_UNICODE)) ?>'>
-                  <span class="flex h-16 items-center justify-center border"
-                        style="background: <?= e((string) $theme['paper']) ?>; border-color: <?= e((string) $theme['paperEdge']) ?>; color: <?= e((string) $theme['accent']) ?>">✦</span>
+                  <?php if ($hasVideo) : ?>
+                    <span class="relative flex h-16 items-center justify-center overflow-hidden border border-ink bg-ink">
+                      <?php if ($bdPoster !== '') : ?>
+                        <img src="<?= e($bdPoster) ?>" alt="" loading="lazy" decoding="async"
+                             class="absolute inset-0 h-full w-full object-cover opacity-70">
+                      <?php endif; ?>
+                      <span class="relative z-10 text-cream" aria-hidden="true">▶</span>
+                      <span class="absolute right-1 top-1 z-10 bg-ink/80 px-1.5 py-[1px] text-[0.55rem] uppercase tracking-[0.14em] text-cream">
+                        Video
+                      </span>
+                    </span>
+                  <?php else : ?>
+                    <span class="flex h-16 items-center justify-center border"
+                          style="background: <?= e((string) $theme['paper']) ?>; border-color: <?= e((string) $theme['paperEdge']) ?>; color: <?= e((string) $theme['accent']) ?>">✦</span>
+                  <?php endif; ?>
                   <span class="mt-3 block font-display text-lg text-ink"><?= e((string) $theme['name']) ?></span>
                   <span class="mt-1 block text-[0.72rem] text-muted"><?= e((string) ($theme['sub'][$locale] ?? '')) ?></span>
                 </label>
