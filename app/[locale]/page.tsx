@@ -11,6 +11,7 @@ import { img, blurData } from "@/lib/images";
 import { getVenues, getCities, getStories } from "@/lib/cms";
 import { faqLd, breadcrumbLd, pageMeta } from "@/lib/seo";
 import { getContent, getServices, getProcess, getTestimonials, getFaq, getAbout } from "@/lib/cms";
+import { serviceCover } from "@/lib/content";
 import { isLocale, type Locale } from "@/lib/i18n";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -130,7 +131,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           {services.map((s, i) => (
             <Reveal key={s.slug} delay={i * 90}>
               <Link href={p(`/leistungen#${s.slug}`)} className="group block">
-                <Photo seed={s.seed} alt={s.title[l]} ratio="4/5" sizes="(max-width: 640px) 100vw, 25vw" />
+                <Photo seed={serviceCover(s)} alt={s.title[l]} ratio="4/5" sizes="(max-width: 640px) 100vw, 25vw" />
                 <h3 className="font-display mt-5 text-xl font-normal text-ink transition-colors group-hover:text-gold">
                   {s.title[l]}
                 </h3>
@@ -157,7 +158,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <Reveal key={s.slug} delay={i * 80} className={i % 3 === 0 ? "md:col-span-2" : ""}>
               <Link href={p(`/portfolio/${s.slug}`)} className="group block">
                 <Photo
-                  seed={s.seeds[0]}
+                  seed={s.uploads?.[0] ?? s.seeds[0]}
                   alt={`${s.couple} – ${s.venue[l]}`}
                   ratio={i % 3 === 0 ? "16/9" : "4/3"}
                   sizes="(max-width: 768px) 100vw, 50vw"

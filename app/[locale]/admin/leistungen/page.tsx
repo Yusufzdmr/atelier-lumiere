@@ -110,7 +110,17 @@ export default async function AdminServices({ params }: { params: Promise<{ loca
 
           {/* Hauptbild des Abschnitts */}
           <div className="mt-8 border-t border-sand-deep pt-6">
-            <ImageField name={`s${i}_seed`} defaultValue={s.seed} folder={`inhalte/leistungen/${i}`} locale={l} />
+            <h3 className="text-[0.66rem] uppercase tracking-[0.2em] text-gold">
+              {de ? "Titelbild" : "Kapak fotoğrafı"}
+            </h3>
+            <p className="mt-2 max-w-xl text-[0.76rem] leading-relaxed text-muted">
+              {de
+                ? "Erscheint auf der Startseite als Karte dieser Leistung und ganz oben auf /leistungen. Ohne eigenes Bild wird das erste der Beispielbilder unten verwendet, sonst ein Motiv aus dem Bestand."
+                : "Ana sayfada bu hizmetin kartında ve /leistungen sayfasının en üstünde görünür. Kendi görsel yüklemezsen aşağıdaki örneklerden ilki kullanılır, o da yoksa stoktan bir görsel."}
+            </p>
+            <div className="mt-5">
+              <ImageField name={`s${i}_seed`} defaultValue={s.seed} folder={`inhalte/leistungen/${i}`} locale={l} />
+            </div>
           </div>
 
           {/* Beispielstrecke: vier Plaetze, leere bleiben einfach leer */}
@@ -120,8 +130,8 @@ export default async function AdminServices({ params }: { params: Promise<{ loca
             </h3>
             <p className="mt-2 max-w-xl text-[0.76rem] leading-relaxed text-muted">
               {de
-                ? "Diese Bilder stehen unter dem Text der Leistung. Bleiben alle vier leer, zeigt die Seite passende Bilder aus dem Bestand."
-                : "Bu görseller hizmet metninin altında görünür. Dördü de boşsa sayfa stoktan uygun görselleri gösterir."}
+                ? "Diese Bilder stehen unter dem Text der Leistung auf /leistungen. Das erste dient zusätzlich als Ersatz-Titelbild, wenn oben keins gesetzt ist."
+                : "Bu görseller /leistungen sayfasında hizmet metninin altında görünür. İlki, yukarıda kapak yüklenmediyse yedek kapak olarak da kullanılır."}
             </p>
             <div className="mt-5 grid gap-7 md:grid-cols-2">
               {[0, 1, 2, 3].map((k) => (

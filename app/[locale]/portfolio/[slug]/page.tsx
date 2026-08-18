@@ -35,7 +35,7 @@ export async function generateMetadata({
     vars: { couple: s.couple, venue: s.venue[l] },
     title: `${s.couple} – ${s.venue[l]}`,
     description: s.intro[l].slice(0, 158),
-    image: img(s.seeds[0], 1200, 630),
+    image: img(s.uploads?.[0] ?? s.seeds[0], 1200, 630),
   });
 }
 
@@ -53,7 +53,7 @@ export default async function StoryPage({ params }: { params: Promise<{ locale: 
 
   return (
     <>
-      <PageHero eyebrow={`${s.venue[l]} · ${s.month[l]}`} title={s.couple} text={s.intro[l]} seed={s.seeds[0]} height="lg" />
+      <PageHero eyebrow={`${s.venue[l]} · ${s.month[l]}`} title={s.couple} text={s.intro[l]} seed={s.uploads?.[0] ?? s.seeds[0]} height="lg" />
 
       <Section>
         <Breadcrumbs
@@ -149,7 +149,7 @@ export default async function StoryPage({ params }: { params: Promise<{ locale: 
           {others.map((o, i) => (
             <Reveal key={o.slug} delay={i * 80}>
               <Link href={p(`/portfolio/${o.slug}`)} className="group block">
-                <Photo seed={o.seeds[1]} alt={o.couple} ratio="4/5" sizes="33vw" />
+                <Photo seed={o.uploads?.[0] ?? o.seeds[1] ?? o.seeds[0]} alt={o.couple} ratio="4/5" sizes="33vw" />
                 <h3 className="font-display mt-4 text-lg text-ink transition-colors group-hover:text-gold">{o.couple}</h3>
                 <div className="text-[0.68rem] uppercase tracking-[0.16em] text-muted">{o.venue[l]}</div>
               </Link>
@@ -168,7 +168,7 @@ export default async function StoryPage({ params }: { params: Promise<{ locale: 
             title: `${s.couple} – ${s.venue[l]}`,
             description: s.intro[l],
             path: `/portfolio/${s.slug}`,
-            image: img(s.seeds[0], 1200, 630),
+            image: img(s.uploads?.[0] ?? s.seeds[0], 1200, 630),
           }),
           breadcrumbLd(l, [
             { name: "Home", path: "/" },

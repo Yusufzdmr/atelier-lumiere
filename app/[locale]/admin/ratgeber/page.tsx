@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import GalleryUploader from "@/components/admin/GalleryUploader";
 import { getPosts, getCities, getVenues } from "@/lib/cms";
-import { editPost, newPost, deletePost, uploadPostPhotos, deletePostPhoto } from "@/lib/actions";
+import { editPost, newPost, deletePost, uploadPostPhotos, deletePostPhoto, makePostCoverPhoto } from "@/lib/actions";
 import { img } from "@/lib/images";
 import { isLocale, type Locale } from "@/lib/i18n";
 
@@ -148,15 +148,31 @@ export default async function AdminBlog({ params }: { params: Promise<{ locale: 
               {(s.uploads?.length ?? 0) > 0 && (
                 <div className="mt-5 flex flex-wrap gap-3">
                   {(s.uploads ?? []).map((src, i) => (
-                    <form action={deletePostPhoto} key={i} className="relative">
-                      <input type="hidden" name="slug" value={s.slug} />
-                      <input type="hidden" name="index" value={i} />
+                    <div key={i} className="group/ph relative overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element -- Blob-URL, kein Next-Loader nötig */}
                       <img src={img(src, 200, 140)} alt="" className="h-24 w-36 object-cover" />
-                      <button className="absolute right-1 top-1 bg-ink/80 px-2 py-1 text-[0.6rem] uppercase tracking-[0.14em] text-cream hover:bg-gold">
-                        {de ? "Löschen" : "Sil"}
-                      </button>
-                    </form>
+                      {i === 0 && (
+                        <span className="absolute left-1 top-1 bg-gold px-2 py-0.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream">
+                          {de ? "Titelbild" : "Kapak"}
+                        </span>
+                      )}
+                      {i > 0 && (
+                        <form action={makePostCoverPhoto} className="absolute inset-x-0 top-0">
+                          <input type="hidden" name="slug" value={s.slug} />
+                          <input type="hidden" name="index" value={i} />
+                          <button className="w-full bg-gold/80 py-1 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover/ph:opacity-100 hover:bg-gold">
+                            {de ? "Als Titelbild" : "Kapak yap"}
+                          </button>
+                        </form>
+                      )}
+                      <form action={deletePostPhoto} className="absolute inset-x-0 bottom-0">
+                        <input type="hidden" name="slug" value={s.slug} />
+                        <input type="hidden" name="index" value={i} />
+                        <button className="w-full bg-ink/80 py-1 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover/ph:opacity-100">
+                          {de ? "Löschen" : "Sil"}
+                        </button>
+                      </form>
+                    </div>
                   ))}
                 </div>
               )}

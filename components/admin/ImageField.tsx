@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { uploadContentImage } from "@/lib/actions";
+import { img } from "@/lib/images";
 import { resizeImage } from "@/lib/invite";
 import type { Locale } from "@/lib/i18n";
 
@@ -35,7 +36,10 @@ export default function ImageField({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const isUpload = /^(https?:|data:|\/)/.test(value);
+  // Auch fuer Text-Kennungen ("lum-service-foto") die tatsaechlich gezeigte
+  // Grafik anzeigen – sonst weiss der Redakteur nicht, was oben auf der Seite
+  // steht, und ein Upload sieht aus, als haette sich nichts geaendert.
+  const previewSrc = value ? img(value, 240, 160) : "";
 
   async function handle(list: FileList | null) {
     const file = list?.[0];
@@ -73,9 +77,9 @@ export default function ImageField({
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handle(e.target.files)} />
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        {isUpload && (
-          // eslint-disable-next-line @next/next/no-img-element -- Blob-URL, bewusst ohne Optimierung
-          <img src={value} alt="" className="h-16 w-24 border border-sand-deep object-cover" />
+        {previewSrc && (
+          // eslint-disable-next-line @next/next/no-img-element -- gemischte Quellen, kein Next-Loader noetig
+          <img src={previewSrc} alt="" className="h-16 w-24 border border-sand-deep object-cover" />
         )}
 
         <button
@@ -84,7 +88,7 @@ export default function ImageField({
           disabled={busy}
           className="border border-ink px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-50"
         >
-          {busy ? "…" : isUpload ? (de ? "Bild ersetzen" : "Görseli değiştir") : de ? "Bild hochladen" : "Görsel yükle"}
+          {busy ? "…" : previewSrc ? (de ? "Bild ersetzen" : "Görseli değiştir") : de ? "Bild hochladen" : "Görsel yükle"}
         </button>
 
         {value && (

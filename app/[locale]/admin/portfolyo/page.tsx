@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import GalleryUploader from "@/components/admin/GalleryUploader";
 import { getStories, getCities, getVenues } from "@/lib/cms";
-import { editStory, newStory, deleteStory, uploadStoryPhotos, deleteStoryPhoto } from "@/lib/actions";
+import { editStory, newStory, deleteStory, uploadStoryPhotos, deleteStoryPhoto, makeStoryCoverPhoto } from "@/lib/actions";
 import { img } from "@/lib/images";
 import { isLocale, type Locale } from "@/lib/i18n";
 
@@ -61,6 +61,20 @@ export default async function AdminPortfolio({ params }: { params: Promise<{ loc
                     <div key={i} className="group/ph relative aspect-[3/4] overflow-hidden border border-sand-deep">
                       {/* eslint-disable-next-line @next/next/no-img-element -- gemischte Quellen */}
                       <img src={p.src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      {p.upload && i === 0 && (
+                        <span className="absolute left-1 top-1 bg-gold px-2 py-0.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream">
+                          {de ? "Titelbild" : "Kapak"}
+                        </span>
+                      )}
+                      {p.upload && i > 0 && (
+                        <form action={makeStoryCoverPhoto} className="absolute inset-x-0 top-0">
+                          <input type="hidden" name="slug" value={s.slug} />
+                          <input type="hidden" name="index" value={i} />
+                          <button className="w-full bg-gold/80 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover/ph:opacity-100 hover:bg-gold">
+                            {de ? "Als Titelbild" : "Kapak yap"}
+                          </button>
+                        </form>
+                      )}
                       {p.upload && (
                         <form action={deleteStoryPhoto} className="absolute inset-x-0 bottom-0">
                           <input type="hidden" name="slug" value={s.slug} />

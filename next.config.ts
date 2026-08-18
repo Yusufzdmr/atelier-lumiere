@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Ohne Blob-Token landen hochgeladene Bilder als Data-URL im Formular.
+    // Der Standardwert von 1 MB reicht dafuer nicht; sonst verwerfen die
+    // Server Actions den Speichern-Klick stillschweigend.
+    serverActions: { bodySizeLimit: "6mb" },
+  },
   images: {
     // Demo-Bilder. Im Live-Betrieb werden die Originale des Fotografen
     // über /public oder Vercel Blob ausgeliefert (WebP/AVIF automatisch).

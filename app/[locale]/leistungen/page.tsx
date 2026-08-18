@@ -7,6 +7,7 @@ import { Section, Photo, Breadcrumbs, Btn } from "@/components/ui";
 import VideoEmbed from "@/components/VideoEmbed";
 import { img } from "@/lib/images";
 import { getServices } from "@/lib/cms";
+import { serviceCover } from "@/lib/content";
 import { getDict } from "@/lib/dict";
 import { breadcrumbLd, serviceLd, pageMeta } from "@/lib/seo";
 import { locales, isLocale, type Locale } from "@/lib/i18n";
@@ -64,7 +65,7 @@ export default async function ServicesPage({ params }: { params: Promise<{ local
             <div key={s.slug} id={s.slug} className="scroll-mt-28">
               <div className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-20 ${i % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
                 <Reveal mask>
-                  <Photo seed={s.seed} alt={s.title[l]} ratio="4/5" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  <Photo seed={serviceCover(s)} alt={s.title[l]} ratio="4/5" sizes="(max-width: 1024px) 100vw, 50vw" />
                 </Reveal>
                 <Reveal delay={120}>
                   <div className="eyebrow">0{i + 1}</div>

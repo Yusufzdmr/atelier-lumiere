@@ -40,10 +40,10 @@ export default async function PortfolioPage({ params }: { params: Promise<{ loca
               <Link href={p(`/portfolio/${s.slug}`)} className="group block">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="sm:col-span-2">
-                    <Photo seed={s.seeds[0]} alt={s.couple} ratio="16/10" sizes="(max-width: 640px) 100vw, 66vw" />
+                    <Photo seed={s.uploads?.[0] ?? s.seeds[0]} alt={s.couple} ratio="16/10" sizes="(max-width: 640px) 100vw, 66vw" />
                   </div>
                   <div className="hidden sm:block">
-                    <Photo seed={s.seeds[1]} alt={`${s.couple} 2`} ratio="4/5" sizes="33vw" />
+                    <Photo seed={s.uploads?.[1] ?? s.seeds[1] ?? s.uploads?.[0] ?? s.seeds[0]} alt={`${s.couple} 2`} ratio="4/5" sizes="33vw" />
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap items-baseline justify-between gap-4">

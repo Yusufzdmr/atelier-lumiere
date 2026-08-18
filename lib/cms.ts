@@ -250,6 +250,20 @@ export async function removeStoryPhoto(slug: string, index: number) {
   if (removed) await deleteUpload(removed);
 }
 
+/**
+ * Kapak = uploads[0]. „Kapak yap" o karesi öne alır; yeni alan, göç yok — [0]
+ * okuyan her yerde (ana sayfa, portfolyo listesi, çekim üstü, „diğer çekimler")
+ * anında geçerli.
+ */
+export const makeStoryCover = (slug: string, index: number) =>
+  mutate((c) => {
+    const story = c.stories.find((s) => s.slug === slug);
+    if (!story?.uploads?.length) return;
+    if (index <= 0 || index >= story.uploads.length) return;
+    const [picked] = story.uploads.splice(index, 1);
+    story.uploads.unshift(picked);
+  });
+
 /* ------------------------- Hochzeitslocations ------------------------- */
 
 export const getVenues = async (): Promise<Venue[]> => (await getContent()).venues;
@@ -342,6 +356,16 @@ export async function removePostPhoto(slug: string, index: number) {
   await storeContent(c);
   if (removed) await deleteUpload(removed);
 }
+
+/** Beitragskapak: uploads[0] öne alınır. */
+export const makePostCover = (slug: string, index: number) =>
+  mutate((c) => {
+    const post = c.posts.find((p) => p.slug === slug);
+    if (!post?.uploads?.length) return;
+    if (index <= 0 || index >= post.uploads.length) return;
+    const [picked] = post.uploads.splice(index, 1);
+    post.uploads.unshift(picked);
+  });
 
 /* ------------------------- SEO & Aktionscode ------------------------- */
 

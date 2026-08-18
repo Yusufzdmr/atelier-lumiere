@@ -17,6 +17,18 @@ export type Service = {
   videoUrl?: string;
 };
 
+/**
+ * Kapak: eigenes Titelbild vor eigenen Beispielbildern vor Demo-Motiv.
+ * Ohne diese Reihenfolge liesse sich ein hochgeladenes Foto nie zur Karte
+ * auf der Startseite machen, wenn oben noch die Demo-Kennung ("lum-service-…")
+ * steht – das war die haeufigste Verwirrung im Panel.
+ */
+export function serviceCover(s: Service): string {
+  if (/^(https?:|data:|\/)/.test(s.seed)) return s.seed;
+  const first = (s.photos ?? []).find(Boolean);
+  return first ?? s.seed;
+}
+
 export const services: Service[] = [
   {
     slug: "hochzeitsfotografie",

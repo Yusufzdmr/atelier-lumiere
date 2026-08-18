@@ -21,8 +21,8 @@ import {
   getContent, saveContent, resetContent, defaultContent,
   saveVenue, addVenue, removeVenue,
   saveCity, addCity, removeCity,
-  saveStory, addStory, removeStory, addStoryPhotos, removeStoryPhoto,
-  savePost, addPost, removePost, addPostPhotos, removePostPhoto,
+  saveStory, addStory, removeStory, addStoryPhotos, removeStoryPhoto, makeStoryCover,
+  savePost, addPost, removePost, addPostPhotos, removePostPhoto, makePostCover,
   type SiteContent,
 } from "./cms";
 import type { Service, ProcessStep, Testimonial, FaqItem } from "./content";
@@ -392,6 +392,12 @@ export async function deleteStoryPhoto(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function makeStoryCoverPhoto(formData: FormData) {
+  await requireAdmin();
+  await makeStoryCover(str(formData, "slug"), Number(formData.get("index")));
+  revalidatePath("/", "layout");
+}
+
 /* ------------------------------ Einladungen ------------------------------ */
 
 export async function removeInvitation(formData: FormData) {
@@ -746,6 +752,12 @@ export async function uploadPostPhotos(slug: string, photos: string[]) {
 export async function deletePostPhoto(formData: FormData) {
   await requireAdmin();
   await removePostPhoto(str(formData, "slug"), Number(formData.get("index")));
+  revalidatePath("/", "layout");
+}
+
+export async function makePostCoverPhoto(formData: FormData) {
+  await requireAdmin();
+  await makePostCover(str(formData, "slug"), Number(formData.get("index")));
   revalidatePath("/", "layout");
 }
 
