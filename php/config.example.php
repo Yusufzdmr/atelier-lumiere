@@ -29,15 +29,14 @@ return [
     'db_pass' => '',
 
     /*
-     * Passwort für /admin.
+     * Startpasswort für /admin — nur für den ersten Login.
      *
-     * Besser als Klartext ist ein Hash – dann steht das Passwort nirgends,
-     * auch nicht in einer Sicherung der Datei. Erzeugen mit:
+     * Sobald man im Adminbereich unter „Zugang" ein neues Passwort setzt,
+     * landet der Hash in der Datenbank und dieser Eintrag wird ignoriert.
+     * Bis dahin: hier ein Hash (bevorzugt) oder Klartext.
      *
+     * Hash erzeugen mit:
      *   php -r "echo password_hash('DAS-PASSWORT', PASSWORD_DEFAULT), PHP_EOL;"
-     *
-     * und das Ergebnis ($2y$…) hier eintragen. Klartext funktioniert weiter,
-     * damit ein bestehender Zugang nicht bricht.
      */
     'admin_key' => 'bitte-aendern',
 
