@@ -141,17 +141,15 @@ final class Intro
             // Streifen stehen. .t-cardbg bleibt jetzt transparent (statt
             // #0b0906), damit ausserhalb des Videobereichs keine dunkle
             // Flaeche aufblitzt, wenn der Browser Layoutspruenge macht.
-            . '.t-card--backdrop{min-height:70vh;text-shadow:0 1px 4px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.55)}'
+            . '.t-card--backdrop{min-height:70vh;text-shadow:0 1px 4px rgba(0,0,0,.9),0 0 18px rgba(0,0,0,.6)}'
             . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:transparent;contain:paint;transform:translateZ(0)}'
-            // Video zusaetzlich leicht weichgezeichnet: als Motiv verstaerkt es
-            // die Stimmung, Text darueber verliert weniger Kontrast an den
-            // hellen Reflexionen. Kein Kunststueck – dieselbe Idee wie eine
-            // Ebene Milchglas hinter Untertiteln.
-            . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;filter:blur(3px) brightness(.75) saturate(1.05);transform:translateZ(0) scale(1.05)}'
-            // Uniformer, kraeftigerer Wash: sichere Lesbarkeit fuer alle
-            // Textblöcke, egal welche Stelle des Films gerade laeuft. Zu
-            // hell war 0.32 – dunkle Buchstaben verschwanden im Wasser.
-            . '.t-cardbg-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,.55) 0%,rgba(11,9,6,.6) 45%,rgba(11,9,6,.7) 100%)}'
+            // Video wieder scharf – kein filter:blur mehr, das die Kunden
+            // ausdruecklich abgelehnt haben. Lesbarkeit uebernimmt jetzt der
+            // Wash + die Textschatten.
+            . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;transform:translateZ(0)}'
+            // Uniformer, ausreichend kraeftiger Wash, damit heller Text auf
+            // hellen Reflexionen nicht verschwindet.
+            . '.t-cardbg-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,.5) 0%,rgba(11,9,6,.55) 45%,rgba(11,9,6,.65) 100%)}'
             . '</style>';
 
         return $style
