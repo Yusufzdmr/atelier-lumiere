@@ -37,23 +37,23 @@ final class Admin
     public const TABS = [
         ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
 
-        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
-        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller'],
+        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim', 'pinned' => true],
+        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller', 'pinned' => true],
         ['href' => '/texte', 'group' => 'website', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
         ['href' => '/leistungen', 'group' => 'website', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
         ['href' => '/pakete', 'group' => 'website', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
         ['href' => '/staedte', 'group' => 'website', 'de' => 'Städte', 'tr' => 'Şehirler'],
         ['href' => '/locations', 'group' => 'website', 'de' => 'Locations', 'tr' => 'Mekânlar'],
-        ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
-        ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
+        ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo', 'pinned' => true],
+        ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber', 'pinned' => true],
         ['href' => '/ueber-mich', 'group' => 'website', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
         ['href' => '/rechtliches', 'group' => 'website', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
         ['href' => '/seo', 'group' => 'website', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
 
         // Die Kundenakte ist die Galerie: wer eine anlegt, legt eine Galerie an.
-        ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler'],
+        ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler', 'pinned' => true],
 
-        ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+        ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler', 'pinned' => true],
         // Themen sind die Designs der Einladungskarte, nicht der Website.
         ['href' => '/themen', 'group' => 'einladung', 'de' => 'Designs', 'tr' => 'Tasarımlar'],
 
@@ -199,6 +199,40 @@ final class Admin
     }
 
     /**
+     * Bir sekmenin ziyaret sayacını artırır. Panele her GET isteğinde çağrılır.
+     *
+     * @param string $tab örn. "" (overview), "/kunden", "/portfolio"
+     */
+    public static function recordVisit(string $tab): void
+    {
+        // Sadece TABS'ta olan sekmeleri say. Alt sayfalar (/kunden/{code}) üst
+        // sekmeye ("/kunden") yuvarlanır — sayaç kısmen daha temiz olur.
+        $canonical = null;
+        foreach (self::TABS as $t) {
+            $href = (string) $t['href'];
+            if ($href === $tab || ($href !== '' && str_starts_with($tab, $href . '/'))) {
+                $canonical = $href;
+                break;
+            }
+        }
+        if ($canonical === null) {
+            return;
+        }
+
+        // ON DUPLICATE KEY: atomik, yarış koşulu yok.
+        try {
+            Db::run(
+                'INSERT INTO admin_usage (tab, hits) VALUES (?, 1)
+                 ON DUPLICATE KEY UPDATE hits = hits + 1, last_at = CURRENT_TIMESTAMP',
+                [$canonical]
+            );
+        } catch (\Throwable $_) {
+            // Tablo yoksa (henüz schema yüklenmedi) veya DB düştüyse:
+            // panel çalışmaya devam etsin — sayaç kritik değil.
+        }
+    }
+
+    /**
      * Die Reiter nach Abschnitten, fertig für die Seitenleiste.
      *
      * @return list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
@@ -308,6 +342,14 @@ final class Admin
     public static function requireLogin(string $locale): void
     {
         if (self::isLoggedIn()) {
+            // GET isteklerinde ziyaret sayacını artır — POST'lar redirect
+            // sonrası GET olarak gelir, çift sayım olmaz.
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+                $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+                // "/tr/admin/kunden" → "/kunden", "/de/admin" → ""
+                $tab = preg_replace('#^/[a-z]{2}/admin#', '', $path) ?? '';
+                self::recordVisit($tab);
+            }
             return;
         }
 
