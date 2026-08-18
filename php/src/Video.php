@@ -34,7 +34,9 @@ final class Video
     public static function parse(?string $input): ?array
     {
         $url = trim((string) $input);
-        if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
+        // Absolut (http/https) oder ein eigener Upload (/uploads/…) — sonst
+        // nichts. `javascript:` und andere Schemata scheitern hier.
+        if ($url === '' || (preg_match('#^https?://#i', $url) !== 1 && !str_starts_with($url, '/'))) {
             return null;
         }
 
