@@ -47,9 +47,10 @@ final class Themes
             'henna'     => 3800,
             'party'     => 3200,
             'sealLight' => 2400,
-            // Lumina: die Schwaene laufen als Schleife; wir zeigen etwa
-            // vier Sekunden, damit ein voller Kreis der Bewegung sichtbar ist.
-            'lumina'    => 4200,
+            // Lumina: die Schwaene laufen als Schleife *hinter* Kuvert und
+            // Karte, nicht als vorgeschaltete Szene. Der Vorspann-Timer bleibt
+            // deshalb bei null; invitation.js gibt Kuvert und Idle sofort frei.
+            'lumina'    => 0,
             default     => 0,
         };
     }

@@ -58,10 +58,11 @@ final class Intro
                 . '<span class="ti-sweep"></span>'
                 . '<span class="ti-vignette"></span>',
 
-            // Lumina: zwei Schwaene gleiten im Morgenlicht, das Standbild
-            // liegt vor dem Kuvert. Der Stil wird hier inline mitgeliefert,
-            // damit die Szene keinen separaten Tailwind-Build braucht.
-            'lumina' => self::luminaSwans(),
+            // Lumina laeuft nicht als Vorspann-Overlay, sondern als
+            // dauerhaftes Hintergrundvideo hinter Kuvert und Karte. Deshalb
+            // hier leer – die eigentliche Ausgabe liefert Intro::backdrop(),
+            // das invitation.php ausserhalb des Kuverts einbindet.
+            'lumina' => '',
 
             default => '',
         };
@@ -95,9 +96,45 @@ final class Intro
     }
 
     /**
-     * Schwaene im Morgenlicht: das GIF fuellt die Szene, ein warmer Wash und
-     * eine sanfte Vignette legen sich darueber, damit die Karte darunter
-     * nicht abrupt sondern durch das gleiche Licht auftaucht.
+     * Dauerhafter Hintergrund fuer ein Thema – etwa das Schwaene-Video hinter
+     * dem Kuvert der Lumina-Karte. Wird von invitation.php als eigene Ebene
+     * unter der Kuvert-Buehne gerendert; Kuvert und Karte legen sich in der
+     * Mitte darueber, das Motiv laeuft rundherum weiter.
+     *
+     * @param array<string,mixed> $theme
+     */
+    public static function backdrop(string $id, array $theme): string
+    {
+        if ($id !== 'lumina') {
+            return '';
+        }
+
+        // Warmer Wash + dunkler Rand halten die Karte lesbar, sonst
+        // konkurrieren Kuguflaeche und Papier um denselben Kontrast.
+        // z-index:-1 setzt den Hintergrund unter den Fluss der Seite: die
+        // Kuvert-Buehne (z-50, fixed, ohne Hintergrundfarbe fuer Lumina) laesst
+        // ihn durch, und wenn die Buehne verschwindet, deckt der Karteninhalt
+        // der normalen Flusslage ihn nicht ab. body darf dabei keinen eigenen
+        // Stacking-Context erzeugen – hier tut er es nicht.
+        $style = '<style>'
+            . '.t-backdrop{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#0b0906}'
+            . '.t-backdrop-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;opacity:.9}'
+            . '.t-backdrop-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(255,214,150,.28),transparent 66%),radial-gradient(circle at 50% 50%,transparent 40%,rgba(0,0,0,.55) 100%)}'
+            . '</style>';
+
+        return $style
+            . '<div class="t-backdrop" aria-hidden="true">'
+            . '<video class="t-backdrop-vid" autoplay muted loop playsinline preload="auto" poster="/assets/intro/lumina-swans.gif">'
+            . '<source src="/assets/intro/lumina-swans.webm" type="video/webm">'
+            . '<source src="/assets/intro/lumina-swans.mp4" type="video/mp4">'
+            . '</video>'
+            . '<span class="t-backdrop-wash"></span>'
+            . '</div>';
+    }
+
+    /**
+     * (Deprecated) Frueher als Vorspann-Overlay; jetzt uebernimmt backdrop().
+     * Bleibt als Fallback fuer aeltere Referenzen erhalten.
      */
     private static function luminaSwans(): string
     {

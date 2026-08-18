@@ -53,6 +53,7 @@ if (!in_array($introKind, \Atelier\Themes::INTROS, true)) {
     $introKind = 'none';
 }
 $introHtml = Intro::html($introKind, $theme);
+$backdropHtml = Intro::backdrop($introKind, $theme);
 $introMs = \Atelier\Themes::introDuration($introKind);
 
 $idleKind = (string) ($theme['idle'] ?? 'breathe');
@@ -222,12 +223,17 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
            Klappe, Karte und Siegel sind einzelne Flaechen: erst bricht das
            Siegel, dann schlaegt die Klappe auf, dann hebt sich die Karte
            heraus. Vorher war es ein Rechteck, das ausblendete. */ ?>
+  <?= $backdropHtml ?>
   <?= $introHtml ?>
 
+  <?php /* Bei Themen mit dauerhaftem Hintergrund (z. B. Lumina) darf die
+           Kuvert-Buehne nicht mit einer vollen Farbe darueberliegen – sonst
+           deckt sie das Video wieder zu. Dann faellt der Hintergrund weg
+           und die Buehne wird transparent. */ ?>
   <div class="t-envelope-stage idle-<?= e($idleKind) ?> fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
        data-intro-ms="<?= (int) $introMs ?>"
-       style="background: <?= e((string) $theme['bg']) ?>">
+       <?php if ($backdropHtml === '') : ?>style="background: <?= e((string) $theme['bg']) ?>"<?php endif; ?>>
     <?= $scene ?>
 
     <button type="button" data-envelope-open
