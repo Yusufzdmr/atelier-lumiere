@@ -604,31 +604,50 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
 
           <div class="mt-4 flex items-center justify-center p-6" data-theme-preview="<?= e($id) ?>"
                style="background: <?= e((string) $theme['bg']) ?>">
+            <?php
+              $bdVideo = (string) ($theme['backdropVideo'] ?? '');
+              $hasBd   = $bdVideo !== '';
+              // Backdrop-Videolu temalarda kart Intro::backdrop mantığıyla
+              // render edilir: kağıt saydam, yazı krem, üstte hafif koyu wash.
+              // Böylece operatör panelde de gerçek görünümü görür.
+            ?>
             <div class="t-card relative w-full max-w-[16rem] overflow-hidden px-6 py-10 text-center"
-                 style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>;
-                        <?= (string) $theme['image'] !== '' ? 'background-image:url(' . e((string) $theme['image']) . ');background-size:' . ($theme['imageMode'] === 'repeat' ? 'auto' : 'cover') . ';background-position:center;' : '' ?>">
-              <div class="t-seal mx-auto flex h-9 w-9 items-center justify-center rounded-full text-[0.7rem]"
-                   style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>">A&amp;M</div>
+                 style="<?php if ($hasBd) : ?>background: #0b0906; color: #f6ecd8; border: 1px solid <?= e((string) $theme['paperEdge']) ?>; text-shadow: 0 1px 4px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.6);<?php else : ?>background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>;<?= (string) $theme['image'] !== '' ? 'background-image:url(' . e((string) $theme['image']) . ');background-size:' . ($theme['imageMode'] === 'repeat' ? 'auto' : 'cover') . ';background-position:center;' : '' ?><?php endif; ?>">
 
-              <div class="mt-6 text-[0.5rem] uppercase tracking-[0.3em]" style="color: <?= e((string) $theme['soft']) ?>">
-                <?= $de ? 'Wir heiraten' : 'Evleniyoruz' ?>
-              </div>
+              <?php if ($hasBd) : ?>
+                <video autoplay muted loop playsinline preload="auto"
+                       class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                       <?= (string) ($theme['backdropPoster'] ?? '') !== '' ? 'poster="' . e((string) $theme['backdropPoster']) . '"' : '' ?>>
+                  <source src="<?= e($bdVideo) ?>" type="<?= str_ends_with(strtolower($bdVideo), '.webm') ? 'video/webm' : 'video/mp4' ?>">
+                </video>
+                <div class="pointer-events-none absolute inset-0"
+                     style="background: linear-gradient(180deg, rgba(11,9,6,.5) 0%, rgba(11,9,6,.55) 45%, rgba(11,9,6,.65) 100%)"></div>
+              <?php endif; ?>
 
-              <div class="t-name font-display mt-3 flex flex-col leading-tight">
-                <span class="text-2xl font-light">Ayşe</span>
-                <span class="my-0.5 text-base italic" style="color: <?= e((string) $theme['accent']) ?>">&amp;</span>
-                <span class="text-2xl font-light">Mehmet</span>
-              </div>
+              <div class="relative z-10">
+                <div class="t-seal mx-auto flex h-9 w-9 items-center justify-center rounded-full text-[0.7rem]"
+                     style="background: <?= e((string) $theme['seal']) ?>; color: <?= e((string) $theme['sealText']) ?>">A&amp;M</div>
 
-              <div class="mx-auto mt-4 h-px w-20" style="background: <?= e((string) $theme['accent']) ?>"></div>
+                <div class="mt-6 text-[0.5rem] uppercase tracking-[0.3em]" style="color: <?= $hasBd ? '#f6ecd8' : e((string) $theme['soft']) ?>">
+                  <?= $de ? 'Wir heiraten' : 'Evleniyoruz' ?>
+                </div>
 
-              <div class="t-date mt-4 text-[0.62rem] uppercase tracking-[0.2em]" style="color: <?= e((string) $theme['soft']) ?>">
-                12.09.2026 · 16:00
-              </div>
+                <div class="t-name font-display mt-3 flex flex-col leading-tight">
+                  <span class="text-2xl font-light">Ayşe</span>
+                  <span class="my-0.5 text-base italic" style="color: <?= $hasBd ? '#E9CB92' : e((string) $theme['accent']) ?>">&amp;</span>
+                  <span class="text-2xl font-light">Mehmet</span>
+                </div>
 
-              <div class="mt-6 inline-block border px-4 py-2 text-[0.55rem] uppercase tracking-[0.2em]"
-                   style="border-color: <?= e((string) $theme['accent']) ?>; color: <?= e((string) $theme['accent']) ?>">
-                RSVP
+                <div class="mx-auto mt-4 h-px w-20" style="background: <?= $hasBd ? '#E9CB92' : e((string) $theme['accent']) ?>"></div>
+
+                <div class="t-date mt-4 text-[0.62rem] uppercase tracking-[0.2em]" style="color: <?= $hasBd ? '#f6ecd8' : e((string) $theme['soft']) ?>">
+                  12.09.2026 · 16:00
+                </div>
+
+                <div class="mt-6 inline-block border px-4 py-2 text-[0.55rem] uppercase tracking-[0.2em]"
+                     style="border-color: <?= $hasBd ? '#E9CB92' : e((string) $theme['accent']) ?>; color: <?= $hasBd ? '#E9CB92' : e((string) $theme['accent']) ?>">
+                  RSVP
+                </div>
               </div>
             </div>
           </div>
