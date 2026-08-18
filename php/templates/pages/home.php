@@ -96,7 +96,7 @@ $values = array_slice((array) ($about['values'] ?? []), 0, 4);
     <?php foreach ($services as $i => $service) : ?>
       <?= Ui::revealOpen($i * 90) ?>
         <a href="<?= e($p('/leistungen#' . (string) ($service['slug'] ?? ''))) ?>" class="group block">
-          <?= Ui::photo((string) ($service['seed'] ?? ''), I18n::pick($service['title'] ?? null, $locale), '4/5', '', '(max-width: 640px) 100vw, 25vw', 640, 800) ?>
+          <?= Ui::photo(Content::serviceCover($service), I18n::pick($service['title'] ?? null, $locale), '4/5', '', '(max-width: 640px) 100vw, 25vw', 640, 800) ?>
           <h3 class="font-display mt-5 text-xl font-normal text-ink transition-colors group-hover:text-gold"><?= e(I18n::pick($service['title'] ?? null, $locale)) ?></h3>
           <p class="mt-2 text-[0.88rem] leading-relaxed text-muted"><?= e(I18n::pick($service['short'] ?? null, $locale)) ?></p>
         </a>
@@ -120,7 +120,7 @@ $values = array_slice((array) ($about['values'] ?? []), 0, 4);
       <?= Ui::revealOpen($i * 80, $wide ? 'md:col-span-2' : '') ?>
         <a href="<?= e($p('/portfolio/' . (string) ($story['slug'] ?? ''))) ?>" class="group block">
           <?= Ui::photo(
-              (string) (($story['seeds'] ?? [])[0] ?? ''),
+              Content::storyCover($story),
               (string) ($story['couple'] ?? '') . ' – ' . I18n::pick($story['venue'] ?? null, $locale),
               $wide ? '16/9' : '4/3',
               '',

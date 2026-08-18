@@ -7,6 +7,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Content;
 use Atelier\I18n;
 use Atelier\Ui;
 use Atelier\Video;
@@ -52,7 +53,7 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
         <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-20 <?= $i % 2 ? 'lg:[&>*:first-child]:order-2' : '' ?>">
           <?= Ui::revealOpen(0, '', true) ?>
             <?= Ui::photo(
-                (string) ($service['seed'] ?? ''),
+                Content::serviceCover($service),
                 I18n::pick($service['title'] ?? null, $locale),
                 '4/5',
                 '',

@@ -174,6 +174,47 @@ final class Content
         return array_values(array_filter(self::list('venues'), static fn (array $v): bool => ($v['citySlug'] ?? '') === $citySlug));
     }
 
+    /**
+     * Kapak einer Leistung: eigenes Titelbild (als URL) vor eigenem Beispielfoto
+     * vor Demo-Kennung. Ohne diese Reihenfolge liesse sich ein hochgeladenes Foto
+     * nie zur Karte auf der Startseite machen, solange oben noch die
+     * Platzhalter-Kennung ("lum-service-…") steht – der haeufigste Trugschluss
+     * im Panel: "ich habe geladen, warum aendert sich nichts".
+     *
+     * @param array<string,mixed> $service
+     */
+    public static function serviceCover(array $service): string
+    {
+        $seed = (string) ($service['seed'] ?? '');
+        if ($seed !== '' && preg_match('#^(https?:|data:|/)#', $seed) === 1) {
+            return $seed;
+        }
+        foreach ((array) ($service['uploads'] ?? []) as $url) {
+            if (is_string($url) && $url !== '') {
+                return $url;
+            }
+        }
+        return $seed;
+    }
+
+    /**
+     * Kapak einer Reportage: uploads[0] vor seeds[0]. Dieselbe Regel wie
+     * portfolio.php sie seit dem Titelbild-Fix nutzt – nur ausserhalb der
+     * Uebersicht (Startseite, „andere Reportagen") war das noch nicht gesetzt.
+     *
+     * @param array<string,mixed> $story
+     */
+    public static function storyCover(array $story, int $fallbackSeed = 0): string
+    {
+        foreach ((array) ($story['uploads'] ?? []) as $url) {
+            if (is_string($url) && $url !== '') {
+                return $url;
+            }
+        }
+        $seeds = (array) ($story['seeds'] ?? []);
+        return (string) ($seeds[$fallbackSeed] ?? ($seeds[0] ?? ''));
+    }
+
     /* ----------------------------- Schreiben ----------------------------- */
 
     /** @param array<string,mixed> $data */

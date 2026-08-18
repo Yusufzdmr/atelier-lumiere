@@ -80,8 +80,8 @@ final class ListAdminController
             // nur, was wir tun – zu sehen ist es nirgends.
             'photos' => fn (array $item): array => [
                 'hint' => $de
-                    ? 'Diese Bilder stehen unter dem Text der Leistung. Mehrere auf einmal möglich; die ersten vier erscheinen auf der Seite. Ohne eigene Bilder zeigt die Seite Platzhalter.'
-                    : 'Bu görseller hizmet metninin altında görünür. Aynı anda birden çok seçebilirsiniz; sayfada ilk dördü çıkar. Kendi görseliniz yoksa temsili görseller gösterilir.',
+                    ? 'Diese Bilder stehen unter dem Text der Leistung. Mehrere auf einmal möglich; die ersten vier erscheinen auf der Seite. Ist unten kein „Bild-Kennung“ als eigene Adresse gesetzt, wird das erste dieser Fotos zusätzlich zum Titelbild (Startseite + Kopf von /leistungen).'
+                    : 'Bu görseller hizmet metninin altında görünür. Aynı anda birden çok seçebilirsiniz; sayfada ilk dördü çıkar. Aşağıdaki „Görsel anahtarı“ bir adres değilse, buradaki ilk fotoğraf aynı zamanda kapak (ana sayfa + /leistungen üstü) olur.',
                 'list' => $this->serviceShots($item),
             ],
             'sections' => fn (int $i): array => [[
@@ -95,7 +95,7 @@ final class ListAdminController
                     ['path' => "services.$i.bullets.de", 'label' => $de ? 'Enthalten (DE) – eine Zeile je Punkt' : 'İçerik (DE) – her satıra bir madde', 'type' => 'lines', 'rows' => 5],
                     ['path' => "services.$i.bullets.en", 'label' => $de ? 'Enthalten (EN)' : 'İçerik (EN)', 'type' => 'lines', 'rows' => 5],
                     ['path' => "services.$i.slug", 'label' => $de ? 'Anker (URL-Teil)' : 'Bağlantı adı (URL)', 'hint' => $de ? 'Ändern macht alte Links auf diesen Abschnitt ungültig.' : 'Değiştirmek bu bölüme giden eski bağlantıları bozar.'],
-                    ['path' => "services.$i.seed", 'label' => $de ? 'Bild-Kennung (grosses Bild oben)' : 'Görsel anahtarı (üstteki büyük görsel)', 'hint' => $de ? 'Platzhalter-Name oder eine Bildadresse.' : 'Temsili görsel adı ya da bir görsel adresi.'],
+                    ['path' => "services.$i.seed", 'label' => $de ? 'Titelbild (grosses Bild oben)' : 'Kapak fotoğrafı (üstteki büyük görsel)', 'hint' => $de ? 'Direkte Bildadresse (https://…) gewinnt. Sonst wird das erste hochgeladene Foto oben als Titelbild verwendet; steht auch das nicht bereit, greift der Platzhalter mit dieser Kennung.' : 'Doğrudan görsel adresi (https://…) öncelikli. Yoksa yukarıda yüklediğin ilk fotoğraf kapak olur; o da yoksa bu anahtardaki temsili görsel gösterilir.'],
                     [
                         'path' => "services.$i.videoUrl", 'label' => $de ? 'Beispielfilm (YouTube / Vimeo)' : 'Örnek film (YouTube / Vimeo)', 'wide' => true,
                         'hint' => $de
