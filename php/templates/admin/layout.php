@@ -157,7 +157,7 @@ $link = static function (array $tab): string {
     <?php endif; ?>
   </div>
 
-  <div id="toast-host" class="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
+  <div id="toast-host" aria-live="polite" class="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
   <script src="/assets/admin.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/admin.js')) ?>" defer></script>
   <script src="/assets/upload.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/upload.js')) ?>" defer></script>

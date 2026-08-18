@@ -218,7 +218,7 @@
 
     setTimeout(function () {
       toast.classList.add("translate-y-2", "opacity-0");
-      setTimeout(function () { toast.remove(); }, 220);
+      setTimeout(function () { toast.remove(); }, 200);
     }, 3000);
   };
 
