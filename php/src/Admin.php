@@ -57,6 +57,7 @@ final class Admin
         // Themen sind die Designs der Einladungskarte, nicht der Website.
         ['href' => '/themen', 'group' => 'einladung', 'de' => 'Designs', 'tr' => 'Tasarımlar'],
 
+        ['href' => '/zugang', 'group' => 'technik', 'de' => 'Zugang', 'tr' => 'Erişim'],
         ['href' => '/integrationen', 'group' => 'technik', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
         ['href' => '/systemcheck', 'group' => 'technik', 'de' => 'Vor dem Livegang', 'tr' => 'Yayın kontrolü'],
     ];
