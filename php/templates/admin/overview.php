@@ -9,6 +9,7 @@
  * @var list<array<string,mixed>> $invitations
  * @var list<array<string,mixed>> $rsvps
  * @var list<array<string,mixed>> $customers
+ * @var list<array{kind:string,message:string,href:string,severity:string}> $pending
  */
 
 use function Atelier\e;
@@ -44,6 +45,31 @@ $newLeads = $fresh($leads, 'at');
 $newPicks = $fresh($selections, 'at');
 ?>
 <div class="space-y-12">
+  <?php /* -------------------- Bekleyen iş -------------------- */ ?>
+  <?php if ($pending !== []) : ?>
+    <section aria-label="<?= $de ? 'Ausstehend' : 'Bekleyen' ?>">
+      <h2 class="font-display text-xl text-ink">
+        <?= $de ? 'Was gerade wartet' : 'Bekleyen işler' ?>
+      </h2>
+      <div class="mt-4 space-y-2">
+        <?php foreach ($pending as $item) : ?>
+          <?php
+            $tone = $item['severity'] === 'warn'
+              ? 'border-l-red-700 hover:border-l-red-800'
+              : 'border-l-gold hover:border-l-gold';
+          ?>
+          <a href="<?= e($item['href']) ?>"
+             class="flex items-center justify-between gap-4 border-l-2 border border-sand-deep bg-cream px-5 py-3 text-[0.9rem] text-ink transition-colors hover:bg-sand/30 <?= $tone ?>">
+            <span><?= e($item['message']) ?></span>
+            <span class="text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+              <?= $de ? 'öffnen' : 'aç' ?> →
+            </span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </section>
+  <?php endif; ?>
+
   <div>
     <h2 class="font-display text-xl text-ink"><?= $de ? 'Übersicht' : 'Genel bakış' ?></h2>
     <p class="mt-2 text-sm text-muted">

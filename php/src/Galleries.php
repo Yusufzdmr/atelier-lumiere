@@ -186,6 +186,44 @@ final class Galleries
         self::notify($selection);
     }
 
+    /**
+     * Seçim panelde görüldü — bekleyen iş listesinden düşer.
+     *
+     * `seenAt` ilk görme zamanını, `seenPickCount` o andaki kare sayısını
+     * tutar. Paar sonradan bir kare daha eklerse (picks sayısı artar) tekrar
+     * "yeni" sayılır.
+     */
+    public static function markSelectionSeen(string $code): void
+    {
+        $selection = self::selection($code);
+        if ($selection === null) {
+            return;
+        }
+
+        $selection['seenAt'] = date('c');
+        $selection['seenPickCount'] = count((array) ($selection['picks'] ?? []));
+
+        Db::run(
+            'UPDATE selections SET data = ? WHERE code = ?',
+            [Db::encode($selection), self::normalize($code)]
+        );
+    }
+
+    /**
+     * Görülmemiş veya yeni kare eklenmiş seçim mi?
+     *
+     * @param array<string,mixed> $selection
+     */
+    public static function isSelectionUnseen(array $selection): bool
+    {
+        if (empty($selection['seenAt'])) {
+            return true;
+        }
+        $seen = (int) ($selection['seenPickCount'] ?? 0);
+        $now  = count((array) ($selection['picks'] ?? []));
+        return $now > $seen;
+    }
+
     /* ------------------------------ Schreiben ----------------------------- */
 
     /** @param array<string,mixed> $gallery */

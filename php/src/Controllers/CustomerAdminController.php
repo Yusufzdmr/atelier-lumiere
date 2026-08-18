@@ -124,6 +124,16 @@ final class CustomerAdminController
         $gallery = Galleries::find($code);
         $selection = Galleries::selection($code);
 
+        // Panele bakıldı: bekleyen iş listesinden düşer. Paar sonradan
+        // kare eklerse (picks sayısı artar) tekrar "yeni" sayılır.
+        if ($selection !== null && Galleries::isSelectionUnseen($selection)) {
+            Galleries::markSelectionSeen($code);
+            // Bellekteki kopyayı da güncelle ki template aynı isteğinde
+            // eski "yeni" işareti göstermesin.
+            $selection['seenAt'] = date('c');
+            $selection['seenPickCount'] = count((array) ($selection['picks'] ?? []));
+        }
+
         // Nur die Einladungen, die mit dem Gutschein dieses Kunden entstanden.
         $usedFor = [];
         foreach ($customer['coupon']['usedFor'] as $use) {

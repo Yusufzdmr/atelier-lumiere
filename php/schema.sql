@@ -103,3 +103,11 @@ CREATE TABLE IF NOT EXISTS payments (
   at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX payments_slug_idx (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Panelin hangi sekmelerinde çalışıldığını sayar.
+-- „Sık kullanılanlar" listesini (son 30 gün) buradan üretiriz.
+CREATE TABLE IF NOT EXISTS admin_usage (
+  tab      VARCHAR(64) NOT NULL PRIMARY KEY,
+  hits     INT UNSIGNED NOT NULL DEFAULT 0,
+  last_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

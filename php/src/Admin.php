@@ -37,23 +37,23 @@ final class Admin
     public const TABS = [
         ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
 
-        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim'],
-        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller'],
+        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim', 'pinned' => true],
+        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller', 'pinned' => true],
         ['href' => '/texte', 'group' => 'website', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
         ['href' => '/leistungen', 'group' => 'website', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
         ['href' => '/pakete', 'group' => 'website', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
         ['href' => '/staedte', 'group' => 'website', 'de' => 'Städte', 'tr' => 'Şehirler'],
         ['href' => '/locations', 'group' => 'website', 'de' => 'Locations', 'tr' => 'Mekânlar'],
-        ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo'],
-        ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber'],
+        ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo', 'pinned' => true],
+        ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber', 'pinned' => true],
         ['href' => '/ueber-mich', 'group' => 'website', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
         ['href' => '/rechtliches', 'group' => 'website', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
         ['href' => '/seo', 'group' => 'website', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
 
         // Die Kundenakte ist die Galerie: wer eine anlegt, legt eine Galerie an.
-        ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler'],
+        ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler', 'pinned' => true],
 
-        ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler'],
+        ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler', 'pinned' => true],
         // Themen sind die Designs der Einladungskarte, nicht der Website.
         ['href' => '/themen', 'group' => 'einladung', 'de' => 'Designs', 'tr' => 'Tasarımlar'],
 
@@ -62,28 +62,270 @@ final class Admin
     ];
 
     /**
-     * Die Reiter nach Abschnitten, fertig für die Seitenleiste.
+     * Bekleyen iş satırlarının şablonları.
      *
-     * @return list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
+     * `%d` sayı ile, `%s` metin ile doldurulur. Tek satırlık mesajlar; ekstra
+     * detay `href` üzerinden — kart tıklandığında tam bağlama gider.
+     *
+     * @var array<string,array{de:string,tr:string}>
+     */
+    private const PENDING_LABELS = [
+        'lead_stale' => [
+            'de' => '%d Anfrage(n) älter als 48 Stunden ohne Antwort',
+            'tr' => '%d talep 48 saatten uzun cevapsız',
+        ],
+        'invitation_unpaid' => [
+            'de' => '%d Einladung(en) seit über 7 Tagen unbezahlt',
+            'tr' => '%d davetiye 7 günden uzun ödenmemiş',
+        ],
+        'selection_new' => [
+            'de' => '%d neue Albumauswahl(en) noch nicht angesehen',
+            'tr' => '%d yeni albüm seçimi henüz görülmedi',
+        ],
+        'wedding_empty' => [
+            'de' => '%s in %d Tagen — Galerie noch leer',
+            'tr' => '%s %d gün sonra — galeri hâlâ boş',
+        ],
+    ];
+
+    /**
+     * Bekleyen iş satırları — overview şablonu için.
+     *
+     * Ekstra DB round-trip yok: overview() zaten leads/selections/invitations/
+     * customers dizilerini yükledi, aynı verilerden filtreliyoruz.
+     *
+     * @param list<array<string,mixed>> $leads
+     * @param list<array<string,mixed>> $selections
+     * @param list<array<string,mixed>> $invitations
+     * @param list<array<string,mixed>> $customers
+     * @param list<array<string,mixed>> $galleries
+     * @return list<array{kind:string,message:string,href:string,severity:string}>
+     */
+    public static function pendingWork(
+        string $locale,
+        array $leads,
+        array $selections,
+        array $invitations,
+        array $customers,
+        array $galleries
+    ): array {
+        $out = [];
+        $label = static function (string $kind) use ($locale): string {
+            $row = self::PENDING_LABELS[$kind] ?? [];
+            return (string) ($row[$locale] ?? $row['de'] ?? '');
+        };
+
+        // Cevapsız talepler (48 saatten eski)
+        $limit48h = date('c', strtotime('-48 hours'));
+        $stale = 0;
+        foreach ($leads as $lead) {
+            if ((string) ($lead['at'] ?? '') !== '' && (string) $lead['at'] < $limit48h) {
+                $stale++;
+            }
+        }
+        if ($stale > 0) {
+            $out[] = [
+                'kind'     => 'lead_stale',
+                'message'  => sprintf($label('lead_stale'), $stale),
+                'href'     => '#anfragen',
+                'severity' => 'warn',
+            ];
+        }
+
+        // Ödenmemiş davetiyeler (7 günden eski)
+        // createdAt ISO 8601 (date('c')) formatında saklanıyor — aynı formatta karşılaştır.
+        $limit7d = date('c', strtotime('-7 days'));
+        $unpaid = 0;
+        foreach ($invitations as $inv) {
+            $created = (string) ($inv['createdAt'] ?? '');
+            if (empty($inv['paid']) && $created !== '' && $created < $limit7d) {
+                $unpaid++;
+            }
+        }
+        if ($unpaid > 0) {
+            $out[] = [
+                'kind'     => 'invitation_unpaid',
+                'message'  => sprintf($label('invitation_unpaid'), $unpaid),
+                'href'     => I18n::path('/admin/einladungen', $locale),
+                'severity' => 'warn',
+            ];
+        }
+
+        // Yeni gelen albüm seçimleri
+        $unseen = 0;
+        foreach ($selections as $sel) {
+            if (Galleries::isSelectionUnseen($sel)) {
+                $unseen++;
+            }
+        }
+        if ($unseen > 0) {
+            $out[] = [
+                'kind'     => 'selection_new',
+                'message'  => sprintf($label('selection_new'), $unseen),
+                'href'     => '#auswahlen',
+                'severity' => 'info',
+            ];
+        }
+
+        // Yaklaşan düğün + boş galeri (önümüzdeki 7 gün)
+        $photosByCode = [];
+        foreach ($galleries as $g) {
+            $code = (string) ($g['code'] ?? '');
+            $photosByCode[$code] = count((array) ($g['uploads'] ?? [])) + count((array) ($g['seeds'] ?? []));
+        }
+        $today = date('Y-m-d');
+        $in7d  = date('Y-m-d', strtotime('+7 days'));
+        foreach ($customers as $c) {
+            $date = (string) ($c['date'] ?? '');
+            $code = (string) ($c['code'] ?? '');
+            if ($date < $today || $date > $in7d || $code === '') {
+                continue;
+            }
+            if (($photosByCode[$code] ?? 0) > 0) {
+                continue;
+            }
+            $days = max(0, (int) ((strtotime($date) - strtotime($today)) / 86400));
+            $couple = (string) ($c['couple'] ?? $code);
+            $out[] = [
+                'kind'     => 'wedding_empty',
+                'message'  => sprintf($label('wedding_empty'), $couple, $days),
+                'href'     => I18n::path('/admin/kunden/' . $code, $locale),
+                'severity' => 'warn',
+            ];
+        }
+
+        // Sekiz satırdan fazlasını gösterme.
+        return array_slice($out, 0, 8);
+    }
+
+    /**
+     * Bir sekmenin ziyaret sayacını artırır. Panele her GET isteğinde çağrılır.
+     *
+     * @param string $tab örn. "" (overview), "/kunden", "/portfolio"
+     */
+    public static function recordVisit(string $tab): void
+    {
+        // Sadece TABS'ta olan sekmeleri say. Alt sayfalar (/kunden/{code}) üst
+        // sekmeye ("/kunden") yuvarlanır — sayaç kısmen daha temiz olur.
+        $canonical = null;
+        foreach (self::TABS as $t) {
+            $href = (string) $t['href'];
+            if ($href === $tab || ($href !== '' && str_starts_with($tab, $href . '/'))) {
+                $canonical = $href;
+                break;
+            }
+        }
+        if ($canonical === null) {
+            return;
+        }
+
+        // ON DUPLICATE KEY: atomik, yarış koşulu yok.
+        try {
+            Db::run(
+                'INSERT INTO admin_usage (tab, hits) VALUES (?, 1)
+                 ON DUPLICATE KEY UPDATE hits = hits + 1, last_at = CURRENT_TIMESTAMP',
+                [$canonical]
+            );
+        } catch (\Throwable $_) {
+            // Tablo yoksa (henüz schema yüklenmedi) veya DB düştüyse:
+            // panel çalışmaya devam etsin — sayaç kritik değil.
+        }
+    }
+
+    /**
+     * Kenar çubuğu için „sık kullanılanlar" — en çok en fazla 6 sekme.
+     *
+     * Kullanım verisi yeterliyse (son 30 günde ≥3 farklı sekme) sayaçtan;
+     * yeterli değilse TABS içindeki pinned:true alanından.
+     *
+     * @return list<array{href:string,label:string,active:bool}>
+     */
+    public static function pinnedTabs(string $locale, string $current, int $count = 6): array
+    {
+        $hrefs = [];
+
+        try {
+            $rows = Db::all(
+                'SELECT tab FROM admin_usage
+                 WHERE last_at > (NOW() - INTERVAL 30 DAY)
+                 ORDER BY hits DESC LIMIT ' . max(1, min(12, $count))
+            );
+            if (count($rows) >= 3) {
+                foreach ($rows as $row) {
+                    $hrefs[] = (string) $row['tab'];
+                }
+            }
+        } catch (\Throwable $_) {
+            // Tablo yoksa varsayılana düşer.
+        }
+
+        if ($hrefs === []) {
+            foreach (self::TABS as $t) {
+                if (!empty($t['pinned'])) {
+                    $hrefs[] = (string) $t['href'];
+                }
+            }
+        }
+
+        $out = [];
+        foreach ($hrefs as $href) {
+            foreach (self::TABS as $t) {
+                if ((string) $t['href'] === $href) {
+                    $out[] = [
+                        'href'   => I18n::path('/admin' . $href, $locale),
+                        'label'  => (string) ($t[$locale] ?? $t['de']),
+                        'active' => $current === $href,
+                    ];
+                    break;
+                }
+            }
+            if (count($out) >= $count) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Kenar çubuğu içeriği: sık kullanılanlar (düz liste) ve „daha fazla"
+     * altında gruplu geri kalan sekmeler.
+     *
+     * @return array{
+     *   pinned: list<array{href:string,label:string,active:bool}>,
+     *   more:   list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
+     * }
      */
     public static function sidebar(string $locale, string $current): array
     {
-        $sections = [];
+        $pinned = self::pinnedTabs($locale, $current);
+        $pinnedHrefs = array_map(static fn (array $t): string => $t['href'], $pinned);
 
+        // "more" bölümü: pinned'de OLMAYAN ve grubu olan sekmeler.
+        // Overview grup boş — o pinned'in üstünde ayrı render edilir.
+        $more = [];
         foreach (self::TABS as $tab) {
             $group = (string) $tab['group'];
-            $sections[$group]['label'] = $group === ''
-                ? ''
-                : (self::GROUPS[$group][$locale] ?? self::GROUPS[$group]['de']);
-            $sections[$group]['key'] = $group;
-            $sections[$group]['tabs'][] = [
+            if ($group === '') {
+                continue;
+            }
+            $rendered = [
                 'href'   => I18n::path('/admin' . $tab['href'], $locale),
                 'label'  => (string) ($tab[$locale] ?? $tab['de']),
                 'active' => $current === $tab['href'],
             ];
+            if (in_array($rendered['href'], $pinnedHrefs, true)) {
+                continue;
+            }
+            $more[$group]['label'] = self::GROUPS[$group][$locale] ?? self::GROUPS[$group]['de'];
+            $more[$group]['key']   = $group;
+            $more[$group]['tabs'][] = $rendered;
         }
 
-        return array_values($sections);
+        return [
+            'pinned' => $pinned,
+            'more'   => array_values($more),
+        ];
     }
 
     /** Wie der gerade offene Reiter heißt – für die schmale Ansicht. */
@@ -171,6 +413,14 @@ final class Admin
     public static function requireLogin(string $locale): void
     {
         if (self::isLoggedIn()) {
+            // GET isteklerinde ziyaret sayacını artır — POST'lar redirect
+            // sonrası GET olarak gelir, çift sayım olmaz.
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+                $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+                // "/tr/admin/kunden" → "/kunden", "/de/admin" → ""
+                $tab = preg_replace('#^/[a-z]{2}/admin#', '', $path) ?? '';
+                self::recordVisit($tab);
+            }
             return;
         }
 

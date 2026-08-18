@@ -32,6 +32,14 @@ $link = static function (array $tab): string {
     return '<a href="' . e($tab['href']) . '" class="block border-l-2 py-[0.4rem] pl-3.5 pr-2 text-[0.82rem] leading-snug transition-colors '
         . $classes . '"' . ($tab['active'] ? ' aria-current="page"' : '') . '>' . e($tab['label']) . '</a>';
 };
+
+$overviewTab = static function () use ($locale, $current, $link): string {
+    return $link([
+        'href'   => I18n::path('/admin', $locale),
+        'label'  => $locale === 'de' ? 'Übersicht' : 'Genel bakış',
+        'active' => $current === '',
+    ]);
+};
 ?>
 <!doctype html>
 <html lang="<?= e(I18n::htmlLang()) ?>">
@@ -43,7 +51,9 @@ $link = static function (array $tab): string {
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/style.css')) ?>">
 </head>
-<body class="min-h-screen bg-cream antialiased">
+<body class="min-h-screen bg-cream antialiased"
+      data-toast-ok="<?= $de ? 'Gespeichert.' : 'Kaydedildi.' ?>"
+      data-toast-deleted="<?= $de ? 'Gelöscht.' : 'Silindi.' ?>">
 
   <?php /* ------------------------------- Kopf -------------------------------- */ ?>
   <header class="sticky top-0 z-30 border-b border-sand-deep bg-cream/95 backdrop-blur">
@@ -110,7 +120,18 @@ $link = static function (array $tab): string {
           haelt einen Abschnitt zusammen.
         */ ?>
         <nav class="mt-4 pb-3 sm:columns-2 sm:gap-x-8">
-          <?php foreach ($sections as $section) : ?>
+          <?php /* Overview + sık kullanılanlar önce */ ?>
+          <div class="mb-6 break-inside-avoid">
+            <div class="mb-2 text-[0.58rem] uppercase tracking-[0.2em] text-muted">
+              <?= $de ? 'Häufig' : 'Sık kullanılan' ?>
+            </div>
+            <?= $overviewTab() ?>
+            <?php foreach ($sections['pinned'] as $tab) : ?>
+              <?= $link($tab) ?>
+            <?php endforeach; ?>
+          </div>
+
+          <?php foreach ($sections['more'] as $section) : ?>
             <div class="mb-6 break-inside-avoid">
               <?php if ($section['label'] !== '') : ?>
                 <div class="mb-2 text-[0.58rem] uppercase tracking-[0.2em] text-muted"><?= e($section['label']) ?></div>
@@ -128,16 +149,38 @@ $link = static function (array $tab): string {
         <?php /* ------------------------ Seitenleiste ------------------------- */ ?>
         <?php /* Rollbalken nur, wenn das Fenster wirklich zu niedrig ist. */ ?>
         <nav class="hidden lg:sticky lg:top-[3.9rem] lg:block lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:py-7">
-          <?php foreach ($sections as $section) : ?>
-            <div class="mb-5">
-              <?php if ($section['label'] !== '') : ?>
-                <div class="mb-1.5 pl-3.5 text-[0.58rem] uppercase tracking-[0.2em] text-muted"><?= e($section['label']) ?></div>
-              <?php endif; ?>
-              <?php foreach ($section['tabs'] as $tab) : ?>
-                <?= $link($tab) ?>
-              <?php endforeach; ?>
+          <?php /* Overview (sabit üst) */ ?>
+          <div class="mb-4">
+            <?= $overviewTab() ?>
+          </div>
+
+          <?php /* Sık kullanılanlar */ ?>
+          <div class="mb-5">
+            <div class="mb-1.5 pl-3.5 text-[0.58rem] uppercase tracking-[0.2em] text-muted">
+              <?= $de ? 'Häufig' : 'Sık kullanılan' ?>
             </div>
-          <?php endforeach; ?>
+            <?php foreach ($sections['pinned'] as $tab) : ?>
+              <?= $link($tab) ?>
+            <?php endforeach; ?>
+          </div>
+
+          <?php /* Daha fazla — açılır, localStorage'da durum kalır */ ?>
+          <details id="admin-more" class="group">
+            <summary class="mb-3 flex cursor-pointer items-center gap-2 pl-3.5 text-[0.58rem] uppercase tracking-[0.2em] text-muted hover:text-ink">
+              <span><?= $de ? 'Mehr' : 'Daha fazla' ?></span>
+              <span class="text-gold transition-transform group-open:rotate-90">›</span>
+            </summary>
+            <?php foreach ($sections['more'] as $section) : ?>
+              <div class="mb-5">
+                <?php if ($section['label'] !== '') : ?>
+                  <div class="mb-1.5 pl-3.5 text-[0.58rem] uppercase tracking-[0.2em] text-muted"><?= e($section['label']) ?></div>
+                <?php endif; ?>
+                <?php foreach ($section['tabs'] as $tab) : ?>
+                  <?= $link($tab) ?>
+                <?php endforeach; ?>
+              </div>
+            <?php endforeach; ?>
+          </details>
         </nav>
 
         <?php /* --------------------------- Inhalt ---------------------------- */ ?>
@@ -149,20 +192,13 @@ $link = static function (array $tab): string {
             </div>
           <?php endif; ?>
 
-          <?php if (isset($_GET['gespeichert'])) : ?>
-            <div class="mb-8 flex items-center gap-3 border border-gold/50 bg-sand/40 px-5 py-3 text-[0.88rem] text-ink">
-              <span class="text-gold">✓</span>
-              <?= $_GET['gespeichert'] === 'geloescht'
-                ? ($de ? 'Gelöscht.' : 'Silindi.')
-                : ($de ? 'Gespeichert.' : 'Kaydedildi.') ?>
-            </div>
-          <?php endif; ?>
-
           <?= $content ?>
         </main>
       </div>
     <?php endif; ?>
   </div>
+
+  <div id="toast-host" aria-live="polite" class="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
   <script src="/assets/admin.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/admin.js')) ?>" defer></script>
   <script src="/assets/upload.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/upload.js')) ?>" defer></script>

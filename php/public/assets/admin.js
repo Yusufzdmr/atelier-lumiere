@@ -179,6 +179,86 @@
       });
     });
   });
+
+  /* -------------------------- Toast -------------------------- */
+  // Kısa süreli bildirim: kaydet-yenile-oku döngüsü yerine sağ alt köşede
+  // üç saniye görünür. Faz 2'de AJAX cevaplarını da bu bileşen gösterecek.
+  var toastHost = document.getElementById("toast-host");
+
+  window.adminToast = function (message, kind) {
+    if (!toastHost || !message) return;
+
+    var toast = document.createElement("div");
+    var isError = kind === "error";
+    var isInfo = kind === "info";
+    var border = isError ? "border-red-700 text-red-800 bg-red-50"
+               : isInfo  ? "border-sand-deep text-muted bg-cream"
+                         : "border-gold text-ink bg-sand/40";
+
+    toast.className =
+      "pointer-events-auto flex items-center gap-3 border px-5 py-3 " +
+      "text-[0.88rem] shadow-sm transition-all duration-200 " +
+      "translate-y-2 opacity-0 " + border;
+
+    var mark = document.createElement("span");
+    mark.textContent = isError ? "!" : "✓";
+    mark.className = isError ? "text-red-700" : isInfo ? "text-muted" : "text-gold";
+    toast.appendChild(mark);
+
+    var text = document.createElement("span");
+    text.textContent = message;
+    toast.appendChild(text);
+
+    toastHost.appendChild(toast);
+
+    // Bir sonraki paint'te transition başlasın diye requestAnimationFrame.
+    requestAnimationFrame(function () {
+      toast.classList.remove("translate-y-2", "opacity-0");
+    });
+
+    setTimeout(function () {
+      toast.classList.add("translate-y-2", "opacity-0");
+      setTimeout(function () { toast.remove(); }, 200);
+    }, 3000);
+  };
+
+  /* Sayfa yüklenirken ?gespeichert=... varsa toast tetikle ve URL'yi temizle. */
+  (function () {
+    var params = new URLSearchParams(location.search);
+    if (!params.has("gespeichert")) return;
+
+    var val = params.get("gespeichert");
+    var body = document.body;
+    var kind = "ok";
+    var msg  = body.getAttribute("data-toast-ok") || "";
+
+    if (val === "geloescht") {
+      kind = "info";
+      msg  = body.getAttribute("data-toast-deleted") || msg;
+    }
+
+    window.adminToast(msg, kind);
+
+    // Geri tuşu tekrar toast atmasın.
+    params.delete("gespeichert");
+    var query = params.toString();
+    history.replaceState({}, "", location.pathname + (query ? "?" + query : ""));
+  })();
+
+  /* --------------------- Sidebar „daha fazla" hafıza --------------------- */
+  var more = document.getElementById("admin-more");
+  if (more) {
+    if (localStorage.getItem("admin.moreOpen") === "1") {
+      more.open = true;
+    }
+    more.addEventListener("toggle", function () {
+      if (more.open) {
+        localStorage.setItem("admin.moreOpen", "1");
+      } else {
+        localStorage.removeItem("admin.moreOpen");
+      }
+    });
+  }
 })();
 
 /* ---------------------- Themen: Vorschau in Gerätebreiten ---------------- */
