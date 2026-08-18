@@ -113,16 +113,26 @@ final class Intro
         }
 
         $style = '<style>'
-            // Papierfarbe ausschalten, damit das Video auch tatsaechlich zu
-            // sehen ist. Karteninhalt bekommt eine eigene Stapelebene.
+            // Papierfarbe ausschalten, damit das Video sichtbar ist.
             . '.t-card--lumina{background:transparent!important;color:#f6ecd8!important}'
             . '.t-card--lumina > *{position:relative;z-index:1}'
+            // Alle Farbwerte kommen aus dem Theme als inline styles („color:
+            // #2A241D") und schlagen die Klassenregel. Fuer die Lumina-Karte
+            // deshalb einheitlich helle Toene erzwingen, sonst verschluckt
+            // der Film die dunklen Namen. Akzent (Kalligrafie) bleibt Gold.
+            . '.t-card--lumina [style*="color"]{color:#f6ecd8!important}'
+            . '.t-card--lumina [style*="color:#B08D57"],'
+            . '.t-card--lumina [style*="color:#9E7A45"],'
+            . '.t-card--lumina [style*="color:#D5BA8F"]{color:#E9CB92!important}'
+            . '.t-card--lumina [style*="background:#"]{background:transparent!important}'
+            . '.t-card--lumina [style*="border"]{border-color:rgba(233,203,146,.35)!important}'
             . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906}'
-            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover}'
-            // Zwei Waschen: linear zum Rand hin dunkler (Vignette), leichter
-            // Papierton nur im Textbereich, sonst wird das Wasser milchig.
-            . '.t-cardbg-vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 45%,rgba(11,9,6,.65) 100%)}'
-            . '.t-cardbg-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,0) 0%,rgba(11,9,6,.25) 50%,rgba(11,9,6,.55) 100%)}'
+            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;opacity:.9}'
+            // Video muss deutlich unter dem Text bleiben – vorher waren die
+            // dunklen Buchstaben im Wasser nicht mehr zu lesen. Zwei Ebenen:
+            // ein flaechiger dunkler Wash und eine Randvignette.
+            . '.t-cardbg-wash{position:absolute;inset:0;background:rgba(11,9,6,.55)}'
+            . '.t-cardbg-vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 30%,rgba(11,9,6,.55) 100%)}'
             . '</style>';
 
         return $style
