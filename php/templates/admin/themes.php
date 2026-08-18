@@ -184,6 +184,51 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                 <label class="<?= $label ?>"><?= $de ? 'Deckkraft (%)' : 'Opaklık (%)' ?></label>
                 <input type="number" min="0" max="100" name="imageOpacity" value="<?= e((string) $theme['imageOpacity']) ?>" class="<?= $input ?>">
               </div>
+
+              <?php /*
+                Backdrop-Video: laeuft *in* der Karte hinter dem Text. Wenn
+                gesetzt, wird die Papierflaeche transparent und der Text
+                automatisch hell (Intro::backdrop kuemmert sich darum). Ohne
+                Video funktioniert das Thema unveraendert.
+              */ ?>
+              <div class="md:col-span-2 border-t border-sand-deep pt-6">
+                <label class="<?= $label ?>"><?= $de ? 'Kartenhintergrund (Video)' : 'Kart arka plan videosu' ?></label>
+                <p class="<?= $hint ?>">
+                  <?= $de
+                      ? 'mp4/webm/mov bis 100 MB. Läuft hinter dem Karteninhalt in einer Schleife; darüber liegt ein dunkler Wash, damit der Text lesbar bleibt. Kurze Clips (5–10 s) reichen aus.'
+                      : 'mp4/webm/mov, en fazla 100 MB. Kart içinde döngü halinde oynar; üzerine koyu bir tabaka biner, yazı okunur kalır. Kısa klipler (5–10 s) yeterlidir.' ?>
+                </p>
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                  <?php if ((string) ($theme['backdropVideo'] ?? '') !== '') : ?>
+                    <video src="<?= e((string) $theme['backdropVideo']) ?>" muted preload="metadata"
+                           class="h-16 w-24 bg-ink object-cover"></video>
+                    <button name="was" value="backdrop-delete" class="text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
+                            data-confirm="<?= $de ? 'Video entfernen?' : 'Video kaldırılsın mı?' ?>">
+                      <?= $de ? 'Video entfernen' : 'Videoyu kaldır' ?>
+                    </button>
+                  <?php endif; ?>
+                </div>
+                <input type="file" name="backdropVideo" accept="video/mp4,video/webm,video/quicktime" class="mt-3 w-full text-[0.8rem] text-muted">
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="<?= $label ?>"><?= $de ? 'Video-Standbild (optional)' : 'Video kapağı (isteğe bağlı)' ?></label>
+                <p class="<?= $hint ?>">
+                  <?= $de
+                      ? 'Wird angezeigt, solange das Video noch lädt.'
+                      : 'Video yüklenene kadar gösterilir.' ?>
+                </p>
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                  <?php if ((string) ($theme['backdropPoster'] ?? '') !== '') : ?>
+                    <img src="<?= e((string) $theme['backdropPoster']) ?>" alt="" class="h-16 w-24 border border-sand-deep object-cover">
+                    <button name="was" value="backdrop-poster-delete" class="text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
+                            data-confirm="<?= $de ? 'Standbild entfernen?' : 'Kapak kaldırılsın mı?' ?>">
+                      <?= $de ? 'Standbild entfernen' : 'Kapağı kaldır' ?>
+                    </button>
+                  <?php endif; ?>
+                </div>
+                <input type="file" name="backdropPoster" accept="image/*" class="mt-3 w-full text-[0.8rem] text-muted">
+              </div>
             </div>
           </div>
 

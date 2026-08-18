@@ -261,7 +261,7 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
   </div>
 
   <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
-    <div class="t-card rv-<?= e($revealKind) ?> <?= $backdropHtml !== '' ? 't-card--lumina' : '' ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
+    <div class="t-card rv-<?= e($revealKind) ?> <?= $backdropHtml !== '' ? 't-card--backdrop' : '' ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
          data-speed="<?= (int) ($theme['animationSpeed'] ?? 1200) ?>"
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
       <?= $backdropHtml ?>

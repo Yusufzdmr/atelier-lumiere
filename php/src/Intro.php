@@ -96,41 +96,48 @@ final class Intro
     }
 
     /**
-     * Hintergrund innerhalb der Karte. Bei Lumina spielt das Schwaene-Video
-     * *in der Karte*, nicht im ganzen Fenster – die Karte selbst ist der
-     * Rahmen des Films, Text liegt oben drauf. Ueber dem Video liegt ein
-     * Papier-Wash, sonst waere die Karte ein Handyvideo, ueber dem man
-     * Namen nicht mehr entziffert. Rueckgabewert: leerer String bei Themen
-     * ohne Backdrop, sonst das HTML-Fragment (Style + Video + Wash), das
-     * invitation.php als erstes Kind in `.t-card` einsetzt.
+     * Hintergrund innerhalb der Karte: liest `theme.backdropVideo` und legt
+     * das Video als lebendige Papierflaeche der Karte hinter den Text.
+     * Ohne gesetztes Video (die meisten Themen) leerer String.
+     *
+     * Frueher nur fuer die Kennung 'lumina' fest verdrahtet; jetzt darf jedes
+     * Thema im Panel eine mp4/webm-Datei hochladen und bekommt automatisch
+     * denselben Effekt.
      *
      * @param array<string,mixed> $theme
      */
     public static function backdrop(string $id, array $theme): string
     {
-        if ($id !== 'lumina') {
+        $video = (string) ($theme['backdropVideo'] ?? '');
+        if ($video === '') {
             return '';
         }
 
+        $poster = (string) ($theme['backdropPoster'] ?? '');
+        // Poster darf ein Bild oder – rein historisch – auch das Lumina-GIF
+        // sein. Beides greift der Browser als erstes Standbild.
+        $posterAttr = $poster !== '' ? ' poster="' . e($poster) . '"' : '';
+
+        // Endung entscheidet ueber den <source type>: mp4/mov -> h264, webm -> vp9.
+        $sourceType = str_ends_with(strtolower($video), '.webm') ? 'video/webm' : 'video/mp4';
+
         $style = '<style>'
             // Papierfarbe ausschalten, damit das Video sichtbar ist.
-            . '.t-card--lumina{background:transparent!important;color:#f6ecd8!important}'
-            . '.t-card--lumina > *{position:relative;z-index:1}'
+            . '.t-card--backdrop{background:transparent!important;color:#f6ecd8!important}'
+            . '.t-card--backdrop > *{position:relative;z-index:1}'
             // Alle Farbwerte kommen aus dem Theme als inline styles („color:
-            // #2A241D") und schlagen die Klassenregel. Fuer die Lumina-Karte
-            // deshalb einheitlich helle Toene erzwingen, sonst verschluckt
-            // der Film die dunklen Namen. Akzent (Kalligrafie) bleibt Gold.
-            . '.t-card--lumina [style*="color"]{color:#f6ecd8!important}'
-            . '.t-card--lumina [style*="color:#B08D57"],'
-            . '.t-card--lumina [style*="color:#9E7A45"],'
-            . '.t-card--lumina [style*="color:#D5BA8F"]{color:#E9CB92!important}'
-            . '.t-card--lumina [style*="background:#"]{background:transparent!important}'
-            . '.t-card--lumina [style*="border"]{border-color:rgba(233,203,146,.35)!important}'
-            // Weniger Ebenen fuer den Browser: eigene Compositing-Schicht,
-            // Video ohne Opazitaet (Alpha wandert in den Wash), Wash und
-            // Vignette in *einem* Gradient. Auf schwachen Geraeten hat das
-            // Zusammenrechnen von drei halbtransparenten Schichten mehr
-            // gekostet als das Decodieren des Films selbst.
+            // #2A241D") und schlagen die Klassenregel. Auf einer Video-Karte
+            // deshalb einheitlich helle Toene erzwingen; goldene Toene bleiben
+            // als hellerer Goldton stehen.
+            . '.t-card--backdrop [style*="color"]{color:#f6ecd8!important}'
+            . '.t-card--backdrop [style*="color:#B08D57"],'
+            . '.t-card--backdrop [style*="color:#9E7A45"],'
+            . '.t-card--backdrop [style*="color:#D5BA8F"]{color:#E9CB92!important}'
+            . '.t-card--backdrop [style*="background:#"]{background:transparent!important}'
+            . '.t-card--backdrop [style*="border"]{border-color:rgba(233,203,146,.35)!important}'
+            // Eigene Compositing-Schicht, Video ohne separate Opazitaet, ein
+            // Gradient statt zweier halbtransparenter Waschen. Sonst hat das
+            // Zusammenrechnen der Ebenen mehr gekostet als der Film selbst.
             . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906;contain:paint;transform:translateZ(0)}'
             . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;transform:translateZ(0)}'
             . '.t-cardbg-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(11,9,6,.45) 0%,rgba(11,9,6,.55) 55%,rgba(11,9,6,.72) 100%)}'
@@ -138,9 +145,8 @@ final class Intro
 
         return $style
             . '<div class="t-cardbg" aria-hidden="true">'
-            . '<video class="t-cardbg-vid" autoplay muted loop playsinline preload="auto" poster="/assets/intro/lumina-swans.gif">'
-            . '<source src="/assets/intro/lumina-swans.webm" type="video/webm">'
-            . '<source src="/assets/intro/lumina-swans.mp4" type="video/mp4">'
+            . '<video class="t-cardbg-vid" autoplay muted loop playsinline preload="auto"' . $posterAttr . '>'
+            . '<source src="' . e($video) . '" type="' . e($sourceType) . '">'
             . '</video>'
             . '<span class="t-cardbg-wash"></span>'
             . '</div>';

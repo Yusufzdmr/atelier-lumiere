@@ -422,6 +422,11 @@ final class Themes
             'imageMode'      => 'cover',
             'imageOpacity'   => '100',
             'envelopeImage'  => '',
+            // Hintergrundvideo *in* der Karte (nicht ueber der Buehne).
+            // Wenn gesetzt, liegt der Film hinter dem Karteninhalt; die
+            // Papierflaeche wird transparent und der Text hell.
+            'backdropVideo'   => '',
+            'backdropPoster'  => '',
             'animation'      => '',
             'intro'          => '',
             'idle'           => '',

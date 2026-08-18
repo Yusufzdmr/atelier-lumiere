@@ -207,6 +207,8 @@ final class AdminController
                 'deco-add'        => $this->addDecoration(),
                 'image-delete'    => $this->deleteThemeImage('image'),
                 'envelope-delete' => $this->deleteThemeImage('envelopeImage'),
+                'backdrop-delete' => $this->deleteThemeImage('backdropVideo'),
+                'backdrop-poster-delete' => $this->deleteThemeImage('backdropPoster'),
                 default           => null,
             };
 
@@ -289,7 +291,7 @@ final class AdminController
             }, (array) $theme['decorations']);
 
             // Hochgeladene Hintergruende (Canva-Export) ersetzen das bisherige Bild.
-            foreach (['image', 'envelopeImage'] as $field) {
+            foreach (['image', 'envelopeImage', 'backdropPoster'] as $field) {
                 $file = $_FILES[$field] ?? null;
                 if (is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
                     $url = Media::store($file, 'themen/' . $id);
@@ -299,6 +301,20 @@ final class AdminController
                         }
                         $next[$field] = $url;
                     }
+                }
+            }
+
+            // Hintergrundvideo (mp4/webm/mov) fuer Themen wie Lumina. Wird
+            // hinter dem Karteninhalt gespielt; jede Vorlage bekommt so ihre
+            // eigene Bewegung ohne Codeaenderung.
+            $vidFile = $_FILES['backdropVideo'] ?? null;
+            if (is_array($vidFile) && ($vidFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                $vidUrl = Media::storeVideo($vidFile, 'themen/' . $id);
+                if ($vidUrl !== null) {
+                    if ((string) ($theme['backdropVideo'] ?? '') !== '') {
+                        Media::delete((string) $theme['backdropVideo']);
+                    }
+                    $next['backdropVideo'] = $vidUrl;
                 }
             }
 
