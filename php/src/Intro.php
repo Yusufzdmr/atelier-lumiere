@@ -135,17 +135,18 @@ final class Intro
             . '.t-card--backdrop [style*="color:#D5BA8F"]{color:#E9CB92!important}'
             . '.t-card--backdrop [style*="background:#"]{background:transparent!important}'
             . '.t-card--backdrop [style*="border"]{border-color:rgba(233,203,146,.35)!important}'
-            // Eigene Compositing-Schicht, Video ohne separate Opazitaet, ein
-            // Gradient statt zweier halbtransparenter Waschen. Sonst hat das
-            // Zusammenrechnen der Ebenen mehr gekostet als der Film selbst.
+            // Eigene Compositing-Schicht, Video ohne separate Opazitaet.
             // !important auf width/height/object-fit muss sein: Tailwinds
             // Preflight setzt `video{height:auto}` und liess sonst schwarze
-            // Streifen oben/unten stehen. min-height sichert die Karte auf
-            // sehr kurzen Inhalten – sonst waere das Video ein Streifen.
-            . '.t-card--backdrop{min-height:70vh}'
-            . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906;contain:paint;transform:translateZ(0)}'
+            // Streifen stehen. .t-cardbg bleibt jetzt transparent (statt
+            // #0b0906), damit ausserhalb des Videobereichs keine dunkle
+            // Flaeche aufblitzt, wenn der Browser Layoutspruenge macht.
+            . '.t-card--backdrop{min-height:70vh;text-shadow:0 1px 3px rgba(0,0,0,.55),0 0 12px rgba(0,0,0,.35)}'
+            . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:transparent;contain:paint;transform:translateZ(0)}'
             . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;transform:translateZ(0)}'
-            . '.t-cardbg-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(11,9,6,.45) 0%,rgba(11,9,6,.55) 55%,rgba(11,9,6,.72) 100%)}'
+            // Wash deutlich leichter, gleichmaessig – vorher wurden die Raender
+            // fast schwarz und der Nutzer las das als „Streifen um das Video".
+            . '.t-cardbg-wash{position:absolute;inset:0;background:rgba(11,9,6,.32)}'
             . '</style>';
 
         return $style
