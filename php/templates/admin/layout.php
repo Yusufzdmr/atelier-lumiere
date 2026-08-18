@@ -43,7 +43,9 @@ $link = static function (array $tab): string {
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/style.css')) ?>">
 </head>
-<body class="min-h-screen bg-cream antialiased">
+<body class="min-h-screen bg-cream antialiased"
+      data-toast-ok="<?= $de ? 'Gespeichert.' : 'Kaydedildi.' ?>"
+      data-toast-deleted="<?= $de ? 'Gelöscht.' : 'Silindi.' ?>">
 
   <?php /* ------------------------------- Kopf -------------------------------- */ ?>
   <header class="sticky top-0 z-30 border-b border-sand-deep bg-cream/95 backdrop-blur">
@@ -149,20 +151,13 @@ $link = static function (array $tab): string {
             </div>
           <?php endif; ?>
 
-          <?php if (isset($_GET['gespeichert'])) : ?>
-            <div class="mb-8 flex items-center gap-3 border border-gold/50 bg-sand/40 px-5 py-3 text-[0.88rem] text-ink">
-              <span class="text-gold">✓</span>
-              <?= $_GET['gespeichert'] === 'geloescht'
-                ? ($de ? 'Gelöscht.' : 'Silindi.')
-                : ($de ? 'Gespeichert.' : 'Kaydedildi.') ?>
-            </div>
-          <?php endif; ?>
-
           <?= $content ?>
         </main>
       </div>
     <?php endif; ?>
   </div>
+
+  <div id="toast-host" class="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
   <script src="/assets/admin.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/admin.js')) ?>" defer></script>
   <script src="/assets/upload.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/upload.js')) ?>" defer></script>
