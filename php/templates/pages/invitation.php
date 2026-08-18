@@ -265,7 +265,11 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
     </div>
   </div>
 
-  <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
+  <?php /* Bei einem Backdrop-Thema (Lumina) muss der Karteninhalt eine eigene
+           Stapelebene ueber dem Video haben – sonst deckt das fixed z-0
+           Backdrop den ganzen normalen Fluss zu. Ohne Backdrop schadet die
+           zusaetzliche Klasse nichts. */ ?>
+  <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24 <?= $backdropHtml !== '' ? 't-above-backdrop' : '' ?>">
     <div class="t-card rv-<?= e($revealKind) ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
          data-speed="<?= (int) ($theme['animationSpeed'] ?? 1200) ?>"
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">

@@ -111,15 +111,17 @@ final class Intro
 
         // Warmer Wash + dunkler Rand halten die Karte lesbar, sonst
         // konkurrieren Kuguflaeche und Papier um denselben Kontrast.
-        // z-index:-1 setzt den Hintergrund unter den Fluss der Seite: die
-        // Kuvert-Buehne (z-50, fixed, ohne Hintergrundfarbe fuer Lumina) laesst
-        // ihn durch, und wenn die Buehne verschwindet, deckt der Karteninhalt
-        // der normalen Flusslage ihn nicht ab. body darf dabei keinen eigenen
-        // Stacking-Context erzeugen – hier tut er es nicht.
+        // z-index 0 fixed liegt unter der Kuvert-Buehne (z-50) und ueber der
+        // body-Hintergrundfarbe – z:-1 hatte er nicht geschafft, weil body
+        // seine Farbe auf die Wurzel malt und die Ebene damit verdeckt.
+        // Der eigentliche Karteninhalt bekommt in invitation.php ein
+        // `position:relative; z-index:1`, damit er nach dem Kuvert-Ende
+        // ueber dem Video sichtbar bleibt.
         $style = '<style>'
-            . '.t-backdrop{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#0b0906}'
+            . '.t-backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;background:#0b0906}'
             . '.t-backdrop-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;opacity:.9}'
             . '.t-backdrop-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(255,214,150,.28),transparent 66%),radial-gradient(circle at 50% 50%,transparent 40%,rgba(0,0,0,.55) 100%)}'
+            . '.t-above-backdrop{position:relative;z-index:1}'
             . '</style>';
 
         return $style
