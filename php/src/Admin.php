@@ -481,6 +481,11 @@ final class Admin
      */
     public static function passwordWarning(string $locale): string
     {
+        // Panelden belirlenmiş DB hash varsa: config yok sayılır, uyarı yok.
+        if (Integrations::adminPasswordHash() !== '') {
+            return '';
+        }
+
         $key = Config::str('admin_key', '');
         $de = $locale === 'de';
 
@@ -493,8 +498,8 @@ final class Admin
 
         if ($key === '' || in_array(mb_strtolower($key), $weak, true)) {
             return $de
-                ? 'Der Adminbereich hat noch das Standardpasswort. Vor dem Livegang in der config.php ändern – am besten als Hash.'
-                : 'Yönetim paneli hâlâ varsayılan parolayı kullanıyor. Yayına almadan önce config.php içinde değiştirin – tercihen hash olarak.';
+                ? 'Der Adminbereich hat noch das Standardpasswort. Am besten unter „Zugang" ein neues setzen.'
+                : 'Yönetim paneli hâlâ varsayılan parolayı kullanıyor. En iyisi „Erişim" sekmesinden yeni bir parola belirle.';
         }
 
         if (mb_strlen($key) < 12) {
