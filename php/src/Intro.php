@@ -105,10 +105,14 @@ final class Intro
         //  0.00–0.35 s  ein
         //  0.35–3.85 s  halten
         //  3.85–4.20 s  aus
+        // Frueher als <img> auf ein GIF – 3.2 MB, jedes Frame in der CPU
+        // dekodiert, auf dem Handy hakelig. Als <video> mit H.264/VP9 sind es
+        // ~120 KB, laeuft hardwarebeschleunigt, keine Ruckler. Zwei Quellen:
+        // webm zuerst (kleiner, wo unterstuetzt), mp4 als Fallback fuer Safari.
         $style = '<style>'
             . '.t-intro.ti-lumina{background:#0b0906}'
-            . '.t-intro.ti-lumina .ti-lumina-img{opacity:0;object-fit:cover;height:100%;width:100%}'
-            . '.t-intro.ti-lumina[data-playing="true"] .ti-lumina-img{animation:tiLumina 4.2s ease both}'
+            . '.t-intro.ti-lumina .ti-lumina-vid{opacity:0;object-fit:cover;height:100%;width:100%}'
+            . '.t-intro.ti-lumina[data-playing="true"] .ti-lumina-vid{animation:tiLumina 4.2s ease both}'
             . '.t-intro.ti-lumina .ti-warm{opacity:0}'
             . '.t-intro.ti-lumina[data-playing="true"] .ti-warm{animation:tiWarmShort 4.2s ease-in-out both}'
             . '.t-intro.ti-lumina .ti-vignette{opacity:0}'
@@ -117,7 +121,10 @@ final class Intro
             . '</style>';
 
         return $style
-            . '<img class="ti-lumina-img" src="/assets/intro/lumina-swans.gif" alt="" loading="eager" decoding="async">'
+            . '<video class="ti-lumina-vid" autoplay muted loop playsinline preload="auto" poster="/assets/intro/lumina-swans.gif">'
+            . '<source src="/assets/intro/lumina-swans.webm" type="video/webm">'
+            . '<source src="/assets/intro/lumina-swans.mp4" type="video/mp4">'
+            . '</video>'
             . '<span class="ti-warm"></span>'
             . '<span class="ti-vignette"></span>';
     }
