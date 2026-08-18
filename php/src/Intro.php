@@ -126,13 +126,14 @@ final class Intro
             . '.t-card--lumina [style*="color:#D5BA8F"]{color:#E9CB92!important}'
             . '.t-card--lumina [style*="background:#"]{background:transparent!important}'
             . '.t-card--lumina [style*="border"]{border-color:rgba(233,203,146,.35)!important}'
-            . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906}'
-            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;opacity:.9}'
-            // Video muss deutlich unter dem Text bleiben – vorher waren die
-            // dunklen Buchstaben im Wasser nicht mehr zu lesen. Zwei Ebenen:
-            // ein flaechiger dunkler Wash und eine Randvignette.
-            . '.t-cardbg-wash{position:absolute;inset:0;background:rgba(11,9,6,.55)}'
-            . '.t-cardbg-vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 30%,rgba(11,9,6,.55) 100%)}'
+            // Weniger Ebenen fuer den Browser: eigene Compositing-Schicht,
+            // Video ohne Opazitaet (Alpha wandert in den Wash), Wash und
+            // Vignette in *einem* Gradient. Auf schwachen Geraeten hat das
+            // Zusammenrechnen von drei halbtransparenten Schichten mehr
+            // gekostet als das Decodieren des Films selbst.
+            . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906;contain:paint;transform:translateZ(0)}'
+            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;transform:translateZ(0)}'
+            . '.t-cardbg-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(11,9,6,.45) 0%,rgba(11,9,6,.55) 55%,rgba(11,9,6,.72) 100%)}'
             . '</style>';
 
         return $style
@@ -142,7 +143,6 @@ final class Intro
             . '<source src="/assets/intro/lumina-swans.mp4" type="video/mp4">'
             . '</video>'
             . '<span class="t-cardbg-wash"></span>'
-            . '<span class="t-cardbg-vignette"></span>'
             . '</div>';
     }
 
