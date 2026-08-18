@@ -36,7 +36,7 @@ final class Themes
      * Korn, Lichtleck. Die Dauer steht in `introDuration()`; `invitation.js`
      * wartet sie ab, bevor es die Karte freigibt.
      */
-    public const INTROS = ['none', 'darkroom', 'focus', 'henna', 'party', 'sealLight', 'lumina'];
+    public const INTROS = ['none', 'darkroom', 'focus', 'henna', 'party', 'sealLight'];
 
     /** Wie lange eine Szene läuft (ms). Muss zum Stylesheet passen. */
     public static function introDuration(string $intro): int
@@ -47,10 +47,6 @@ final class Themes
             'henna'     => 3800,
             'party'     => 3200,
             'sealLight' => 2400,
-            // Lumina: die Schwaene laufen als Schleife *hinter* Kuvert und
-            // Karte, nicht als vorgeschaltete Szene. Der Vorspann-Timer bleibt
-            // deshalb bei null; invitation.js gibt Kuvert und Idle sofort frei.
-            'lumina'    => 0,
             default     => 0,
         };
     }
@@ -65,7 +61,6 @@ final class Themes
                 'henna'     => 'Henna: die Linie zeichnet sich, Herzschlag',
                 'party'     => 'Fest: Lichtstrahlen und Konfetti',
                 'sealLight' => 'Siegel & Licht: Wachs bricht, Gold läuft durch',
-                'lumina'    => 'Lumina: zwei Schwäne im Morgenlicht',
             ],
             'en' => [
                 'none' => 'No scene — the envelope opens straight away',
@@ -74,7 +69,6 @@ final class Themes
                 'henna' => 'Henna: the line draws itself, over a heartbeat',
                 'party' => 'Celebration: light beams and confetti',
                 'sealLight' => 'Seal & light: the wax breaks, gold runs through',
-                'lumina' => 'Lumina: two swans in the morning light',
             ],
             'tr' => [
                 'none'      => 'Sahne yok – zarf doğrudan açılır',
@@ -83,7 +77,6 @@ final class Themes
                 'henna'     => 'Kına: desen çizilir, kalp atışı',
                 'party'     => 'Kutlama: ışık huzmeleri ve konfeti',
                 'sealLight' => 'Mühür & ışık: mum kırılır, altın geçer',
-                'lumina'    => 'Lumina: sabah ışığında iki kuğu',
             ],
         ];
 
