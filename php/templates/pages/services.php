@@ -95,6 +95,12 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
 
         <?php /* Beispielfilm - nur wenn einer hinterlegt ist */ ?>
         <?php if ($film !== '' && Video::isSupported($film)) : ?>
+          <?php /*
+            Standbild-Reihenfolge: eigenes Video-Kapak → erstes eigenes Foto →
+            das Motiv-Feld. So sieht der Gast auch bei einer .mp4-Datei sofort,
+            dass da ein Video wartet, statt einen schwarzen Kasten.
+          */ ?>
+          <?php $videoPoster = (string) ($service['videoPoster'] ?? ($shots[0] ?? '')); ?>
           <div class="mt-10">
             <?= Ui::revealOpen(0) ?>
               <h3 class="text-[0.68rem] uppercase tracking-[0.22em] text-gold"><?= e(I18n::t('services.exampleFilm')) ?></h3>
@@ -102,7 +108,7 @@ $p = static fn (string $to): string => I18n::path($to, $locale);
                 <?= Video::embedBox(
                     $film,
                     I18n::pick($service['title'] ?? null, $locale) . ' - ' . I18n::t('services.exampleFilm'),
-                    (string) ($shots[0] ?? '')
+                    $videoPoster
                 ) ?>
               </div>
             <?= Ui::revealClose() ?>

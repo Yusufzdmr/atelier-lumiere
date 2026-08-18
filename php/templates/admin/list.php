@@ -77,7 +77,12 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
             <?php endif; ?>
 
             <?php if (!empty($item['video'])) : ?>
-              <?php $vBox = $item['video']; $vUrl = (string) ($vBox['url'] ?? ''); $vLocal = $vUrl !== '' && str_starts_with($vUrl, '/uploads/'); ?>
+              <?php
+                $vBox = $item['video'];
+                $vUrl = (string) ($vBox['url'] ?? '');
+                $vPoster = (string) ($vBox['poster'] ?? '');
+                $vLocal = $vUrl !== '' && str_starts_with($vUrl, '/uploads/');
+              ?>
               <div class="space-y-3">
                 <form method="post" enctype="multipart/form-data"
                       class="flex flex-wrap items-end gap-4 border border-sand-deep p-5">
@@ -99,16 +104,64 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
 
                 <?php if ($vUrl !== '') : ?>
                   <div class="flex flex-wrap items-start gap-4 border border-sand-deep p-4">
-                    <?php if ($vLocal) : ?>
-                      <video src="<?= e($vUrl) ?>" controls preload="metadata"
-                             class="h-32 w-56 bg-ink object-cover"></video>
-                    <?php else : ?>
-                      <div class="flex h-32 w-56 items-center justify-center border border-sand-deep bg-sand/40 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
-                        <?= $de ? 'Externer Link' : 'Harici bağlantı' ?>
-                      </div>
-                    <?php endif; ?>
-                    <div class="min-w-0 flex-1 space-y-2">
+                    <?php /* Vorschaukachel mit dem Standbild darueber – wenn keins da ist, sieht man einfach das Video. */ ?>
+                    <div class="relative h-32 w-56 shrink-0 overflow-hidden bg-ink">
+                      <?php if ($vLocal) : ?>
+                        <video src="<?= e($vUrl) ?>" preload="metadata" muted class="h-full w-full object-cover"></video>
+                      <?php endif; ?>
+                      <?php if ($vPoster !== '') : ?>
+                        <img src="<?= e($vPoster) ?>" alt="" loading="lazy"
+                             class="pointer-events-none absolute inset-0 h-full w-full object-cover">
+                      <?php endif; ?>
+                      <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-cream/85 text-ink">
+                          <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="min-w-0 flex-1 space-y-3">
                       <p class="break-all text-[0.78rem] leading-relaxed text-ink"><?= e($vUrl) ?></p>
+
+                      <?php /*
+                        „Kapak koyma" – Poster/Standbild fuer das Video. Vorher
+                        rutschte einfach das erste Servicefoto in den Kasten
+                        (Video::embedBox nimmt $poster von aussen). Jetzt kann
+                        der Betrieb hier ein eigenes Standbild setzen.
+                      */ ?>
+                      <div class="flex flex-wrap items-center gap-3 border-t border-sand-deep pt-3">
+                        <span class="text-[0.6rem] uppercase tracking-[0.18em] text-muted">
+                          <?= $de ? 'Standbild' : 'Video kapağı' ?>
+                        </span>
+
+                        <?php if ($vPoster !== '') : ?>
+                          <img src="<?= e($vPoster) ?>" alt="" loading="lazy"
+                               class="h-10 w-16 border border-sand-deep object-cover">
+                        <?php endif; ?>
+
+                        <form method="post" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+                          <?= $hidden('video-poster-upload', $key, $i) ?>
+                          <input id="poster-<?= e($key) ?>-<?= $i ?>" type="file" name="poster" accept="image/*" class="hidden">
+                          <label for="poster-<?= e($key) ?>-<?= $i ?>"
+                                 class="cursor-pointer border border-ink px-3 py-1.5 text-[0.62rem] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-cream">
+                            <?= $vPoster !== '' ? ($de ? 'Ersetzen' : 'Değiştir') : ($de ? 'Bild wählen' : 'Kapak yükle') ?>
+                          </label>
+                        </form>
+
+                        <?php if ($vPoster !== '') : ?>
+                          <form method="post" class="inline">
+                            <?= $hidden('video-poster-remove', $key, $i) ?>
+                            <button class="text-[0.62rem] uppercase tracking-[0.14em] text-muted underline-offset-4 hover:text-red-800 hover:underline">
+                              <?= $de ? 'Entfernen' : 'Kaldır' ?>
+                            </button>
+                          </form>
+                        <?php endif; ?>
+
+                        <span class="w-full text-[0.7rem] leading-relaxed text-muted">
+                          <?= e((string) ($vBox['posterHint'] ?? '')) ?>
+                        </span>
+                      </div>
+
                       <form method="post">
                         <?= $hidden('video-remove', $key, $i) ?>
                         <button data-confirm="<?= $de ? 'Dieses Video entfernen?' : 'Bu video kaldırılsın mı?' ?>"

@@ -87,10 +87,14 @@ final class ListAdminController
             // Video: Link *oder* eigene Datei. Wer die Datei laedt, ueberschreibt den Link
             // und umgekehrt – zwei parallele Videos machten nur die Vorlage kompliziert.
             'video' => fn (array $item): array => [
-                'url'  => (string) ($item['videoUrl'] ?? ''),
-                'hint' => $de
+                'url'    => (string) ($item['videoUrl'] ?? ''),
+                'poster' => (string) ($item['videoPoster'] ?? ''),
+                'hint'   => $de
                     ? 'YouTube / Vimeo-Link einfügen oder eine mp4/webm-Datei hochladen (max. 100 MB). Vor dem Upload komprimieren – der Server transkodiert nicht.'
                     : 'YouTube / Vimeo bağlantısı yapıştır ya da mp4/webm dosyası yükle (en fazla 100 MB). Yüklemeden önce sıkıştır – sunucu yeniden kodlamaz.',
+                'posterHint' => $de
+                    ? 'Standbild fuer den Video-Kasten. Ohne eigenes Bild greift das erste hochgeladene Foto.'
+                    : 'Video kutusu için kapak görseli. Yüklemezsen ilk yüklenmiş fotoğraf kullanılır.',
             ],
             'sections' => fn (int $i): array => [[
                 'fields' => [
@@ -813,6 +817,8 @@ final class ListAdminController
             'photo-cover' => Lists::makeCover($key, $index, (int) Security::clean($_POST['foto'] ?? '', 6)),
             'video-upload' => $this->uploadVideo($key, $index),
             'video-remove' => $this->removeVideo($key, $index),
+            'video-poster-upload' => $this->uploadVideoPoster($key, $index),
+            'video-poster-remove' => $this->removeVideoPoster($key, $index),
             default => null,
         };
 
@@ -989,6 +995,37 @@ final class ListAdminController
             Media::delete($old);
         }
         Lists::update($key, $index, ['videoUrl' => '']);
+    }
+
+    /**
+     * Standbild fuer das Video: liegt vor dem Play-Klick im Kasten, macht
+     * ueberhaupt sichtbar, dass hier ein Video wartet.
+     */
+    private function uploadVideoPoster(string $key, int $index): void
+    {
+        $url = Media::store($_FILES['poster'] ?? [], $this->folder($key, $index));
+        if ($url === null) {
+            return;
+        }
+        $item = Lists::item($key, $index) ?? [];
+        $old = (string) ($item['videoPoster'] ?? '');
+        if ($old !== '' && str_starts_with($old, '/uploads/')) {
+            Media::delete($old);
+        }
+        Lists::update($key, $index, ['videoPoster' => $url]);
+    }
+
+    private function removeVideoPoster(string $key, int $index): void
+    {
+        $item = Lists::item($key, $index) ?? [];
+        $old = (string) ($item['videoPoster'] ?? '');
+        if ($old === '') {
+            return;
+        }
+        if (str_starts_with($old, '/uploads/')) {
+            Media::delete($old);
+        }
+        Lists::update($key, $index, ['videoPoster' => '']);
     }
 
     private function serviceShots(array $item): array

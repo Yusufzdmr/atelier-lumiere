@@ -85,9 +85,16 @@ final class Video
         }
 
         if ($video['provider'] === 'file') {
-            return '<video controls preload="none" class="w-full bg-ink"'
+            // Aspect-Ratio-Rahmen, damit auf dem Handy kein Sprung entsteht,
+            // solange das Standbild noch laedt. Native <video controls> zeigt
+            // seinen eigenen Play-Knopf – ein eigener Overlay-Kreis darueber
+            // waere waehrend der Wiedergabe eine dauerhaft sichtbare Scheibe.
+            return '<div class="relative overflow-hidden bg-ink" style="aspect-ratio: 16/9">'
+                . '<video controls preload="metadata" playsinline'
+                . ' class="absolute inset-0 h-full w-full bg-ink"'
                 . ($poster !== '' ? ' poster="' . e($poster) . '"' : '')
-                . '><source src="' . e($video['embedUrl']) . '"></video>';
+                . '><source src="' . e($video['embedUrl']) . '"></video>'
+                . '</div>';
         }
 
         $html = '<div class="relative overflow-hidden bg-ink" style="aspect-ratio: 16/9"'
