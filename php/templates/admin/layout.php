@@ -102,9 +102,16 @@ $link = static function (array $tab): string {
           <span class="hidden text-[0.66rem] uppercase tracking-[0.16em] text-muted group-open:inline"><?= $de ? 'Schließen' : 'Kapat' ?></span>
         </summary>
 
-        <nav class="mt-4 grid gap-x-8 gap-y-6 pb-3 sm:grid-cols-2">
+        <?php /*
+          Mehrspalten-Layout statt Grid: bei Grid werden Zeilen ausgeglichen,
+          also blieb unter „Bereich" (ein Eintrag) eine grosse Luecke stehen,
+          waehrend „Site" (dreizehn Eintraege) daneben durchlief. Mit CSS
+          columns fliessen die Abschnitte natuerlich; `break-inside-avoid`
+          haelt einen Abschnitt zusammen.
+        */ ?>
+        <nav class="mt-4 pb-3 sm:columns-2 sm:gap-x-8">
           <?php foreach ($sections as $section) : ?>
-            <div>
+            <div class="mb-6 break-inside-avoid">
               <?php if ($section['label'] !== '') : ?>
                 <div class="mb-2 text-[0.58rem] uppercase tracking-[0.2em] text-muted"><?= e($section['label']) ?></div>
               <?php endif; ?>
