@@ -8,6 +8,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use Atelier\Http;
+use Atelier\Controllers\AccessAdminController;
 use Atelier\Controllers\AdminController;
 use Atelier\Controllers\ContentAdminController;
 use Atelier\Controllers\CustomerAdminController;
@@ -137,6 +138,7 @@ $router->any('/{locale}/admin/kunden/{code}', $admin_(static fn (array $p) => (n
 $router->any('/{locale}/admin/einladungen', $admin_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/themen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
 $router->any('/{locale}/admin/systemcheck', $admin_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
+$router->any('/{locale}/admin/zugang', $admin_(static fn (array $p) => (new AccessAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
