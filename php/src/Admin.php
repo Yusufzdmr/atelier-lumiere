@@ -62,6 +62,143 @@ final class Admin
     ];
 
     /**
+     * Bekleyen iş satırlarının şablonları.
+     *
+     * `%d` sayı ile, `%s` metin ile doldurulur. Tek satırlık mesajlar; ekstra
+     * detay `href` üzerinden — kart tıklandığında tam bağlama gider.
+     *
+     * @var array<string,array{de:string,tr:string}>
+     */
+    private const PENDING_LABELS = [
+        'lead_stale' => [
+            'de' => '%d Anfrage(n) älter als 48 Stunden ohne Antwort',
+            'tr' => '%d talep 48 saatten uzun cevapsız',
+        ],
+        'invitation_unpaid' => [
+            'de' => '%d Einladung(en) seit über 7 Tagen unbezahlt',
+            'tr' => '%d davetiye 7 günden uzun ödenmemiş',
+        ],
+        'selection_new' => [
+            'de' => '%d neue Albumauswahl(en) noch nicht angesehen',
+            'tr' => '%d yeni albüm seçimi henüz görülmedi',
+        ],
+        'wedding_empty' => [
+            'de' => '%s in %d Tagen — Galerie noch leer',
+            'tr' => '%s %d gün sonra — galeri hâlâ boş',
+        ],
+    ];
+
+    /**
+     * Bekleyen iş satırları — overview şablonu için.
+     *
+     * Ekstra DB round-trip yok: overview() zaten leads/selections/invitations/
+     * customers dizilerini yükledi, aynı verilerden filtreliyoruz.
+     *
+     * @param list<array<string,mixed>> $leads
+     * @param list<array<string,mixed>> $selections
+     * @param list<array<string,mixed>> $invitations
+     * @param list<array<string,mixed>> $customers
+     * @param list<array<string,mixed>> $galleries
+     * @return list<array{kind:string,message:string,href:string,severity:string}>
+     */
+    public static function pendingWork(
+        string $locale,
+        array $leads,
+        array $selections,
+        array $invitations,
+        array $customers,
+        array $galleries
+    ): array {
+        $out = [];
+        $label = static function (string $kind) use ($locale): string {
+            $row = self::PENDING_LABELS[$kind] ?? [];
+            return (string) ($row[$locale] ?? $row['de'] ?? '');
+        };
+
+        // Cevapsız talepler (48 saatten eski)
+        $limit48h = date('c', strtotime('-48 hours'));
+        $stale = 0;
+        foreach ($leads as $lead) {
+            if ((string) ($lead['at'] ?? '') !== '' && (string) $lead['at'] < $limit48h) {
+                $stale++;
+            }
+        }
+        if ($stale > 0) {
+            $out[] = [
+                'kind'     => 'lead_stale',
+                'message'  => sprintf($label('lead_stale'), $stale),
+                'href'     => '#anfragen',
+                'severity' => 'warn',
+            ];
+        }
+
+        // Ödenmemiş davetiyeler (7 günden eski)
+        // createdAt ISO 8601 (date('c')) formatında saklanıyor — aynı formatta karşılaştır.
+        $limit7d = date('c', strtotime('-7 days'));
+        $unpaid = 0;
+        foreach ($invitations as $inv) {
+            $created = (string) ($inv['createdAt'] ?? '');
+            if (empty($inv['paid']) && $created !== '' && $created < $limit7d) {
+                $unpaid++;
+            }
+        }
+        if ($unpaid > 0) {
+            $out[] = [
+                'kind'     => 'invitation_unpaid',
+                'message'  => sprintf($label('invitation_unpaid'), $unpaid),
+                'href'     => I18n::path('/admin/einladungen', $locale),
+                'severity' => 'warn',
+            ];
+        }
+
+        // Yeni gelen albüm seçimleri
+        $unseen = 0;
+        foreach ($selections as $sel) {
+            if (Galleries::isSelectionUnseen($sel)) {
+                $unseen++;
+            }
+        }
+        if ($unseen > 0) {
+            $out[] = [
+                'kind'     => 'selection_new',
+                'message'  => sprintf($label('selection_new'), $unseen),
+                'href'     => '#auswahlen',
+                'severity' => 'info',
+            ];
+        }
+
+        // Yaklaşan düğün + boş galeri (önümüzdeki 7 gün)
+        $photosByCode = [];
+        foreach ($galleries as $g) {
+            $code = (string) ($g['code'] ?? '');
+            $photosByCode[$code] = count((array) ($g['uploads'] ?? [])) + count((array) ($g['seeds'] ?? []));
+        }
+        $today = date('Y-m-d');
+        $in7d  = date('Y-m-d', strtotime('+7 days'));
+        foreach ($customers as $c) {
+            $date = (string) ($c['date'] ?? '');
+            $code = (string) ($c['code'] ?? '');
+            if ($date < $today || $date > $in7d || $code === '') {
+                continue;
+            }
+            if (($photosByCode[$code] ?? 0) > 0) {
+                continue;
+            }
+            $days = max(0, (int) ((strtotime($date) - strtotime($today)) / 86400));
+            $couple = (string) ($c['couple'] ?? $code);
+            $out[] = [
+                'kind'     => 'wedding_empty',
+                'message'  => sprintf($label('wedding_empty'), $couple, $days),
+                'href'     => I18n::path('/admin/kunden/' . $code, $locale),
+                'severity' => 'warn',
+            ];
+        }
+
+        // Sekiz satırdan fazlasını gösterme.
+        return array_slice($out, 0, 8);
+    }
+
+    /**
      * Die Reiter nach Abschnitten, fertig für die Seitenleiste.
      *
      * @return list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
