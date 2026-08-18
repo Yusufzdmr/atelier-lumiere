@@ -260,6 +260,54 @@ final class Media
             : null;
     }
 
+    /** Kurzer Beispielfilm einer Leistung (mp4/webm/mov). 100 MB Deckel. */
+    private const MAX_VIDEO = 100 * 1024 * 1024;
+
+    /**
+     * Video übernehmen: Endung nach Inhalt, nicht nach dem Dateinamen.
+     *
+     * Wir transkodieren nicht – das kann ein Webhosting nicht in Ruhe. Wer
+     * grosse Kameradateien laedt, sieht sie so wie sie sind; im Panel steht
+     * daher der Hinweis „vorher komprimieren".
+     *
+     * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int} $file
+     */
+    public static function storeVideo(array $file, string $folder): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $tmp = (string) ($file['tmp_name'] ?? '');
+        if ($tmp === '' || !is_uploaded_file($tmp) || (int) ($file['size'] ?? 0) > self::MAX_VIDEO) {
+            return null;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo !== false ? (string) finfo_file($finfo, $tmp) : '';
+        if ($finfo !== false) {
+            finfo_close($finfo);
+        }
+
+        $extension = match ($mime) {
+            'video/mp4', 'video/x-m4v'    => 'mp4',
+            'video/webm'                  => 'webm',
+            'video/quicktime', 'video/mov' => 'mov',
+            default                        => null,
+        };
+
+        if ($extension === null) {
+            return null;
+        }
+
+        $name = bin2hex(random_bytes(8)) . '.' . $extension;
+        $target = self::dir($folder) . '/' . $name;
+
+        return move_uploaded_file($tmp, $target)
+            ? self::url(trim($folder, '/') . '/' . $name)
+            : null;
+    }
+
     /**
      * Schmuckelemente: Blume, Rahmen, Monogramm.
      *

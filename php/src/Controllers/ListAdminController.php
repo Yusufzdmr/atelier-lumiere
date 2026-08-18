@@ -84,6 +84,14 @@ final class ListAdminController
                     : 'Bu görseller hizmet metninin altında görünür. Aynı anda birden çok seçebilirsiniz; sayfada ilk dördü çıkar. Aşağıdaki „Görsel anahtarı“ bir adres değilse, buradaki ilk fotoğraf aynı zamanda kapak (ana sayfa + /leistungen üstü) olur.',
                 'list' => $this->serviceShots($item),
             ],
+            // Video: Link *oder* eigene Datei. Wer die Datei laedt, ueberschreibt den Link
+            // und umgekehrt – zwei parallele Videos machten nur die Vorlage kompliziert.
+            'video' => fn (array $item): array => [
+                'url'  => (string) ($item['videoUrl'] ?? ''),
+                'hint' => $de
+                    ? 'YouTube / Vimeo-Link einfügen oder eine mp4/webm-Datei hochladen (max. 100 MB). Vor dem Upload komprimieren – der Server transkodiert nicht.'
+                    : 'YouTube / Vimeo bağlantısı yapıştır ya da mp4/webm dosyası yükle (en fazla 100 MB). Yüklemeden önce sıkıştır – sunucu yeniden kodlamaz.',
+            ],
             'sections' => fn (int $i): array => [[
                 'fields' => [
                     ['path' => "services.$i.title.de", 'label' => $de ? 'Titel (DE)' : 'Başlık (DE)'],
@@ -694,6 +702,7 @@ final class ListAdminController
                     'view'        => ($spec['view'])($item),
                     'sections'    => ($spec['sections'])($i, $item),
                     'photos'      => isset($spec['photos']) ? ($spec['photos'])($item) : null,
+                    'video'       => isset($spec['video']) ? ($spec['video'])($item) : null,
                     'deleteLabel' => $spec['delete']['label'],
                     'confirm'     => $spec['delete']['confirm'],
                 ];
@@ -802,6 +811,8 @@ final class ListAdminController
             'photos-add' => Lists::addUploads($key, $index, Media::storeMany('fotos', $this->folder($key, $index), 40)),
             'photo-delete' => Lists::removeUpload($key, $index, (int) Security::clean($_POST['foto'] ?? '', 6)),
             'photo-cover' => Lists::makeCover($key, $index, (int) Security::clean($_POST['foto'] ?? '', 6)),
+            'video-upload' => $this->uploadVideo($key, $index),
+            'video-remove' => $this->removeVideo($key, $index),
             default => null,
         };
 
@@ -945,6 +956,41 @@ final class ListAdminController
      * @param array<string,mixed> $item
      * @return list<array{src:string,upload:bool,index:int}>
      */
+    /**
+     * Video-Datei zu einem Eintrag legen und die `videoUrl` darauf zeigen lassen.
+     *
+     * Wenn vorher schon eine eigene Datei hinterlegt war (nicht bloss ein
+     * YouTube-Link), wird sie ersetzt und die alte im Blob geloescht – sonst
+     * bleiben nach ein paar Versuchen 300 MB tote Dateien liegen.
+     */
+    private function uploadVideo(string $key, int $index): void
+    {
+        $url = Media::storeVideo($_FILES['video'] ?? [], $this->folder($key, $index));
+        if ($url === null) {
+            return;
+        }
+        $item = Lists::item($key, $index) ?? [];
+        $old = (string) ($item['videoUrl'] ?? '');
+        if ($old !== '' && str_starts_with($old, '/uploads/')) {
+            Media::delete($old);
+        }
+        Lists::update($key, $index, ['videoUrl' => $url]);
+    }
+
+    /** Nur die eigene Datei entfernen; ein YouTube-Link bleibt einfach im Feld. */
+    private function removeVideo(string $key, int $index): void
+    {
+        $item = Lists::item($key, $index) ?? [];
+        $old = (string) ($item['videoUrl'] ?? '');
+        if ($old === '') {
+            return;
+        }
+        if (str_starts_with($old, '/uploads/')) {
+            Media::delete($old);
+        }
+        Lists::update($key, $index, ['videoUrl' => '']);
+    }
+
     private function serviceShots(array $item): array
     {
         $photos = [];

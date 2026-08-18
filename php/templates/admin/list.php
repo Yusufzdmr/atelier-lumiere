@@ -76,6 +76,52 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
               <?= $item['panel'] ?>
             <?php endif; ?>
 
+            <?php if (!empty($item['video'])) : ?>
+              <?php $vBox = $item['video']; $vUrl = (string) ($vBox['url'] ?? ''); $vLocal = $vUrl !== '' && str_starts_with($vUrl, '/uploads/'); ?>
+              <div class="space-y-3">
+                <form method="post" enctype="multipart/form-data"
+                      class="flex flex-wrap items-end gap-4 border border-sand-deep p-5">
+                  <?= $hidden('video-upload', $key, $i) ?>
+                  <div class="min-w-[16rem] flex-1">
+                    <label class="block text-[0.6rem] uppercase tracking-[0.18em] text-muted" for="vid-<?= e($key) ?>-<?= $i ?>">
+                      <?= $de ? 'Video hochladen (mp4/webm/mov)' : 'Video yükle (mp4/webm/mov)' ?>
+                    </label>
+                    <input id="vid-<?= e($key) ?>-<?= $i ?>" type="file" name="video" accept="video/mp4,video/webm,video/quicktime"
+                           class="mt-2 w-full text-[0.8rem] text-muted file:mr-4 file:border file:border-sand-deep file:bg-transparent file:px-4 file:py-2 file:text-[0.66rem] file:uppercase file:tracking-[0.16em] file:text-ink">
+                    <p class="mt-2 text-[0.72rem] leading-relaxed text-muted">
+                      <?= e((string) ($vBox['hint'] ?? '')) ?>
+                    </p>
+                  </div>
+                  <button class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
+                    <?= $de ? 'Hochladen' : 'Yükle' ?>
+                  </button>
+                </form>
+
+                <?php if ($vUrl !== '') : ?>
+                  <div class="flex flex-wrap items-start gap-4 border border-sand-deep p-4">
+                    <?php if ($vLocal) : ?>
+                      <video src="<?= e($vUrl) ?>" controls preload="metadata"
+                             class="h-32 w-56 bg-ink object-cover"></video>
+                    <?php else : ?>
+                      <div class="flex h-32 w-56 items-center justify-center border border-sand-deep bg-sand/40 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+                        <?= $de ? 'Externer Link' : 'Harici bağlantı' ?>
+                      </div>
+                    <?php endif; ?>
+                    <div class="min-w-0 flex-1 space-y-2">
+                      <p class="break-all text-[0.78rem] leading-relaxed text-ink"><?= e($vUrl) ?></p>
+                      <form method="post">
+                        <?= $hidden('video-remove', $key, $i) ?>
+                        <button data-confirm="<?= $de ? 'Dieses Video entfernen?' : 'Bu video kaldırılsın mı?' ?>"
+                                class="text-[0.66rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-red-800">
+                          <?= $de ? 'Video entfernen' : 'Videoyu kaldır' ?>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+
             <?php if (!empty($item['photos'])) : ?>
               <?php $photos = $item['photos']; ?>
               <div class="space-y-4">
