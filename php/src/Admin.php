@@ -233,28 +233,99 @@ final class Admin
     }
 
     /**
-     * Die Reiter nach Abschnitten, fertig für die Seitenleiste.
+     * Kenar çubuğu için „sık kullanılanlar" — en çok en fazla 6 sekme.
      *
-     * @return list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
+     * Kullanım verisi yeterliyse (son 30 günde ≥3 farklı sekme) sayaçtan;
+     * yeterli değilse TABS içindeki pinned:true alanından.
+     *
+     * @return list<array{href:string,label:string,active:bool}>
+     */
+    public static function pinnedTabs(string $locale, string $current, int $count = 6): array
+    {
+        $hrefs = [];
+
+        try {
+            $rows = Db::all(
+                'SELECT tab FROM admin_usage
+                 WHERE last_at > (NOW() - INTERVAL 30 DAY)
+                 ORDER BY hits DESC LIMIT ' . max(1, min(12, $count))
+            );
+            if (count($rows) >= 3) {
+                foreach ($rows as $row) {
+                    $hrefs[] = (string) $row['tab'];
+                }
+            }
+        } catch (\Throwable $_) {
+            // Tablo yoksa varsayılana düşer.
+        }
+
+        if ($hrefs === []) {
+            foreach (self::TABS as $t) {
+                if (!empty($t['pinned'])) {
+                    $hrefs[] = (string) $t['href'];
+                }
+            }
+        }
+
+        $out = [];
+        foreach ($hrefs as $href) {
+            foreach (self::TABS as $t) {
+                if ((string) $t['href'] === $href) {
+                    $out[] = [
+                        'href'   => I18n::path('/admin' . $href, $locale),
+                        'label'  => (string) ($t[$locale] ?? $t['de']),
+                        'active' => $current === $href,
+                    ];
+                    break;
+                }
+            }
+            if (count($out) >= $count) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Kenar çubuğu içeriği: sık kullanılanlar (düz liste) ve „daha fazla"
+     * altında gruplu geri kalan sekmeler.
+     *
+     * @return array{
+     *   pinned: list<array{href:string,label:string,active:bool}>,
+     *   more:   list<array{key:string,label:string,tabs:list<array{href:string,label:string,active:bool}>}>
+     * }
      */
     public static function sidebar(string $locale, string $current): array
     {
-        $sections = [];
+        $pinned = self::pinnedTabs($locale, $current);
+        $pinnedHrefs = array_map(static fn (array $t): string => $t['href'], $pinned);
 
+        // "more" bölümü: pinned'de OLMAYAN ve grubu olan sekmeler.
+        // Overview grup boş — o pinned'in üstünde ayrı render edilir.
+        $more = [];
         foreach (self::TABS as $tab) {
             $group = (string) $tab['group'];
-            $sections[$group]['label'] = $group === ''
-                ? ''
-                : (self::GROUPS[$group][$locale] ?? self::GROUPS[$group]['de']);
-            $sections[$group]['key'] = $group;
-            $sections[$group]['tabs'][] = [
+            if ($group === '') {
+                continue;
+            }
+            $rendered = [
                 'href'   => I18n::path('/admin' . $tab['href'], $locale),
                 'label'  => (string) ($tab[$locale] ?? $tab['de']),
                 'active' => $current === $tab['href'],
             ];
+            if (in_array($rendered['href'], $pinnedHrefs, true)) {
+                continue;
+            }
+            $more[$group]['label'] = self::GROUPS[$group][$locale] ?? self::GROUPS[$group]['de'];
+            $more[$group]['key']   = $group;
+            $more[$group]['tabs'][] = $rendered;
         }
 
-        return array_values($sections);
+        return [
+            'pinned' => $pinned,
+            'more'   => array_values($more),
+        ];
     }
 
     /** Wie der gerade offene Reiter heißt – für die schmale Ansicht. */
