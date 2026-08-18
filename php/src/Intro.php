@@ -138,8 +138,13 @@ final class Intro
             // Eigene Compositing-Schicht, Video ohne separate Opazitaet, ein
             // Gradient statt zweier halbtransparenter Waschen. Sonst hat das
             // Zusammenrechnen der Ebenen mehr gekostet als der Film selbst.
+            // !important auf width/height/object-fit muss sein: Tailwinds
+            // Preflight setzt `video{height:auto}` und liess sonst schwarze
+            // Streifen oben/unten stehen. min-height sichert die Karte auf
+            // sehr kurzen Inhalten – sonst waere das Video ein Streifen.
+            . '.t-card--backdrop{min-height:70vh}'
             . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906;contain:paint;transform:translateZ(0)}'
-            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;transform:translateZ(0)}'
+            . '.t-cardbg-vid{position:absolute!important;inset:0!important;height:100%!important;width:100%!important;object-fit:cover!important;transform:translateZ(0)}'
             . '.t-cardbg-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(11,9,6,.45) 0%,rgba(11,9,6,.55) 55%,rgba(11,9,6,.72) 100%)}'
             . '</style>';
 
