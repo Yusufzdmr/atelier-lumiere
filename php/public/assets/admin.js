@@ -138,15 +138,51 @@
         var speed = Number((form.querySelector("[data-theme-speed]") || {}).value || 1200);
         var delay = Number((form.querySelector("[data-theme-delay]") || {}).value || 0);
 
+        // Themes::ANIMATIONS listesindeki her seçenek için bir kare çifti.
+        // Eksik olan bir seçenek fallback ile hep "seal" gösterirdi — o yüzden
+        // ne seçilirse seçilsin önizleme aynı kalirdi. Sunucu tarafında kayıt
+        // zaten çalışıyor; burası yalnız görsel önizleme.
         var frames = {
           seal: [
             { opacity: 0, transform: "translateY(18px) scale(.97)" },
             { opacity: 1, transform: "none" },
           ],
           fade: [{ opacity: 0 }, { opacity: 1 }],
+          rise: [
+            { opacity: 0, transform: "translateY(30px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          zoom: [
+            { opacity: 0, transform: "scale(.85)" },
+            { opacity: 1, transform: "scale(1)" },
+          ],
+          zoomOut: [
+            { opacity: 0, transform: "scale(1.15)" },
+            { opacity: 1, transform: "scale(1)" },
+          ],
           curtain: [
             { clipPath: "inset(0 50% 0 50%)" },
             { clipPath: "inset(0 0 0 0)" },
+          ],
+          unfold: [
+            { clipPath: "inset(50% 0 50% 0)" },
+            { clipPath: "inset(0 0 0 0)" },
+          ],
+          flip: [
+            { opacity: 0, transform: "perspective(800px) rotateY(-72deg)" },
+            { opacity: 1, transform: "perspective(800px) rotateY(0deg)" },
+          ],
+          slideLeft: [
+            { opacity: 0, transform: "translateX(60px)" },
+            { opacity: 1, transform: "translateX(0)" },
+          ],
+          slideRight: [
+            { opacity: 0, transform: "translateX(-60px)" },
+            { opacity: 1, transform: "translateX(0)" },
+          ],
+          blur: [
+            { opacity: 0, filter: "blur(12px)" },
+            { opacity: 1, filter: "blur(0)" },
           ],
           petals: [
             { opacity: 0, transform: "rotate(-2deg) translateY(24px)" },
