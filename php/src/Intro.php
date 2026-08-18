@@ -58,6 +58,11 @@ final class Intro
                 . '<span class="ti-sweep"></span>'
                 . '<span class="ti-vignette"></span>',
 
+            // Lumina: zwei Schwaene gleiten im Morgenlicht, das Standbild
+            // liegt vor dem Kuvert. Der Stil wird hier inline mitgeliefert,
+            // damit die Szene keinen separaten Tailwind-Build braucht.
+            'lumina' => self::luminaSwans(),
+
             default => '',
         };
 
@@ -87,6 +92,34 @@ final class Intro
         }
 
         return $svg . '</svg>';
+    }
+
+    /**
+     * Schwaene im Morgenlicht: das GIF fuellt die Szene, ein warmer Wash und
+     * eine sanfte Vignette legen sich darueber, damit die Karte darunter
+     * nicht abrupt sondern durch das gleiche Licht auftaucht.
+     */
+    private static function luminaSwans(): string
+    {
+        // Zeiten sind auf introDuration('lumina') = 4200 ms abgestimmt:
+        //  0.00–0.35 s  ein
+        //  0.35–3.85 s  halten
+        //  3.85–4.20 s  aus
+        $style = '<style>'
+            . '.t-intro.ti-lumina{background:#0b0906}'
+            . '.t-intro.ti-lumina .ti-lumina-img{opacity:0;object-fit:cover;height:100%;width:100%}'
+            . '.t-intro.ti-lumina[data-playing="true"] .ti-lumina-img{animation:tiLumina 4.2s ease both}'
+            . '.t-intro.ti-lumina .ti-warm{opacity:0}'
+            . '.t-intro.ti-lumina[data-playing="true"] .ti-warm{animation:tiWarmShort 4.2s ease-in-out both}'
+            . '.t-intro.ti-lumina .ti-vignette{opacity:0}'
+            . '.t-intro.ti-lumina[data-playing="true"] .ti-vignette{animation:tiVignette 1s ease-in 3.2s both}'
+            . '@keyframes tiLumina{0%{opacity:0;transform:scale(1.06)}12%{opacity:1;transform:scale(1.04)}88%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}'
+            . '</style>';
+
+        return $style
+            . '<img class="ti-lumina-img" src="/assets/intro/lumina-swans.gif" alt="" loading="eager" decoding="async">'
+            . '<span class="ti-warm"></span>'
+            . '<span class="ti-vignette"></span>';
     }
 
     /** Konfetti: feste Anzahl, feste Plätze – kein Zufall, damit es ruhig bleibt. */
