@@ -234,6 +234,10 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                   <?php if ((string) ($theme['backdropVideo'] ?? '') !== '') : ?>
                     <video src="<?= e((string) $theme['backdropVideo']) ?>" muted preload="metadata"
                            class="h-16 w-24 bg-ink object-cover"></video>
+                    <a href="<?= e((string) $theme['backdropVideo']) ?>" download
+                       class="text-[0.66rem] uppercase tracking-[0.16em] text-ink underline-offset-4 hover:text-gold hover:underline">
+                      <?= $de ? 'Herunterladen' : 'İndir' ?>
+                    </a>
                     <button name="was" value="backdrop-delete" class="text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
                             data-confirm="<?= $de ? 'Video entfernen?' : 'Video kaldırılsın mı?' ?>">
                       <?= $de ? 'Video entfernen' : 'Videoyu kaldır' ?>
