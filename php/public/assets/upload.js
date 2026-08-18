@@ -102,4 +102,24 @@
     xhr.open("POST", form.action || window.location.href, true);
     xhr.send(daten);
   });
+
+  /*
+   * „Ersetzen" auf einer Platzhalter-Kachel oeffnet den Datei-Dialog des
+   * Upload-Formulars (per <label for=…>). Damit der Nutzer danach nicht noch
+   * einmal auf „Hochladen" klicken muss, schicken wir das Formular gleich ab,
+   * sobald ueberhaupt Dateien ausgewaehlt wurden. Der obige submit-Handler
+   * kuemmert sich dann um Fortschritt und Fehlerfall.
+   */
+  document.addEventListener("change", function (event) {
+    var eingang = event.target;
+    if (!(eingang instanceof HTMLInputElement) || eingang.type !== "file") return;
+    if (!eingang.files || eingang.files.length === 0) return;
+    var form = eingang.form;
+    if (!form || form.dataset.uploadLaeuft) return;
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+    } else {
+      form.submit();
+    }
+  });
 })();

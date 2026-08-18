@@ -123,7 +123,20 @@ $hidden = static function (string $was, string $key, ?int $index = null) use ($c
                             </button>
                           </form>
                         <?php else : ?>
-                          <span class="absolute inset-x-0 bottom-0 bg-ink/60 py-1 text-center text-[0.55rem] uppercase tracking-[0.14em] text-cream">
+                          <?php /*
+                            Platzhalter sind jetzt „klicken zum Ersetzen": das
+                            <label> zeigt auf den Datei-Dialog oben, ein Klick
+                            oeffnet also denselben Auswaehler wie „Hochladen".
+                            Der erste Upload verdraengt die Kachel, weil dann
+                            oben ein eigenes Foto in der Liste steht.
+                          */ ?>
+                          <label for="up-<?= e($key) ?>-<?= $i ?>"
+                                 class="absolute inset-0 flex cursor-pointer flex-col items-center justify-end bg-ink/0 transition-colors hover:bg-ink/40">
+                            <span class="mb-1.5 w-full bg-gold/85 py-1 text-center text-[0.55rem] uppercase tracking-[0.14em] text-cream opacity-0 transition-opacity group-hover/ph:opacity-100">
+                              <?= $de ? 'Ersetzen' : 'Değiştir' ?>
+                            </span>
+                          </label>
+                          <span class="pointer-events-none absolute inset-x-0 top-0 bg-ink/55 py-1 text-center text-[0.55rem] uppercase tracking-[0.14em] text-cream">
                             <?= $de ? 'Platzhalter' : 'Temsili' ?>
                           </span>
                         <?php endif; ?>

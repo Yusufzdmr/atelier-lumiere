@@ -917,8 +917,10 @@ final class ListAdminController
             $photos[] = ['src' => $url, 'upload' => true, 'index' => $i];
         }
 
-        // Platzhalter nur zeigen, solange es keine eigenen Bilder gibt –
-        // auf der Seite ist es genauso.
+        // Platzhalter nur zeigen, solange es keine eigenen Bilder gibt.
+        // Die Vorlage macht daraus einen „Klick zum Ersetzen"-Streifen: das
+        // Panel hatte vorher „Temsili"-Kacheln, die aussahen wie Fotos,
+        // aber weder loeschbar noch tauschbar waren.
         if ($photos === []) {
             foreach ((array) ($item['seeds'] ?? []) as $seed) {
                 if (is_string($seed)) {
@@ -953,6 +955,9 @@ final class ListAdminController
             return $photos;
         }
 
+        // Solange nichts hochgeladen ist: dieselben vier Motive, die die Seite
+        // zeigt – jetzt aber im Panel klickbar (siehe Vorlage: `label for=`
+        // faengt den Klick ab und oeffnet den Datei-Dialog).
         $slug = (string) ($item['slug'] ?? '');
         for ($k = 0; $k < 4; $k++) {
             $photos[] = ['src' => Images::img("svc-$slug-$k", 400, 520), 'upload' => false, 'index' => -1];
