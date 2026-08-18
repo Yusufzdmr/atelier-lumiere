@@ -356,4 +356,32 @@ return [
         ],
         'texture' => 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'2\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.14\' fill=\'%23333333\'/%3E%3C/svg%3E")',
     ],
+    [
+        // Lumina: passt zur Schwaenen-Szene. Palette aus dem Standbild
+        // (Morgenlicht, Nebel, Wasserreflex) statt kalter Kontraste;
+        // Kuvert und Karte gleiten aus derselben Lichtstimmung heraus.
+        'id' => 'lumina',
+        'name' => 'Lumina',
+        'sub' => [
+            'de' => 'Morgennebel & Goldlicht',
+            'tr' => 'Sabah sisi & altın ışık',
+        ],
+        'bg' => '#F1E9D8',
+        'paper' => '#FBF5E8',
+        'paperEdge' => 'rgba(158,122,69,0.28)',
+        'fg' => '#2A241D',
+        'soft' => 'rgba(42,36,29,0.58)',
+        'accent' => '#9E7A45',
+        'accentSoft' => '#D5BA8F',
+        'envelope' => '#E4D5B9',
+        'envelopeFlap' => '#DAC8A5',
+        'envelopeEdge' => 'rgba(158,122,69,0.42)',
+        'seal' => '#9E7A45',
+        'sealText' => '#FBF5E8',
+        'petal' => '#E9D9BF',
+        'animation' => 'fade',
+        'intro' => 'lumina',
+        'idle' => 'sheen',
+        'texture' => 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'2\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.14\' fill=\'%239E7A45\'/%3E%3C/svg%3E")',
+    ],
 ];
