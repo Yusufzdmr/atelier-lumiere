@@ -96,10 +96,13 @@ final class Intro
     }
 
     /**
-     * Dauerhafter Hintergrund fuer ein Thema – etwa das Schwaene-Video hinter
-     * dem Kuvert der Lumina-Karte. Wird von invitation.php als eigene Ebene
-     * unter der Kuvert-Buehne gerendert; Kuvert und Karte legen sich in der
-     * Mitte darueber, das Motiv laeuft rundherum weiter.
+     * Hintergrund innerhalb der Karte. Bei Lumina spielt das Schwaene-Video
+     * *in der Karte*, nicht im ganzen Fenster – die Karte selbst ist der
+     * Rahmen des Films, Text liegt oben drauf. Ueber dem Video liegt ein
+     * Papier-Wash, sonst waere die Karte ein Handyvideo, ueber dem man
+     * Namen nicht mehr entziffert. Rueckgabewert: leerer String bei Themen
+     * ohne Backdrop, sonst das HTML-Fragment (Style + Video + Wash), das
+     * invitation.php als erstes Kind in `.t-card` einsetzt.
      *
      * @param array<string,mixed> $theme
      */
@@ -109,28 +112,27 @@ final class Intro
             return '';
         }
 
-        // Warmer Wash + dunkler Rand halten die Karte lesbar, sonst
-        // konkurrieren Kuguflaeche und Papier um denselben Kontrast.
-        // z-index 0 fixed liegt unter der Kuvert-Buehne (z-50) und ueber der
-        // body-Hintergrundfarbe – z:-1 hatte er nicht geschafft, weil body
-        // seine Farbe auf die Wurzel malt und die Ebene damit verdeckt.
-        // Der eigentliche Karteninhalt bekommt in invitation.php ein
-        // `position:relative; z-index:1`, damit er nach dem Kuvert-Ende
-        // ueber dem Video sichtbar bleibt.
         $style = '<style>'
-            . '.t-backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;background:#0b0906}'
-            . '.t-backdrop-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;opacity:.9}'
-            . '.t-backdrop-wash{position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(255,214,150,.28),transparent 66%),radial-gradient(circle at 50% 50%,transparent 40%,rgba(0,0,0,.55) 100%)}'
-            . '.t-above-backdrop{position:relative;z-index:1}'
+            // Papierfarbe ausschalten, damit das Video auch tatsaechlich zu
+            // sehen ist. Karteninhalt bekommt eine eigene Stapelebene.
+            . '.t-card--lumina{background:transparent!important;color:#f6ecd8!important}'
+            . '.t-card--lumina > *{position:relative;z-index:1}'
+            . '.t-cardbg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:#0b0906}'
+            . '.t-cardbg-vid{position:absolute;inset:0;height:100%;width:100%;object-fit:cover}'
+            // Zwei Waschen: linear zum Rand hin dunkler (Vignette), leichter
+            // Papierton nur im Textbereich, sonst wird das Wasser milchig.
+            . '.t-cardbg-vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 45%,rgba(11,9,6,.65) 100%)}'
+            . '.t-cardbg-wash{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,0) 0%,rgba(11,9,6,.25) 50%,rgba(11,9,6,.55) 100%)}'
             . '</style>';
 
         return $style
-            . '<div class="t-backdrop" aria-hidden="true">'
-            . '<video class="t-backdrop-vid" autoplay muted loop playsinline preload="auto" poster="/assets/intro/lumina-swans.gif">'
+            . '<div class="t-cardbg" aria-hidden="true">'
+            . '<video class="t-cardbg-vid" autoplay muted loop playsinline preload="auto" poster="/assets/intro/lumina-swans.gif">'
             . '<source src="/assets/intro/lumina-swans.webm" type="video/webm">'
             . '<source src="/assets/intro/lumina-swans.mp4" type="video/mp4">'
             . '</video>'
-            . '<span class="t-backdrop-wash"></span>'
+            . '<span class="t-cardbg-wash"></span>'
+            . '<span class="t-cardbg-vignette"></span>'
             . '</div>';
     }
 

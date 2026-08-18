@@ -223,17 +223,12 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
            Klappe, Karte und Siegel sind einzelne Flaechen: erst bricht das
            Siegel, dann schlaegt die Klappe auf, dann hebt sich die Karte
            heraus. Vorher war es ein Rechteck, das ausblendete. */ ?>
-  <?= $backdropHtml ?>
   <?= $introHtml ?>
 
-  <?php /* Bei Themen mit dauerhaftem Hintergrund (z. B. Lumina) darf die
-           Kuvert-Buehne nicht mit einer vollen Farbe darueberliegen – sonst
-           deckt sie das Video wieder zu. Dann faellt der Hintergrund weg
-           und die Buehne wird transparent. */ ?>
   <div class="t-envelope-stage idle-<?= e($idleKind) ?> fixed inset-0 z-50 flex flex-col items-center justify-center gap-9 px-6"
        data-envelope data-animation="<?= e((string) $theme['animation']) ?>"
        data-intro-ms="<?= (int) $introMs ?>"
-       <?php if ($backdropHtml === '') : ?>style="background: <?= e((string) $theme['bg']) ?>"<?php endif; ?>>
+       style="background: <?= e((string) $theme['bg']) ?>">
     <?= $scene ?>
 
     <button type="button" data-envelope-open
@@ -265,14 +260,11 @@ if ((string) ($invitation['slug'] ?? '') === 'vorschau') : ?>
     </div>
   </div>
 
-  <?php /* Bei einem Backdrop-Thema (Lumina) muss der Karteninhalt eine eigene
-           Stapelebene ueber dem Video haben – sonst deckt das fixed z-0
-           Backdrop den ganzen normalen Fluss zu. Ohne Backdrop schadet die
-           zusaetzliche Klasse nichts. */ ?>
-  <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24 <?= $backdropHtml !== '' ? 't-above-backdrop' : '' ?>">
-    <div class="t-card rv-<?= e($revealKind) ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
+  <div class="mx-auto max-w-2xl px-5 py-16 sm:py-24">
+    <div class="t-card rv-<?= e($revealKind) ?> <?= $backdropHtml !== '' ? 't-card--lumina' : '' ?> relative overflow-hidden px-6 py-14 text-center sm:px-12"
          data-speed="<?= (int) ($theme['animationSpeed'] ?? 1200) ?>"
          style="background: <?= e((string) $theme['paper']) ?>; color: <?= e((string) $theme['fg']) ?>; border: 1px solid <?= e((string) $theme['paperEdge']) ?>">
+      <?= $backdropHtml ?>
 
       <?= $decorations('card') ?>
 
