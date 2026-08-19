@@ -369,7 +369,26 @@ yok, yeniden tohumlama gerekmedi.
 
 1. **Panelde göz kontrolü** — geliştiricide panel şifresi olmadığı için editörün
    canlı önizlemesi ve iki sekmeli çakışma reddi giriş altındaki katmanda
-   sınandı; formun kendi bağlantısını gözle görmek kaldı.
+   sınandı; formun kendi bağlantısını gözle görmek kaldı. Beş dakikalık tur:
+
+   | Adım | Beklenen |
+   |---|---|
+   | `/de/admin/designs` aç | İki kart: Élysée ve Noir, kartlarda gerçek davetiye görünüyor, aktif olanın çerçevesi altın |
+   | Üstteki `modern` süzgecine bas | Yalnızca Noir kalıyor; "Alle" geri getiriyor |
+   | Élysée kartında **Bearbeiten** | Sekiz bölüm kapalı, sağda kartın küçük hâli |
+   | **2 · Farben** aç, `accent` alanına `#AA0000` yaz | Sağdaki karttaki isimler **kaydetmeden** kırmızıya döner |
+   | Renk seçiciyi tıkla, başka renk seç | Metin alanı da onunla değişir (iki yönlü) |
+   | **3 · Schriften** → `display` ağırlığını 300'den 700'e al | Tarih satırı anında kalınlaşır |
+   | **4 · Texte** → "Wir heiraten"i değiştir | Kartta anında değişir |
+   | **Speichern** | "Gespeichert." ve altta sürüm bir artmış olur |
+   | Hiçbir şey değiştirmeden tekrar **Speichern** | Sürüm **artmaz** (içerik aynı) |
+   | Aynı tasarımı ikinci bir sekmede aç, birinci sekmede kaydet, sonra ikinci sekmede kaydet | İkincisi yazmaz: "Diese Vorlage wurde geändert…" |
+   | Kataloğa dön, Noir'da **Deaktivieren** | Soru sormadan pasife alır, çerçeve altından çıkar |
+   | Tekrar **Aktivieren** | Uyarısı yoksa tek tıkla açılır; uyarısı olan bir taslakta önce "N Hinweise. Trotzdem veröffentlichen?" diye sorar |
+   | `/de/v2/designs/elysee` aç | Panelde kaydettiğin ne varsa burada da öyle görünür |
+
+   Bir şey beklenenden farklı çıkarsa ekran görüntüsü yeter; hangi adımda
+   olduğunu yaz.
 2. **Kalp şeklinde harita** — `docs/backlog/2026-08-19-kalp-seklinde-harita.md`,
    Ayhan'a üç soru.
 3. **Faz 3** — müşteri tarafı. Kendi spec'iyle başlamalı. Faz 2'den devredilen
