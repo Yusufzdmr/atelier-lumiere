@@ -433,6 +433,14 @@ final class Design
             'idle'     => (string) ($animation['idle'] ?? 'none'),
             'reveal'   => (string) ($animation['reveal'] ?? 'up'),
             'particle' => (string) ($animation['particle'] ?? 'none'),
+            // Wie die Karte hereinkommt und wie die Namen erscheinen. Beides
+            // steht im alten Motor in eigenen Feldern. Ohne sie laesst sich
+            // die Abfolge "Siegel bricht, Karte steigt auf" nicht nachbauen -
+            // und genau die nennt das Abnahmekriterium.
+            'card'     => (string) ($animation['card'] ?? 'none'),
+            'nameMove' => (string) ($animation['nameMove'] ?? 'none'),
+            'speed'    => max(0, min(20000, (int) ($animation['speed'] ?? 1200))),
+            'delay'    => max(0, min(20000, (int) ($animation['delay'] ?? 0))),
         ];
 
         return $doc;
@@ -1398,6 +1406,14 @@ Beklenen: `Call to undefined method Atelier\Design::fromTheme()`.
                 'idle'     => (string) ($theme['idle'] ?? 'none'),
                 'reveal'   => (string) ($theme['reveal'] ?? 'up'),
                 'particle' => (string) ($theme['particle'] ?? 'none'),
+                // Achtung, zwei Bedeutungen desselben Wortes: im Thema ist
+                // `animation` ein einzelnes Feld (wie die Karte hereinkommt),
+                // im Dokument heisst so der ganze Block. Deshalb wird daraus
+                // hier `animation.card`.
+                'card'     => (string) ($theme['animation'] ?? 'none'),
+                'nameMove' => (string) ($theme['nameAnimation'] ?? 'none'),
+                'speed'    => (int) ($theme['animationSpeed'] ?? 1200),
+                'delay'    => (int) ($theme['animationDelay'] ?? 0),
             ],
         ]);
     }
@@ -2561,6 +2577,9 @@ use function Atelier\e;
 
 $ratio = str_replace(':', ' / ', (string) $design['canvas']['ratio']);
 $intro = (string) $design['animation']['intro'];
+// Wie die Karte hereinkommt - beim Original steht das in data-animation.
+$karteAn = (string) $design['animation']['card'];
+$tempo = (int) $design['animation']['speed'];
 ?>
 <style><?= $styles ?></style>
 
@@ -2570,7 +2589,8 @@ $intro = (string) $design['animation']['intro'];
   </h1>
   <p class="mt-2 text-sm text-ink/60">
     <?= e($design['category']) ?> · Fassung <?= (int) $design['version'] ?> ·
-    <?= count($design['layers']) ?> Ebenen · Auftakt: <?= e($intro) ?>
+    <?= count($design['layers']) ?> Ebenen · Auftakt: <?= e($intro) ?> ·
+    Karte: <?= e($karteAn) ?> (<?= $tempo ?> ms)
   </p>
 
   <?php if ($warnings !== []): ?>
@@ -2587,6 +2607,7 @@ $intro = (string) $design['animation']['intro'];
 
   <div class="mt-10 flex justify-center">
     <div class="<?= e($scope) ?> d-stage d-intro-<?= e($intro) ?> relative w-full max-w-sm overflow-hidden"
+         data-animation="<?= e($karteAn) ?>" data-speed="<?= $tempo ?>"
          style="aspect-ratio: <?= $ratio ?>; background: var(--d-bg, #EFE7DC);">
 
       <div class="d-page absolute inset-0"><?= $seite ?></div>

@@ -170,7 +170,7 @@ alınacak: slug çakışması riski var, ayrı tablo mu ortak mı orada karara b
 | `fonts` | `{anahtar: FontEntry}` | isimli yazı jetonları |
 | `layers` | `Element[]` | **sıra = z-index**, küçük indeks arkada |
 | `sections` | `Section[]` | Faz 3'e kadar boş dizi |
-| `animation` | `{intro, idle, reveal, particle}` | mevcut `Themes` sabitleri aynen |
+| `animation` | `{intro, idle, reveal, particle, card, nameMove, speed, delay}` | mevcut `Themes` sabitleri aynen. `card` temanın skaler `animation` alanı (kartın giriş hareketi), `nameMove` ise `nameAnimation` — ikisi de adları çakıştığı için yeniden adlandırıldı |
 
 `canvas.ratio` başlangıçta `"9:16"`. `canvas.safe` kenar boşluğu yüzdesi —
 yayın kontrolünde (Faz 2) "isim güvenli alanın dışına taşıyor" uyarısı buradan
