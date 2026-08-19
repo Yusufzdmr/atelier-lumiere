@@ -1278,13 +1278,33 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
             </div>
           <?php endforeach; ?>
 
+          <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
+            <div>
+              <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
+              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>">
+                <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                  <option value="<?= e($familie) ?>" <?= (string) $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          <?php endforeach; ?>
+
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
-            <?php if (!$rechte['color'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
+            <?php if (!$rechte['color'] && !$rechte['font'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
             <div class="border-t border-sand-deep pt-6">
               <div class="<?= $label ?>"><?= e($id) ?></div>
 
               <?php if ($rechte['color']) : ?>
                 <input type="color" name="layer_color_<?= e($id) ?>" class="<?= $field ?> h-12">
+              <?php endif; ?>
+
+              <?php if ($rechte['font']) : ?>
+                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>">
+                  <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
+                  <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                    <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+                  <?php endforeach; ?>
+                </select>
               <?php endif; ?>
 
               <?php if ($rechte['text']) : ?>
@@ -1471,6 +1491,13 @@ başa eklenir):
             }
         }
 
+        foreach (array_keys($darf['fonts']) as $marke) {
+            $wert = Security::clean($_POST['fonts_' . $marke] ?? '', 64);
+            if ($wert !== '') {
+                $wahl['fonts'][$marke] = $wert;
+            }
+        }
+
         foreach ($darf['layers'] as $id => $rechte) {
             $eintrag = [];
 
@@ -1478,6 +1505,12 @@ başa eklenir):
                 $wert = Security::clean($_POST['layer_color_' . $id] ?? '', 32);
                 if ($wert !== '') {
                     $eintrag['color'] = $wert;
+                }
+            }
+            if ($rechte['font']) {
+                $wert = Security::clean($_POST['layer_font_' . $id] ?? '', 64);
+                if ($wert !== '') {
+                    $eintrag['font'] = $wert;
                 }
             }
             if ($rechte['text']) {
@@ -1775,20 +1808,9 @@ sorulduğu sunucuda belli. Betik yalnızca görünürlük ve önizleme.
 
   /*
    * Vorschau: die gebundenen Felder heissen im Dokument anders als im
-   * Formular, deshalb die Karte. Sie ist die einzige Stelle, an der der
-   * Browser etwas ueber bind-Namen wissen muss.
+   * Formular. Diese Zuordnung ist die einzige Stelle, an der der Browser
+   * etwas ueber bind-Namen wissen muss.
    */
-  var bindOf = {
-    bride: ['bride_name', 'couple_names', 'initials'],
-    groom: ['groom_name', 'couple_names', 'initials'],
-    date: ['wedding_date', 'wedding_weekday'],
-    time: ['wedding_time'],
-    venue: ['location_name'],
-    address: ['location_address'],
-    message: ['invitation_text'],
-    hashtag: ['hashtag']
-  };
-
   var preview = form.querySelector('[data-preview]');
   if (!preview) return;
 
@@ -1813,15 +1835,12 @@ sorulduğu sunucuda belli. Betik yalnızca görünürlük ve önizleme.
       hashtag: werte.hashtag || ''
     };
 
-    // Die Elemente tragen ihre Kennung in der Klasse (d-el-<id>), aber welches
-    // bind dahintersteht, steht nur im Dokument. Deshalb bekommt die Vorschau
-    // ihre Zuordnung beim ersten Lauf aus dem gerenderten Markup: jedes
-    // gebundene Element hat dort bereits den Beispielwert stehen.
-    Object.keys(bindOf).forEach(function (feld) {
-      bindOf[feld].forEach(function (bind) {
-        var ziel = preview.querySelector('[data-bind="' + bind + '"]');
-        if (ziel) ziel.textContent = text[bind];
-      });
+    // Welches Element welches bind traegt, steht im Markup (data-bind, siehe
+    // Schritt 2) - nicht hier. Ein Design ohne wedding_time hat die Zeile
+    // nicht, und dann findet querySelector nichts. Das ist richtig so.
+    Object.keys(text).forEach(function (bind) {
+      var ziel = preview.querySelector('[data-bind="' + bind + '"]');
+      if (ziel) ziel.textContent = text[bind];
     });
   }
 
