@@ -493,6 +493,7 @@ alınmışsa sonuna dört haneli onaltılık eklenir, eski motordaki davranış.
 | Panelde v2 davetiye listesi | `/admin/einladungen` eski tabloyu okuyor; yeni davetiyeleri **görmez** | D |
 | Animasyon seçimi (eski adım 1) | v2'de tasarımın `animation` alanında, müşteri seçimi ayrı bir izin sorusu | sonra |
 | OG görseli | `OgImage` eski kayıt şemasına bağlı | sonra |
+| Canlı önizlemede haftanın gününün (`wedding_weekday`) eşlenmemesi | tarayıcıda `Dates::weekday()`'in ikinci bir uygulaması olurdu; ikisi birbirinden farklı sonuç verebilir | — |
 
 **Panel v2 davetiyelerini görmüyor** — kararlar belgesinin uyardığı nokta. 3B
 bunu bilerek bırakıyor: `/admin/einladungen` eski tabloyu okuyor ve ona

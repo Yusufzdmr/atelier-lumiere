@@ -78,6 +78,13 @@
 
     // couple_names und initials setzen sich aus zwei Feldern zusammen; der
     // Rest ist eins zu eins.
+    //
+    // wedding_weekday fehlt hier absichtlich: der Wochentag wird serverseitig
+    // aus dem Datum von Atelier\Dates::weekday() abgeleitet, in drei Sprachen.
+    // Eine zweite Implementierung im Browser koennte von dem abweichen, was
+    // auf der veroeffentlichten Einladung tatsaechlich steht. Deshalb zeigt
+    // die Vorschau hier den vom Server zuletzt gerenderten Wochentag, und die
+    // veroeffentlichte Einladung hat immer recht.
     var text = {
       couple_names: [werte.bride, werte.groom].filter(Boolean).join(' & '),
       initials: (werte.bride || ' ').charAt(0) + (werte.groom || ' ').charAt(0),
