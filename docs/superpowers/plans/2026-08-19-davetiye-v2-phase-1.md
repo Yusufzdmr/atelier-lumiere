@@ -2785,7 +2785,7 @@ $idle = (string) $design['animation']['idle'];
 */ ?>
 
   <?php if ($warnings !== []): ?>
-    <ul class="fixed bottom-14 left-4 z-[60] max-w-xs border border-amber-500/40 bg-amber-50 p-3 text-xs text-ink/80">
+    <ul class="fixed bottom-6 left-4 z-[60] max-w-xs border border-gold bg-cream p-3 text-xs text-ink-soft">
       <?php foreach ($warnings as $warning): ?>
         <li><?= e($warning['kind']) ?> — <?= e($warning['element']) ?><?php
           if ($warning['detail'] !== '') {
@@ -2898,6 +2898,20 @@ $idle = (string) $design['animation']['idle'];
     <span><?= $locale === 'de' ? 'Kuvert anklicken' : 'click the envelope' ?></span>
   </div>
 ```
+
+### Plan duzeltmesi 5 — 2026-08-19, uyari kutusu goze carpmadan olu duruyordu
+
+Yukaridaki uyari kutusunun dort sinifi derlenmis CSS'te yok: `bottom-14`,
+`border-amber-500/40`, `bg-amber-50`, `text-ink/80`. Kutu yalnizca `$warnings`
+dolu oldugunda basildigi icin ilk sinif denetiminden gecmisti — Elysee'nin
+uyarisi yok, yani kutu hic render edilmedi ve DOM'da gorunmedi. Bir tasarim
+ilk kez uyari uretti gununde kutu zeminsiz, cercevesiz ve `bottom` degeri
+olmadan (yani sayfanin dibine yapismis degil, ustte) cikardi.
+
+Mevcut olanlarla: `bottom-6`, `border-gold`, `bg-cream`, `text-ink-soft`.
+(`z-[60]`, `max-w-xs`, `p-3`, `text-xs`, `fixed`, `left-4` derlemede var.)
+Ders: render edilmeyen dallarin siniflari tarayici denetimine girmiyor, onlari
+elle sormak gerekiyor.
 
 - [ ] **Step 4: Katalog şablonunu yaz**
 
