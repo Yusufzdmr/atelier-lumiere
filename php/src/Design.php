@@ -496,7 +496,9 @@ final class Design
                 if ($text === '') {
                     continue;
                 }
-                $out .= '<div class="' . e($class) . '">' . e($text) . '</div>';
+                $out .= '<div class="' . e($class) . '"'
+                    . ($el['bind'] !== '' ? ' data-bind="' . e($el['bind']) . '"' : '')
+                    . '>' . e($text) . '</div>';
                 continue;
             }
 
