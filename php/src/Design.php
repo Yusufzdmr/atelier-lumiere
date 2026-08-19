@@ -277,7 +277,16 @@ final class Design
      */
     private static function key(string $value): string
     {
-        $value = strtolower(trim($value));
+        // mb_strtolower, nicht strtolower: das eine arbeitet auf Zeichen, das
+        // andere auf Bytes. Byteweise bleibt aus "Élysée" ein grosses É stehen,
+        // das die Zeile darunter wegwirft - der Slug hiesse "lysee". Dieselbe
+        // Tabelle wie in Themes::slug(), damit es nicht zwei Wahrheiten gibt.
+        $value = mb_strtolower(trim($value), 'UTF-8');
+        $value = strtr($value, [
+            'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss',
+            'ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ç' => 'c',
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'à' => 'a', 'â' => 'a', 'î' => 'i',
+        ]);
         $value = (string) preg_replace('/[\s_]+/', '-', $value);
         $value = (string) preg_replace('/[^a-z0-9-]/', '', $value);
         $value = (string) preg_replace('/-{2,}/', '-', $value);
@@ -912,6 +921,32 @@ final class Design
 
         // complete() zieht die Grenzen: unbekannte Enums fallen auf die
         // Voreinstellung, Zahlen werden geklemmt, Rechte zu Wahrheitswerten.
+        return self::complete($doc);
+    }
+
+    /**
+     * Eine Vorlage als neuer Entwurf.
+     *
+     * Dient zwei Wegen: dem Kopieren im Katalog und dem Uebernehmen eines alten
+     * Themas (dort kommt $doc aus fromTheme()). Beide Male gilt dasselbe: neue
+     * Kennung aus dem Namen, Entwurf, Fassung eins. Die Fassung der Quelle geht
+     * ausdruecklich NICHT mit - "Fassung 7" an einem Eintrag, den es seit einer
+     * Minute gibt, waere eine Luege ueber seine Geschichte.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,string> $name
+     * @return array<string,mixed>
+     */
+    public static function copy(array $doc, string $kennung, array $name): array
+    {
+        $doc = self::complete($doc);
+
+        $doc['id']      = self::key($kennung);
+        $doc['slug']    = self::key($kennung);
+        $doc['name']    = ['de' => (string) ($name['de'] ?? ''), 'en' => (string) ($name['en'] ?? '')];
+        $doc['status']  = 'draft';
+        $doc['version'] = 1;
+
         return self::complete($doc);
     }
 

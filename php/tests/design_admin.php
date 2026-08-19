@@ -89,3 +89,27 @@ assert_same('632:490', $angriff['canvas']['ratio'], 'fromPost: canvas bleibt unb
 assert_same(6, $angriff['canvas']['safe'], 'fromPost: canvas safe bleibt unberuehrt');
 assert_same([], $angriff['sections'], 'fromPost: sections bleibt unberuehrt');
 assert_same(1, count($angriff['layers']), 'fromPost: die Ebenenliste kommt nicht aus dem Formular');
+
+/* --- Kopieren: eine neue Vorlage faengt bei eins an --- */
+
+$quelle = Design::complete([
+    'id' => 'elysee', 'slug' => 'elysee',
+    'name' => ['de' => 'Élysée', 'en' => 'Élysée'],
+    'status' => 'active', 'version' => 7, 'category' => 'luxury',
+    'palette' => ['accent' => ['value' => '#B08D57']],
+    'layers' => [['id' => 'gruss', 'type' => 'text', 'text' => ['de' => 'Hallo']]],
+]);
+
+$kopie = Design::copy($quelle, 'Élysée Nacht', ['de' => 'Élysée Nacht', 'en' => 'Élysée Night']);
+
+assert_same('elysee-nacht', $kopie['id'], 'copy: die Kennung kommt aus dem Namen');
+assert_same('elysee-nacht', $kopie['slug'], 'copy: der Slug ist die Kennung');
+assert_same('Élysée Nacht', $kopie['name']['de'], 'copy: der neue Name steht drin');
+assert_same('draft', $kopie['status'], 'copy: eine Kopie ist ein Entwurf');
+assert_same(1, $kopie['version'], 'copy: eine neue Vorlage faengt bei Fassung eins an');
+assert_same('#B08D57', $kopie['palette']['accent']['value'], 'copy: die Farben kommen mit');
+assert_same('gruss', $kopie['layers'][0]['id'], 'copy: die Ebenen kommen mit');
+
+// Die Quelle darf sich nicht veraendern - sie liegt in der Datenbank.
+assert_same('elysee', $quelle['id'], 'copy: die Quelle bleibt, wie sie war');
+assert_same(7, $quelle['version'], 'copy: die Quelle behaelt ihre Fassung');
