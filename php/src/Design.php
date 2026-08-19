@@ -55,6 +55,17 @@ final class Design
     ];
 
     /**
+     * Von welcher Ecke aus gemessen wird.
+     *
+     * Der alte Motor klebt Eckstuecke an die Kante („top:0 right:0"), er
+     * rechnet nicht. Ohne Anker muesste rechts als „100 minus Breite"
+     * geschrieben werden - und das verrutscht, sobald der Kasten ein anderes
+     * Seitenverhaeltnis bekommt. Eckschmuck ist das haeufigste Muster
+     * ueberhaupt, deshalb kann das Format es benennen.
+     */
+    public const ANCHORS = ['topleft', 'topright', 'bottomleft', 'bottomright'];
+
+    /**
      * @param array<string,mixed> $doc
      * @return array<string,mixed>
      */
@@ -250,6 +261,10 @@ final class Design
             $value = array_key_exists($key, $box) ? (int) $box[$key] : $default;
             $out[$key] = max($min, min($max, $value));
         }
+
+        $anchor = (string) ($box['anchor'] ?? '');
+        $out['anchor'] = in_array($anchor, self::ANCHORS, true) ? $anchor : 'topleft';
+
         return $out;
     }
 
@@ -306,8 +321,9 @@ final class Design
 
             $css .= $selector . '{'
                 . 'position:absolute;'
-                . 'left:' . $box['x'] . '%;'
-                . 'top:' . $box['y'] . '%;'
+                // Welche zwei Kanten geschrieben werden, sagt der Anker.
+                . (str_contains($box['anchor'], 'right') ? 'right:' : 'left:') . $box['x'] . '%;'
+                . (str_starts_with($box['anchor'], 'bottom') ? 'bottom:' : 'top:') . $box['y'] . '%;'
                 . 'width:' . $box['w'] . '%;'
                 . ($box['h'] > 0 ? 'height:' . $box['h'] . '%;' : 'height:auto;')
                 . 'opacity:' . rtrim(rtrim(number_format($box['opacity'] / 100, 2, '.', ''), '0'), '.') . ';'

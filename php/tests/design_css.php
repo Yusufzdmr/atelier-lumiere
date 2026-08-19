@@ -132,3 +132,45 @@ assert_contains($beides, 'transform:rotate(180deg) scale(-1,-1);', 'css: Drehung
 $box = Design::completeBox(['flipx' => 7, 'flipy' => -3]);
 assert_same($box['flipx'], 1, 'box: flipx wird auf 1 begrenzt');
 assert_same($box['flipy'], 0, 'box: flipy wird auf 0 begrenzt');
+
+/* --- Ankern: das Original klebt Ecken an die Kante, es rechnet nicht --- */
+
+// Im alten Motor steht scene-tr auf „top:0 right:0" und scene-bl auf
+// „bottom:0 left:0". Ohne Anker muss die rechte Ecke als 100 minus Breite
+// ausgerechnet werden - und verrutscht, sobald sich das Seitenverhaeltnis
+// des Kastens aendert. Deshalb kennt die Kiste die vier Ecken.
+
+$sol = Design::css(['id' => 'an', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 5, 'y' => 7, 'w' => 10]],
+]], '.d-an');
+
+assert_contains($sol, 'left:5%;', 'css: ohne Anker misst x von links');
+assert_contains($sol, 'top:7%;', 'css: ohne Anker misst y von oben');
+
+$sag = Design::css(['id' => 'an', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10, 'anchor' => 'topright']],
+]], '.d-an');
+
+assert_contains($sag, 'right:0%;', 'css: topright misst x von rechts');
+assert_not_contains($sag, 'left:', 'css: topright schreibt kein left');
+
+$altSol = Design::css(['id' => 'an', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 2, 'y' => 3, 'w' => 10, 'anchor' => 'bottomleft']],
+]], '.d-an');
+
+assert_contains($altSol, 'left:2%;', 'css: bottomleft misst x von links');
+assert_contains($altSol, 'bottom:3%;', 'css: bottomleft misst y von unten');
+assert_not_contains($altSol, 'top:', 'css: bottomleft schreibt kein top');
+
+$altSag = Design::css(['id' => 'an', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10, 'anchor' => 'bottomright']],
+]], '.d-an');
+
+assert_contains($altSag, 'right:0%;', 'css: bottomright misst x von rechts');
+assert_contains($altSag, 'bottom:0%;', 'css: bottomright misst y von unten');
+
+// Ein unbekannter Anker faellt auf die Ecke zurueck, die alles andere auch
+// benutzt - ein Dokument mit Tippfehler bleibt lesbar.
+assert_same(Design::completeBox(['anchor' => 'mitte'])['anchor'], 'topleft',
+    'box: unbekannter Anker faellt auf topleft zurueck');
+assert_same(Design::completeBox([])['anchor'], 'topleft', 'box: Anker ist voreingestellt topleft');

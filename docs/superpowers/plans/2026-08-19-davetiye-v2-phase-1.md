@@ -3478,6 +3478,8 @@ Ve formatın iki bilinen eksiği, ikisi de Faz 1'de ölçülüp kayda geçti:
 
 1. **`maxWidth`** — eski sahne `vw` ile ölçekleniyor ve bir piksel tavanı var; yeni format sadece
    yüzde biliyor. Task 12'nin telefon ölçümü buna karar verecek.
-2. **`anchor`** — köşeye yapışma (`top-right`, `bottom-left`…). Bugün her kutu sol üstten
-   ölçülüyor, o yüzden sağ/alt yapışık bir parça `100 - genişlik` diye hesaplanıyor ve kabın
-   en-boy oranı değişince kayıyor. Köşe süslemesi en yaygın kalıp olduğu için bu erken gelmeli.
+2. ~~**`anchor`** — köşeye yapışma.~~ **Yapıldı, 2026-08-19.** Kutu artık dört köşeyi
+   biliyor (`Design::ANCHORS`); `css()` ankere göre `left`/`right` ve `top`/`bottom` yazıyor.
+   Ölçüldü: sol alt parça ankersiz hâlde (`top:78%`) 1920x1080'de sahnenin altını **31 px**
+   aşıyordu, ankerle tam oturuyor — ve hata kabın oranıyla birlikte büyüyordu. Aynı işte
+   `flipx`/`flipy` de geldi (bkz. Noir aktarımı).

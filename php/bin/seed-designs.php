@@ -50,9 +50,9 @@ $tasarimlar = [
         // einzeln, deshalb drei verschiedene Dateien und keine Spiegelung
         // ausser unten links.
         'parcalar'  => [
-            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'elysee-1', 'x' => 0,  'y' => 0,  'w' => 17, 'delay' => 200],
-            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'elysee-2', 'x' => 83, 'y' => 0,  'w' => 17, 'delay' => 350],
-            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'elysee-3', 'x' => 0,  'y' => 78, 'w' => 14, 'flipy' => 1, 'delay' => 500],
+            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'elysee-1', 'x' => 0, 'y' => 0, 'w' => 17, 'anker' => 'topleft',     'delay' => 200],
+            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'elysee-2', 'x' => 0, 'y' => 0, 'w' => 17, 'anker' => 'topright',    'delay' => 350],
+            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'elysee-3', 'x' => 0, 'y' => 0, 'w' => 14, 'anker' => 'bottomleft',  'flipy' => 1, 'delay' => 500],
         ],
         'kunstwort' => 'Blattwerk',
         'y'         => ['gruss' => 12, 'marie' => 20, 'und' => 34, 'jonas' => 44,
@@ -67,10 +67,10 @@ $tasarimlar = [
         // nur zwei Dateien - noir-2 und noir-4 waren Kopien von noir-1 und
         // noir-3 und sind geloescht.
         'parcalar'  => [
-            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'noir-1', 'x' => 0,  'y' => 0,  'w' => 17, 'delay' => 200],
-            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'noir-1', 'x' => 83, 'y' => 0,  'w' => 17, 'flipx' => 1, 'delay' => 350],
-            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'noir-3', 'x' => 0,  'y' => 78, 'w' => 14, 'flipy' => 1, 'delay' => 500],
-            ['id' => 'szenebr', 'wo' => 'unten rechts', 'datei' => 'noir-3', 'x' => 86, 'y' => 78, 'w' => 14, 'rotate' => 180, 'delay' => 650],
+            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'noir-1', 'x' => 0, 'y' => 0, 'w' => 17, 'anker' => 'topleft',     'delay' => 200],
+            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'noir-1', 'x' => 0, 'y' => 0, 'w' => 17, 'anker' => 'topright',    'flipx' => 1, 'delay' => 350],
+            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'noir-3', 'x' => 0, 'y' => 0, 'w' => 14, 'anker' => 'bottomleft',  'flipy' => 1, 'delay' => 500],
+            ['id' => 'szenebr', 'wo' => 'unten rechts', 'datei' => 'noir-3', 'x' => 0, 'y' => 0, 'w' => 14, 'anker' => 'bottomright', 'rotate' => 180, 'delay' => 650],
         ],
         // Noirs Szene zeichnet keine Blaetter, sondern Winkel.
         'kunstwort' => 'Ecke',
@@ -161,6 +161,8 @@ $ebenen = [
         'box'    => ['x' => $p['x'], 'y' => $p['y'], 'w' => $p['w'], 'h' => 0,
                      'rotate' => $p['rotate'] ?? 0,
                      'flipx' => $p['flipx'] ?? 0, 'flipy' => $p['flipy'] ?? 0,
+                     // Ecken kleben, sie werden nicht ausgerechnet.
+                     'anchor' => $p['anker'] ?? 'topleft',
                      'opacity' => 100],
         'motion' => ['move' => 'rise', 'delay' => $p['delay'], 'duration' => 1600],
     ], $cfg['parcalar']),

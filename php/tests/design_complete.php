@@ -34,7 +34,7 @@ $box = Design::completeBox([]);
 // dieselbe Zeichnung gespiegelt in vier Ecken, und Spiegeln ist keine
 // Drehung. Voreingestellt ist beides aus.
 assert_same(['x' => 4, 'y' => 4, 'w' => 20, 'h' => 0, 'rotate' => 0, 'opacity' => 100,
-             'flipx' => 0, 'flipy' => 0], $box,
+             'flipx' => 0, 'flipy' => 0, 'anchor' => 'topleft'], $box,
     'completeBox: Standardwerte');
 
 /* --- Kasten: Werte ausserhalb des Bereichs werden beschnitten, nicht verworfen --- */
