@@ -1508,7 +1508,11 @@ if (!needs_db()) {
     return;
 }
 
-require_once __DIR__ . '/../src/bootstrap.php';
+// NICHT src/bootstrap.php einbinden: bin/test.php hat View.php schon per
+// require geladen (nicht require_once), und bootstrap.php laedt es noch
+// einmal - dann ist Atelier\e() doppelt erklaert und PHP bricht ab.
+// Gebraucht wird von bootstrap.php ohnehin nur die Konfiguration.
+Atelier\Config::load(dirname(__DIR__) . '/config.php');
 
 $id = 'testdesign';
 
