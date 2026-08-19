@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Atelier\Controllers;
 
-use Atelier\Admin;
 use Atelier\Config;
 use Atelier\Design;
 use Atelier\I18n;
@@ -99,34 +98,6 @@ final class DesignController
             'kuvert'   => Design::html($design, $values, $locale, 'envelope'),
             'karte'    => Design::html($design, $values, $locale, 'card'),
             'warnings' => Design::warnings($design),
-        ]);
-    }
-
-    /**
-     * Panel: was liegt in `designs`.
-     *
-     * Faz 1 zeigt nur. Bearbeiten kommt in Faz 2 - die Liste ist trotzdem
-     * schon da, weil man sonst nicht sieht, ob das Aussaeen gewirkt hat.
-     */
-    public function admin(string $locale): void
-    {
-        // recordVisit() nicht von Hand: requireLogin() zaehlt den Besuch
-        // schon, aus dem Pfad. Ein zweiter Aufruf zaehlt doppelt.
-        Admin::requireLogin($locale);
-
-        $designs = Design::all();
-        $warnings = [];
-        foreach ($designs as $design) {
-            $warnings[$design['id']] = Design::warnings($design);
-        }
-
-        View::page('admin/designs', [
-            'layout'   => 'admin/layout',
-            'locale'   => $locale,
-            'current'  => '/designs',
-            'meta'     => ['title' => 'Designs (v2)', 'noindex' => true],
-            'designs'  => $designs,
-            'warnings' => $warnings,
         ]);
     }
 }

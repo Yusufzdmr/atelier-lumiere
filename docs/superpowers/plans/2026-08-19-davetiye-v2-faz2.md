@@ -41,6 +41,11 @@ sade JS (yapı kurulumu yok).
   `php/src/Design.php`, `php/src/Controllers/DesignController.php`. Geri kalan her
   şey yeni dosya.
 
+> **Task 3 sırasında yakalandı (2026-08-19):** planın ilk hâlindeki `w-40`,
+> `lg:top-24` ve `lg:grid-cols-[1fr_0.8fr]` derlenmiş CSS'te **yok**. Yerlerine
+> mevcut olanlar yazıldı: `w-56`, `lg:top-28`, `lg:grid-cols-[1.2fr_0.8fr]`.
+> Yeni bir sınıf yazmadan önce denetimi koş — Faz 1'de bu hata dört kez çıktı.
+
 ## Dosya yapısı
 
 | Dosya | Sorumluluk |
@@ -900,7 +905,7 @@ Her kartın eylem satırına, kopyalama:
               <input type="hidden" name="was" value="kopyala">
               <input type="hidden" name="quelle" value="<?= e($id) ?>">
               <input name="neuer_name" placeholder="<?= $tr ? 'kopyanın adı' : 'Name der Kopie' ?>"
-                     class="w-40 border border-sand-deep bg-transparent px-2 py-2 text-[0.7rem] text-ink">
+                     class="w-56 border border-sand-deep bg-transparent px-2 py-2 text-[0.7rem] text-ink">
               <button class="border border-sand-deep px-3 py-2 text-muted transition-colors hover:text-ink">
                 <?= $tr ? 'Kopyala' : 'Kopieren' ?>
               </button>
@@ -1096,7 +1101,7 @@ $fehler = (string) ($_GET['fehler'] ?? '');
     <p class="border-l-2 border-red-700 px-4 py-3 text-sm text-red-700"><?= $tr ? 'Oturum düştü, sayfayı tazele.' : 'Die Sitzung ist abgelaufen.' ?></p>
   <?php endif; ?>
 
-  <div class="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
+  <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
     <form method="post" class="space-y-4" data-design-form>
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
       <input type="hidden" name="was" value="kaydet">
@@ -1121,7 +1126,7 @@ $fehler = (string) ($_GET['fehler'] ?? '');
        dasselbe Markup wie auf der oeffentlichen Seite, nur kleiner. Das Skript
        aendert daran ausschliesslich CSS-Variablen und Textknoten.
     */ ?>
-    <div class="lg:sticky lg:top-24">
+    <div class="lg:sticky lg:top-28">
       <div class="<?= e($scope) ?> relative overflow-hidden border border-sand-deep"
            data-design-preview
            style="aspect-ratio: <?= e(str_replace(':', ' / ', (string) $design['canvas']['ratio'])) ?>;
@@ -1303,7 +1308,7 @@ Devamı, aynı formun içinde:
         </p>
         <?php foreach ($design['layers'] as $ebene) : ?>
           <div class="flex flex-wrap items-center gap-4 border-b border-sand-deep py-2">
-            <span class="w-40 text-sm text-ink"><?= e($ebene['label'] ?: $ebene['id']) ?></span>
+            <span class="w-56 text-sm text-ink"><?= e($ebene['label'] ?: $ebene['id']) ?></span>
             <?php foreach (Design::PERMISSIONS as $recht) : ?>
               <label class="flex items-center gap-2 text-[0.66rem] text-muted">
                 <input type="checkbox" name="perm_<?= e($recht) ?>_<?= e($ebene['id']) ?>" <?= $ebene['permissions'][$recht] ? 'checked' : '' ?>>
