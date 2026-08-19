@@ -76,7 +76,12 @@ $idle = (string) $design['animation']['idle'];
         <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
              data-speed="<?= $tempo ?>"
              style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
-                    container-type: inline-size;"><?= $karte ?></div>
+                    container-type: inline-size;
+                    /* Die Ebenen der Karte tragen eigene z-index-Werte aus
+                       Design::css(). Ohne eigenen Stapelkontext klettern sie
+                       aus der Karte heraus und legen sich ueber das Kuvert -
+                       dann faengt der Name den Klick ab und nichts oeffnet. */
+                    isolation: isolate;"><?= $karte ?></div>
       </div>
       <!--
         Das Kuvert. Die Attribute sind der Vertrag von invitation.js:
@@ -104,10 +109,11 @@ $idle = (string) $design['animation']['idle'];
         ausserhalb von ihr steht. Stuende die Karte darueber, waere das Kuvert
         nicht anklickbar und nichts wuerde sich je oeffnen.
       -->
-      <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 flex flex-col items-center justify-center gap-9 px-6"
+      <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 z-30 flex flex-col items-center justify-center gap-9 px-6"
            data-envelope
            data-animation="<?= e($karteAn) ?>"
-           data-intro-ms="<?= $introMs ?>">
+           data-intro-ms="<?= $introMs ?>"
+           style="background: var(--d-bg);">
 
         <button type="button" data-envelope-open
                 class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
