@@ -174,3 +174,22 @@ assert_contains($altSag, 'bottom:0%;', 'css: bottomright misst y von unten');
 assert_same(Design::completeBox(['anchor' => 'mitte'])['anchor'], 'topleft',
     'box: unbekannter Anker faellt auf topleft zurueck');
 assert_same(Design::completeBox([])['anchor'], 'topleft', 'box: Anker ist voreingestellt topleft');
+
+/* --- Schriftwerte stehen als Variablen, nicht als feste Zahlen --- */
+
+// Sonst kann die Vorschau im Panel sie nicht ohne Speichern aendern: eine feste
+// Zahl in der Elementregel laesst sich nur ueber eine Karte Element->Schriftmarke
+// erreichen, und die gibt es im DOM nicht.
+
+$sch = Design::css([
+    'id'    => 'sch',
+    'fonts' => ['display' => ['family' => 'Cormorant Garamond', 'weight' => 300, 'tracking' => 4, 'lineHeight' => 115]],
+    'layers' => [['id' => 'a', 'type' => 'text', 'style' => ['font' => 'display', 'size' => 100]]],
+], '.d-sch');
+
+assert_contains($sch, '--dfw-display:300;', 'css: Gewicht steht als Variable');
+assert_contains($sch, '--dft-display:0.04em;', 'css: Laufweite steht als Variable');
+assert_contains($sch, '--dfl-display:1.15;', 'css: Zeilenhoehe steht als Variable');
+assert_contains($sch, 'font-weight:var(--dfw-display);', 'css: die Elementregel liest das Gewicht');
+assert_contains($sch, 'letter-spacing:var(--dft-display);', 'css: die Elementregel liest die Laufweite');
+assert_contains($sch, 'line-height:var(--dfl-display);', 'css: die Elementregel liest die Zeilenhoehe');

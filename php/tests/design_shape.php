@@ -98,9 +98,16 @@ $css = Design::css([
     'layers' => [['id' => 'n', 'type' => 'text', 'style' => ['font' => 'display']]],
 ], '.d-typo');
 
-assert_contains($css, 'font-weight:300', 'css: das Gewicht der Marke wird geschrieben');
-assert_contains($css, 'letter-spacing:0.04em', 'css: die Laufweite wird geschrieben');
-assert_contains($css, 'line-height:1.15', 'css: die Zeilenhoehe wird geschrieben');
+// Seit Faz 2 stehen die drei Werte als Variable am Bereich und werden in der
+// Elementregel gelesen - sonst koennte die Vorschau im Panel sie nicht ohne
+// Speichern aendern. Geprueft wird deshalb beides: der Wert oben, der Zugriff
+// unten. Gerendert kommt dasselbe heraus.
+assert_contains($css, '--dfw-display:300;', 'css: das Gewicht der Marke steht als Variable');
+assert_contains($css, '--dft-display:0.04em;', 'css: die Laufweite steht als Variable');
+assert_contains($css, '--dfl-display:1.15;', 'css: die Zeilenhoehe steht als Variable');
+assert_contains($css, 'font-weight:var(--dfw-display)', 'css: das Gewicht wird gelesen');
+assert_contains($css, 'letter-spacing:var(--dft-display)', 'css: die Laufweite wird gelesen');
+assert_contains($css, 'line-height:var(--dfl-display)', 'css: die Zeilenhoehe wird gelesen');
 
 // Ohne Marke keine leeren Angaben.
 $css = Design::css(['id' => 'ohne', 'layers' => [['id' => 'n', 'type' => 'text']]], '.d-ohne');

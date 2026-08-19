@@ -314,6 +314,13 @@ final class Design
         }
         foreach ($doc['fonts'] as $key => $entry) {
             $vars .= '--df-' . $key . ':' . self::safeFont((string) $entry['family']) . ';';
+            // Gewicht, Laufweite und Zeilenhoehe ebenfalls als Variable: nur so
+            // kann die Vorschau im Panel sie ohne Speichern aendern. Eine feste
+            // Zahl in der Elementregel braeuchte eine Karte Element->Marke, und
+            // die gibt es im DOM nicht.
+            $vars .= '--dfw-' . $key . ':' . (int) $entry['weight'] . ';';
+            $vars .= '--dft-' . $key . ':' . ($entry['tracking'] / 100) . 'em;';
+            $vars .= '--dfl-' . $key . ':' . ($entry['lineHeight'] / 100) . ';';
         }
         // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
         // Breite. Das gilt unabhaengig von Palette und Schriften – sonst
@@ -356,9 +363,9 @@ final class Design
                 $schrift = '';
                 if ($style['font'] !== '' && isset($doc['fonts'][$style['font']])) {
                     $marke = $doc['fonts'][$style['font']];
-                    $schrift = 'font-weight:' . $marke['weight'] . ';'
-                        . 'letter-spacing:' . ($marke['tracking'] / 100) . 'em;'
-                        . 'line-height:' . ($marke['lineHeight'] / 100) . ';';
+                    $schrift = 'font-weight:var(--dfw-' . $style['font'] . ');'
+                        . 'letter-spacing:var(--dft-' . $style['font'] . ');'
+                        . 'line-height:var(--dfl-' . $style['font'] . ');';
                 }
 
                 $css .= $selector . '{'
