@@ -314,6 +314,16 @@ final class Design
 
             if ($el['type'] === 'text') {
                 $style = $el['style'];
+
+                // Die Werte der Schriftmarke, auf die das Element zeigt.
+                $schrift = '';
+                if ($style['font'] !== '' && isset($doc['fonts'][$style['font']])) {
+                    $marke = $doc['fonts'][$style['font']];
+                    $schrift = 'font-weight:' . $marke['weight'] . ';'
+                        . 'letter-spacing:' . ($marke['tracking'] / 100) . 'em;'
+                        . 'line-height:' . ($marke['lineHeight'] / 100) . ';';
+                }
+
                 $css .= $selector . '{'
                     . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
                     . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
@@ -321,6 +331,10 @@ final class Design
                     // sonst waechst die Karte und die Schrift bleibt stehen.
                     . 'font-size:' . ($style['size'] / 10) . 'cqw;'
                     . 'text-align:' . $style['align'] . ';'
+                    // Gewicht, Laufweite und Zeilenhoehe standen bisher in der
+                    // Schriftmarke und wurden nie geschrieben - ein Drittel der
+                    // Typografie lag tot im Dokument.
+                    . $schrift
                     . '}';
             }
 

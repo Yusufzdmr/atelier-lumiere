@@ -115,14 +115,17 @@ $ebenen = [
     // Zwei Zeilen, kein Name am Stueck - so steht es im Original.
     ['id' => 'marie', 'label' => 'Braut', 'type' => 'text', 'spot' => 'card',
      'bind' => 'bride_name',
-     'box' => ['x' => 37, 'y' => 20, 'w' => 27, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     // Volle Textbreite, nicht die gemessene Breite des kurzen Namens:
+     // gemessen wurde "Marie", und ein langer Name laeuft aus einem
+     // 27%-Kasten nach beiden Seiten heraus. Zentriert wird per text-align.
+     'box' => ['x' => 8, 'y' => 20, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
      'permissions' => ['color' => true]],
 
     ['id' => 'jonas', 'label' => 'Braeutigam', 'type' => 'text', 'spot' => 'card',
      'bind' => 'groom_name',
-     'box' => ['x' => 37, 'y' => 44, 'w' => 25, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => 44, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 550, 'duration' => 1200],
      'permissions' => ['color' => true]],

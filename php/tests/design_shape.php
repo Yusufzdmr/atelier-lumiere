@@ -88,3 +88,21 @@ assert_not_contains($css, 'font-size:260%', 'css: kein Prozent der geerbten Groe
 
 $css = Design::css(['id' => 'u', 'layers' => [['id' => 'a', 'type' => 'text']]], '.d-u');
 assert_contains($css, 'font-size:10cqw', 'css: der Standard 100 wird zu 10cqw');
+
+/* --- Die Schriftmarke bringt mehr mit als ihre Familie --- */
+
+$css = Design::css([
+    'id'     => 'typo',
+    'fonts'  => ['display' => ['family' => 'Cormorant Garamond', 'weight' => 300,
+                              'tracking' => 4, 'lineHeight' => 115]],
+    'layers' => [['id' => 'n', 'type' => 'text', 'style' => ['font' => 'display']]],
+], '.d-typo');
+
+assert_contains($css, 'font-weight:300', 'css: das Gewicht der Marke wird geschrieben');
+assert_contains($css, 'letter-spacing:0.04em', 'css: die Laufweite wird geschrieben');
+assert_contains($css, 'line-height:1.15', 'css: die Zeilenhoehe wird geschrieben');
+
+// Ohne Marke keine leeren Angaben.
+$css = Design::css(['id' => 'ohne', 'layers' => [['id' => 'n', 'type' => 'text']]], '.d-ohne');
+assert_not_contains($css, 'font-weight:', 'css: ohne Marke kein Gewicht');
+assert_not_contains($css, 'line-height:', 'css: ohne Marke keine Zeilenhoehe');
