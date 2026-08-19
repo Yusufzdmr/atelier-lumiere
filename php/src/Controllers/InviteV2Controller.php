@@ -242,4 +242,83 @@ final class InviteV2Controller
 
         return ['slug' => $slug, 'path' => $path, 'url' => Config::url() . $path];
     }
+
+    /**
+     * Die fertige Einladung.
+     *
+     * Gezeigt wird der Schnappschuss, nicht das Design: wer die Vorlage im
+     * Panel spaeter aendert, aendert diese Karte nicht. Genau dafuer gibt es
+     * die Spalte.
+     *
+     * @param array<string,string> $params
+     */
+    public function show(array $params): void
+    {
+        $locale = I18n::locale();
+        $einladung = InvitationsV2::find($params['slug'] ?? '');
+
+        if ($einladung === null) {
+            // pages/not-found liest $locale unbedingt (not-found.php:10) und
+            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
+            // Variablen und die Seite kommt auf Englisch heraus, egal in
+            // welcher Sprache sie aufgerufen wurde. DesignController::preview()
+            // gibt sie aus genau diesem Grund mit.
+            http_response_code(404);
+            View::page('pages/not-found', [
+                'locale' => $locale,
+                'path'   => I18n::path('/v2/einladung'),
+                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+            ]);
+            return;
+        }
+
+        $doc = Design::complete($einladung['design_snapshot']);
+        $values = Design::bindValues($einladung['data'], $locale);
+        $scope = '.d-' . $doc['id'];
+
+        $namen = trim(((string) ($einladung['data']['bride'] ?? '')) . ' & ' . ((string) ($einladung['data']['groom'] ?? '')), ' &');
+
+        View::page('pages/invite-v2-show', [
+            'locale' => $locale,
+            'path'   => I18n::path('/v2/einladung/' . $einladung['slug'], $locale),
+            'meta'   => Seo::forPage('einladung2', [
+                'title' => $namen !== '' ? $namen : I18n::t('invitation2.wizardTitle'),
+                // Eine Einladung gehoert nicht in den Index. Der Link ist
+                // fuer die Gaeste, nicht fuer die Suche.
+                'noindex' => true,
+                // Dieselbe Choreografie wie in der Design-Vorschau: Kuvert
+                // oeffnen, Karte aufsteigen lassen. Ohne dieses Skript bleibt
+                // das Kuvert zu.
+                'scripts' => ['/assets/invitation.js'],
+            ]),
+            'design' => $doc,
+            // OHNE Punkt. Design::css() bekommt den Selektor (".d-elysee"),
+            // die Vorlage bekommt den Klassennamen ("d-elysee") - sie schreibt
+            // ihn in ein class-Attribut. Mit Punkt entstuende die Klasse
+            // ".d-elysee", die der Selektor .d-elysee niemals trifft, und die
+            // Einladung kaeme voellig ungestylt heraus. DesignController::
+            // preview() macht es aus demselben Grund so (DesignController.php:125).
+            'scope'  => ltrim($scope, '.'),
+            'styles' => Design::css($doc, $scope),
+            // Die fuenf Bewegungswerte rechnet sonst design-preview.php aus.
+            // Die Buehne liest sie, leitet sie aber nicht selbst ab - eine
+            // Rechnung, eine Quelle der Wahrheit (Aufgabe 5).
+            'ratio'   => str_replace(':', ' / ', (string) $doc['canvas']['ratio']),
+            'karteAn' => (string) $doc['animation']['card'],
+            'tempo'   => (int) $doc['animation']['speed'],
+            'introMs' => 0,
+            'idle'    => (string) $doc['animation']['idle'],
+            // Die Initialen stehen auf dem Siegel. Sie kommen aus den Daten
+            // des Paares, nicht aus dem Dokument.
+            'initialen' => $values['initials'],
+            // Leer, und zwar immer. Die Buehne zeigt Warnungen ungeprueft an
+            // (design-stage.php:50) - auf einer echten Einladung hat ein Gast
+            // nichts mit den Maengeln einer Vorlage zu tun. Waere der Wert gar
+            // nicht gesetzt, stuende dort eine leere Box: null !== [] ist wahr.
+            'warnings' => [],
+            'seite'  => Design::html($doc, $values, $locale, 'page'),
+            'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
+            'karte'  => Design::html($doc, $values, $locale, 'card'),
+        ]);
+    }
 }
