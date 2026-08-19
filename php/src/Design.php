@@ -658,4 +658,86 @@ final class Design
             ],
         ]);
     }
+
+    /* ------------------------------ Speicher ------------------------------ */
+
+    /*
+     * Warum die Spalte `data` heisst und nicht `doc`:
+     *
+     * Db::json() und Db::jsonList() lesen die Spalte mit dem festen Namen
+     * `data` – sie nehmen ihn nicht aus der Abfrage. Alle elf JSON-Spalten des
+     * bestehenden Schemas heissen deshalb so. Eine Spalte `doc` haette hier
+     * still `null` geliefert, und zwar erst bei der ersten Abfrage, die
+     * jemand spaeter ohne Alias schreibt.
+     */
+
+    /** @return array<string,mixed>|null */
+    public static function find(string $slug): ?array
+    {
+        $doc = Db::json('SELECT data FROM designs WHERE slug = ? LIMIT 1', [$slug]);
+        return $doc === null ? null : self::complete($doc);
+    }
+
+    /** @return array<string,mixed>|null */
+    public static function findById(string $id): ?array
+    {
+        $doc = Db::json('SELECT data FROM designs WHERE id = ? LIMIT 1', [$id]);
+        return $doc === null ? null : self::complete($doc);
+    }
+
+    /**
+     * @param string $status Leer = alle.
+     * @return list<array<string,mixed>>
+     */
+    public static function all(string $status = ''): array
+    {
+        $rows = $status === ''
+            ? Db::jsonList('SELECT data FROM designs ORDER BY sort, slug')
+            : Db::jsonList('SELECT data FROM designs WHERE status = ? ORDER BY sort, slug', [$status]);
+
+        return array_values(array_map([self::class, 'complete'], $rows));
+    }
+
+    /**
+     * Speichern und die Fassung derer hochzaehlen, die sich geaendert haben.
+     *
+     * Dieselbe Regel wie bei den Themen: eine verschickte Einladung haelt ihre
+     * eigene Kopie fest, und die Nummer sagt, wie weit sie vom heutigen Stand
+     * entfernt ist. Wuerde jedes Speichern hochzaehlen, waere die Nummer nichts
+     * wert.
+     *
+     * @param array<string,mixed> $doc
+     */
+    public static function save(array $doc): void
+    {
+        $doc = self::complete($doc);
+        $old = self::findById($doc['id']);
+
+        if ($old !== null) {
+            $a = $old;
+            $b = $doc;
+            unset($a['version'], $b['version']);
+            $doc['version'] = $a === $b ? (int) $old['version'] : (int) $old['version'] + 1;
+        }
+
+        Db::run(
+            'INSERT INTO designs (id, slug, family, category, status, version, sort, cover, data)
+             VALUES (:id, :slug, :family, :category, :status, :version, :sort, :cover, :data)
+             ON DUPLICATE KEY UPDATE
+               slug = VALUES(slug), family = VALUES(family), category = VALUES(category),
+               status = VALUES(status), version = VALUES(version), sort = VALUES(sort),
+               cover = VALUES(cover), data = VALUES(data)',
+            [
+                'id'       => $doc['id'],
+                'slug'     => $doc['slug'],
+                'family'   => $doc['family'],
+                'category' => $doc['category'],
+                'status'   => $doc['status'],
+                'version'  => $doc['version'],
+                'sort'     => $doc['sort'],
+                'cover'    => $doc['cover'],
+                'data'     => Db::encode($doc),
+            ]
+        );
+    }
 }

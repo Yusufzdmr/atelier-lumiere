@@ -111,3 +111,32 @@ CREATE TABLE IF NOT EXISTS admin_usage (
   hits     INT UNSIGNED NOT NULL DEFAULT 0,
   last_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Davetiye v2: tasarım bir doküman. Eski temalar site_content içinde kalıyor,
+-- bu tablo onların yanında duruyor.
+CREATE TABLE IF NOT EXISTS designs (
+  id         VARCHAR(64)  NOT NULL PRIMARY KEY,
+  slug       VARCHAR(96)  NOT NULL,
+  family     VARCHAR(64)  NOT NULL DEFAULT '',
+  category   VARCHAR(48)  NOT NULL DEFAULT '',
+  status     VARCHAR(16)  NOT NULL DEFAULT 'draft',
+  version    INT UNSIGNED NOT NULL DEFAULT 1,
+  sort       INT          NOT NULL DEFAULT 0,
+  cover      VARCHAR(255) NOT NULL DEFAULT '',
+  data       LONGTEXT     NOT NULL CHECK (JSON_VALID(data)),
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY designs_slug_idx (slug),
+  INDEX designs_list_idx (status, sort)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Davetiyenin kendisi Faz 3'te yazılacak. Tablo şimdiden kuruluyor:
+-- design_snapshot'ı sonradan eklemek yayınlanmış davetiyeleri bozar.
+CREATE TABLE IF NOT EXISTS invitations_v2 (
+  slug            VARCHAR(96) NOT NULL PRIMARY KEY,
+  design_id       VARCHAR(64) NOT NULL,
+  design_snapshot LONGTEXT    NOT NULL CHECK (JSON_VALID(design_snapshot)),
+  data            LONGTEXT    NOT NULL CHECK (JSON_VALID(data)),
+  created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX invitations_v2_design_idx (design_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
