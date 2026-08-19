@@ -148,8 +148,8 @@ tanım burada sabitleniyor:
 | Bayrak | Anlamı | Sihirbazda karşılığı |
 |---|---|---|
 | `edit` | **ana şalter.** Kapalıysa aşağıdaki beşi sayılmaz | katman sihirbazda hiç görünmez |
-| `color` | bu katmanın rengi jetondan koparılıp ayrı verilebilir | renk seçici |
-| `font` | bu katmanın yazı tipi jetondan koparılabilir | yazı tipi listesi |
+| `color` | bu katmana kendi rengi verilebilir (§5.1) | renk seçici |
+| `font` | bu katmana kendi yazı tipi verilebilir (§5.1) | yazı tipi listesi |
 | `text` | sabit metni değiştirilebilir (`bind` taşıyanda anlamsız, yok sayılır) | metin kutusu (de/en) |
 | `photo` | görseli değiştirilebilir (`image`/`photo` tipinde anlamlı) | dosya yükleme |
 | `hide` | tümden gizlenebilir | aç/kapa kutusu |
@@ -164,6 +164,42 @@ Bunlardan **ayrı** iki bayrak (Faz 1 §2'de ayrımı yazılmış):
 |---|---|---|
 | `palette.<ad>.customer` | müşteri **bu jetonu** değiştirebilir mi | tek seçim, jetonu kullanan bütün katmanlar döner |
 | `fonts.<ad>.customer` | müşteri **bu yazı jetonunu** değiştirebilir mi | aynı |
+
+### 5.1 Katman rengi ham değer olamaz — jeton basılır
+
+Renderer'da elementin rengi **her zaman bir jeton anahtarıdır**
+(`Design.php:371`):
+
+```php
+($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
+```
+
+Yani `style.color`'a `#B08D57` yazmak `color:var(--d-#B08D57)` üretir — geçersiz
+CSS, sessizce renksiz element. Yazı tipi için de aynısı (`--df-`, satır 367).
+
+Bu yüzden `color`/`font` izni **"jetondan koparma"** değil, **"kendine jeton
+bastırma"**: `personalize()` müşterinin verdiği değer için yeni bir jeton üretir
+ve elementi ona çevirir.
+
+```php
+// müşteri name-1 katmanına #B08D57 verdi
+$doc['palette']['kunde-name-1'] = ['value' => '#B08D57', 'label' => [...], 'customer' => false];
+$doc['layers'][$i]['style']['color'] = 'kunde-name-1';
+```
+
+Anahtar kalıbı `kunde-<element-id>`. Element kimlikleri zaten `a-z0-9-`, yani
+`Design::complete()` içindeki anahtar normalizasyonundan (`key()`,
+`Design.php:278`) değişmeden geçer ve `--d-kunde-name-1` geçerli bir CSS
+değişken adıdır.
+
+`customer => false` bilerek: bastırılan jeton müşterinin *sonucu*, tekrar
+sunulacak bir *seçenek* değil. D'de sihirbaz snapshot'a karşı yeniden açılınca
+bu jeton "değiştirilebilir jeton" listesinde çıkmaz; katman kendi `color`
+iznini taşımaya devam ettiği için renk yine değişebilir, aynı jeton üzerine
+yazılır.
+
+Kazancı: renderer'a tek satır eklenmiyor ve snapshot geçerli bir doküman olarak
+kalıyor — §4'ün bütün gerekçesi bu.
 
 ### Panel etiketleri düzeltilir
 
@@ -321,6 +357,7 @@ Sıra önemli: sabit `/v2/einladung` desenli `{slug}`'dan **önce** gelir.
 | `data/dict.php` | yeni anahtarlar, üç dil kümesine de |
 | `templates/pages/design-preview.php` | sahne partial'a taşınır (§8.1) |
 | `templates/admin/design-edit-sections.php` | izin etiketleri (§5) |
+| `src/Design.php` | `safeColor()`, `safeFont()` `private` → `public` (§9). Başka değişiklik yok |
 
 `Design.php` **1097 satır** — sihirbazın saf fonksiyonları oraya değil ayrı bir
 dosyaya gidiyor. Sınır net: `Design` formatı tanımlar ve basar; `DesignWizard`
@@ -369,7 +406,16 @@ Hepsi mevcut yardımcılarla, yenisi icat edilmiyor:
 | Metin | `Security::clean()` alan başına sınırla |
 | Yükleme | `Media::store()` — dosya adına değil **içeriğe** bakar (`getimagesize`), klasör `einladungen/v2/{slug}` |
 | Görsel yolu | `Design::safeSrc()` zaten `/uploads` ve `/assets` dışını reddediyor; yüklenen dosya oradan geçer |
-| Renk / yazı | `Design::safeColor()`, `safeFont()` — jetondan koparılan değerler de bu süzgeçten geçer |
+| Renk / yazı | `Design::safeColor()`, `safeFont()` — bastırılan jetonun değeri (§5.1) yazılmadan **önce** buradan geçer |
+
+`safeColor()` ve `safeFont()` bugün `private` ve yalnızca `css()` içinde, yani
+**basım anında** çalışıyor. Sihirbaz da onları kullanacağı için `public`
+oluyorlar. Alternatifi (`DesignWizard`'a ikinci bir renk kuralı yazmak) "geçerli
+renk nedir" sorusuna iki cevap üretirdi. Gövdeleri değişmiyor, yalnızca
+görünürlükleri.
+
+Böylece geçersiz bir renk basım anında değil **yazım anında** `transparent`
+oluyor: snapshot'ta hiçbir zaman çöp değer durmuyor.
 
 ### İzin süzgeci
 
@@ -396,7 +442,9 @@ alınmışsa sonuna dört haneli onaltılık eklenir, eski motordaki davranış.
 | `steps()` `edit` kapalıyken diğer beş bayrağı saymıyor | ana şalter gerçekten şalter olsun |
 | `steps()` `customer` işaretli jeton tek başına `design` adımını açıyor | jeton izni katman izninden bağımsız |
 | `choices()` yalnızca dokümanda geçen `bind`'ları soruyor | olmayan alan sorulmasın |
-| `personalize()` izinli rengi uyguluyor | izin verilen gerçekten çalışsın |
+| `personalize()` izinli renk için `kunde-<id>` jetonu basıyor ve elementi ona çeviriyor | §5.1 — ham değer geçersiz CSS üretir |
+| `personalize()` aynı katman ikinci kez renklenince aynı jetonun üstüne yazıyor | her düzenleme bir jeton bırakmasın |
+| `personalize()` geçersiz rengi `transparent` yapıyor, jetonu yine de basıyor | çöp değer snapshot'a girmesin |
 | `personalize()` izinsiz rengi düşürüyor | **güvenlik sınırı** |
 | `personalize()` bilinmeyen katman kimliğini düşürüyor | uydurma kimlikle belge şişirilmesin |
 | `personalize()` `customer=false` jetonu düşürüyor | jeton izni gerçekten kilit olsun |
