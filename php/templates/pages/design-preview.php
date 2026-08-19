@@ -44,7 +44,7 @@ $idle = (string) $design['animation']['idle'];
 */ ?>
 
   <?php if ($warnings !== []): ?>
-    <ul class="fixed bottom-14 left-4 z-[60] max-w-xs border border-amber-500/40 bg-amber-50 p-3 text-xs text-ink/80">
+    <ul class="fixed bottom-6 left-4 z-[60] max-w-xs border border-gold bg-cream p-3 text-xs text-ink-soft">
       <?php foreach ($warnings as $warning): ?>
         <li><?= e($warning['kind']) ?> — <?= e($warning['element']) ?><?php
           if ($warning['detail'] !== '') {
