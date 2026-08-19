@@ -434,12 +434,28 @@ final class Design
     private static function safeSrc(string $src): string
     {
         $src = trim($src);
-        if ($src === '' || str_contains($src, '..') || str_contains($src, ':')) {
+        if ($src === '') {
             return '';
         }
-        if (!str_starts_with($src, '/uploads/') && !str_starts_with($src, '/assets/')) {
+
+        // Prozentkodierung aufloesen und vergleichen. Unsere eigenen Pfade
+        // tragen keine – kommt eine an, stammt der Pfad nicht von uns. Ohne
+        // diesen Schritt schluepft %2e%2e an der Punktpruefung vorbei, und
+        // erst der Server macht daraus wieder einen Verzeichniswechsel.
+        if (rawurldecode($src) !== $src) {
             return '';
         }
+
+        // Erlaubt ist nur, was wir selbst vergeben. Damit fallen Nullbyte,
+        // Tabulator, Steuerzeichen und der Doppelpunkt von allein weg.
+        if (preg_match('#^/(uploads|assets)/[A-Za-z0-9/._-]+$#', $src) !== 1) {
+            return '';
+        }
+
+        if (str_contains($src, '..')) {
+            return '';
+        }
+
         return $src;
     }
 

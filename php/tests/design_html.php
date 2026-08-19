@@ -120,3 +120,21 @@ $sauber = Design::warnings([
 ]);
 
 assert_same([], $sauber, 'warnings: sauberes Design meldet nichts');
+
+/* --- safeSrc: was wir nicht selbst vergeben haben, kommt nicht durch --- */
+
+$fremd = ['id' => 'x', 'type' => 'image'];
+$pruef = static function (string $src) use ($fremd): string {
+    return Design::html(['id' => 'd', 'layers' => [$fremd + ['src' => $src]]], [], 'de');
+};
+
+assert_same('', $pruef('/uploads/%2e%2e/config.php'), 'safeSrc: prozentkodierter Wechsel wird verworfen');
+assert_same('', $pruef('/uploads/%252e%252e/config.php'), 'safeSrc: doppelt kodiert wird verworfen');
+assert_same('', $pruef("/uploads/a\x00.png"), 'safeSrc: Nullbyte wird verworfen');
+assert_same('', $pruef("/uploads/a\tb.png"), 'safeSrc: Tabulator wird verworfen');
+assert_same('', $pruef('/uploads/a b.png'), 'safeSrc: Leerzeichen wird verworfen');
+assert_same('', $pruef('//evil.example/x.png'), 'safeSrc: fremder Host wird verworfen');
+assert_same('', $pruef('/UPLOADS/x.png'), 'safeSrc: falsche Schreibung wird verworfen');
+
+assert_contains($pruef('/uploads/blume.webp'), '/uploads/blume.webp', 'safeSrc: eigener Upload kommt durch');
+assert_contains($pruef('/assets/designs/elysee-1.svg'), '/assets/designs/elysee-1.svg', 'safeSrc: eigenes Asset kommt durch');
