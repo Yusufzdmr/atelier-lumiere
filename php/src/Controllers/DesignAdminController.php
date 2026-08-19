@@ -188,4 +188,74 @@ final class DesignAdminController
         }
         return count($pfade) < $ecken ? 'ok=uebernommen_teilweise' : 'ok=uebernommen';
     }
+
+    /**
+     * Editor einer Vorlage. GET zeigt, POST speichert.
+     *
+     * @param array<string,string> $params
+     */
+    public function edit(array $params): void
+    {
+        $locale = (string) ($params['locale'] ?? 'de');
+        Admin::requireLogin($locale);
+
+        $design = Design::find(Security::clean($params['slug'] ?? '', 96));
+        if ($design === null) {
+            (new PageController())->notFound($locale);
+            return;
+        }
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $this->speichere($locale, $design);
+            return;
+        }
+
+        $scope  = '.d-' . $design['id'];
+        $werte  = Design::bindValues(self::BEISPIEL, $locale);
+
+        View::page('admin/design-edit', [
+            'layout'   => 'admin/layout',
+            'locale'   => $locale,
+            'current'  => '/designs',
+            'meta'     => [
+                'title'   => 'Design: ' . ($design['name']['de'] ?? ''),
+                'noindex' => true,
+                // Nur die Vorschau braucht ein Skript. Der Rest ist ein
+                // Formular und bleibt ohne.
+                'scripts' => ['/assets/design-editor.js'],
+            ],
+            'design'   => $design,
+            'scope'    => ltrim($scope, '.'),
+            'styles'   => Design::css($design, $scope),
+            'seite'    => Design::html($design, $werte, $locale, 'page'),
+            'karte'    => Design::html($design, $werte, $locale, 'card'),
+            'warnings' => Design::warnings($design),
+            'csrf'     => Security::csrf(),
+        ]);
+    }
+
+    /** @param array<string,mixed> $design */
+    private function speichere(string $locale, array $design): void
+    {
+        $ziel = I18n::path('/admin/designs/' . $design['slug'], $locale);
+
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            header('Location: ' . $ziel . '?fehler=csrf', true, 303);
+            exit;
+        }
+
+        // Wer das Formular geoeffnet hat, hat eine Fassungsnummer mitbekommen.
+        // Ist sie kleiner als die gespeicherte, hat jemand anders dazwischen
+        // gespeichert - dann wird hier nichts ueberschrieben.
+        $gesehen = (int) ($_POST['version'] ?? 0);
+        if ($gesehen > 0 && $gesehen < (int) $design['version']) {
+            header('Location: ' . $ziel . '?fehler=veraltet', true, 303);
+            exit;
+        }
+
+        Design::save(Design::fromPost($design, $_POST));
+
+        header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
+        exit;
+    }
 }

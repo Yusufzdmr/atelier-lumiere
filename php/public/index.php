@@ -143,6 +143,7 @@ $router->any('/{locale}/admin/kunden/{code}', $admin_(static fn (array $p) => (n
 $router->any('/{locale}/admin/einladungen', $admin_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/themen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
 $router->any('/{locale}/admin/designs', $admin_(static fn (array $p) => (new DesignAdminController())->index($p['locale'])));
+$router->any('/{locale}/admin/designs/{slug}', $admin_(static fn (array $p) => (new DesignAdminController())->edit($p)));
 $router->any('/{locale}/admin/systemcheck', $admin_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
 $router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
 
