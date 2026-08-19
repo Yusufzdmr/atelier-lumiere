@@ -85,6 +85,35 @@ assert_same(['accent'], array_keys($marken['palette']), 'choices: nur angehakte 
 assert_same(['script'], array_keys($marken['fonts']), 'choices: nur angehakte Schriftmarke');
 
 /*
+ * color- und font-Recht sind an Typen gebunden, an denen Design::css()
+ * tatsaechlich einen Zweig hat (nur text und shape fuer Farbe, nur text
+ * fuer Schrift, Design.php:359-400). button hat dort keinen Zweig - wuerde
+ * der Typ hier durchgelassen, boete der Assistent eine Kontrolle an, die
+ * nie etwas veraendert.
+ */
+$farbtypen = DesignWizard::choices(wizard_doc([
+    ['id' => 't', 'type' => 'text',  'permissions' => ['edit' => true, 'color' => true]],
+    ['id' => 's', 'type' => 'shape', 'permissions' => ['edit' => true, 'color' => true]],
+    ['id' => 'b', 'type' => 'button', 'permissions' => ['edit' => true, 'color' => true]],
+    ['id' => 'i', 'type' => 'image', 'permissions' => ['edit' => true, 'color' => true]],
+    ['id' => 'p', 'type' => 'photo', 'permissions' => ['edit' => true, 'color' => true]],
+]));
+assert_true($farbtypen['layers']['t']['color'], 'choices: color-Recht gilt fuer text');
+assert_true($farbtypen['layers']['s']['color'], 'choices: color-Recht gilt fuer shape');
+assert_true(!isset($farbtypen['layers']['b']), 'choices: color-Recht gilt nicht fuer button');
+assert_true(!isset($farbtypen['layers']['i']), 'choices: color-Recht gilt nicht fuer image');
+assert_true(!isset($farbtypen['layers']['p']), 'choices: color-Recht gilt nicht fuer photo');
+
+$schrifttypen = DesignWizard::choices(wizard_doc([
+    ['id' => 't', 'type' => 'text',   'permissions' => ['edit' => true, 'font' => true]],
+    ['id' => 'b', 'type' => 'button', 'permissions' => ['edit' => true, 'font' => true]],
+    ['id' => 'i', 'type' => 'image',  'permissions' => ['edit' => true, 'font' => true]],
+]));
+assert_true($schrifttypen['layers']['t']['font'], 'choices: font-Recht gilt fuer text');
+assert_true(!isset($schrifttypen['layers']['b']), 'choices: font-Recht gilt nicht fuer button');
+assert_true(!isset($schrifttypen['layers']['i']), 'choices: font-Recht gilt nicht fuer image');
+
+/*
  * Die Schrittliste steht nicht fest, sie faellt aus dem Dokument.
  *
  * Elysee hat heute fast keine Rechte - der Assistent hat dort zwei Schritte,
@@ -167,6 +196,22 @@ assert_contains(Design::css($rot, '.t'), 'color:var(--d-kunde-namen)', 'personal
 $zweimal = DesignWizard::personalize($rot, ['layers' => ['namen' => ['color' => '#004400']]]);
 assert_same('#004400', $zweimal['palette']['kunde-namen']['value'], 'personalize: zweite Farbe ueberschreibt dieselbe Marke');
 assert_same(1, count(array_filter(array_keys($zweimal['palette']), static fn ($k) => str_starts_with((string) $k, 'kunde-'))), 'personalize: nur eine gepraegte Marke');
+
+// Kollision: "kunde-<id>" ist kein reserviertes Praefix - ein Admin kann im
+// Panel schon eine Marke mit genau diesem Namen angelegt haben. Die Ebene
+// selbst zeigt hier noch auf 'ink', nicht auf 'kunde-namen' - die Marke ist
+// also die des Grafikers, nicht eine eigene aus einer frueheren Wahl.
+$kollisionsDoc = wizard_doc(
+    [['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names',
+      'style' => ['color' => 'ink'],
+      'permissions' => ['edit' => true, 'color' => true]]],
+    ['ink'         => ['value' => '#1A1A1A', 'customer' => false],
+     'kunde-namen' => ['value' => '#00FF00', 'customer' => false]]
+);
+$ausweich = DesignWizard::personalize($kollisionsDoc, ['layers' => ['namen' => ['color' => '#8B0000']]]);
+assert_same('kunde-namen-2', $ausweich['layers'][0]['style']['color'], 'personalize: eine belegte kunde-Marke bekommt einen Ausweichnamen');
+assert_same('#8B0000', $ausweich['palette']['kunde-namen-2']['value'], 'personalize: die neue Marke traegt die gewaehlte Farbe');
+assert_same('#00FF00', $ausweich['palette']['kunde-namen']['value'], 'personalize: die urspruengliche Marke des Grafikers bleibt unangetastet');
 
 // Unsinn wird nicht gespeichert - er wird beim Schreiben geklaert, nicht erst
 // beim Drucken.

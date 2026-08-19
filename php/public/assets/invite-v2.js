@@ -82,9 +82,11 @@
     // wedding_weekday fehlt hier absichtlich: der Wochentag wird serverseitig
     // aus dem Datum von Atelier\Dates::weekday() abgeleitet, in drei Sprachen.
     // Eine zweite Implementierung im Browser koennte von dem abweichen, was
-    // auf der veroeffentlichten Einladung tatsaechlich steht. Deshalb zeigt
-    // die Vorschau hier den vom Server zuletzt gerenderten Wochentag, und die
-    // veroeffentlichte Einladung hat immer recht.
+    // auf der veroeffentlichten Einladung tatsaechlich steht. Die Vorschau
+    // leert diesen Knoten deshalb unten nur, statt ihn zu spiegeln - die
+    // Beispieldaten sagen sonst weiter "Sonntag", waehrend der Kunde laengst
+    // einen Samstag eingetippt hat. Die veroeffentlichte Einladung bekommt
+    // den echten Wochentag vom Server und hat immer recht.
     var text = {
       couple_names: [werte.bride, werte.groom].filter(Boolean).join(' & '),
       initials: (werte.bride || ' ').charAt(0) + (werte.groom || ' ').charAt(0),
@@ -105,6 +107,11 @@
       var ziel = preview.querySelector('[data-bind="' + bind + '"]');
       if (ziel) ziel.textContent = text[bind];
     });
+
+    // wedding_weekday wird geleert, nicht gespiegelt (siehe oben): sonst
+    // widerspraeche die Karte dem Datum, das der Kunde gerade eingetippt hat.
+    var wochentag = preview.querySelector('[data-bind="wedding_weekday"]');
+    if (wochentag) wochentag.textContent = '';
   }
 
   form.querySelectorAll('[data-live]').forEach(function (el) {

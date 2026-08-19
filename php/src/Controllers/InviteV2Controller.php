@@ -89,13 +89,16 @@ final class InviteV2Controller
 
         View::page('pages/invite-v2-wizard', [
             'locale'  => $locale,
+            // layout.php braucht $path fuer den Sprachumschalter und die
+            // aktive Kopfzeile (layout.php:25, 86) - ohne ihn meldet PHP eine
+            // undefinierte Variable als zweite Zeile der Seite.
+            'path'    => I18n::path('/v2/einladung'),
             'meta'    => Seo::forPage('einladung2', [
                 'title'    => I18n::t('invitation2.wizardTitle'),
                 'noindex'  => true,
                 'scripts'  => ['/assets/invite-v2.js'],
             ]),
             'design'  => $design,
-            'designs' => $designs,
             'steps'   => DesignWizard::steps($design),
             'choices' => DesignWizard::choices($design),
             'values'  => [],

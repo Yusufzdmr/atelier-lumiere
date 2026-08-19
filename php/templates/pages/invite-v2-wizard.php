@@ -9,7 +9,6 @@
  *
  * @var string $locale
  * @var array<string,mixed> $design
- * @var list<array<string,mixed>> $designs
  * @var list<string> $steps
  * @var array<string,mixed> $choices
  * @var array<string,string> $values
@@ -28,6 +27,20 @@ use Atelier\Ui;
 $t = static fn (string $key): string => I18n::t('invitation2.' . $key);
 $p = static fn (string $path): string => I18n::path($path, $locale);
 $old = static fn (string $feld): string => (string) ($values[$feld] ?? '');
+// Ein Farbfeld sendet immer einen Wert mit, auch wenn niemand es beruehrt
+// hat - ohne value faellt der Browser auf #000000 zurueck. publish() saehe
+// dann fuer jede erlaubte Ebene Schwarz, egal was das Design wirklich
+// vorsieht. style.color ist ein Markenname, nicht der Wert selbst - der Wert
+// steht in der Palette.
+$farbeVon = static function (string $id) use ($design): string {
+    foreach ($design['layers'] as $el) {
+        if ((string) $el['id'] === $id) {
+            $marke = (string) ($el['style']['color'] ?? '');
+            return (string) ($design['palette'][$marke]['value'] ?? '#000000');
+        }
+    }
+    return '#000000';
+};
 
 $label = 'text-[0.62rem] uppercase tracking-[0.18em] text-muted';
 $field = 'mt-2 w-full border border-sand-deep bg-cream px-4 py-3 text-sm text-ink';
@@ -139,7 +152,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <div class="<?= $label ?>"><?= e($id) ?></div>
 
               <?php if ($rechte['color']) : ?>
-                <input type="color" name="layer_color_<?= e($id) ?>" class="<?= $field ?> h-12">
+                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($farbeVon($id)) ?>" class="<?= $field ?> h-12">
               <?php endif; ?>
 
               <?php if ($rechte['font']) : ?>

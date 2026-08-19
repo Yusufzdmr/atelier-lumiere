@@ -81,8 +81,12 @@ final class DesignWizard
             }
 
             $rechte = [
-                'color' => $p['color'] && in_array($el['type'], ['text', 'button', 'shape'], true),
-                'font'  => $p['font'] && in_array($el['type'], ['text', 'button'], true),
+                // button fehlt hier absichtlich: Design::css() hat fuer
+                // diesen Typ gar keinen Zweig (nur text und shape) - eine
+                // Kontrolle anzubieten, die nie etwas veraendert, waere ein
+                // Versprechen, das die Vorlage nicht haelt.
+                'color' => $p['color'] && in_array($el['type'], ['text', 'shape'], true),
+                'font'  => $p['font'] && $el['type'] === 'text',
                 // Ein bind holt seinen Wert aus den Daten. Ein fester Text
                 // daneben waere eine zweite Wahrheit, die nie gewinnt.
                 'text'  => $p['text'] && $el['bind'] === '' && in_array($el['type'], ['text', 'button'], true),
@@ -187,7 +191,13 @@ final class DesignWizard
             // Markennamen: color:var(--d-<name>). Ein roher Wert ergaebe
             // var(--d-#8B0000) - ungueltiges CSS und ein farbloses Element.
             if ($rechte['color'] && isset($gewaehlt['color'])) {
-                $marke = 'kunde-' . $id;
+                // "kunde-" ist kein reserviertes Praefix - ein Admin kann im
+                // Panel schon eine Marke mit genau diesem Namen angelegt
+                // haben, bevor je ein Kunde durch den Assistenten ging. Ohne
+                // diese Pruefung ueberschriebe die Wahl des Kunden die Marke
+                // des Grafikers still, und die Kollision friere sich in
+                // jeden kuenftigen Schnappschuss ein.
+                $marke = self::freieMarke($doc, 'palette', $id, (string) ($el['style']['color'] ?? ''));
                 $doc['palette'][$marke] = [
                     'value'    => Design::safeColor((string) $gewaehlt['color']),
                     'label'    => ['de' => 'Eigene Farbe', 'tr' => 'Kendi rengi'],
@@ -199,7 +209,8 @@ final class DesignWizard
             }
 
             if ($rechte['font'] && isset($gewaehlt['font'])) {
-                $marke = 'kunde-' . $id;
+                // Dieselbe Kollisionsgefahr wie bei der Farbe, siehe oben.
+                $marke = self::freieMarke($doc, 'fonts', $id, (string) ($el['style']['font'] ?? ''));
                 $doc['fonts'][$marke] = [
                     'family'     => Design::safeFont((string) $gewaehlt['font']),
                     'size'       => $doc['fonts'][$el['style']['font']]['size'] ?? 100,
@@ -247,5 +258,35 @@ final class DesignWizard
         // Standardfelder, und der Schnappschuss hat garantiert die Form, die
         // Design::css() und Design::html() erwarten.
         return Design::complete($doc);
+    }
+
+    /**
+     * Einen freien Markennamen fuer die gepraegte "kunde-<id>"-Konvention finden.
+     *
+     * Zeigt die Ebene schon auf genau diesen Namen, ist es die eigene Marke aus
+     * einer frueheren Personalisierung derselben Ebene - die wird wiederverwendet,
+     * damit ein zweites Absenden keine zweite Marke praegt (siehe Test). Steht
+     * der Name aber schon im eingehenden Dokument und gehoert nicht dieser
+     * Ebene, ist es die Marke des Grafikers - dann wird ein Ausweichname
+     * angehaengt, statt sie still zu ueberschreiben.
+     *
+     * @param array<string,mixed> $doc
+     */
+    private static function freieMarke(array $doc, string $bereich, string $id, string $aktuell): string
+    {
+        $basis = 'kunde-' . $id;
+
+        if ($aktuell === $basis && isset($doc[$bereich][$basis])) {
+            return $basis;
+        }
+        if (!isset($doc[$bereich][$basis])) {
+            return $basis;
+        }
+
+        $n = 2;
+        while (isset($doc[$bereich][$basis . '-' . $n])) {
+            $n++;
+        }
+        return $basis . '-' . $n;
     }
 }

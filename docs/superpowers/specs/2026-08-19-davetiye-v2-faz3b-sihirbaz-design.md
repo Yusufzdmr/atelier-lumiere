@@ -502,8 +502,11 @@ yalnızca kendi adreslerinden görünür. D bunu ele alacak.
 
 ## 12. Bitti sayılma ölçütü
 
-- [ ] `/de/v2/einladung` açılıyor; tasarım `?design=<slug>` ile geliyor,
-      gelmiyorsa aktif tasarımlardan seçtiriliyor.
+- [ ] `/de/v2/einladung` açılıyor; tasarım `?design=<slug>` ile geliyor —
+      bilinmeyen ya da eksik değer sessizce ilk aktif tasarıma düşüyor, bir
+      seçtirme ekranı yok. Bu doğru: bu fazda sihirbaz hiçbir yerden
+      bağlanmıyor, ona ulaşılan tek yol Schaufenster'dan gelen `?design=`.
+      Seçtirme ekranı, sihirbazı bağlayacak sonraki fazın işi.
 - [ ] Élysée seçilince **üç adım** görünüyor (künye, tasarım, yayınlama).
       Ölçüldü 2026-08-19: canlı veride `palette.accent.customer` **açık**,
       katman izinlerinin hepsi kapalı — yani "Tasarım" adımını tek başına bir
