@@ -1689,15 +1689,42 @@ git commit -m "Publishing freezes the personalised document, not a list of edits
 
         View::page('pages/invite-v2-show', [
             'locale' => $locale,
+            'path'   => I18n::path('/v2/einladung/' . $einladung['slug'], $locale),
             'meta'   => Seo::forPage('einladung2', [
                 'title' => $namen !== '' ? $namen : I18n::t('invitation2.wizardTitle'),
                 // Eine Einladung gehoert nicht in den Index. Der Link ist
                 // fuer die Gaeste, nicht fuer die Suche.
                 'noindex' => true,
+                // Dieselbe Choreografie wie in der Design-Vorschau: Kuvert
+                // oeffnen, Karte aufsteigen lassen. Ohne dieses Skript bleibt
+                // das Kuvert zu.
+                'scripts' => ['/assets/invitation.js'],
             ]),
             'design' => $doc,
-            'scope'  => $scope,
+            // OHNE Punkt. Design::css() bekommt den Selektor (".d-elysee"),
+            // die Vorlage bekommt den Klassennamen ("d-elysee") - sie schreibt
+            // ihn in ein class-Attribut. Mit Punkt entstuende die Klasse
+            // ".d-elysee", die der Selektor .d-elysee niemals trifft, und die
+            // Einladung kaeme voellig ungestylt heraus. DesignController::
+            // preview() macht es aus demselben Grund so (DesignController.php:125).
+            'scope'  => ltrim($scope, '.'),
             'styles' => Design::css($doc, $scope),
+            // Die fuenf Bewegungswerte rechnet sonst design-preview.php aus.
+            // Die Buehne liest sie, leitet sie aber nicht selbst ab - eine
+            // Rechnung, eine Quelle der Wahrheit (Aufgabe 5).
+            'ratio'   => str_replace(':', ' / ', (string) $doc['canvas']['ratio']),
+            'karteAn' => (string) $doc['animation']['card'],
+            'tempo'   => (int) $doc['animation']['speed'],
+            'introMs' => 0,
+            'idle'    => (string) $doc['animation']['idle'],
+            // Die Initialen stehen auf dem Siegel. Sie kommen aus den Daten
+            // des Paares, nicht aus dem Dokument.
+            'initialen' => $values['initials'],
+            // Leer, und zwar immer. Die Buehne zeigt Warnungen ungeprueft an
+            // (design-stage.php:50) - auf einer echten Einladung hat ein Gast
+            // nichts mit den Maengeln einer Vorlage zu tun. Waere der Wert gar
+            // nicht gesetzt, stuende dort eine leere Box: null !== [] ist wahr.
+            'warnings' => [],
             'seite'  => Design::html($doc, $values, $locale, 'page'),
             'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
             'karte'  => Design::html($doc, $values, $locale, 'card'),
