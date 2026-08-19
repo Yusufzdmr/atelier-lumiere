@@ -320,7 +320,25 @@ formata `closing_text` eklemek C'nin işi.
 Bir `bind` sorulup boş bırakılırsa `Design::resolveText()` zaten boş dize
 döndürür ve `html()` o elementi hiç basmaz (`Design.php:487`). Yani eksik alan
 davetiyeyi bozmaz, o satır görünmez. Zorunlu olan yalnızca ikisi: `bride` ve
-`groom` — ikisi de boşsa davetiyenin kime ait olduğu belirsiz kalır.
+`groom` — ve yalnızca **tasarım onları soruyorsa**; ikisi de boşsa davetiyenin
+kime ait olduğu belirsiz kalır.
+
+### `bind` → form alanı
+
+Sorulan alan sayısı `bind` sayısından az: dört `bind` aynı iki alandan türüyor.
+`DesignWizard` bu haritayı taşır, şablon değil:
+
+| `bind` | sorulan alan |
+|---|---|
+| `couple_names`, `initials` | `bride` + `groom` |
+| `bride_name` | `bride` |
+| `groom_name` | `groom` |
+| `wedding_date`, `wedding_weekday` | `date` |
+| `wedding_time` | `time` |
+| `location_name` | `venue` |
+| `location_address` | `address` |
+| `invitation_text` | `message` |
+| `hashtag` | `hashtag` |
 
 ## 8. Rotalar ve dosyalar
 
