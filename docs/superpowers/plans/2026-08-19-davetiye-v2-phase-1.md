@@ -3202,21 +3202,21 @@ use function Atelier\e;
 
 $tr = $locale === 'tr';
 ?>
-<h1 class="text-xl font-medium"><?= $tr ? 'Tasarımlar (v2)' : 'Designs (v2)' ?></h1>
+<h2 class="font-display text-xl text-ink"><?= $tr ? 'Tasarımlar (v2)' : 'Designs (v2)' ?></h1>
 
-<p class="mt-2 max-w-2xl text-sm text-gray-600">
+<p class="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
   <?= $tr
     ? 'Davetiye sisteminin ikinci sürümü. Bu listede düzenleme yok — Faz 1 yalnızca formatı ve gösterimi kuruyor. Yeni kayıt için: php bin/seed-designs.php'
     : 'Die zweite Fassung des Einladungssystems. Hier wird nur gelesen – Faz 1 baut Format und Darstellung. Neue Einträge: php bin/seed-designs.php' ?>
 </p>
 
 <?php if ($designs === []): ?>
-  <p class="mt-8 text-sm text-gray-500">
+  <p class="mt-8 text-sm text-muted">
     <?= $tr ? 'Henüz tasarım yok.' : 'Noch kein Design.' ?>
   </p>
 <?php else: ?>
   <table class="mt-8 w-full text-sm">
-    <thead class="border-b border-gray-300 text-left text-xs uppercase tracking-wide text-gray-500">
+    <thead class="border-b border-sand-deep text-left text-[0.62rem] uppercase tracking-[0.16em] text-muted">
       <tr>
         <th class="py-2"><?= $tr ? 'Ad' : 'Name' ?></th>
         <th class="py-2"><?= $tr ? 'Kategori' : 'Kategorie' ?></th>
@@ -3230,13 +3230,13 @@ $tr = $locale === 'tr';
     <tbody>
       <?php foreach ($designs as $design): ?>
         <?php $meldungen = $warnings[$design['id']] ?? []; ?>
-        <tr class="border-b border-gray-200">
+        <tr class="border-b border-sand-deep">
           <td class="py-3"><?= e($design['name']['de']) ?></td>
-          <td class="py-3 text-gray-600"><?= e($design['category']) ?></td>
-          <td class="py-3 text-gray-600"><?= e($design['status']) ?></td>
-          <td class="py-3 text-gray-600"><?= (int) $design['version'] ?></td>
-          <td class="py-3 text-gray-600"><?= count($design['layers']) ?></td>
-          <td class="py-3 <?= $meldungen === [] ? 'text-gray-400' : 'text-amber-700' ?>">
+          <td class="py-3 text-muted"><?= e($design['category']) ?></td>
+          <td class="py-3 text-muted"><?= e($design['status']) ?></td>
+          <td class="py-3 text-muted"><?= (int) $design['version'] ?></td>
+          <td class="py-3 text-muted"><?= count($design['layers']) ?></td>
+          <td class="py-3 <?= $meldungen === [] ? 'text-muted' : 'text-gold' ?>">
             <?= $meldungen === [] ? '—' : count($meldungen) ?>
           </td>
           <td class="py-3 text-right">
@@ -3251,6 +3251,24 @@ $tr = $locale === 'tr';
   </table>
 <?php endif; ?>
 ```
+
+### Plan duzeltmesi 3 — 2026-08-19, panelin gri paleti de olu
+
+Yukaridaki tablo Tailwind'in varsayilan gri/amber paletini kullaniyor; bu
+projenin derlenmis CSS'inde o renkler hic yok. Tarayicida stylesheet'lere
+sorularak dogrulandi: `text-gray-600`, `text-gray-500`, `text-gray-400`,
+`text-amber-700`, `border-gray-300`, `border-gray-200`, `tracking-wide` — yedisi
+de yok. (`underline` ise var, o kalabilir.) Panel `templates/admin/layout.php`
+uzerinden ayni `style.css`'i yukluyor, yani panelde de ayni kural geciyor.
+
+Yerine sitenin kendi paleti: `text-muted`, `border-sand-deep`, uyari sayisi
+icin `text-gold`, olcu icin `text-[0.62rem] tracking-[0.16em]`. Baslik `<h1>`
+degil `<h2 class="font-display text-xl text-ink">` — panelin butun sekmeleri
+boyle basliyor (`templates/admin/themes.php`, `invitations.php`), ve `<h1>`
+zaten duzende bir kez geciyor.
+
+Ayrica plan Step 5'te "eski tema sekmesi" sablonunu `themen.php` diye aniyor;
+dosyanin adi `templates/admin/themes.php`, rota `/{locale}/admin/themen`.
 
 - [ ] **Step 4: Rotayı ekle**
 
