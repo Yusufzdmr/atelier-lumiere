@@ -7,6 +7,8 @@ use Atelier\Config;
 use Atelier\Design;
 use Atelier\I18n;
 use Atelier\Seo;
+use Atelier\Themes;
+use Atelier\Security;
 use Atelier\View;
 
 /**
@@ -31,7 +33,33 @@ final class DesignController
     public function index(): void
     {
         $locale = I18n::locale();
+        // Nur was veroeffentlicht ist. Ein Entwurf ist eine halbe Vorlage, und
+        // eine halbe Vorlage im Schaufenster kostet Vertrauen.
         $designs = Design::all('active');
+
+        $kategorien = [];
+        foreach ($designs as $eintrag) {
+            $k = (string) $eintrag['category'];
+            if ($k !== '' && !in_array($k, $kategorien, true)) {
+                $kategorien[] = $k;
+            }
+        }
+        sort($kategorien);
+
+        // Der Filter steht in der Adresse, nicht in der Sitzung: ein geteilter
+        // Link soll denselben Blick oeffnen.
+        $filter = Security::clean($_GET['kategorie'] ?? '', 48);
+        if ($filter !== '') {
+            $designs = array_values(array_filter(
+                $designs,
+                static fn (array $d): bool => (string) $d['category'] === $filter
+            ));
+        }
+
+        $themenIds = array_map(
+            static fn (array $t): string => (string) ($t['id'] ?? ''),
+            Themes::all()
+        );
 
         $styles = '';
         foreach ($designs as $design) {
@@ -49,6 +77,9 @@ final class DesignController
             'designs' => $designs,
             'styles'  => $styles,
             'values'  => Design::bindValues(self::BEISPIEL, $locale),
+            'kategorien' => $kategorien,
+            'filter'     => $filter,
+            'machbar'    => Design::creatable($designs, $themenIds),
         ]);
     }
 

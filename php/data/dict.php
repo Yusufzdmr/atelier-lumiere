@@ -166,6 +166,10 @@ Wir fotografieren euch.',
             'photos' => 'Bilder',
             'protected' => 'Passwortgeschützt',
         ],
+        'invitation2' => [
+            'title' => 'Einladungen, die sich öffnen lassen',
+            'lead'  => 'Jede Vorlage bringt ihre eigenen Farben, ihr Kuvert und ihr Siegel mit. Schaut sie in Ruhe an – ändern lässt sich später alles.',
+        ],
         'invite' => [
             'title' => 'Digitale Hochzeitseinladung',
             'useDesign' => 'Mit diesem Design erstellen',
@@ -532,6 +536,10 @@ We photograph you.',
             'photos' => 'Pictures',
             'protected' => 'Password protected',
         ],
+        'invitation2' => [
+            'title' => 'Invitations that open',
+            'lead'  => 'Every template brings its own colours, its envelope and its seal. Take your time looking – everything can be changed later.',
+        ],
         'invite' => [
             'title' => 'Digital wedding invitation',
             'useDesign' => 'Create with this design',
@@ -895,6 +903,10 @@ Sizi fotoğraflıyoruz.',
             'empty' => 'Henüz kare seçilmedi.',
             'photos' => 'kare',
             'protected' => 'Parola korumalı',
+        ],
+        'invitation2' => [
+            'title' => 'Açılan davetiyeler',
+            'lead'  => 'Her tasarım kendi renklerini, zarfını ve mührünü getirir. Acele etmeden bakın — sonradan her şey değiştirilebilir.',
         ],
         'invite' => [
             'title' => 'Dijital düğün davetiyesi',
