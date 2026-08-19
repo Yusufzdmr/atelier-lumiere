@@ -524,4 +524,123 @@ final class Design
 
         return $out;
     }
+
+    /* -------------------------------- Umzug -------------------------------- */
+
+    /**
+     * Ein Thema aus dem bestehenden Motor als Dokument.
+     *
+     * Der Schmuck traegt dort schon alles, was ein Element hier braucht –
+     * Prozentmasse, Ort, Bewegung. Deshalb ist das eine Umrechnung und keine
+     * Neuanlage von Hand.
+     *
+     * Der feste Text der Karte (Namen, Datum, Ort) entsteht hier *nicht*: er
+     * steckt heute im Kartenschablone und wird beim Aussaeen gesetzt, wo man
+     * die Kaesten am fertigen Bild abmessen kann.
+     *
+     * @param array<string,mixed> $theme
+     * @return array<string,mixed>
+     */
+    public static function fromTheme(array $theme): array
+    {
+        $theme = Themes::complete($theme);
+
+        $palette = [];
+        foreach ([
+            'bg', 'paper', 'paperEdge', 'fg', 'soft', 'accent', 'accentSoft',
+            'envelope', 'envelopeFlap', 'envelopeEdge', 'seal', 'sealText', 'petal',
+        ] as $key) {
+            $value = (string) ($theme[$key] ?? '');
+            if ($value === '') {
+                continue;
+            }
+            $palette[$key] = [
+                'value'    => $value,
+                'label'    => ['de' => $key, 'tr' => $key],
+                'customer' => false,
+            ];
+        }
+
+        $back = [];
+        $front = [];
+
+        if ((string) ($theme['image'] ?? '') !== '') {
+            $back[] = [
+                'id'     => 'bgimage',
+                'label'  => 'Hintergrund',
+                'type'   => 'image',
+                'spot'   => 'page',
+                'src'    => (string) $theme['image'],
+                'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100,
+                             'rotate' => 0, 'opacity' => (int) ($theme['imageOpacity'] ?? 100)],
+                'motion' => ['move' => 'none', 'delay' => 0, 'duration' => 0],
+            ];
+        }
+
+        if ((string) ($theme['envelopeImage'] ?? '') !== '') {
+            $back[] = [
+                'id'     => 'envimage',
+                'label'  => 'Kuvert',
+                'type'   => 'image',
+                'spot'   => 'envelope',
+                'src'    => (string) $theme['envelopeImage'],
+                'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'rotate' => 0, 'opacity' => 100],
+                'motion' => ['move' => 'none', 'delay' => 0, 'duration' => 0],
+            ];
+        }
+
+        foreach ((array) ($theme['decorations'] ?? []) as $deco) {
+            if (!is_array($deco)) {
+                continue;
+            }
+            $deco = Themes::completeDecoration($deco);
+            if ((string) $deco['src'] === '') {
+                continue;
+            }
+
+            $element = [
+                'id'     => (string) $deco['id'],
+                'label'  => (string) $deco['label'],
+                'type'   => 'image',
+                'spot'   => (string) $deco['spot'],
+                'src'    => (string) $deco['src'],
+                'box'    => [
+                    'x'       => (int) $deco['x'],
+                    'y'       => (int) $deco['y'],
+                    'w'       => (int) $deco['width'],
+                    'h'       => 0,
+                    'rotate'  => (int) $deco['rotate'],
+                    'opacity' => (int) $deco['opacity'],
+                ],
+                'motion' => [
+                    'move'     => (string) $deco['move'],
+                    'delay'    => (int) $deco['delay'],
+                    'duration' => (int) $deco['duration'],
+                ],
+            ];
+
+            // Aus einem Ja/Nein wird eine Position in der Liste.
+            if ($deco['front']) {
+                $front[] = $element;
+            } else {
+                $back[] = $element;
+            }
+        }
+
+        return self::complete([
+            'id'        => (string) ($theme['id'] ?? ''),
+            'slug'      => (string) ($theme['id'] ?? ''),
+            'name'      => ['de' => (string) ($theme['name'] ?? ''), 'en' => (string) ($theme['name'] ?? '')],
+            'family'    => (string) ($theme['family'] ?? ''),
+            'version'   => max(1, (int) ($theme['version'] ?? 1)),
+            'palette'   => $palette,
+            'layers'    => array_merge($back, $front),
+            'animation' => [
+                'intro'    => (string) ($theme['intro'] ?? 'none'),
+                'idle'     => (string) ($theme['idle'] ?? 'none'),
+                'reveal'   => (string) ($theme['reveal'] ?? 'up'),
+                'particle' => (string) ($theme['particle'] ?? 'none'),
+            ],
+        ]);
+    }
 }
