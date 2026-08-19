@@ -6,6 +6,7 @@ namespace Atelier\Controllers;
 
 use Atelier\Config;
 use Atelier\Design;
+use Atelier\DesignSections;
 use Atelier\DesignWizard;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
@@ -302,7 +303,9 @@ final class InviteV2Controller
             // Einladung kaeme voellig ungestylt heraus. DesignController::
             // preview() macht es aus demselben Grund so (DesignController.php:125).
             'scope'  => ltrim($scope, '.'),
-            'styles' => Design::css($doc, $scope),
+            // Die Abschnittsregeln haengen an denselben Marken wie die Karte,
+            // also gehoeren sie in denselben Stilblock.
+            'styles' => Design::css($doc, $scope) . DesignSections::css($doc, $scope),
             // Die fuenf Bewegungswerte rechnet sonst design-preview.php aus.
             // Die Buehne liest sie, leitet sie aber nicht selbst ab - eine
             // Rechnung, eine Quelle der Wahrheit (Aufgabe 5).
@@ -322,6 +325,9 @@ final class InviteV2Controller
             'seite'  => Design::html($doc, $values, $locale, 'page'),
             'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
             'karte'  => Design::html($doc, $values, $locale, 'card'),
+            // Rohdaten, nicht gebundene Werte: die Abschnitte binden ihre
+            // eigenen Platzhalter (Adresse, Countdown-Datum) selbst.
+            'abschnitte' => DesignSections::html($doc, $einladung['data'], $locale),
         ]);
     }
 }

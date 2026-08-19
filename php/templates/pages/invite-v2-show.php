@@ -29,6 +29,7 @@
  * @var string $idle
  * @var string $initialen
  * @var list<array{kind:string,element:string,detail:string}> $warnings
+ * @var string $abschnitte
  */
 
 use Atelier\View;
@@ -53,3 +54,13 @@ use Atelier\View;
     // Abschnitte.
     'fest'      => false,
 ]) ?>
+<?php /*
+   Unter der Buehne, nicht darin: die Karte hat einen festen Rahmen, die
+   Abschnitte haben eine variable Laenge. Ist nichts auszugeben, steht hier
+   auch nichts - kein leerer Kasten.
+*/ ?>
+<?php if ($abschnitte !== '') : ?>
+  <div class="<?= e($scope) ?> d-sections mx-auto max-w-2xl px-6 py-16">
+    <?= $abschnitte ?>
+  </div>
+<?php endif; ?>
