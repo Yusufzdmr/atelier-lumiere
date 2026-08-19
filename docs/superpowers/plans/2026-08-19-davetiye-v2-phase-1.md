@@ -2923,18 +2923,18 @@ use function Atelier\e;
 <!-- Der Kopf ist fixiert und 94 px hoch; py-16 sind 64 und die
      Ueberschrift verschwindet darunter. Die anderen Seiten holen den
      Abstand aus Ui::pageHero, diese hat keinen. -->
-<section class="mx-auto max-w-6xl px-6 pb-24 pt-32">
+<section class="mx-auto max-w-7xl px-6 pb-24 pt-32">
   <h1 class="font-display text-3xl font-light text-ink">
     <?= $locale === 'de' ? 'Designs (zweite Fassung)' : 'Designs (second version)' ?>
   </h1>
-  <p class="mt-2 max-w-xl text-sm text-ink/60">
+  <p class="mt-2 max-w-xl text-sm text-muted">
     <?= $locale === 'de'
       ? 'Dieselben Vorlagen, aber vollständig aus Daten gebaut. Steht zum Vergleich neben der ersten Fassung.'
       : 'The same templates, built entirely from data. Here for comparison beside the first version.' ?>
   </p>
 
   <?php if ($designs === []): ?>
-    <p class="mt-10 text-sm text-ink/60">
+    <p class="mt-10 text-sm text-muted">
       <?= $locale === 'de' ? 'Noch kein Design angelegt.' : 'No design yet.' ?>
       <code>php bin/seed-designs.php</code>
     </p>
@@ -2948,10 +2948,10 @@ use function Atelier\e;
                     background: var(--d-bg, #EFE7DC);">
           <?= Design::html($design, $values, $locale) ?>
         </div>
-        <p class="mt-3 font-display text-lg font-light text-ink group-hover:underline">
+        <p class="mt-3 font-display text-lg font-light text-ink group-hover:text-gold">
           <?= e($design['name'][$locale] ?? $design['name']['de']) ?>
         </p>
-        <p class="text-xs uppercase tracking-[0.16em] text-ink/50">
+        <p class="text-xs uppercase tracking-[0.16em] text-muted">
           <?= e($design['category']) ?>
         </p>
       </a>
@@ -2970,6 +2970,26 @@ Diğer genel sayfalar bu boşluğu `Ui::pageHero`'nun tam genişlikteki
 görselinden alıyor; bu sayfada hero yok, o yüzden boşluğu kendisi vermeli.
 `pt-32` (128 px) 93,6'yı rahat aşıyor. Önizleme sayfası etkilenmiyor:
 `d-stage` `fixed inset-0 z-50` ile başlığın üstünde tam ekran duruyor.
+
+### Plan duzeltmesi 2 — 2026-08-19, olu siniflar
+
+`public/assets/style.css` hazir derlenmis ve depoya islenmis (Tailwind v4,
+kaynaklari tarayarak uretilmis). Sablona yazilan ama CSS'te bulunmayan bir
+sinif sessizce hicbir sey yapmiyor. Tarayicida butun stylesheet'lerin
+selector'leriyle karsilastirildi; katalogta dort sinif olu cikti:
+
+| Yazilan | Durum | Yerine |
+| --- | --- | --- |
+| `max-w-6xl` | CSS'te yok — bolum ortalanmiyor, genis ekranda sola yapisiyor | `max-w-7xl` (eski katalogun genisligi) |
+| `text-ink/60` | `text-ink/NN` hic uretilmemis | `text-muted` |
+| `text-ink/50` | ayni | `text-muted` |
+| `group-hover:underline` | uretilen group-hover'lar: `text-gold`, `opacity-100`, `scale-105`, `-translate-y-1` | `group-hover:text-gold` |
+
+CSS'i yeniden derlemek cozum degil: `style.css` bu daldan once var olan bir
+dosya, ve Task 12 Step 7 yalnizca alti mevcut dosyanin degismesini kabul
+ediyor. Onizleme sayfasi ayni denetimden temiz gecti — oradaki `d-card`,
+`d-page`, `d-envelope`, `d-stage`, `d-spot-*` zaten CSS beklemeyen kanca
+siniflari.
 
 - [ ] **Step 5: Rotaları ekle**
 
