@@ -29,6 +29,10 @@ final class DesignSections
     /** Welche Arten es gibt. Alles andere faellt beim Einlesen weg. */
     public const TYPES = ['location', 'countdown', 'family', 'program'];
 
+    /** Wie viele Programmzeilen, und wie lang eine sein darf. */
+    public const PROGRAM_MAX = 20;
+    public const PROGRAM_LEN = 80;
+
     /**
      * Vollstaendige Abschnitte, in der Reihenfolge des Feldes.
      *
@@ -87,5 +91,95 @@ final class DesignSections
         $doc['sections'] = $out;
 
         return $doc;
+    }
+
+    /**
+     * Die Zeilen des Programms, sauber.
+     *
+     * Ohne Titel keine Zeile: eine Uhrzeit allein sagt nichts. Die Obergrenze
+     * schneidet ab, statt die Eingabe abzulehnen - eine Einladung soll nicht
+     * an einer zu langen Liste scheitern.
+     *
+     * @param array<string,mixed> $data
+     * @return list<array{time:string,title:string}>
+     */
+    public static function programRows(array $data): array
+    {
+        $out = [];
+
+        foreach ((array) ($data['program'] ?? []) as $zeile) {
+            if (!is_array($zeile)) {
+                continue;
+            }
+            $titel = trim((string) ($zeile['title'] ?? ''));
+            if ($titel === '') {
+                continue;
+            }
+            $out[] = [
+                'time'  => mb_substr(trim((string) ($zeile['time'] ?? '')), 0, self::PROGRAM_LEN),
+                'title' => mb_substr($titel, 0, self::PROGRAM_LEN),
+            ];
+            if (count($out) >= self::PROGRAM_MAX) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Welche Abschnitte wirklich gedruckt werden.
+     *
+     * Getrennt von html(), weil zwei Stellen dieselbe Frage stellen: der
+     * Renderer, um zu drucken, und der Assistent, um zu wissen, ob er nach
+     * Inhalt fragen muss.
+     *
+     * $heute kommt herein statt aus date() - sonst haengt ein Test an der Uhr.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,mixed> $data
+     * @return list<array<string,mixed>>
+     */
+    public static function visible(array $doc, array $data, string $heute = ''): array
+    {
+        $doc = self::complete($doc);
+        $heute = $heute !== '' ? $heute : date('Y-m-d');
+
+        $out = [];
+        foreach ($doc['sections'] as $abschnitt) {
+            if (!$abschnitt['enabled']) {
+                continue;
+            }
+            if (!self::hatInhalt($abschnitt, $data, $heute)) {
+                continue;
+            }
+            $out[] = $abschnitt;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Hat dieser Abschnitt etwas zu zeigen?
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    private static function hatInhalt(array $abschnitt, array $data, string $heute): bool
+    {
+        $familien = is_array($data['families'] ?? null) ? $data['families'] : [];
+        $datum = trim((string) ($data['date'] ?? ''));
+
+        return match ((string) $abschnitt['type']) {
+            // Ohne Adresse haette der Kartenlink kein Ziel.
+            'location'  => trim((string) ($data['address'] ?? '')) !== '',
+            // Ein vergangener Termin bekommt keinen Countdown; der Tag selbst
+            // zaehlt noch, es wird ja bis zum Morgen gefeiert.
+            'countdown' => $datum !== '' && $datum >= $heute,
+            'family'    => trim((string) ($familien['bride'] ?? '')) !== ''
+                        || trim((string) ($familien['groom'] ?? '')) !== '',
+            'program'   => self::programRows($data) !== [],
+            default     => false,
+        };
     }
 }
