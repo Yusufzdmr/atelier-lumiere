@@ -212,14 +212,26 @@ final class DesignWizard
             }
 
             if ($rechte['text'] && isset($gewaehlt['text']) && is_array($gewaehlt['text'])) {
-                $doc['layers'][$i]['text'] = [
-                    'de' => Security::clean($gewaehlt['text']['de'] ?? '', 600),
-                    'en' => Security::clean($gewaehlt['text']['en'] ?? '', 600),
-                ];
+                // Ein leeres Feld ist kein Loeschbefehl - dieselbe Regel wie
+                // Design::fromPost(). Sonst loescht eine Wahl, die nur "de"
+                // mitschickt, stillschweigend das vorhandene "en".
+                foreach (['de', 'en'] as $sprache) {
+                    $wert = Security::clean((string) ($gewaehlt['text'][$sprache] ?? ''), 600);
+                    if ($wert !== '') {
+                        $doc['layers'][$i]['text'][$sprache] = $wert;
+                    }
+                }
             }
 
             if ($rechte['photo'] && isset($gewaehlt['src'])) {
-                $doc['layers'][$i]['src'] = (string) $gewaehlt['src'];
+                // Beim Schreiben geklaert, nicht erst beim Drucken (siehe
+                // Design::safeSrc()). Ein leerer Rueckgabewert heisst
+                // "kein gueltiger Pfad" - dann bleibt der alte Pfad stehen,
+                // statt eine leere Bildquelle einzufrieren.
+                $pfad = Design::safeSrc((string) $gewaehlt['src']);
+                if ($pfad !== '') {
+                    $doc['layers'][$i]['src'] = $pfad;
+                }
             }
 
             if ($rechte['hide'] && !empty($gewaehlt['hidden'])) {

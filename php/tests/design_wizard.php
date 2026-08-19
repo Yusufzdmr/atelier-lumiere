@@ -193,9 +193,75 @@ assert_same('#1A1A1A', $sperre['palette']['ink']['value'], 'personalize: Marke o
 $text = DesignWizard::personalize($basis, ['layers' => ['namen' => ['text' => ['de' => 'X', 'en' => 'X']]]]);
 assert_same('', $text['layers'][0]['text']['de'], 'personalize: fester Text auf gebundener Ebene wird verworfen');
 
-// Ausblenden ohne Recht: faellt still.
-$weg = DesignWizard::personalize($basis, ['layers' => ['siegel' => ['hidden' => true]]]);
-assert_same(2, count($weg['layers']), 'personalize: ohne hide-Recht bleibt die Ebene stehen');
+// Ausblenden ohne Recht: faellt still. Wichtig ist, welche Ebene das prueft:
+// 'siegel' hat gar kein edit-Recht und wuerde schon am $rechte===null-Wächter
+// scheitern, ohne je die hide-Pruefung zu erreichen. 'namen' dagegen hat
+// edit und color, also passiert die Wahl den Wächter - und nur das hide-Gatter
+// selbst darf sie noch stoppen. Eine falsche Umsetzung, die bloss
+// "!empty($gewaehlt['hidden'])" prueft, wuerde diese Ebene trotzdem entfernen.
+$weg = DesignWizard::personalize($basis, ['layers' => ['namen' => ['hidden' => true]]]);
+assert_same(2, count($weg['layers']), 'personalize: ohne hide-Recht bleibt die Ebene stehen, obwohl sie andere Rechte hat');
+
+// Ausblenden mit Recht: die Ebene verschwindet wirklich, der Rest rueckt
+// mit luckenlosen Schluesseln nach und behaelt seine Reihenfolge - die
+// Reihenfolge ist der z-Index.
+$hideDoc = wizard_doc([
+    ['id' => 'a', 'type' => 'text', 'bind' => 'couple_names',
+     'permissions' => ['edit' => true, 'hide' => true]],
+    ['id' => 'b', 'type' => 'text', 'bind' => 'wedding_date',
+     'permissions' => ['edit' => true, 'hide' => true]],
+    ['id' => 'c', 'type' => 'text', 'bind' => 'wedding_time',
+     'permissions' => ['edit' => true, 'hide' => true]],
+]);
+$versteckt = DesignWizard::personalize($hideDoc, ['layers' => ['b' => ['hidden' => true]]]);
+assert_same(2, count($versteckt['layers']), 'personalize: mit hide-Recht verschwindet die Ebene');
+assert_same([0, 1], array_keys($versteckt['layers']), 'personalize: die Schluessel sind nach dem Entfernen luckenlos');
+assert_same(['a', 'c'], array_map(static fn (array $el): string => (string) $el['id'], $versteckt['layers']), 'personalize: die Reihenfolge der uebrigen Ebenen bleibt erhalten');
+
+// Schrift-Zweig: eine erlaubte Schrift praegt eine eigene Marke, die Ebene
+// zeigt auf sie, und die Messwerte (Groesse, Gewicht, Laufweite, Zeilenhoehe)
+// erbt sie von der Marke, die die Ebene vorher trug - sonst spraenge der
+// Titel in einer fremden Groesse auf die Seite.
+$fontDoc = wizard_doc(
+    [['id' => 'titel', 'type' => 'text', 'bind' => '',
+      'style' => ['font' => 'script'],
+      'permissions' => ['edit' => true, 'font' => true]]],
+    [],
+    ['script' => ['family' => 'Great Vibes', 'size' => 140, 'weight' => 500, 'tracking' => 5, 'lineHeight' => 110]]
+);
+$schrift = DesignWizard::personalize($fontDoc, ['layers' => ['titel' => ['font' => 'Cormorant']]]);
+assert_same('kunde-titel', $schrift['layers'][0]['style']['font'], 'personalize: die Ebene zeigt auf die eigene Schriftmarke');
+assert_same('Cormorant', $schrift['fonts']['kunde-titel']['family'], 'personalize: die Marke traegt die Schrift');
+assert_same(false, $schrift['fonts']['kunde-titel']['customer'], 'personalize: die gepraegte Schriftmarke wird nicht wieder angeboten');
+assert_same(140, $schrift['fonts']['kunde-titel']['size'], 'personalize: die Groesse erbt von der vorherigen Marke');
+assert_same(500, $schrift['fonts']['kunde-titel']['weight'], 'personalize: das Gewicht erbt von der vorherigen Marke');
+assert_same(5, $schrift['fonts']['kunde-titel']['tracking'], 'personalize: die Laufweite erbt von der vorherigen Marke');
+assert_same(110, $schrift['fonts']['kunde-titel']['lineHeight'], 'personalize: die Zeilenhoehe erbt von der vorherigen Marke');
+
+// Foto-Zweig: ein erlaubter Pfad wird uebernommen; ein Pfad ausserhalb von
+// /uploads oder /assets wird beim Schreiben verworfen (Design::safeSrc()),
+// und die Ebene behaelt ihren alten Pfad, statt eine leere Quelle einzufrieren.
+$fotoDoc = wizard_doc([
+    ['id' => 'foto', 'type' => 'photo', 'src' => '/uploads/einladungen/v2/x/original.jpg',
+     'permissions' => ['edit' => true, 'photo' => true]],
+]);
+$gutesFoto = DesignWizard::personalize($fotoDoc, ['layers' => ['foto' => ['src' => '/uploads/einladungen/v2/x/neu.jpg']]]);
+assert_same('/uploads/einladungen/v2/x/neu.jpg', $gutesFoto['layers'][0]['src'], 'personalize: ein erlaubter Pfad wird uebernommen');
+
+$boesesFoto = DesignWizard::personalize($fotoDoc, ['layers' => ['foto' => ['src' => 'https://evil.example/x.jpg']]]);
+assert_same('/uploads/einladungen/v2/x/original.jpg', $boesesFoto['layers'][0]['src'], 'personalize: ein Pfad ausserhalb von /uploads oder /assets wird verworfen, der alte Pfad bleibt stehen');
+
+// text-Zweig: eine mitgeschickte Sprache wird gesetzt, eine nicht
+// mitgeschickte bleibt stehen - dieselbe Regel wie Design::fromPost(), ein
+// leeres Feld ist kein Loeschbefehl.
+$textDoc = wizard_doc([
+    ['id' => 'motto', 'type' => 'text', 'bind' => '',
+     'text' => ['de' => 'Hallo', 'en' => 'Hello'],
+     'permissions' => ['edit' => true, 'text' => true]],
+]);
+$teiltext = DesignWizard::personalize($textDoc, ['layers' => ['motto' => ['text' => ['de' => 'Servus']]]]);
+assert_same('Servus', $teiltext['layers'][0]['text']['de'], 'personalize: die mitgeschickte Sprache wird gesetzt');
+assert_same('Hello', $teiltext['layers'][0]['text']['en'], 'personalize: eine nicht mitgeschickte Sprache bleibt stehen');
 
 // Die Form bleibt die eines vollstaendigen Dokuments - der Schnappschuss geht
 // unveraendert an den Renderer.

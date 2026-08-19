@@ -434,7 +434,10 @@ final class Design
     }
 
     /**
-     * Nur was als Farbe durchgeht.
+     * Eine Farbe, die keine Regel schliessen kann.
+     *
+     * Der Wert kommt aus dem Panel und landet ungefiltert in einem Stilblock.
+     * Ohne diese Pruefung reicht ein „}" im Feld, um die Seite umzubauen.
      *
      * Oeffentlich, weil der Assistent denselben Massstab braucht: eine Farbe
      * wird beim Schreiben geklaert, nicht erst beim Drucken. Zwei Antworten
@@ -452,7 +455,13 @@ final class Design
         return 'transparent';
     }
 
-    /** Schriftname aus demselben Grund: nur Buchstaben, Ziffern, Leerzeichen, Komma, Bindestrich. */
+    /**
+     * Schriftname aus demselben Grund wie safeColor(): nur Buchstaben, Ziffern,
+     * Leerzeichen, Komma, Bindestrich.
+     *
+     * Oeffentlich aus demselben Grund: der Assistent klaert eine Schriftfamilie
+     * beim Schreiben, nicht der Renderer beim Drucken.
+     */
     public static function safeFont(string $value): string
     {
         $value = trim($value);
@@ -531,8 +540,12 @@ final class Design
      * Ein Design kann aus dem Panel kommen oder als JSON eingespielt werden.
      * Ohne diese Pruefung liesse sich ueber die Bildquelle ein fremder Host
      * einbinden – und das faellt genau dann auf, wenn es zu spaet ist.
+     *
+     * Oeffentlich aus demselben Grund wie safeColor()/safeFont(): der
+     * Assistent klaert einen Bildpfad beim Schreiben, nicht der Renderer
+     * beim Drucken.
      */
-    private static function safeSrc(string $src): string
+    public static function safeSrc(string $src): string
     {
         $src = trim($src);
         if ($src === '') {
