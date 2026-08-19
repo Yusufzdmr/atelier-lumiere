@@ -271,3 +271,49 @@ assert_same(Design::complete($rot), $rot, 'personalize: das Ergebnis ist bereits
 $vorher = $basis;
 DesignWizard::personalize($basis, ['layers' => ['namen' => ['color' => '#8B0000']]]);
 assert_same($vorher, $basis, 'personalize: die Vorlage bleibt unberuehrt');
+
+use Atelier\InvitationsV2;
+
+/*
+ * Der Name muss in beiden Tabellen frei sein.
+ *
+ * Das v2-Praefix in der Adresse ist absichtlich vorlaeufig (Phase 1, §1). An
+ * dem Tag, an dem es faellt, muss /einladung/{slug} genau eine Einladung
+ * treffen. Heute kostet das nichts; spaeter waere es unmoeglich - eine
+ * veroeffentlichte Adresse benennt man nicht um.
+ */
+if (needs_db()) {
+    // bin/test.php hat den Autoloader schon registriert und View.php schon
+    // per require geladen (nicht require_once) - src/bootstrap.php wuerde
+    // View.php ein zweites Mal einbinden und e() doppelt erklaeren. Deshalb
+    // hier nur das eine Stueck aus bootstrap.php nachholen, das wirklich
+    // fehlt: die Konfiguration fuer die Datenbankverbindung.
+    Atelier\Config::load(dirname(__DIR__) . '/config.php');
+
+    $name = 'test-v2-' . bin2hex(random_bytes(4));
+    assert_true(InvitationsV2::slugAvailable($name), 'slugAvailable: ein frischer Name ist frei');
+
+    InvitationsV2::create($name, 'elysee', ['id' => 'elysee', 'layers' => []], ['bride' => 'Marie']);
+    assert_true(!InvitationsV2::slugAvailable($name), 'slugAvailable: nach dem Anlegen belegt');
+
+    $gefunden = InvitationsV2::find($name);
+    assert_same('elysee', $gefunden['design_id'] ?? '', 'find: die Kennung des Designs steht drin');
+    assert_same('Marie', $gefunden['data']['bride'] ?? '', 'find: die Daten kommen als Feld zurueck');
+    assert_true(isset($gefunden['design_snapshot']['layers']), 'find: der Schnappschuss kommt als Feld zurueck');
+
+    \Atelier\Db::run('DELETE FROM invitations_v2 WHERE slug = ?', [$name]);
+
+    /*
+     * Die andere Haelfte: der Name muss auch in der ALTEN Tabelle frei sein.
+     *
+     * Faellt das v2 eines Tages aus der Adresse, muss /einladung/{slug} genau eine
+     * Einladung treffen. Ohne diesen Test ginge eine Fassung durch, die nur
+     * invitations_v2 befragt - die alte Tabelle ist leer, es faellt nicht auf.
+     */
+    $alt = 'test-alt-' . bin2hex(random_bytes(4));
+    \Atelier\Db::run('INSERT INTO invitations (slug, data) VALUES (?, ?)', [$alt, \Atelier\Db::encode(['slug' => $alt])]);
+    assert_true(!InvitationsV2::slugAvailable($alt), 'slugAvailable: in der alten Tabelle belegt zaehlt auch');
+    \Atelier\Db::run('DELETE FROM invitations WHERE slug = ?', [$alt]);
+} else {
+    echo "  (invitations_v2: uebersprungen, keine config.php)\n";
+}
