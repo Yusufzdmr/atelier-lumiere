@@ -231,6 +231,12 @@ final class DesignSections
      * ohne Farbe: die kommt aus den Marken des Designs, nicht von hier.
      * Jeder Selektor haengt am $scope - zwei Designs auf einer Seite duerfen
      * sich sonst gegenseitig umfaerben (siehe Design::css()).
+     *
+     * .d-sec-days bekommt hier den Abstand zum gedruckten Datum, nicht als
+     * Leerzeichen in der Verkettung in countdown(): ein Layout-Zwischenraum
+     * ist eine Stilfrage und gehoert ins Stylesheet - ein Leerzeichen mitten
+     * in einer PHP-Verkettung waere fuer den naechsten Leser unsichtbar und
+     * liesse sich unbemerkt wieder loeschen.
      */
     private static function baseline(string $scope): string
     {
@@ -238,6 +244,7 @@ final class DesignSections
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             . $scope . ' .d-sec-title{font-size:1.25rem;font-weight:600;line-height:1.3;margin-bottom:0.75rem;}'
             . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
+            . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
             . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto 1fr;gap:0.375rem 1.25rem;}'
             . $scope . ' .d-sec-program dt{font-weight:600;}'
             . $scope . ' .d-sec-program dd{margin:0;}';
