@@ -1109,6 +1109,25 @@ use Atelier\View;
  */
 final class InviteV2Controller
 {
+    /**
+     * Damit die Vorschau ueberhaupt Knoten hat.
+     *
+     * Ein gebundenes Textelement ohne Wert wird nicht gezeichnet. Stuende hier
+     * nichts, faende das Skript in Aufgabe 9 keine [data-bind]-Knoten und die
+     * Live-Vorschau bliebe still - ein Fehler, den man auf einem Bildschirmfoto
+     * nicht sieht. Dieselben Felder wie im Schaufenster.
+     */
+    private const BEISPIEL = [
+        'bride'   => 'Sophia',
+        'groom'   => 'Maximilian',
+        'date'    => '2027-09-12',
+        'time'    => '18:00',
+        'venue'   => 'Schloss Hohenstein',
+        'address' => 'Schlossstraße 1, 89312 Günzburg',
+        'message' => 'Wir heiraten und wünschen uns, dass ihr dabei seid.',
+        'hashtag' => '#sophiaundmaximilian',
+    ];
+
     public function wizard(): void
     {
         $locale = I18n::locale();
@@ -1145,7 +1164,12 @@ final class InviteV2Controller
             'values'  => [],
             'scope'   => $scope,
             'styles'  => Design::css($design, $scope),
-            'karte'   => Design::html($design, Design::bindValues([], $locale), $locale, 'card'),
+            // Beispieldaten, nicht leer. Design::html() ueberspringt ein
+            // gebundenes Textelement, dessen Wert leer ist (Design.php:487) -
+            // mit leeren Daten stuenden vier der sechs Elemente gar nicht erst
+            // im DOM, und die Vorschau in Aufgabe 9 fuellte etwas, das es nicht
+            // gibt. Das Skript leert sie beim ersten Lauf wieder.
+            'karte'   => Design::html($design, Design::bindValues(self::BEISPIEL, $locale), $locale, 'card'),
             'csrf'    => Security::csrf(),
             'error'   => '',
             'done'    => null,
