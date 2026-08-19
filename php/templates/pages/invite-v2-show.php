@@ -32,6 +32,7 @@
  * @var string $abschnitte
  */
 
+use function Atelier\e;
 use Atelier\View;
 ?>
 <?= View::partial('partials/design-stage', [
