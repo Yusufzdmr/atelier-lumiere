@@ -865,9 +865,10 @@ final class Design
      * im Formular steht, bleibt wie es war - ein leeres Feld ist kein
      * Loeschbefehl.
      *
-     * Was hier NICHT steht, steht mit Absicht nicht hier: box, canvas und
-     * sections. Die Kaesten gehoeren der vierten Phase, die Abschnitte der
-     * dritten. tests/design_admin.php haelt diese Grenze.
+     * Was hier NICHT steht, steht mit Absicht nicht hier: box und canvas.
+     * Die Kaesten gehoeren der vierten Phase. Die Abschnitte kommen mit der
+     * dritten Phase herein - sie werden gelesen. tests/design_admin.php
+     * haelt diese Grenze.
      *
      * @param array<string,mixed> $doc  das gespeicherte Dokument
      * @param array<string,mixed> $post rohe Formularwerte
@@ -979,6 +980,39 @@ final class Design
                 $doc['animation'][$feld] = (int) $post[$name];
             }
         }
+
+        /*
+         * Die Abschnitte kommen indiziert herein (sec_*_0, sec_*_1 …), damit
+         * die Reihenfolge im Formular die Reihenfolge im Dokument wird - genau
+         * wie bei den Ebenen der Index den z-Index bestimmt. Ein Eintrag ohne
+         * Kennung oder mit unbekanntem Typ faellt in DesignSections::complete()
+         * still weg; hier wird nur eingesammelt.
+         */
+        $abschnitte = [];
+        for ($i = 0; $i < 40; $i++) {
+            if (!isset($post['sec_type_' . $i])) {
+                continue;
+            }
+            $abschnitte[] = [
+                'id'      => Security::clean($post['sec_id_' . $i] ?? '', 64),
+                'type'    => Security::clean($post['sec_type_' . $i] ?? '', 24),
+                'title'   => [
+                    'de' => Security::clean($post['sec_title_de_' . $i] ?? '', 120),
+                    'en' => Security::clean($post['sec_title_en_' . $i] ?? '', 120),
+                ],
+                'enabled' => isset($post['sec_on_' . $i]),
+                'style'   => [
+                    'color' => Security::clean($post['sec_color_' . $i] ?? '', 64),
+                    'font'  => Security::clean($post['sec_font_' . $i] ?? '', 64),
+                ],
+                'permissions' => [
+                    'edit' => isset($post['perm_sec_edit_' . $i]),
+                    'hide' => isset($post['perm_sec_hide_' . $i]),
+                ],
+            ];
+        }
+        $doc['sections'] = $abschnitte;
+        $doc = DesignSections::complete($doc);
 
         // complete() zieht die Grenzen: unbekannte Enums fallen auf die
         // Voreinstellung, Zahlen werden geklemmt, Rechte zu Wahrheitswerten.

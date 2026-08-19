@@ -71,7 +71,7 @@ $rechte = Design::fromPost($basis, ['perm_color_gruss' => 'an']);
 assert_same(true, $rechte['layers'][0]['permissions']['color'], 'fromPost: gesetztes Recht kommt an');
 assert_same(false, $rechte['layers'][0]['permissions']['text'], 'fromPost: fehlendes Haekchen loescht das Recht');
 
-/* --- Die Grenze der Phase: box, canvas und sections bleiben unberuehrt --- */
+/* --- Die Grenze der Phase: box und canvas bleiben unberuehrt --- */
 
 $angriff = Design::fromPost($basis, [
     'box_x_gruss'  => '99',
@@ -87,8 +87,45 @@ assert_same(8, $angriff['layers'][0]['box']['x'], 'fromPost: box bleibt unberueh
 assert_same(12, $angriff['layers'][0]['box']['y'], 'fromPost: box bleibt unberuehrt (y)');
 assert_same('632:490', $angriff['canvas']['ratio'], 'fromPost: canvas bleibt unberuehrt');
 assert_same(6, $angriff['canvas']['safe'], 'fromPost: canvas safe bleibt unberuehrt');
-assert_same([], $angriff['sections'], 'fromPost: sections bleibt unberuehrt');
 assert_same(1, count($angriff['layers']), 'fromPost: die Ebenenliste kommt nicht aus dem Formular');
+
+/*
+ * Die Grenze verschiebt sich: box und canvas bleiben der vierten Phase, die
+ * Abschnitte kommen in der dritten herein. Frueher stand hier
+ * "sections bleibt unberuehrt" - das war richtig, solange es keinen Editor
+ * dafuer gab. Jetzt gibt es einen, und ein Formularwert, der kein Feld ist,
+ * darf trotzdem nichts anrichten.
+ */
+assert_same([], $angriff['sections'], 'fromPost: sections aus einem Nicht-Feld bleibt leer');
+
+/* --- Der Abschnitts-Editor: eine gute Zeile kommt normalisiert an, eine
+       unbekannte Art faellt weg --- */
+
+$mitAbschnitt = Design::fromPost($basis, [
+    'sec_id_0'    => 'Ort 1',
+    'sec_type_0'  => 'location',
+    'sec_title_de_0' => 'Ort',
+    'sec_title_en_0' => 'Place',
+    'sec_color_0' => 'accent',
+    'sec_font_0'  => 'display',
+    'sec_on_0'    => '1',
+    'perm_sec_edit_0' => '1',
+    'perm_sec_hide_0' => '1',
+
+    'sec_id_1'   => 'gibtesnicht',
+    'sec_type_1' => 'wetterbericht',
+]);
+
+assert_same(1, count($mitAbschnitt['sections']), 'fromPost: unbekannter Typ kommt nicht herein');
+assert_same('ort-1', $mitAbschnitt['sections'][0]['id'], 'fromPost: die Kennung wird normalisiert');
+assert_same('location', $mitAbschnitt['sections'][0]['type'], 'fromPost: der Typ steht');
+assert_same('Ort', $mitAbschnitt['sections'][0]['title']['de'], 'fromPost: der Titel steht');
+assert_same('accent', $mitAbschnitt['sections'][0]['style']['color'], 'fromPost: die Farbmarke steht');
+assert_same(true, $mitAbschnitt['sections'][0]['permissions']['hide'], 'fromPost: das Recht steht');
+
+$ohneHaken = Design::fromPost($basis, ['sec_id_0' => 'ort-1', 'sec_type_0' => 'location']);
+assert_same(false, $ohneHaken['sections'][0]['enabled'], 'fromPost: ohne Haken ist der Abschnitt aus');
+assert_same(false, $ohneHaken['sections'][0]['permissions']['edit'], 'fromPost: ohne Haken kein Recht');
 
 /* --- Kopieren: eine neue Vorlage faengt bei eins an --- */
 

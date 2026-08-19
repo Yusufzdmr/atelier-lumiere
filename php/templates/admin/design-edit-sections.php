@@ -11,6 +11,7 @@
  */
 
 use Atelier\Design;
+use Atelier\DesignSections;
 use Atelier\Themes;
 use function Atelier\e;
 ?>
@@ -183,7 +184,47 @@ use function Atelier\e;
   <?php endforeach; ?>
 <?= $zu ?>
 
-<?= $auf($tr ? '8 · Yayın' : '8 · Veröffentlichen') ?>
+<?= $auf($tr ? '8 · Bölümler' : '8 · Abschnitte') ?>
+  <p class="<?= $label ?>">
+    <?= $tr
+        ? 'Kartın altında görünenler. Sıra buradaki sıradır. "Düzenlenebilir" ana şalter: kapalıyken müşteri bu bölüme hiç dokunamaz.'
+        : 'Was unter der Karte steht. Die Reihenfolge hier ist die Reihenfolge auf der Seite. „Bearbeitbar" ist der Hauptschalter: ist er aus, fasst der Kunde diesen Abschnitt gar nicht an.' ?>
+  </p>
+  <?php
+  $sekmeler = $design['sections'];
+  // Immer eine leere Zeile mehr, damit ein Abschnitt ohne Umweg dazukommt.
+  $sekmeler[] = ['id' => '', 'type' => '', 'title' => ['de' => '', 'en' => ''],
+                 'enabled' => false, 'style' => ['color' => '', 'font' => ''],
+                 'permissions' => ['edit' => false, 'hide' => false]];
+  ?>
+  <?php foreach ($sekmeler as $i => $abschnitt) : ?>
+    <div class="grid gap-3 border-b border-sand-deep py-3 sm:grid-cols-6">
+      <input class="<?= $feld ?>" name="sec_id_<?= $i ?>" value="<?= e((string) $abschnitt['id']) ?>"
+             placeholder="<?= $tr ? 'kimlik' : 'Kennung' ?>">
+      <select class="<?= $feld ?>" name="sec_type_<?= $i ?>">
+        <option value=""><?= $tr ? '— yok —' : '— keiner —' ?></option>
+        <?php foreach (DesignSections::TYPES as $typ) : ?>
+          <option value="<?= e($typ) ?>" <?= (string) $abschnitt['type'] === $typ ? 'selected' : '' ?>><?= e($typ) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input class="<?= $feld ?>" name="sec_title_de_<?= $i ?>" value="<?= e((string) $abschnitt['title']['de']) ?>" placeholder="DE">
+      <input class="<?= $feld ?>" name="sec_title_en_<?= $i ?>" value="<?= e((string) $abschnitt['title']['en']) ?>" placeholder="EN">
+      <input class="<?= $feld ?>" name="sec_color_<?= $i ?>" value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="<?= $tr ? 'renk markası' : 'Farbmarke' ?>">
+      <input class="<?= $feld ?>" name="sec_font_<?= $i ?>" value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="<?= $tr ? 'yazı markası' : 'Schriftmarke' ?>">
+      <label class="flex items-center gap-2 text-[0.66rem] text-ink">
+        <input type="checkbox" name="sec_on_<?= $i ?>" <?= $abschnitt['enabled'] ? 'checked' : '' ?>>
+        <?= $tr ? 'Açık' : 'An' ?></label>
+      <label class="flex items-center gap-2 text-[0.66rem] text-ink">
+        <input type="checkbox" name="perm_sec_edit_<?= $i ?>" <?= $abschnitt['permissions']['edit'] ? 'checked' : '' ?>>
+        <?= $tr ? 'Düzenlenebilir' : 'Bearbeitbar' ?></label>
+      <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+        <input type="checkbox" name="perm_sec_hide_<?= $i ?>" <?= $abschnitt['permissions']['hide'] ? 'checked' : '' ?>>
+        <?= $tr ? 'Gizlenebilir' : 'Ausblendbar' ?></label>
+    </div>
+  <?php endforeach; ?>
+<?= $zu ?>
+
+<?= $auf($tr ? '9 · Yayın' : '9 · Veröffentlichen') ?>
   <p class="text-sm text-ink">
     <?= $tr ? 'Durum' : 'Zustand' ?>: <strong><?= e((string) $design['status']) ?></strong>
     · <?= $tr ? 'sürüm' : 'Fassung' ?> <?= (int) $design['version'] ?>
