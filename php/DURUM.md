@@ -277,6 +277,53 @@ var: galeri `beispiel-demo`.
 Kod güncellemesi: `tar czf … | scp` → sunucuda `tar xzf`.
 **msys2'nin `rsync`'i Windows'ta `ssh` açamıyor** (`dup() in/out/err failed`).
 
+## 19 Ağustos — Davetiye v2 Faz 1 demo sunucusunda
+
+`davetiye-v2-phase-1` dalı `master`'a alındı ve VPS demosuna yüklendi
+(https://45-147-46-177.sslip.io). Yükleme yine `tar` + `scp`; 150 dosya.
+Yükleme öncesi yedek: `/root/atelier-yedek-20260819-1013.tar.gz`.
+`config.php` ve `public/uploads/` pakete alınmadı, o yüzden ikisine de
+dokunulmadı. Komşu `gidonla.com` kontrol edildi: 200, nginx aktif.
+
+**Veritabanı 12 → 15 tablo.** `schema.sql` baştan sona `CREATE TABLE IF NOT
+EXISTS`, mevcut veriye dokunmadan üçünü kurdu: `designs`, `invitations_v2` ve
+bir de `admin_usage` — sonuncusu panel kullanım sayacının tablosu, 17 Ağustos
+yüklemesinden sonra eklendiği için sunucuda hiç yoktu. Şema tek satır SQL
+parolası açığa çıkmadan `config.php` üzerinden PDO ile koşuldu.
+
+Sonra `php bin/seed-designs.php` — Élysée belgesi 14 katmanla kuruldu.
+Doğrulandı: `/de/v2/designs`, `/de/v2/designs/elysee`, `/tr/admin/designs`
+200; bilinmeyen slug 404; eski yolların hepsi (ana sayfa, eski katalog, eski
+davetiye sihirbazı, panel) 200.
+
+### Canlıdaki renkler siyahtı — geri alındı
+
+Yükleme sonrası isimler altın değil siyah çıktı. Sebep kodda değil **içerikte**:
+canlı `site_content` içinde `elysee` temasının `accent`, `fg` ve `soft` alanları
+`#000000` idi. Eski sayfa da aynı şekilde koyu basıyordu, yani v2 veriyi
+sadakatle yansıtıyordu.
+
+Kod aklandı: kaydetme yolu (`AdminController` → `Security::clean(...) ?: eski
+değer`) kendiliğinden asla siyah yazmıyor, `admin.js` renk seçiciyi yalnızca
+kullanıcı girdisinde metin alanına kopyalıyor, ve 18 Ağustos'ta sunucuda
+çalışan şablon bugünküyle aynı (iki ayrı alan: seçici + metin). Bozulan yalnızca
+o gün panelde elle dokunulan dört kayıt — `elysee`, `elysee-variante`, `test-2`,
+`1a-test` — ve hep aynı üç alan.
+
+`elysee` Yusuf'un onayıyla belgelenmiş değerlerine döndürüldü
+(`accent #B08D57`, `fg #221C16`, `soft rgba(34,28,22,0.58)`; kaynak
+`data/themes.php` ve `data/inhalte.sql`). Üç deneme temasına **dokunulmadı**.
+
+> **Bunu bir daha yaşarsan:** v2 tasarım belgesi paleti temadan **kopyalayarak**
+> saklıyor. Temanın rengini değiştirdikten sonra `php bin/seed-designs.php`
+> yeniden koşmazsan v2 eski rengi göstermeye devam eder. Bu, Faz 2'de panelden
+> renk düzenlenince otomatik yapılmalı.
+
+ALL-INKL tarafı değişmedi: kod orada duruyor ama `config.php` hâlâ yok, yani
+site ayağa kalkmış değil. `atelier-lumiere.de` de checkdomain'de park hâlinde
+(sertifikası `*.checkdomain.de`), `atelier.newbornshooting-babydream.de` ise
+kasserver'a düşüyor ama kendi sertifikası yok.
+
 ## 17 Ağustos — kullanım kolaylığı ve SEO
 
 Hepsi „sahibi teknik değil, telefondan yönetecek" ölçütüyle yapıldı.
