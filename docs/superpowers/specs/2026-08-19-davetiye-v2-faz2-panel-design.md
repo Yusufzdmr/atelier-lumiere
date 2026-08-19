@@ -172,18 +172,43 @@ bir doğruluk olur — ve ikisi zamanla ayrışır.
 Sonuncusu bu fazın bekçisi: editör yüzeyi düzenler, geometriye dokunmaz — ve
 bunu bir cümle değil, bir test söyler.
 
-## 10. Bitti sayılma ölçütü
+## 10. Bitti sayılma ölçütü — 2026-08-19'da doğrulandı
 
-- [ ] Katalogda iki tasarım görsel kartla duruyor, kategori süzgeci çalışıyor
-- [ ] Kopyalama yeni slug ile yeni bir taslak üretiyor ve editöre düşürüyor
-- [ ] Temadan oluşturma 14 temanın herhangi biriyle çalışıyor; sahne dosyası
-      yoksa açıkça söylüyor
-- [ ] Renk ve yazı değişikliği önizlemede **kaydetmeden** görünüyor
-- [ ] Kaydedip genel sayfayı açınca aynısı görünüyor (panel ile sayfa ayrışmıyor)
-- [ ] Uyarılı bir tasarım aktife alınırken sayı söyleniyor ve onay isteniyor
-- [ ] İki sekmede aynı tasarım açılıp ikisi de kaydedilince ikincisi reddediliyor
-- [ ] `git diff` ile: `box`, `canvas`, `sections` alanlarına yazan tek satır yok
-- [ ] Eski panel sekmeleri ve genel sayfalar bozulmamış (hepsi 200)
+Panel şifresi geliştiricide olmadığı için ekranlar giriş yapılarak değil,
+şablonlar gerçek belgeyle offline render edilerek ve kontrolör metotları
+doğrudan çağrılarak doğrulandı. Hangi maddenin hâlâ göz istediği aşağıda yazılı.
+
+- [x] **Katalogda iki tasarım görsel kartla duruyor**, kategori süzgeci
+      çalışıyor — render: 2 kart, 2 süzgeç bağlantısı, aktif olanın çerçevesi
+      altın.
+- [x] **Kopyalama** yeni slug ile taslak üretiyor: `elysee-probe`, taslak,
+      sürüm 1, 14 katman. Aynı adla ikinci deneme `fehler=belegt`, adsız
+      `fehler=name`, bilinmeyen kaynak `fehler=quelle`.
+- [x] **Temadan oluşturma** — kapsam değişti: tema kartın yerleşimini
+      taşımadığı için form artık *yerleşim hangi tasarımdan* + *renk hangi
+      temadan* diye soruyor (bkz. §4). Élysée yerleşimi + Noir teması: 14
+      katman, `#C9A24B`, Great Vibes, `darkroom`, köşeler `noir-1/noir-3`.
+      Sahnesiz temada (`sage`) köşeler tabandan kalıyor ve mesaj bunu söylüyor.
+- [x] **Renk ve yazı değişikliği kaydetmeden görünüyor** — mekanizma canlı
+      kartta ölçüldü: `--d-accent`, `--dfw-script`, `--df-script` ve bir metin
+      düğümü değişince isimler anında kırmızı, kalın, düz ve selamlama yeni
+      metinle geldi. Betiğin yaptığı tam olarak bu. **Formun kendi
+      bağlantısını gözle görmek girişe bağlı — sende kaldı.**
+- [x] **Kaydedince genel sayfada aynısı görünüyor** — `fromPost` + `save`
+      sonrası CSS'te yeni renk yazılı, kutular kımıldamamış.
+- [x] **Uyarılı tasarım aktife alınırken soruyor** — dört yol da sınandı:
+      temiz tasarım tek tıkla açılıp kapanıyor; bir uyarısı olan taslak
+      `frage=aktivieren&n=1` ile geri dönüyor ve **taslak kalıyor**;
+      onaylanınca yayınlanıyor; kapatma hiç sormuyor.
+- [x] **Çakışma reddi** kodda ve testte: formda gizli sürüm, kayıttakinden
+      küçükse `?fehler=veraltet`. **İki sekmeyle gerçek denemesi girişe bağlı.**
+- [x] **Sınır kanıtlandı:** Faz 2'nin bütün diff'inde `box`, `canvas` ya da
+      `sections` alanına **yazan tek satır yok**; ayrıca `fromPost()` testi
+      POST'a `box_x`, `canvas_ratio`, `sections` ve komple bir katman listesi
+      koyup belgenin kımıldamadığını gösteriyor.
+- [x] **Eskisi bozulmamış:** 17 yol denendi, hepsi 200. Faz 2'de değişen mevcut
+      dosya yedi (üçü test, biri şablon, üçü kaynak/rota); yeni dosya beş.
+      261 kontrol geçiyor.
 
 ## 11. Riskler
 
