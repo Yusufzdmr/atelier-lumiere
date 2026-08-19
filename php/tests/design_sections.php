@@ -195,19 +195,29 @@ assert_same('', DesignSections::html(sec_doc([['id' => 'p', 'type' => 'program']
  * aber kein Test hat das bisher geprueft. Wuerden beide mb_substr-Aufrufe
  * geloescht, liefe die ganze Suite trotzdem gruen.
  *
- * Der mehrbytige Fall wird getrennt geprueft: ein byteweiser Schnitt mitten
- * durch ein zweibytiges Zeichen ergaebe eine kaputte Zeichenkette, die erst
- * auf der Seite auffaellt - mb_strlen allein wuerde das nicht immer zeigen,
- * aber mb_check_encoding schon.
+ * Das Zeichen '—' (Gedankenstrich, U+2014) ist in UTF-8 drei Byte breit, und
+ * PROGRAM_LEN (80) ist kein Vielfaches von drei. Ein byteweiser Schnitt bei
+ * 80 Byte liegt deshalb zwingend mitten in einem Zeichen (80 / 3 = 26 Rest 2)
+ * und ergibt eine kaputte Zeichenkette, die erst auf der Seite auffaellt.
+ * Mit 'üş' (zwei Byte je Zeichen) waere 80 dagegen ein Vielfaches der
+ * Zeichenbreite - ein byteweiser Schnitt landete dort zufaellig auch auf
+ * einer Zeichengrenze und mb_check_encoding koennte den Fehler nicht zeigen.
+ * Deshalb steht hier ein drittes, eigens gewaehltes Zeichen.
  */
 
 $lang = DesignSections::programRows(['program' => [
     ['time' => '15:00', 'title' => str_repeat('A', 90)],
 ]]);
-assert_same(80, mb_strlen($lang[0]['title']), 'programRows: Titel wird auf PROGRAM_LEN gekuerzt');
+assert_same(DesignSections::PROGRAM_LEN, mb_strlen($lang[0]['title']), 'programRows: Titel wird auf PROGRAM_LEN gekuerzt');
 
 $mehrbytig = DesignSections::programRows(['program' => [
     ['time' => '15:00', 'title' => str_repeat('üş', 60)],
 ]]);
-assert_same(80, mb_strlen($mehrbytig[0]['title']), 'programRows: mehrbytiger Titel wird auf PROGRAM_LEN gekuerzt');
-assert_same(true, mb_check_encoding($mehrbytig[0]['title'], 'UTF-8'), 'programRows: mehrbytiger Schnitt bleibt gueltiges UTF-8');
+assert_same(DesignSections::PROGRAM_LEN, mb_strlen($mehrbytig[0]['title']), 'programRows: mehrbytiger Titel wird auf PROGRAM_LEN gekuerzt');
+
+// Das eigentliche Beweisstueck: eine Zeichenbreite, die PROGRAM_LEN nicht teilt.
+$dreibytig = DesignSections::programRows(['program' => [
+    ['time' => '15:00', 'title' => str_repeat('—', 100)],
+]]);
+assert_same(DesignSections::PROGRAM_LEN, mb_strlen($dreibytig[0]['title']), 'programRows: dreibytiger Titel wird auf PROGRAM_LEN gekuerzt');
+assert_same(true, mb_check_encoding($dreibytig[0]['title'], 'UTF-8'), 'programRows: dreibytiger Schnitt bleibt gueltiges UTF-8');
