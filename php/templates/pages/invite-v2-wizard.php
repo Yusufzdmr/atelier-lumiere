@@ -48,6 +48,7 @@ $field = 'mt-2 w-full border border-sand-deep bg-cream px-4 py-3 text-sm text-in
 $stepTitles = [
     'angaben'          => $t('stepAngaben'),
     'bilder'           => $t('stepBilder'),
+    'abschnitte'       => $t('stepAbschnitte'),
     'design'           => $t('stepDesign'),
     'veroeffentlichen' => $t('stepPublish'),
 ];
@@ -120,6 +121,49 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <label class="<?= $label ?>" for="b-<?= e($id) ?>"><?= e($id) ?></label>
               <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
                      accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+
+        <?php if ($key === 'abschnitte') : ?>
+          <?php foreach ($choices['sections'] as $sid => $abschnitt) : ?>
+            <div class="border-t border-sand-deep pt-6">
+              <div class="<?= $label ?>"><?= e($sid) ?></div>
+
+              <?php if ($abschnitt['hide']) : ?>
+                <label class="mt-3 flex items-center gap-2 text-sm text-muted">
+                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>"> <?= e($t('sectionHide')) ?>
+                </label>
+              <?php endif; ?>
+
+              <?php if (in_array('families', $abschnitt['fields'], true)) : ?>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label class="<?= $label ?>" for="fb"><?= e($t('familyBride')) ?></label>
+                    <input id="fb" name="family_bride" class="<?= $field ?>" maxlength="120" value="<?= e($old('family_bride')) ?>">
+                  </div>
+                  <div>
+                    <label class="<?= $label ?>" for="fg"><?= e($t('familyGroom')) ?></label>
+                    <input id="fg" name="family_groom" class="<?= $field ?>" maxlength="120" value="<?= e($old('family_groom')) ?>">
+                  </div>
+                </div>
+              <?php endif; ?>
+
+              <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
+                <?php /*
+                   Feste Zeilenzahl statt Hinzufuegen-Knopf: ohne Skript
+                   funktioniert das Formular sonst nicht, und der alte
+                   Assistent macht es genauso.
+                */ ?>
+                <?php for ($z = 0; $z < 8; $z++) : ?>
+                  <div class="mt-3 grid gap-3 sm:grid-cols-[8rem_1fr]">
+                    <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
+                           placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
+                    <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
+                           placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
+                  </div>
+                <?php endfor; ?>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
