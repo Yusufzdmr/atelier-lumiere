@@ -157,6 +157,32 @@ $meldungen = [
             </a>
           </div>
 
+          <form method="post">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="was" value="durum">
+            <input type="hidden" name="quelle" value="<?= e($id) ?>">
+            <button class="border border-sand-deep px-3 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
+              <?= $akt ? ($tr ? 'Pasife al' : 'Deaktivieren') : ($tr ? 'Aktife al' : 'Aktivieren') ?>
+            </button>
+          </form>
+
+          <?php if ((string) ($_GET['frage'] ?? '') === 'aktivieren' && (string) ($_GET['id'] ?? '') === $id) : ?>
+            <form method="post" class="space-y-2 border-l-2 border-gold p-3">
+              <p class="text-sm text-ink">
+                <?= $tr
+                  ? 'Bu tasarımda ' . (int) ($_GET['n'] ?? 0) . ' uyarı var. Yine de yayınlansın mı?'
+                  : 'Diese Vorlage hat ' . (int) ($_GET['n'] ?? 0) . ' Hinweise. Trotzdem veröffentlichen?' ?>
+              </p>
+              <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+              <input type="hidden" name="was" value="durum">
+              <input type="hidden" name="quelle" value="<?= e($id) ?>">
+              <input type="hidden" name="bestaetigt" value="1">
+              <button class="bg-ink px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+                <?= $tr ? 'Uyarılarla yayınla' : 'Mit Hinweisen veröffentlichen' ?>
+              </button>
+            </form>
+          <?php endif; ?>
+
           <form method="post" class="flex flex-wrap items-center gap-2">
             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
             <input type="hidden" name="was" value="kopyala">

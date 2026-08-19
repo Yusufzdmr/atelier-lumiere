@@ -97,6 +97,9 @@ final class DesignAdminController
         if ($was === 'temadan') {
             $this->zurueck($locale, $this->ausThema());
         }
+        if ($was === 'durum') {
+            $this->zurueck($locale, $this->durum());
+        }
 
         $this->zurueck($locale, 'fehler=unbekannt');
     }
@@ -187,6 +190,31 @@ final class DesignAdminController
             return 'ok=uebernommen_ohne_kunst';
         }
         return count($pfade) < $ecken ? 'ok=uebernommen_teilweise' : 'ok=uebernommen';
+    }
+
+    /** Aktiv/inaktiv. Hinweise halten nicht auf, aber sie werden gesagt. */
+    private function durum(): string
+    {
+        $design = Design::findById(Security::clean($_POST['quelle'] ?? '', 64));
+        if ($design === null) {
+            return 'fehler=quelle';
+        }
+
+        $ziel = (string) $design['status'] === 'active' ? 'inactive' : 'active';
+
+        // Beim Abschalten fragt niemand. Beim Einschalten schon - und die
+        // Hinweise werden hier neu gerechnet, nicht aus dem Formular geglaubt.
+        if ($ziel === 'active' && !isset($_POST['bestaetigt'])) {
+            $meldungen = Design::warnings($design);
+            if ($meldungen !== []) {
+                return 'frage=aktivieren&id=' . rawurlencode((string) $design['id']) . '&n=' . count($meldungen);
+            }
+        }
+
+        $design['status'] = $ziel;
+        Design::save($design);
+
+        return 'ok=' . ($ziel === 'active' ? 'aktiv' : 'inaktiv');
     }
 
     /**
