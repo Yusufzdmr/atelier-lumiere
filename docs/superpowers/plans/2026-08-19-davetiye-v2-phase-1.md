@@ -741,6 +741,16 @@ Beklenen: `Call to undefined method Atelier\Design::css()`.
 
             if ($el['type'] === 'text') {
                 $style = $el['style'];
+
+                // Die Werte der Schriftmarke, auf die das Element zeigt.
+                $schrift = '';
+                if ($style['font'] !== '' && isset($doc['fonts'][$style['font']])) {
+                    $marke = $doc['fonts'][$style['font']];
+                    $schrift = 'font-weight:' . $marke['weight'] . ';'
+                        . 'letter-spacing:' . ($marke['tracking'] / 100) . 'em;'
+                        . 'line-height:' . ($marke['lineHeight'] / 100) . ';';
+                }
+
                 $css .= $selector . '{'
                     . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
                     . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
@@ -1926,6 +1936,11 @@ Birincisi, sahnenin kendisi kap ilan edilsin. Palet değişkenlerini yazan bloğ
                     // sonst waechst die Karte und die Schrift bleibt stehen.
                     . 'font-size:' . ($style['size'] / 10) . 'cqw;'
                     . 'text-align:' . $style['align'] . ';'
+                    // Gewicht, Laufweite und Zeilenhoehe standen bisher in der
+                    // Schriftmarke und wurden nie geschrieben - ein Drittel der
+                    // Typografie lag tot im Dokument, und die Namen kamen in
+                    // der Standardstaerke mit Standardzeilenhoehe heraus.
+                    . $schrift
                     . '}';
             }
 ```
@@ -2252,8 +2267,8 @@ Faz 1'in üretebileceği kısım **açılış görünümü**: kartın üst **490
 | Element | bind / metin | x | y | w | `size` |
 |---|---|---|---|---|---|
 | `gruss` | sabit "Wir heiraten" | 8 | 12 | 85 | 15 |
-| `marie` | `bride_name` | 37 | 20 | 27 | 111 |
-| `jonas` | `groom_name` | 37 | 44 | 25 | 111 |
+| `marie` | `bride_name` | 8 | 20 | 85 | 111 |
+| `jonas` | `groom_name` | 8 | 44 | 85 | 111 |
 | `tag` | `wedding_weekday` | 8 | 73 | 85 | 18 |
 | `datum` | `wedding_date` | 8 | 77 | 85 | 38 |
 | `saat` | `wedding_time` | 8 | 84 | 85 | 23 |
@@ -2426,14 +2441,17 @@ $ebenen = [
     // Zwei Zeilen, kein Name am Stueck - so steht es im Original.
     ['id' => 'marie', 'label' => 'Braut', 'type' => 'text', 'spot' => 'card',
      'bind' => 'bride_name',
-     'box' => ['x' => 37, 'y' => 20, 'w' => 27, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     // Volle Textbreite, nicht die gemessene Breite des kurzen Namens:
+     // gemessen wurde "Marie", und ein langer Name laeuft aus einem 27%-Kasten
+     // nach beiden Seiten heraus. Zentriert wird per text-align.
+     'box' => ['x' => 8, 'y' => 20, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
      'permissions' => ['color' => true]],
 
     ['id' => 'jonas', 'label' => 'Braeutigam', 'type' => 'text', 'spot' => 'card',
      'bind' => 'groom_name',
-     'box' => ['x' => 37, 'y' => 44, 'w' => 25, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => 44, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 550, 'duration' => 1200],
      'permissions' => ['color' => true]],
