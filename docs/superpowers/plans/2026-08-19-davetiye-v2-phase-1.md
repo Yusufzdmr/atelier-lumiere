@@ -1458,7 +1458,7 @@ CREATE TABLE IF NOT EXISTS designs (
   version    INT UNSIGNED NOT NULL DEFAULT 1,
   sort       INT          NOT NULL DEFAULT 0,
   cover      VARCHAR(255) NOT NULL DEFAULT '',
-  doc        LONGTEXT     NOT NULL CHECK (JSON_VALID(doc)),
+  data       LONGTEXT     NOT NULL CHECK (JSON_VALID(data)),
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY designs_slug_idx (slug),
@@ -1579,17 +1579,27 @@ Beklenen: `config.php` yoksa "übersprungen" yazar ve geçer. Varsa `Call to und
 ```php
     /* ------------------------------ Speicher ------------------------------ */
 
+    /*
+     * Warum die Spalte `data` heisst und nicht `doc`:
+     *
+     * Db::json() und Db::jsonList() lesen die Spalte mit dem festen Namen
+     * `data` – sie nehmen ihn nicht aus der Abfrage. Alle elf JSON-Spalten des
+     * bestehenden Schemas heissen deshalb so. Eine Spalte `doc` haette hier
+     * still `null` geliefert, und zwar erst bei der ersten Abfrage, die
+     * jemand spaeter ohne Alias schreibt.
+     */
+
     /** @return array<string,mixed>|null */
     public static function find(string $slug): ?array
     {
-        $doc = Db::json('SELECT doc FROM designs WHERE slug = ? LIMIT 1', [$slug]);
+        $doc = Db::json('SELECT data FROM designs WHERE slug = ? LIMIT 1', [$slug]);
         return $doc === null ? null : self::complete($doc);
     }
 
     /** @return array<string,mixed>|null */
     public static function findById(string $id): ?array
     {
-        $doc = Db::json('SELECT doc FROM designs WHERE id = ? LIMIT 1', [$id]);
+        $doc = Db::json('SELECT data FROM designs WHERE id = ? LIMIT 1', [$id]);
         return $doc === null ? null : self::complete($doc);
     }
 
@@ -1600,8 +1610,8 @@ Beklenen: `config.php` yoksa "übersprungen" yazar ve geçer. Varsa `Call to und
     public static function all(string $status = ''): array
     {
         $rows = $status === ''
-            ? Db::jsonList('SELECT doc FROM designs ORDER BY sort, slug')
-            : Db::jsonList('SELECT doc FROM designs WHERE status = ? ORDER BY sort, slug', [$status]);
+            ? Db::jsonList('SELECT data FROM designs ORDER BY sort, slug')
+            : Db::jsonList('SELECT data FROM designs WHERE status = ? ORDER BY sort, slug', [$status]);
 
         return array_values(array_map([self::class, 'complete'], $rows));
     }
@@ -1629,12 +1639,12 @@ Beklenen: `config.php` yoksa "übersprungen" yazar ve geçer. Varsa `Call to und
         }
 
         Db::run(
-            'INSERT INTO designs (id, slug, family, category, status, version, sort, cover, doc)
-             VALUES (:id, :slug, :family, :category, :status, :version, :sort, :cover, :doc)
+            'INSERT INTO designs (id, slug, family, category, status, version, sort, cover, data)
+             VALUES (:id, :slug, :family, :category, :status, :version, :sort, :cover, :data)
              ON DUPLICATE KEY UPDATE
                slug = VALUES(slug), family = VALUES(family), category = VALUES(category),
                status = VALUES(status), version = VALUES(version), sort = VALUES(sort),
-               cover = VALUES(cover), doc = VALUES(doc)',
+               cover = VALUES(cover), data = VALUES(data)',
             [
                 'id'       => $doc['id'],
                 'slug'     => $doc['slug'],
@@ -1644,7 +1654,7 @@ Beklenen: `config.php` yoksa "übersprungen" yazar ve geçer. Varsa `Call to und
                 'version'  => $doc['version'],
                 'sort'     => $doc['sort'],
                 'cover'    => $doc['cover'],
-                'doc'      => Db::encode($doc),
+                'data'     => Db::encode($doc),
             ]
         );
     }
