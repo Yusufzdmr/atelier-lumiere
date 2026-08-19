@@ -1742,7 +1742,7 @@ kullanıyor. İkisi de Task 6 ve Task 12'de karşılanıyor.
 
 ---
 
-## Task 6: `shape` elementi — bulanıklık ve köşe yuvarlaklığı
+## Task 6: `shape` elementi (bulanıklık, yuvarlaklık) ve kartla ölçeklenen metin
 
 **Files:**
 - Create: `php/tests/design_shape.php`
@@ -1890,19 +1890,80 @@ Beklenen: FAIL — `shape: ohne Angabe kein Weichzeichner` (dizi anahtarı yok).
             }
 ```
 
-- [ ] **Step 5: Testleri çalıştır**
+- [ ] **Step 5: Metin kartla birlikte ölçeklensin**
+
+Bugün `css()` metin boyutunu `font-size: <size>%` diye yazıyor. Yüzde, **devralınan** boyutun
+yüzdesidir — kartın değil. Sonuç: kart daralınca yazı aynı piksel boyutunda kalır ve tasarım
+telefonda başka, masaüstünde başka orantıda görünür. Formatın "her ölçü yüzde" sözü metinde
+tutulmuyor.
+
+`cqw` (kabın genişliğinin yüzdesi) bunu düzeltiyor: `1cqw` = sahnenin genişliğinin %1'i. Böylece
+tasarım tek parça hâlinde büyüyüp küçülüyor.
+
+`php/src/Design.php` içinde `css()` metodunda **iki** değişiklik:
+
+Birincisi, sahnenin kendisi kap ilan edilsin. Palet değişkenlerini yazan bloğa ekle:
+
+```php
+        if ($vars !== '') {
+            // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
+            // Breite. Ohne diese Zeile haette cqw keinen Bezug und die
+            // Schriftgroesse fiele auf den geerbten Wert zurueck.
+            $css .= $scope . '{container-type:inline-size;' . $vars . '}';
+        }
+```
+
+İkincisi, metin kuralında birim değişsin:
+
+```php
+            if ($el['type'] === 'text') {
+                $style = $el['style'];
+                $css .= $selector . '{'
+                    . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
+                    . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
+                    // Prozent der Kartenbreite, nicht der geerbten Groesse:
+                    // sonst waechst die Karte und die Schrift bleibt stehen.
+                    . 'font-size:' . ($style['size'] / 10) . 'cqw;'
+                    . 'text-align:' . $style['align'] . ';'
+                    . '}';
+            }
+```
+
+`size / 10` bilinçli: `size` alanının aralığı 1…500 ve varsayılanı 100. Bölme, 100'ün makul bir
+gövde metni (kart genişliğinin %10'u) olmasını sağlıyor, yani alanın anlamı "gövde metninin katı"
+olarak kalıyor ve mevcut varsayılan bozulmuyor.
+
+`php/tests/design_shape.php` sonuna ekle:
+
+```php
+/* --- Text waechst mit der Karte, nicht mit der geerbten Groesse --- */
+
+$css = Design::css([
+    'id'     => 't',
+    'layers' => [['id' => 'namen', 'type' => 'text', 'style' => ['size' => 260]]],
+], '.d-t');
+
+assert_contains($css, 'container-type:inline-size', 'css: der Bereich wird zum Bezugsrahmen');
+assert_contains($css, 'font-size:26cqw', 'css: Groesse zaehlt in Kartenbreite');
+assert_not_contains($css, 'font-size:260%', 'css: kein Prozent der geerbten Groesse mehr');
+
+$css = Design::css(['id' => 'u', 'layers' => [['id' => 'a', 'type' => 'text']]], '.d-u');
+assert_contains($css, 'font-size:10cqw', 'css: der Standard 100 wird zu 10cqw');
+```
+
+- [ ] **Step 6: Testleri çalıştır**
 
 Çalıştır: `cd php && php bin/test.php design_shape`
 Beklenen: PASS.
 
 Çalıştır: `cd php && php bin/test.php`
-Beklenen: PASS — Task 1–3'ün testleri de hâlâ geçiyor.
+Beklenen: PASS — Task 1–5'in testleri de hâlâ geçiyor.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add php/tests/design_shape.php php/src/Design.php
-git commit -m "The format grows a blur, because a real design asked for one
+git commit -m "The format grows a blur, and its text learns to scale
 
 Élysée's background is two blurred circles of colour. The document format
 could not say that, which is the proof test doing its job: a shape now
