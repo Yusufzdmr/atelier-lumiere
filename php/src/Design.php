@@ -24,7 +24,8 @@ final class Design
     /** Welche dynamischen Felder eine Vorlage einsetzen darf. */
     public const BINDS = [
         'couple_names', 'bride_name', 'groom_name', 'initials',
-        'wedding_date', 'wedding_time', 'location_name', 'location_address',
+        'wedding_date', 'wedding_weekday', 'wedding_time',
+        'location_name', 'location_address',
         'invitation_text', 'hashtag',
     ];
 
@@ -519,6 +520,7 @@ final class Design
             'groom_name'       => $groom,
             'initials'         => mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1),
             'wedding_date'     => $date !== '' ? Dates::long($date, $locale) : '',
+            'wedding_weekday'  => $date !== '' ? Dates::weekday($date, $locale) : '',
             'wedding_time'     => trim((string) ($data['time'] ?? '')),
             'location_name'    => trim((string) ($data['venue'] ?? '')),
             'location_address' => trim((string) ($data['address'] ?? '')),
@@ -667,7 +669,10 @@ final class Design
             'slug'      => (string) ($theme['id'] ?? ''),
             'name'      => ['de' => (string) ($theme['name'] ?? ''), 'en' => (string) ($theme['name'] ?? '')],
             'family'    => (string) ($theme['family'] ?? ''),
-            'version'   => max(1, (int) ($theme['version'] ?? 1)),
+            // Fassung NICHT vom Thema uebernehmen: das ist eine neue Zeile in
+            // einer neuen Tabelle und hat noch nie eine eigene Speicherung
+            // gesehen. complete() gibt ihr den Standard 1; save() zaehlt von
+            // da an selbst hoch, wenn sich der Inhalt aendert.
             'palette'   => $palette,
             'layers'    => array_merge($back, $front),
             // Achtung, zwei Bedeutungen: das Thema hat ein skalares Feld

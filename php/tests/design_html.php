@@ -138,3 +138,12 @@ assert_same('', $pruef('/UPLOADS/x.png'), 'safeSrc: falsche Schreibung wird verw
 
 assert_contains($pruef('/uploads/blume.webp'), '/uploads/blume.webp', 'safeSrc: eigener Upload kommt durch');
 assert_contains($pruef('/assets/designs/elysee-1.svg'), '/assets/designs/elysee-1.svg', 'safeSrc: eigenes Asset kommt durch');
+
+/* --- Der Wochentag ist ein eigenes Feld: Dates::long() kennt ihn nicht --- */
+
+$werte = Design::bindValues(['date' => '2027-06-20'], 'de');
+
+assert_true(str_contains($werte['wedding_date'], '2027'), 'bindValues: Datum traegt das Jahr');
+assert_true(!str_contains($werte['wedding_date'], 'Sonntag'), 'bindValues: das Datum traegt den Tag NICHT');
+assert_same('Sonntag', $werte['wedding_weekday'], 'bindValues: der Wochentag kommt getrennt');
+assert_same('', Design::bindValues([], 'de')['wedding_weekday'], 'bindValues: ohne Datum kein Wochentag');
