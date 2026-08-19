@@ -107,9 +107,6 @@ $doc['status']   = 'active';
 $doc['category'] = $cfg['kategorie'];
 $doc['tags']     = $cfg['tags'];
 $doc['sort']     = $cfg['sort'];
-// Den Namen traegt fromTheme() nicht mit - es kennt nur Farben, Schriften
-// und Bewegung. Er kommt deshalb hier aus dem Thema.
-$doc['name']     = ['de' => (string) $theme['name'], 'en' => (string) $theme['name']];
 // Gemessen, nicht gewaehlt: der Kopf der Karte ist 632 x 490 - quer, nicht
 // hochkant. Was darunter liegt, sind Abschnitte und gehoert nach Faz 3.
 $doc['canvas']   = ['ratio' => '632:490', 'safe' => 6];

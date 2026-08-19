@@ -522,8 +522,13 @@ koyu zemin + farklı partikül).
 > | Bulgu | Durum |
 > |---|---|
 > | **Aynalama.** Eski motor aynı çizimi dört köşeye `scale:-1 1` ve `scale:1 -1` ile koyuyor; kutuda yalnızca `rotate` vardı ve 180° dönüş ayna değildir. Élysée'nin sol alt yaprağı da bu yüzden yaklaşık duruyordu. | **Kapatıldı:** kutuya `flipx`/`flipy` eklendi, `css()` `rotate()` yanına `scale()` yazıyor, testleri var (199 kontrol). İki tasarım da yeniden tohumlandı. |
-> | **`texture`.** Noir zemininde data-URI'li bir gürültü deseni taşıyor; `Design::fromTheme()` bu alanı hiç görmüyor, format da bir desen/doku katmanı bilmiyor. | Faz 2 |
-> | **`fromTheme()` temanın adını taşımıyor.** Yalnızca renk, yazı ve hareket geçiyor; ad tohumda elle veriliyordu ve ilk Noir kaydı "Élysée" adıyla açıldı. | Tohumda düzeltildi; `fromTheme()` tarafı Faz 2 |
+> | **`texture`.** Her tema data-URI'li bir gürültü deseni taşıyor (`data/themes.php`), ama **PHP tarafında kimse okumuyor** — ne eski motor ne v2. Yalnızca Next.js sürümü kullanıyor (`components/InviteCard.tsx:122,165`, `InviteBuilder.tsx:405`). Yani v2'nin kaybettiği bir şey değil; PHP portu onu baştan taşımamış. | Faz 2 adayı, karşılaştırma borcu değil |
+>
+> **Bir madde geri çekildi.** Önce "`fromTheme()` temanın adını taşımıyor" diye
+> yazılmıştı; yanlıştı. `fromTheme()` adı baştan beri taşıyor ve
+> `tests/design_from_theme.php:31` bunu zaten sınıyor. İlk Noir kaydının
+> "Élysée" adıyla açılmasının sebebi tohum betiğindeki sabit satırdı; o satır
+> silindi, ad artık tek yerden geliyor.
 >
 > Ayrıca Noir'ın miras aldığı hareket eksenleri (`spark` partikülü, `darkroom`
 > girişi, `pulse` boşta hareketi, `letters` isim animasyonu, `flip` kart
