@@ -1905,12 +1905,10 @@ tasarım tek parça hâlinde büyüyüp küçülüyor.
 Birincisi, sahnenin kendisi kap ilan edilsin. Palet değişkenlerini yazan bloğa ekle:
 
 ```php
-        if ($vars !== '') {
-            // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
-            // Breite. Ohne diese Zeile haette cqw keinen Bezug und die
-            // Schriftgroesse fiele auf den geerbten Wert zurueck.
-            $css .= $scope . '{container-type:inline-size;' . $vars . '}';
-        }
+        // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
+        // Breite. Das gilt IMMER, auch ohne Palette und ohne Schriften -
+        // sonst verliert ein Design ohne Farbmarken still seine Schriftgroesse.
+        $css .= $scope . '{container-type:inline-size;' . $vars . '}';
 ```
 
 İkincisi, metin kuralında birim değişsin:
@@ -2256,9 +2254,19 @@ h =  element.height            / kart.height * 100
 
 Dokuz satır not al. Aşağıdaki betikteki sayılar **başlangıç tahminidir**, ölçümle değiştirilecek.
 
-> Not: sahne parçaları eski sayfada `vw` ile ölçekleniyor (`38vw`, üst sınır `240px`), yeni format
-> ise kartın yüzdesi. İkisi genişlikle birlikte farklı davranır. **Masaüstü genişliğinde** ölç
-> (üst sınırın devrede olduğu yer) ve Task 12'de dar ekrandaki sapmayı kaydet.
+> **Neye göre ölçtüğüne dikkat et — burası iki kez yanlış anlaşıldı.**
+>
+> Sahne parçaları ve renk lekeleri eski sayfada **kartın içinde değil**, `.t-envelope-stage`
+> (`fixed inset-0`, yani tüm ekran) içinde duruyor ve `38vw` / `58vw` ile **viewport**
+> genişliğine göre ölçekleniyor. Sadece isim/tarih/mekân kartın içinde.
+>
+> Bu yüzden:
+> - `spot: page` katmanları (`washa`, `washb`, `szene*`) → **viewport**'a göre ölç
+> - `spot: card` katmanları (`namen`, `datum`, `ort`) → **kart alanına** göre ölç
+>
+> Ölçümü **1440 px masaüstü genişliğinde** yap (`max-width` üst sınırlarının devrede olduğu yer)
+> ve Task 12'de dar ekrandaki sapmayı rakamla kaydet: eski taraf `vw` ile ölçekleniyor, yeni
+> taraf yüzdeyle, ve bu ikisi tanım gereği ayrışıyor.
 
 - [ ] **Step 2: Tohumlama betiğini yaz**
 
@@ -2663,18 +2671,19 @@ $introMs = 0;
 ?>
 <style><?= $styles ?></style>
 
-<section class="mx-auto max-w-3xl px-6 py-16">
-  <h1 class="font-display text-3xl font-light text-ink">
-    <?= e($design['name'][$locale] ?? $design['name']['de']) ?>
-  </h1>
-  <p class="mt-2 text-sm text-ink/60">
-    <?= e($design['category']) ?> · Fassung <?= (int) $design['version'] ?> ·
-    <?= count($design['layers']) ?> Ebenen · Auftakt: <?= e($intro) ?> ·
-    Karte: <?= e($karteAn) ?> (<?= $tempo ?> ms)
-  </p>
+<?php /*
+  Vollflaechig, nicht als Kaestchen mit Ueberschrift. Die erste Fassung zeigt
+  unter /designs/{thema} die echte Einladungsseite ueber den ganzen Bildschirm
+  (InviteController::designPreview rendert pages/invitation). Ein Vorschau-
+  kaestchen von 384 px daneben zu stellen und "sieht es gleich aus?" zu fragen
+  waere keine Frage, auf die es eine Antwort geben kann.
+
+  Die Kenndaten stehen deshalb in einer kleinen Leiste unten, ausserhalb der
+  Buehne, wo sie den Vergleich nicht stoeren.
+*/ ?>
 
   <?php if ($warnings !== []): ?>
-    <ul class="mt-6 border border-amber-500/40 bg-amber-50 p-4 text-sm text-ink/80">
+    <ul class="fixed bottom-14 left-4 z-[60] max-w-xs border border-amber-500/40 bg-amber-50 p-3 text-xs text-ink/80">
       <?php foreach ($warnings as $warning): ?>
         <li><?= e($warning['kind']) ?> — <?= e($warning['element']) ?><?php
           if ($warning['detail'] !== '') {
@@ -2685,9 +2694,8 @@ $introMs = 0;
     </ul>
   <?php endif; ?>
 
-  <div class="mt-10 flex justify-center">
-    <div class="<?= e($scope) ?> d-stage relative w-full max-w-sm overflow-hidden"
-         style="aspect-ratio: <?= $ratio ?>; background: var(--d-bg, #EFE7DC);">
+  <div class="<?= e($scope) ?> d-stage fixed inset-0 z-50 overflow-hidden"
+       style="background: var(--d-bg, #EFE7DC);">
 
       <!-- Die Seite: Hintergrund und Zeichnung, immer sichtbar. -->
       <div class="d-page absolute inset-0"><?= $seite ?></div>
@@ -2722,17 +2730,26 @@ $introMs = 0;
         sie findet; die Bewegung selbst macht es ueber die Web Animations API,
         es braucht dafuer kein Stylesheet. data-speed kommt aus dem Dokument.
       -->
-      <div class="d-card t-card absolute inset-0" data-speed="<?= $tempo ?>"
-           style="background: var(--d-paper);"><?= $karte ?></div>
-    </div>
+      <?php /*
+        Die Karte selbst behaelt ihr Seitenverhaeltnis und ihre Breite - wie
+        beim Original, wo sie als max-w-sm mitten auf der Buehne liegt.
+      */ ?>
+      <div class="absolute inset-0 flex items-center justify-center px-6">
+        <div class="d-card t-card relative w-full max-w-sm overflow-hidden"
+             data-speed="<?= $tempo ?>"
+             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);"><?= $karte ?></div>
+      </div>
   </div>
 
-  <p class="mt-4 text-center text-xs text-ink/50">
-    <?= $locale === 'de'
-      ? 'Auf das Kuvert klicken, um die Karte zu öffnen.'
-      : 'Click the envelope to open the card.' ?>
-  </p>
-</section>
+  <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">
+    <span><?= e($design['name'][$locale] ?? $design['name']['de']) ?></span>
+    <span><?= e($design['category']) ?></span>
+    <span>Fassung <?= (int) $design['version'] ?></span>
+    <span><?= count($design['layers']) ?> Ebenen</span>
+    <span>Auftakt <?= e($intro) ?></span>
+    <span>Karte <?= e($karteAn) ?> (<?= $tempo ?> ms)</span>
+    <span><?= $locale === 'de' ? 'Kuvert anklicken' : 'click the envelope' ?></span>
+  </div>
 ```
 
 - [ ] **Step 4: Katalog şablonunu yaz**
