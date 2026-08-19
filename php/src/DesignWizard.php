@@ -97,4 +97,45 @@ final class DesignWizard
 
         return ['fields' => $fields, 'palette' => $palette, 'fonts' => $fonts, 'layers' => $layers];
     }
+
+    /**
+     * Welche Schritte dieses Design braucht.
+     *
+     * Nicht fest verdrahtet: ein Design ohne Rechte hat zwei Schritte, eines
+     * mit Bildern und Farben vier. Ein leerer Schritt ist ein Bildschirm, auf
+     * dem nichts zu tun ist - der wird nicht gezeigt.
+     *
+     * @param array<string,mixed> $doc
+     * @return list<string>
+     */
+    public static function steps(array $doc): array
+    {
+        $w = self::choices($doc);
+
+        $schritte = ['angaben'];
+
+        foreach ($w['layers'] as $rechte) {
+            if ($rechte['photo']) {
+                $schritte[] = 'bilder';
+                break;
+            }
+        }
+
+        $design = $w['palette'] !== [] || $w['fonts'] !== [];
+        if (!$design) {
+            foreach ($w['layers'] as $rechte) {
+                if ($rechte['color'] || $rechte['font'] || $rechte['text'] || $rechte['hide']) {
+                    $design = true;
+                    break;
+                }
+            }
+        }
+        if ($design) {
+            $schritte[] = 'design';
+        }
+
+        $schritte[] = 'veroeffentlichen';
+
+        return $schritte;
+    }
 }

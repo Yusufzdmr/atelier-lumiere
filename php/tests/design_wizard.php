@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Atelier\DesignWizard;
+use Atelier\Design;
 
 /*
  * Was darf der Kunde - und was fragt der Assistent ueberhaupt?
@@ -82,3 +83,53 @@ $marken = DesignWizard::choices(wizard_doc(
 ));
 assert_same(['accent'], array_keys($marken['palette']), 'choices: nur angehakte Farbmarke');
 assert_same(['script'], array_keys($marken['fonts']), 'choices: nur angehakte Schriftmarke');
+
+/*
+ * Die Schrittliste steht nicht fest, sie faellt aus dem Dokument.
+ *
+ * Elysee hat heute fast keine Rechte - der Assistent hat dort zwei Schritte,
+ * und das ist richtig. Ein leerer Schritt "Design" waere ein Bildschirm ohne
+ * Inhalt. Wird im Panel ein Haken gesetzt, wird der Assistent von selbst laenger.
+ */
+
+$knapp = DesignWizard::steps(wizard_doc([
+    ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names'],
+]));
+assert_same(['angaben', 'veroeffentlichen'], $knapp, 'steps: ohne Rechte zwei Schritte');
+
+$mitBild = DesignWizard::steps(wizard_doc([
+    ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names'],
+    ['id' => 'foto', 'type' => 'photo', 'permissions' => ['edit' => true, 'photo' => true]],
+]));
+assert_same(['angaben', 'bilder', 'veroeffentlichen'], $mitBild, 'steps: photo-Recht bringt den Bilder-Schritt');
+
+$mitFarbe = DesignWizard::steps(wizard_doc([
+    ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names',
+     'permissions' => ['edit' => true, 'color' => true]],
+]));
+assert_same(['angaben', 'design', 'veroeffentlichen'], $mitFarbe, 'steps: color-Recht bringt den Design-Schritt');
+
+// Der Haken an einer Marke reicht allein - ohne jedes Ebenenrecht.
+$nurMarke = DesignWizard::steps(wizard_doc(
+    [['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names']],
+    ['accent' => ['value' => '#B08D57', 'customer' => true]]
+));
+assert_same(['angaben', 'design', 'veroeffentlichen'], $nurMarke, 'steps: angehakte Marke oeffnet den Design-Schritt allein');
+
+$alles = DesignWizard::steps(wizard_doc([
+    ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names',
+     'permissions' => ['edit' => true, 'color' => true]],
+    ['id' => 'foto', 'type' => 'photo', 'permissions' => ['edit' => true, 'photo' => true]],
+]));
+assert_same(['angaben', 'bilder', 'design', 'veroeffentlichen'], $alles, 'steps: alle vier, in dieser Reihenfolge');
+
+/*
+ * BIND_FIELDS und Design::BINDS zaehlen dieselben elf Namen auf. Waechst die
+ * eine Liste und die andere nicht, entsteht kein Fehler - es entsteht ein
+ * Feld, das der Assistent nie fragt. Deshalb dieser Test.
+ */
+$spiegel = new ReflectionClass(DesignWizard::class);
+$karte = $spiegel->getConstant('BIND_FIELDS');
+$a = array_keys($karte); sort($a);
+$b = Design::BINDS; sort($b);
+assert_same($b, $a, 'BIND_FIELDS deckt genau Design::BINDS ab');
