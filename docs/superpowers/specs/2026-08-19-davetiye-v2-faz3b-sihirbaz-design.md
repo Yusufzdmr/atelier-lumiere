@@ -503,10 +503,15 @@ yalnızca kendi adreslerinden görünür. D bunu ele alacak.
 
 - [ ] `/de/v2/einladung` açılıyor; tasarım `?design=<slug>` ile geliyor,
       gelmiyorsa aktif tasarımlardan seçtiriliyor.
-- [ ] Élysée seçilince **iki adım** görünüyor (künye, yayınlama) — çünkü
-      izinleri kapalı. Boş bir "Design" adımı yok.
-- [ ] Panelden bir katmana `edit`+`color` verilince sihirbaz **üç adım**
-      gösteriyor; tarayıcı tazelemesi dışında hiçbir şey yapılmadan.
+- [ ] Élysée seçilince **üç adım** görünüyor (künye, tasarım, yayınlama).
+      Ölçüldü 2026-08-19: canlı veride `palette.accent.customer` **açık**,
+      katman izinlerinin hepsi kapalı — yani "Tasarım" adımını tek başına bir
+      renk jetonu açıyor. Adım listesinin gerçekten belgeden türediğinin
+      kanıtı bu: kodda hiçbir yerde "üç adım" yazmıyor.
+      (Spec'in ilk hâli burada "iki adım" diyordu; tohumdaki izinlerin hepsinin
+      kapalı olduğu varsayılmıştı. Panelde jeton açılmış, varsayım yanlıştı.)
+- [ ] Jeton izni kapatılınca sihirbaz **iki adıma** iniyor, açılınca geri
+      üçe çıkıyor — kod değişmeden, yalnızca tarayıcı tazelenerek.
 - [ ] Yalnızca dokümanda geçen `bind`'lar soruluyor.
 - [ ] Yayınla: `invitations_v2`'de satır var, `design_snapshot` dolu ve
       `Design::complete()` şeklinde.
