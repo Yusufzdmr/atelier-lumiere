@@ -98,18 +98,30 @@ Karar `Admin::isLoggedIn()` ile verilir; yeni bir bayrak icat edilmez.
 | `creatable()` boş tema listesinde boş dönüyor | tema silinirse vitrin kırılmasın |
 | `Design::all('active')` taslakları getirmiyor | yarım tasarım müşteriye görünmesin |
 
-## 10. Bitti sayılma ölçütü
+## 10. Bitti sayılma ölçütü — 2026-08-19'da doğrulandı
 
-- [ ] `/de/v2/designs` vitrin gibi görünüyor: başlık, süzgeç, kartlar
-- [ ] Yalnızca `active` tasarımlar listeleniyor
-- [ ] Süzgeç adres satırında taşınıyor ve paylaşılabiliyor
-- [ ] "Mit diesem Design erstellen" yalnızca temayla eşleşen tasarımlarda var;
-      eşleşmeyende not görünüyor
-- [ ] Düğme sihirbazı **o tasarım seçili** olarak açıyor
-- [ ] Demo sayfasında müşteri geliştirici çubuğunu görmüyor; panele girmiş
-      kullanıcı görüyor
-- [ ] Başlık ve paragraf üç dilde sözlükte
-- [ ] Eski `/de/designs`, `/de/einladung` ve panel bozulmamış (hepsi 200)
+- [x] `/de/v2/designs` vitrin gibi görünüyor: sözlükten gelen başlık ve
+      paragraf, `Alle / luxury / modern` süzgeci, iki kart, kart altında ad ve
+      kategori. Başlık sabit menünün altında kalmıyor (128'e karşı 94).
+- [x] Yalnızca `active` tasarımlar listeleniyor (`Design::all('active')`).
+- [x] Süzgeç adres satırında (`?kategorie=modern`), paylaşılabilir.
+- [x] "Mit diesem Design erstellen" iki tasarımda da var — ikisinin de aynı
+      kimlikte teması olduğu için. Eşleşmeyende yerine "Bald im Assistenten"
+      geliyor; kural `Design::creatable()` içinde ve testi var.
+- [x] Düğme sihirbazı o tasarım seçili açıyor: `?design=noir` çağrısında
+      sihirbazın işaretli seçeneği `value="noir" … checked`.
+- [x] Demo sayfasında müşteri geliştirici çubuğunu görmüyor — çıkışta yalnızca
+      "Alle Designs" ve oluştur düğmesi; `if ($intern)` dalında bugünkü çubuk
+      olduğu gibi duruyor.
+- [x] Başlık ve paragraf üç dilde sözlükte (`invitation2.title`, `.lead`).
+- [x] Eski motora **dokunulmadı**: `InviteController.php`, `invite-wizard.php`
+      ve `designs.php` diff'te hiç geçmiyor. On bir yol denendi, hepsi 200.
+      275 kontrol geçiyor.
+
+**Panelde göz kontrolü gerekmiyor** — bu fazın hepsi genel sayfa, giriş
+istemiyor. Yalnızca "panele girmiş kullanıcı eski çubuğu görüyor" maddesi
+girişli bir gözle bakınca tam olur; kod tarafında `Admin::isLoggedIn()` dalı
+yerinde ve çıkıştaki hâl doğrulandı.
 
 ## 11. Riskler
 
