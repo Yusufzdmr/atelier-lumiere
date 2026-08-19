@@ -62,6 +62,31 @@ $meldungen = [
     <p class="border-l-2 border-red-700 px-4 py-3 text-sm text-red-700"><?= e($meldungen[$fehler]) ?></p>
   <?php endif; ?>
 
+  <details class="border border-sand-deep">
+    <summary class="cursor-pointer p-5 <?= $label ?>">
+      <?= $tr ? 'Temadan yeni tasarım' : 'Neues Design aus einem Thema' ?>
+    </summary>
+    <form method="post" class="flex flex-wrap items-end gap-4 border-t border-sand-deep p-5">
+      <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+      <input type="hidden" name="was" value="temadan">
+      <label class="<?= $label ?>">
+        <?= $tr ? 'Tema' : 'Thema' ?>
+        <select name="thema" class="mt-1 block border border-sand-deep bg-transparent px-3 py-2 text-sm text-ink">
+          <?php foreach ($themen as $t) : ?>
+            <option value="<?= e((string) $t['id']) ?>"><?= e((string) $t['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="<?= $label ?>">
+        <?= $tr ? 'Yeni ad' : 'Neuer Name' ?>
+        <input name="neuer_name" class="mt-1 block border border-sand-deep bg-transparent px-3 py-2 text-sm text-ink">
+      </label>
+      <button class="bg-ink px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+        <?= $tr ? 'Oluştur' : 'Anlegen' ?>
+      </button>
+    </form>
+  </details>
+
   <?php if ($kategorien !== []) : ?>
     <div class="flex flex-wrap items-center gap-4 <?= $label ?>">
       <a href="<?= e($p('/admin/designs')) ?>" class="<?= $filter === '' ? 'text-gold' : 'hover:text-ink' ?>">
@@ -119,6 +144,17 @@ $meldungen = [
               <?= $tr ? 'Önizle' : 'Ansehen' ?>
             </a>
           </div>
+
+          <form method="post" class="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="was" value="kopyala">
+            <input type="hidden" name="quelle" value="<?= e($id) ?>">
+            <input name="neuer_name" placeholder="<?= $tr ? 'kopyanın adı' : 'Name der Kopie' ?>"
+                   class="w-56 border border-sand-deep bg-transparent px-2 py-2 text-[0.7rem] text-ink">
+            <button class="border border-sand-deep px-3 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
+              <?= $tr ? 'Kopyala' : 'Kopieren' ?>
+            </button>
+          </form>
         </div>
       </div>
     <?php endforeach; ?>

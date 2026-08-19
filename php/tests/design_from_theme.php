@@ -141,3 +141,24 @@ if (needs_db()) {
         assert_same('seal', $doc['animation']['card'], 'fromTheme: Élysée behaelt seal');
     }
 }
+
+/* --- Die Schriften des Themas kommen mit --- */
+
+// Aufgefallen in Faz 2: „aus einem Thema anlegen" ergab ein Dokument ohne eine
+// einzige Schriftmarke, weil das Aussaeen sie in Faz 1 von Hand geschrieben
+// hatte. Ein Dokument ohne Schriften rendert Text in der Browservoreinstellung.
+
+$mitSchrift = Design::fromTheme([
+    'id' => 'sage',
+    'fonts' => ['display' => 'cormorant', 'body' => 'jost', 'script' => 'greatvibes'],
+]);
+
+assert_same('Cormorant Garamond', $mitSchrift['fonts']['display']['family'], 'fromTheme: Anzeigeschrift kommt mit');
+assert_same('Jost', $mitSchrift['fonts']['body']['family'], 'fromTheme: Grundschrift kommt mit');
+assert_same('Great Vibes', $mitSchrift['fonts']['script']['family'], 'fromTheme: Schreibschrift kommt mit');
+assert_same(300, $mitSchrift['fonts']['display']['weight'], 'fromTheme: gemessenes Gewicht der Anzeigeschrift');
+assert_same(106, $mitSchrift['fonts']['script']['lineHeight'], 'fromTheme: gemessene Zeilenhoehe der Schreibschrift');
+
+// Der Kopf der Karte ist quer, nicht hochkant: 9:16 waere die Voreinstellung
+// des Formats, aber der alte Motor zeigt 632:490.
+assert_same('632:490', $mitSchrift['canvas']['ratio'], 'fromTheme: das gemessene Seitenverhaeltnis');

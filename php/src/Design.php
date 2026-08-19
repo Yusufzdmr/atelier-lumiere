@@ -655,6 +655,39 @@ final class Design
             ];
         }
 
+        // Die Schriften des Themas als Marken. Das Thema nennt nur Schluessel
+        // ("cormorant"), die Familie steht in Themes::FONTS. Gewicht, Laufweite
+        // und Zeilenhoehe kennt das Thema gar nicht - hier stehen die am
+        // Original gemessenen Werte, dieselben, die das Aussaeen in Faz 1 von
+        // Hand geschrieben hat.
+        $schriftmass = [
+            'display' => ['weight' => 300, 'tracking' => 4, 'lineHeight' => 115],
+            'body'    => ['weight' => 400, 'tracking' => 0, 'lineHeight' => 150],
+            'script'  => ['weight' => 400, 'tracking' => 0, 'lineHeight' => 106],
+        ];
+        $familien = [
+            'cormorant'  => 'Cormorant Garamond',
+            'jost'       => 'Jost',
+            'greatvibes' => 'Great Vibes',
+        ];
+
+        $fonts = [];
+        foreach ($schriftmass as $marke => $mass) {
+            $schluessel = (string) (($theme['fonts'][$marke] ?? '') ?: '');
+            $familie = $familien[$schluessel] ?? '';
+            if ($familie === '') {
+                continue;
+            }
+            $fonts[$marke] = [
+                'family'     => $familie,
+                'size'       => 100,
+                'weight'     => $mass['weight'],
+                'tracking'   => $mass['tracking'],
+                'lineHeight' => $mass['lineHeight'],
+                'customer'   => false,
+            ];
+        }
+
         $back = [];
         $front = [];
 
@@ -731,6 +764,11 @@ final class Design
             // gesehen. complete() gibt ihr den Standard 1; save() zaehlt von
             // da an selbst hoch, wenn sich der Inhalt aendert.
             'palette'   => $palette,
+            'fonts'     => $fonts,
+            // Der Kopf der Karte des alten Motors ist quer: 632 x 490, gemessen
+            // am gerenderten Original. 9:16 waere die Voreinstellung des
+            // Formats und hier schlicht falsch.
+            'canvas'    => ['ratio' => '632:490', 'safe' => 6],
             'layers'    => array_merge($back, $front),
             // Achtung, zwei Bedeutungen: das Thema hat ein skalares Feld
             // "animation" (der Karteneinzug); das Dokument nennt so den
