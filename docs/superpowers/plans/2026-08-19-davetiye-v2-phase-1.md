@@ -2803,13 +2803,21 @@ $introMs = 0;
         es braucht dafuer kein Stylesheet. data-speed kommt aus dem Dokument.
       -->
       <?php /*
-        Die Karte selbst behaelt ihr Seitenverhaeltnis und ihre Breite - wie
-        beim Original, wo sie als max-w-sm mitten auf der Buehne liegt.
+        Die Karte behaelt ihr Seitenverhaeltnis und ihre Breite - wie beim
+        Original, wo sie mitten auf der Buehne liegt.
+
+        container-type steht hier ein zweites Mal, und das ist kein Versehen:
+        cqw rechnet gegen den NAECHSTEN Kasten mit container-type. Stuende es
+        nur auf der Buehne, waeren 11 cqw elf Prozent der Fensterbreite statt
+        elf Prozent der Karte - die Namen kaemen dreifach zu gross heraus.
+        Die Schriftgroessen sind an der Karte gemessen, also muss die Karte
+        der Bezug sein.
       */ ?>
       <div class="absolute inset-0 flex items-center justify-center px-6">
         <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
              data-speed="<?= $tempo ?>"
-             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);"><?= $karte ?></div>
+             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
+                    container-type: inline-size;"><?= $karte ?></div>
       </div>
   </div>
 
