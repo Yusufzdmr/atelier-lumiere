@@ -16,6 +16,7 @@ use Atelier\Controllers\DesignController;
 use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\InviteAdminController;
 use Atelier\Controllers\InviteController;
+use Atelier\Controllers\InviteV2Controller;
 use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SelectionController;
@@ -107,6 +108,11 @@ $router->get('/{locale}/designs/{thema}', $page_(static fn (array $p) => (new In
 // Zweite Fassung der Einladung – laeuft neben der ersten, bis verglichen ist.
 $router->get('/{locale}/v2/designs', $page_(static fn (array $p) => (new DesignController())->index()));
 $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new DesignController())->preview($p)));
+
+// Der Assistent der zweiten Fassung. Die feste Adresse steht vor dem Muster
+// {slug} - sonst liest der Router "einladung" als Namen einer Einladung.
+$router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new InviteV2Controller())->wizard()));
+$router->get('/{locale}/v2/einladung/{slug}', $page_(static fn (array $p) => (new InviteV2Controller())->show($p)));
 
 $router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
 $router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));
