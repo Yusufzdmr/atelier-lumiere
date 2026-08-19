@@ -205,6 +205,11 @@ final class Design
             'size'       => max(1, min(500, (int) ($style['size'] ?? 100))),
             'align'      => in_array($style['align'] ?? '', self::ALIGNS, true) ? (string) $style['align'] : 'center',
             'autoShrink' => (bool) ($style['autoShrink'] ?? true),
+            // Nur fuer shape: die weichen Farbflecken hinter der Karte. Ohne
+            // die beiden laesst sich ein bestehendes Design nicht abbilden –
+            // das ist beim Umzug von Élysée aufgefallen.
+            'blur'       => max(0, min(100, (int) ($style['blur'] ?? 0))),
+            'radius'     => max(0, min(50, (int) ($style['radius'] ?? 0))),
         ];
 
         $motion = is_array($el['motion']) ? $el['motion'] : [];
@@ -279,9 +284,12 @@ final class Design
         foreach ($doc['fonts'] as $key => $entry) {
             $vars .= '--df-' . $key . ':' . self::safeFont((string) $entry['family']) . ';';
         }
-        if ($vars !== '') {
-            $css .= $scope . '{' . $vars . '}';
-        }
+        // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
+        // Breite. Das gilt unabhaengig von Palette und Schriften – sonst
+        // haette ein Design ohne beide keinen Bezug, und die Schriftgroesse
+        // fiele still auf den geerbten Wert zurueck (design_shape.php prueft
+        // genau diesen Fall).
+        $css .= $scope . '{container-type:inline-size;' . $vars . '}';
 
         $moves = [];
 
@@ -308,9 +316,28 @@ final class Design
                 $css .= $selector . '{'
                     . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
                     . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
-                    . 'font-size:' . $style['size'] . '%;'
+                    // Prozent der Kartenbreite, nicht der geerbten Groesse:
+                    // sonst waechst die Karte und die Schrift bleibt stehen.
+                    . 'font-size:' . ($style['size'] / 10) . 'cqw;'
                     . 'text-align:' . $style['align'] . ';'
                     . '}';
+            }
+
+            if ($el['type'] === 'shape') {
+                $style = $el['style'];
+                $rules = '';
+                if ($style['color'] !== '') {
+                    $rules .= 'background:var(--d-' . $style['color'] . ');';
+                }
+                if ($style['blur'] > 0) {
+                    $rules .= 'filter:blur(' . $style['blur'] . 'px);';
+                }
+                if ($style['radius'] > 0) {
+                    $rules .= 'border-radius:' . $style['radius'] . '%;';
+                }
+                if ($rules !== '') {
+                    $css .= $selector . '{' . $rules . '}';
+                }
             }
 
             if ($el['motion']['move'] !== 'none') {
