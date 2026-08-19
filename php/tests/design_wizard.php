@@ -362,3 +362,66 @@ if (needs_db()) {
 } else {
     echo "  (invitations_v2: uebersprungen, keine config.php)\n";
 }
+
+use Atelier\DesignSections;
+
+/*
+ * Abschnitte im Assistenten: dieselben zwei Mechanismen wie bei den Ebenen.
+ * Was gefragt wird, entscheidet der Typ (family und program brauchen Inhalt,
+ * location und countdown leben von dem, was ohnehin gefragt wird). Was
+ * angeboten wird, entscheiden die Rechte.
+ */
+function wiz_sec(array $sections, array $layers = []): array
+{
+    return ['id' => 'test', 'slug' => 'test', 'layers' => $layers, 'sections' => $sections];
+}
+
+$zu = DesignWizard::choices(wiz_sec([
+    ['id' => 'prog-1', 'type' => 'program'],
+]));
+assert_same([], $zu['sections'], 'choices: ohne edit-Recht kein Abschnitt');
+
+$auf = DesignWizard::choices(wiz_sec([
+    ['id' => 'prog-1', 'type' => 'program', 'permissions' => ['edit' => true, 'hide' => true]],
+    ['id' => 'ort-1',  'type' => 'location', 'permissions' => ['edit' => true]],
+]));
+assert_same(['prog-1', 'ort-1'], array_keys($auf['sections']), 'choices: beide edit-Abschnitte');
+assert_same(true, $auf['sections']['prog-1']['hide'], 'choices: hide steht');
+assert_same(false, $auf['sections']['ort-1']['hide'], 'choices: ohne hide kein hide');
+assert_same(['program'], $auf['sections']['prog-1']['fields'], 'choices: das Programm braucht Inhalt');
+assert_same([], $auf['sections']['ort-1']['fields'], 'choices: der Ort lebt von den Angaben');
+
+// Der Schritt kommt nur, wenn es dort etwas zu tun gibt.
+assert_same(['angaben', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
+    ['id' => 'ort-1', 'type' => 'location'],
+])), 'steps: ohne Rechte kein Abschnitte-Schritt');
+
+assert_same(['angaben', 'abschnitte', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
+    ['id' => 'fam-1', 'type' => 'family', 'permissions' => ['edit' => true]],
+])), 'steps: ein Abschnitt mit Inhalt bringt den Schritt');
+
+// Die Reihenfolge: Inhalt vor Aussehen.
+$voll = DesignWizard::steps(wiz_sec(
+    [['id' => 'fam-1', 'type' => 'family', 'permissions' => ['edit' => true]]],
+    [['id' => 'foto', 'type' => 'photo', 'permissions' => ['edit' => true, 'photo' => true]],
+     ['id' => 'name', 'type' => 'text', 'bind' => 'couple_names',
+      'permissions' => ['edit' => true, 'color' => true]]]
+));
+assert_same(['angaben', 'bilder', 'abschnitte', 'design', 'veroeffentlichen'], $voll, 'steps: alle fuenf, in dieser Reihenfolge');
+
+// personalize: erlaubtes Ausblenden wird ins Dokument geschrieben.
+$basis = wiz_sec([
+    ['id' => 'fam-1', 'type' => 'family', 'permissions' => ['edit' => true, 'hide' => true]],
+    ['id' => 'ort-1', 'type' => 'location', 'permissions' => ['edit' => true]],
+]);
+
+$weg = DesignWizard::personalize($basis, ['sections' => ['fam-1' => ['hidden' => true]]]);
+assert_same(false, $weg['sections'][0]['enabled'], 'personalize: erlaubtes Ausblenden wirkt');
+
+// Ohne hide-Recht faellt es still.
+$bleibt = DesignWizard::personalize($basis, ['sections' => ['ort-1' => ['hidden' => true]]]);
+assert_same(true, $bleibt['sections'][1]['enabled'], 'personalize: ohne hide-Recht bleibt der Abschnitt an');
+
+// Erfundene Kennung faellt still.
+$erfunden = DesignWizard::personalize($basis, ['sections' => ['gibtesnicht' => ['hidden' => true]]]);
+assert_same(2, count($erfunden['sections']), 'personalize: erfundener Abschnitt fuegt nichts hinzu');
