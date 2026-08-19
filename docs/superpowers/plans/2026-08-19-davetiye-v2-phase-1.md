@@ -1961,15 +1961,31 @@ if (trim($html) === '') {
 }
 
 $dom = new DOMDocument();
-// Die Ausgabe ist ein Fragment und enthaelt Umlaute; ohne die Angabe liest
-// DOMDocument sie als Latin-1 und macht aus „é" zwei Zeichen.
-$ok = @$dom->loadHTML(
-    '<?xml encoding="UTF-8"?><div id="wurzel">' . $html . '</div>',
-    LIBXML_NOERROR | LIBXML_NOWARNING
-);
+libxml_use_internal_errors(true);
+
+/*
+ * loadXML und nicht loadHTML, und das ist kein Geschmack: der HTML-Leser
+ * schreibt Attributnamen klein. Aus "viewBox" wird "viewbox", und SVG
+ * unterscheidet Gross- und Kleinschreibung - die Datei haette dann keine
+ * viewBox mehr, und der Browser zeichnete sie ohne Massstab. Gemessen, nicht
+ * vermutet: mit loadHTML liefert getAttribute('viewBox') eine leere
+ * Zeichenkette. Dasselbe gilt fuer preserveAspectRatio.
+ *
+ * Das Fragment ist wohlgeformtes XML - geprueft -, also braucht es nur eine
+ * Wurzel darum.
+ */
+$ok = $dom->loadXML('<wurzel>' . $html . '</wurzel>');
+
 if (!$ok) {
-    exit("Die Szene liess sich nicht lesen.\n");
+    echo "Die Szene liess sich nicht als XML lesen:
+";
+    foreach (array_slice(libxml_get_errors(), 0, 5) as $fehler) {
+        echo '  ', trim($fehler->message), "
+";
+    }
+    exit(1);
 }
+libxml_clear_errors();
 
 $dir = __DIR__ . '/../public/assets/designs';
 if (!$dry && !is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
@@ -2020,8 +2036,15 @@ foreach ($knoten as $svg) {
     $datei = sprintf('%s-%d.svg', $id, $n);
     $pfad = $dir . '/' . $datei;
 
-    $svgDatei = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'
-        . ($box !== '' ? $box : '0 0 100 100') . '">' . $inhalt . '</svg>';
+    // Kein stiller Rueckfall auf einen Standardwert: eine fehlende viewBox
+    // heisst, dass das Lesen schiefging, und genau das soll auffallen.
+    if ($box === '') {
+        exit("Teil {$n} hat keine viewBox - das Lesen ist schiefgegangen.
+");
+    }
+
+    $svgDatei = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' . $box . '">'
+        . $inhalt . '</svg>';
 
     if (!$dry) {
         file_put_contents($pfad, $svgDatei);
