@@ -59,6 +59,12 @@ $doc['fonts'] = [
                   'tracking' => 4, 'lineHeight' => 115, 'customer' => false],
     'body'    => ['family' => 'Jost', 'size' => 100, 'weight' => 400,
                   'tracking' => 0, 'lineHeight' => 150, 'customer' => false],
+    // Die Namen stehen im Original in einer Schreibschrift, nicht in der
+    // Serifenschrift. Gemessen am gerenderten Original: Great Vibes, Gewicht
+    // 400, keine Laufweite, Zeilenhoehe 1,056. Die Datei liegt im Projekt
+    // (/fonts/greatvibes-latin.woff2), es kommt nichts von aussen dazu.
+    'script'  => ['family' => 'Great Vibes', 'size' => 100, 'weight' => 400,
+                  'tracking' => 0, 'lineHeight' => 106, 'customer' => false],
 ];
 
 // Das Gold darf der Kunde spaeter waehlen.
@@ -119,14 +125,26 @@ $ebenen = [
      // gemessen wurde "Marie", und ein langer Name laeuft aus einem
      // 27%-Kasten nach beiden Seiten heraus. Zentriert wird per text-align.
      'box' => ['x' => 8, 'y' => 20, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
+     'style' => ['font' => 'script', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
      'permissions' => ['color' => true]],
+
+    // Das Kaufmanns-Und zwischen den Namen. Im Original ein eigenes Element
+    // (invitation.php:289), in Gold und in der Serifenschrift - nicht in der
+    // Schreibschrift der Namen. Gemessen: y 176,8 px von 521 = 34 %,
+    // 4,75 cqw = size 47. Kursiv kann das Format noch nicht; es steht
+    // deshalb aufrecht, und das ist in der Spec vermerkt.
+    ['id' => 'und', 'label' => 'Und-Zeichen', 'type' => 'text', 'spot' => 'card',
+     'text' => ['de' => '&', 'en' => '&'],
+     'box' => ['x' => 8, 'y' => 34, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 47, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 475, 'duration' => 1200],
+     'permissions' => []],
 
     ['id' => 'jonas', 'label' => 'Braeutigam', 'type' => 'text', 'spot' => 'card',
      'bind' => 'groom_name',
      'box' => ['x' => 8, 'y' => 44, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
+     'style' => ['font' => 'script', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 550, 'duration' => 1200],
      'permissions' => ['color' => true]],
 
@@ -160,7 +178,9 @@ $ebenen = [
 
     ['id' => 'adres', 'label' => 'Adresse', 'type' => 'text', 'spot' => 'card',
      'bind' => 'location_address',
-     'box' => ['x' => 8, 'y' => 96, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     // 96 % waeren 500 px, und die Unterlaengen von "Guenzburg" enden bei
+     // 522 - einen Pixel unter der 521 px hohen Karte, die sie abschneidet.
+     'box' => ['x' => 8, 'y' => 95, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'soft', 'size' => 22, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 1040, 'duration' => 1000],
      'permissions' => []],
