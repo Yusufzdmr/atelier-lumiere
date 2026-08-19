@@ -269,13 +269,13 @@ final class Design
     }
 
     /**
-     * Kennung: nur Kleinbuchstaben, Ziffern und Bindestrich.
+     * Adresstauglicher Schluessel: Kleinbuchstaben, Ziffern, Bindestrich.
      *
-     * Leerzeichen werden zum Bindestrich, nicht geloescht: aus „Golden Garden"
-     * soll „golden-garden" werden und nicht „goldengarden". Die Kennung steht
-     * in der Adresszeile, und dort ist der Bindestrich die Wortgrenze.
+     * Oeffentlich, weil die Abschnitte dieselbe Regel brauchen. Zwei
+     * Normalisierer hiessen zwei Antworten auf "was ist ein Schluessel", und
+     * die zweite faellt beim ersten Umlaut auseinander.
      */
-    private static function key(string $value): string
+    public static function key(string $value): string
     {
         // mb_strtolower, nicht strtolower: das eine arbeitet auf Zeichen, das
         // andere auf Bytes. Byteweise bleibt aus "Élysée" ein grosses É stehen,
