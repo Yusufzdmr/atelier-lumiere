@@ -2698,6 +2698,7 @@ final class DesignController
             'scope'    => ltrim($scope, '.'),
             'styles'   => Design::css($design, $scope),
             // Drei Ebenenlisten statt einer: die Vorschau schachtelt sie.
+            'initialen' => $values['initials'],
             'seite'    => Design::html($design, $values, $locale, 'page'),
             'kuvert'   => Design::html($design, $values, $locale, 'envelope'),
             'karte'    => Design::html($design, $values, $locale, 'card'),
@@ -2727,6 +2728,7 @@ final class DesignController
  * @var string $kuvert
  * @var string $karte
  * @var list<array{kind:string,element:string,detail:string}> $warnings
+ * @var string $initialen
  * @var string $locale
  */
 
@@ -2740,6 +2742,8 @@ $tempo = (int) $design['animation']['speed'];
 // Wie lange eine Auftaktszene laeuft. Die zweite Fassung hat noch keine
 // eigenen Szenen, also null - das Skript ueberspringt sie dann.
 $introMs = 0;
+// Die ruhige Dauerbewegung des Kuverts - dieselbe Klasse wie im Original.
+$idle = (string) $design['animation']['idle'];
 ?>
 <style><?= $styles ?></style>
 
@@ -2793,37 +2797,63 @@ $introMs = 0;
         Das Kuvert. Die Attribute sind der Vertrag von invitation.js:
         [data-envelope] ist die Huelle, [data-envelope-open] der Anklickpunkt,
         data-animation waehlt die Bewegung der Karte, data-intro-ms sagt, wie
-        lange eine Auftaktszene laeuft. Die Klassen env-flap und env-seal
-        werden von [data-open=true] im bestehenden Stylesheet aufgeklappt.
+        lange eine Auftaktszene laeuft.
 
-        Was hier NICHT steht: Farben und Formen. Die Lasche traegt die
-        Palettenmarke, das Siegel ebenso, und was sonst auf dem Kuvert liegt,
-        kommt aus den Ebenen mit spot=envelope.
+        Der Aufbau ist derselbe wie in pages/invitation.php - t-envelope,
+        t-sheet, t-flap, t-seal - und das ist Absicht, nicht Bequemlichkeit:
+        das Stylesheet bringt fuer diese vier Klassen bereits das Aufklappen
+        mit ([data-open=true] .t-flap dreht die Lasche, .t-sheet faehrt heraus,
+        .t-seal bricht). Ein Kuvert ist Verhalten des Betrachters; nachzubauen,
+        was daneben schon funktioniert, waere eine zweite Baustelle.
+
+        Was hier NICHT steht: die Farben. Jede kommt als Palettenmarke aus dem
+        Dokument. Und was sonst auf dem Kuvert liegt, kommt aus den Ebenen mit
+        spot=envelope.
+
+        Achtung, Kleinschreibung: die Marken heissen --d-envelopeflap,
+        --d-envelopeedge, --d-paperedge, --d-sealtext. key() schreibt klein,
+        und ein camelCase-Name trifft nichts und faellt still auf den Ersatz.
 
         Das Kuvert steht ZULETZT im Markup, also ueber der Karte - so wie im
         Original, wo die Buehne mit z-50 ueber allem liegt und die Karte
-        ausserhalb von ihr steht. Stuende die Karte darueber, waere das
-        Kuvert nicht anklickbar und nichts wuerde sich je oeffnen.
+        ausserhalb von ihr steht. Stuende die Karte darueber, waere das Kuvert
+        nicht anklickbar und nichts wuerde sich je oeffnen.
       -->
-      <div class="d-envelope absolute inset-0" data-envelope
+      <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 flex flex-col items-center justify-center gap-9 px-6"
+           data-envelope
            data-animation="<?= e($karteAn) ?>"
            data-intro-ms="<?= $introMs ?>">
+
         <button type="button" data-envelope-open
-                class="absolute inset-0 h-full w-full cursor-pointer"
+                class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
+                style="aspect-ratio: 8 / 5; background: var(--d-envelope);
+                       border-color: var(--d-envelopeedge);"
                 aria-label="<?= $locale === 'de' ? 'Einladung öffnen' : 'Open the invitation' ?>">
-          <span class="env-flap absolute inset-x-0 top-0 block h-1/2"
-                style="background: var(--d-envelopeflap, var(--d-envelope));"></span>
-          <span class="env-seal absolute left-1/2 top-1/2 block h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style="background: var(--d-seal);"></span>
+
+          <span class="t-sheet" style="background: var(--d-paper); border: 1px solid var(--d-paperedge);">
+            <span class="font-display text-2xl font-light tracking-[0.14em]"
+                  style="color: var(--d-accent);"><?= e($initialen) ?></span>
+          </span>
+
+          <span class="t-flap" style="background: var(--d-envelopeflap);"></span>
+
+          <?php /* Zwei Ebenen mit Absicht: aussen sitzt die Mitte, innen bewegt
+                   sich das Siegel. In einem Element wuerde sealBreak mit seinem
+                   transform die Zentrierung ueberschreiben und das Siegel
+                   spraenge in die Ecke. Dasselbe Problem, dieselbe Loesung wie
+                   in der ersten Fassung. */ ?>
+          <span class="absolute left-1/2 top-[46%] z-[6] -translate-x-1/2 -translate-y-1/2">
+            <span class="t-seal relative flex h-16 w-16 items-center justify-center font-display text-lg"
+                  style="background-color: var(--d-seal); color: var(--d-sealtext);"><?= e($initialen) ?></span>
+          </span>
+
           <?= $kuvert ?>
         </button>
-      </div>
 
-      <!--
-        Die Karte. Der Klassenname t-card ist der Haken, an dem invitation.js
-        sie findet; die Bewegung selbst macht es ueber die Web Animations API,
-        es braucht dafuer kein Stylesheet. data-speed kommt aus dem Dokument.
-      -->
+        <p class="text-[0.62rem] uppercase tracking-[0.28em]" style="color: var(--d-accent);">
+          <?= $locale === 'de' ? 'Tippen zum Öffnen' : 'Tap to open' ?>
+        </p>
+      </div>
   </div>
 
   <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">
