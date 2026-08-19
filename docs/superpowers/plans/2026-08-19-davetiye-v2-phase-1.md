@@ -2233,78 +2233,73 @@ takes it apart, so php/src/Scenes.php is not touched at all."
 Bu görev üç şeyi bir araya getiriyor: `fromTheme()`'in verdiği palet, Task 7'nin varlıkları, ve
 elle ölçülen kutular. Ölçüm gerçek iş — tahmin edilen değerler başlangıç noktası.
 
-- [ ] **Step 1: Eski kartı aç ve ölç**
+- [ ] **Step 1: Ölçümler yapıldı — oku, tekrarlama**
 
-Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
-Tarayıcıda aç: `http://localhost:8080/de/designs/elysee`
+Kartı tarayıcıda ölçtüm (1920x911, `/de/designs/elysee`, zarf açıldıktan sonra). Senin işin
+bu sayıları betiğe geçirmek ve Step 4'te gözle doğrulamak.
 
-Geliştirici araçlarında kart alanının kutusunu al, sonra şunların her biri için kart alanına göre yüzde hesapla:
+**Kritik bulgu: eski "kart" bir kart değil, uzun bir sayfa.** `.t-card` 632 x **1554** px —
+içinde davetiyenin tamamı var: selamlama, isimler, tarih, mekân, metin, geri sayım, program,
+galeri, RSVP. Bunların çoğu **bölüm** (`sections`), ve bölümler bu spec'te açıkça Faz 3'e
+bırakıldı.
 
+Faz 1'in üretebileceği kısım **açılış görünümü**: kartın üst **490 px**'i. Kutu oranı
+**632:490**, yani yatay — `9:16` değil.
+
+| Element | bind / metin | x | y | w | `size` |
+|---|---|---|---|---|---|
+| `gruss` | sabit "Wir heiraten" | 8 | 12 | 85 | 15 |
+| `marie` | `bride_name` | 37 | 20 | 27 | 111 |
+| `jonas` | `groom_name` | 37 | 44 | 25 | 111 |
+| `tag` | `wedding_weekday` | 8 | 73 | 85 | 18 |
+| `datum` | `wedding_date` | 8 | 77 | 85 | 38 |
+| `saat` | `wedding_time` | 8 | 84 | 85 | 23 |
+| `ort` | `location_name` | 8 | 91 | 85 | 24 |
+| `adres` | `location_address` | 8 | 96 | 85 | 22 |
+
+`x` ve `w` kart genişliğinin yüzdesi, `y` **kahraman bölgenin** (490 px) yüzdesi. `size`,
+ölçülen `cqw` değerinin on katı (Task 6'daki `size / 10` kuralı): isimler 11,14 cqw -> 111.
+
+**İsimler iki ayrı satır**, tek "Marie & Jonas" dizesi değil. O yüzden `couple_names` değil,
+`bride_name` ve `groom_name` kullanılıyor.
+
+- [ ] **Step 1b: `wedding_weekday` bağını ekle**
+
+Ölçümde çıktı: eski kart gün adını ayrı basıyor ("Sonntag"), ama `wedding_date` sadece
+"20. Juni 2027" veriyor — `Dates::long()` gün adı içermiyor. `Dates::weekday()` zaten var.
+
+`php/src/Design.php` içinde `BINDS` sabitine `wedding_weekday` ekle:
+
+```php
+    public const BINDS = [
+        'couple_names', 'bride_name', 'groom_name', 'initials',
+        'wedding_date', 'wedding_weekday', 'wedding_time',
+        'location_name', 'location_address',
+        'invitation_text', 'hashtag',
+    ];
 ```
-x = (element.left - kart.left) / kart.width  * 100
-y = (element.top  - kart.top)  / kart.height * 100
-w =  element.width             / kart.width  * 100
-h =  element.height            / kart.height * 100
+
+Ve `bindValues()` içinde `wedding_date` satırının altına:
+
+```php
+            'wedding_weekday'  => $date !== '' ? Dates::weekday($date, $locale) : '',
 ```
 
-Ölçülecekler:
-1. `.scene-wash-a` ve `.scene-wash-b` (bulanık renk lekeleri)
-2. `.scene-tl`, `.scene-tr`, `.scene-bl` (yaprak parçaları)
-3. İsim satırı, tarih satırı, mekân satırı
+`php/tests/design_html.php` sonuna:
 
-Dokuz satır not al. Aşağıdaki betikteki sayılar **başlangıç tahminidir**, ölçümle değiştirilecek.
+```php
+/* --- Der Wochentag ist ein eigenes Feld: Dates::long() kennt ihn nicht --- */
 
-> **Neye göre ölçtüğüne dikkat et — burası iki kez yanlış anlaşıldı.**
->
-> Sahne parçaları ve renk lekeleri eski sayfada **kartın içinde değil**, `.t-envelope-stage`
-> (`fixed inset-0`, yani tüm ekran) içinde duruyor ve `38vw` / `58vw` ile **viewport**
-> genişliğine göre ölçekleniyor. Sadece isim/tarih/mekân kartın içinde.
->
-> Bu yüzden:
-> - `spot: page` katmanları (`washa`, `washb`, `szene*`) → **viewport**'a göre ölç
-> - `spot: card` katmanları (`namen`, `datum`, `ort`) → **kart alanına** göre ölç
->
-> Ölçümü **1440 px masaüstü genişliğinde** yap (`max-width` üst sınırlarının devrede olduğu yer)
-> ve Task 12'de dar ekrandaki sapmayı rakamla kaydet: eski taraf `vw` ile ölçekleniyor, yeni
-> taraf yüzdeyle, ve bu ikisi tanım gereği ayrışıyor.
-> **Formatın bilinen sınırı — köşeye yapışma.**
->
-> Eski parçalar köşelere **yapışıyor**: `.scene-tr` sağa (`right:0`), `.scene-bl` alta
-> (`bottom:0`). Doküman formatı ise her kutuyu sol üstten `x`/`y` ile ölçüyor; "sağa yapış"
-> diye bir kavramı yok. Sağ/alt yapışık bir parçayı ifade etmek için `x = 100 - genişlik`,
-> `y = 100 - yükseklik` hesaplamak gerekiyor — ve otomatik yükseklikli bir görselde o ikinci
-> değer kabın en-boy oranıyla birlikte kayar.
->
-> Bu fazda **hesaplayıp yaz**, sonra Task 12'de farklı yüksekliklerde ne kadar kaydığını ölç.
-> Formata `anchor` alanı eklemek (`top-left` / `top-right` / `bottom-left` / `bottom-right`)
-> doğru çözüm ama Faz 2'ye ait: `blur`/`radius` olmadan tasarım **hiç** çizilemiyordu, bu ise
-> yalnızca referans dışı yüksekliklerde hassasiyet kaybettiriyor. Faz 1'in kanıtını bloke etmiyor.
-### `spot: page` katmanları CSS'ten türetildi — ölçmene gerek yok
+$werte = Design::bindValues(['date' => '2027-06-20'], 'de');
 
-Aşağıdaki beş katmanın sayıları tarayıcıda ölçülerek değil, `style.css`'ten **hesaplanarak**
-bulundu. Referans: **viewport 1440 × 900**. Türetmeyi kontrol edebilmen için burada duruyor.
+assert_true(str_contains($werte['wedding_date'], '2027'), 'bindValues: Datum traegt das Jahr');
+assert_true(!str_contains($werte['wedding_date'], 'Sonntag'), 'bindValues: das Datum traegt den Tag NICHT');
+assert_same('Sonntag', $werte['wedding_weekday'], 'bindValues: der Wochentag kommt getrennt');
+assert_same('', Design::bindValues([], 'de')['wedding_weekday'], 'bindValues: ohne Datum kein Wochentag');
+```
 
-| Katman | style.css | px (1440×900) | w | h | x | y |
-|---|---|---|---|---|---|---|
-| `szenetl` | `38vw`, tavan `240px`, `top:0 left:0` | 240 | 240/1440 = **17** | otomatik | **0** | **0** |
-| `szenetr` | aynı, `right:0` | 240 | **17** | otomatik | 100−17 = **83** | **0** |
-| `szenebl` | `32vw`, tavan `200px`, `bottom:0 left:0` | 200 | 200/1440 = **14** | otomatik | **0** | 100−(200/900) = **78** |
-| `washa` | `58vw`, tavan `520px`, `top:-10% left:-16%` | 520 | 520/1440 = **36** | 520/900 = **58** | **−16** | **−10** |
-| `washb` | `52vw`, tavan `460px`, `bottom:-8% right:-14%` | 460 | 460/1440 = **32** | 460/900 = **51** | 100+14−32 = **82** | 100+8−51 = **57** |
+Çalıştır: `cd php && php bin/test.php design_html` — geçmeli.
 
-Üç noktaya dikkat:
-
-1. **Sahne parçalarında `h = 0` (otomatik).** viewBox kare olduğu için tarayıcı yüksekliği
-   genişlikten türetiyor; elle yazmak kabın oranı değişince bozardı.
-2. **`szenebl`'in `y`'si referansa bağlı.** `bottom:0`'ı format ifade edemiyor (bkz. yukarıdaki
-   köşe yapışması notu), o yüzden `100 − yükseklik` diye hesaplandı. Pencere yüksekliği
-   değişince kayar; Task 12 ne kadar kaydığını ölçecek.
-3. **Lekeler orijinalde daire** (`width` ve `height` ikisi de `vw`). Formatta `w` genişliğin,
-   `h` yüksekliğin yüzdesi olduğu için farklı oranlarda hafif elips oluyorlar. `blur: 46` altında
-   fark görünmüyor, ama bilinerek yapılıyor.
-
-**Sadece üç metin katmanı (`namen`, `datum`, `ort`) gerçekten ölçülecek** — onlar kartın içinde ve
-kartın yüksekliği içeriğe göre değişiyor, hesapla bulunamaz.
 
 - [ ] **Step 2: Tohumlama betiğini yaz**
 
@@ -2362,6 +2357,9 @@ $doc['category'] = 'luxury';
 $doc['tags']     = ['creme', 'gold'];
 $doc['sort']     = 1;
 $doc['name']     = ['de' => 'Élysée', 'en' => 'Élysée'];
+// Gemessen, nicht gewaehlt: der Kopf der Karte ist 632 x 490 - quer, nicht
+// hochkant. Was darunter liegt, sind Abschnitte und gehoert nach Faz 3.
+$doc['canvas']   = ['ratio' => '632:490', 'safe' => 6];
 
 // Die Schriften des Themas als Marken.
 $doc['fonts'] = [
@@ -2412,31 +2410,67 @@ $ebenen = [
      'box' => ['x' => 0, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 500, 'duration' => 1600]],
 
-    // 3. Der Text der Karte
-    ['id' => 'namen', 'label' => 'Namen', 'type' => 'text', 'spot' => 'card',
-     'bind' => 'couple_names',
-     'box' => ['x' => 8, 'y' => 34, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 260,
-                 'align' => 'center', 'autoShrink' => true],
+    // 3. Der Kopf der Karte. Alle Zahlen am gerenderten Original gemessen:
+    //    x und w in Prozent der Kartenbreite, y in Prozent der 490 px hohen
+    //    Kopfzone, size als Zehnfaches des gemessenen cqw-Werts.
+    ['id' => 'gruss', 'label' => 'Gruss', 'type' => 'text', 'spot' => 'card',
+     'text' => ['de' => 'Wir heiraten', 'en' => 'We are getting married'],
+     'box' => ['x' => 8, 'y' => 12, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'body', 'color' => 'soft', 'size' => 15, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 300, 'duration' => 1000],
+     'permissions' => ['text' => true]],
+
+    // Zwei Zeilen, kein Name am Stueck - so steht es im Original.
+    ['id' => 'marie', 'label' => 'Braut', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'bride_name',
+     'box' => ['x' => 37, 'y' => 20, 'w' => 27, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
      'permissions' => ['color' => true]],
 
+    ['id' => 'jonas', 'label' => 'Braeutigam', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'groom_name',
+     'box' => ['x' => 37, 'y' => 44, 'w' => 25, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 550, 'duration' => 1200],
+     'permissions' => ['color' => true]],
+
+    ['id' => 'tag', 'label' => 'Wochentag', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'wedding_weekday',
+     'box' => ['x' => 8, 'y' => 73, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'body', 'color' => 'soft', 'size' => 18, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 700, 'duration' => 1000],
+     'permissions' => []],
+
     ['id' => 'datum', 'label' => 'Datum', 'type' => 'text', 'spot' => 'card',
      'bind' => 'wedding_date',
-     'box' => ['x' => 8, 'y' => 52, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'style' => ['font' => 'body', 'color' => 'fg', 'size' => 100,
-                 'align' => 'center', 'autoShrink' => true],
-     'motion' => ['move' => 'fade', 'delay' => 700, 'duration' => 1000],
+     'box' => ['x' => 8, 'y' => 77, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'display', 'color' => 'fg', 'size' => 38, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 800, 'duration' => 1000],
+     'permissions' => []],
+
+    ['id' => 'saat', 'label' => 'Uhrzeit', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'wedding_time',
+     'box' => ['x' => 8, 'y' => 84, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'body', 'color' => 'fg', 'size' => 23, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 880, 'duration' => 1000],
      'permissions' => []],
 
     ['id' => 'ort', 'label' => 'Ort', 'type' => 'text', 'spot' => 'card',
      'bind' => 'location_name',
-     'box' => ['x' => 8, 'y' => 62, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'style' => ['font' => 'body', 'color' => 'soft', 'size' => 90,
-                 'align' => 'center', 'autoShrink' => true],
-     'motion' => ['move' => 'fade', 'delay' => 900, 'duration' => 1000],
+     'box' => ['x' => 8, 'y' => 91, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'body', 'color' => 'fg', 'size' => 24, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 960, 'duration' => 1000],
+     'permissions' => []],
+
+    ['id' => 'adres', 'label' => 'Adresse', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'location_address',
+     'box' => ['x' => 8, 'y' => 96, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'style' => ['font' => 'body', 'color' => 'soft', 'size' => 22, 'align' => 'center'],
+     'motion' => ['move' => 'fade', 'delay' => 1040, 'duration' => 1000],
      'permissions' => []],
 ];
+
 
 foreach ($ebenen as $ebene) {
     $doc['layers'][] = $ebene;
@@ -2476,7 +2510,7 @@ echo "\n", $vorher === null ? "Angelegt" : "Aktualisiert",
 - [ ] **Step 3: Kuru çalıştır**
 
 Çalıştır: `cd php && php bin/seed-designs.php --dry`
-Beklenen: 8 katman listelenir (2 shape, 3 image, 3 text), uyarı çıkmaz.
+Beklenen: 13 katman listelenir (2 shape, 3 image, 8 text), uyarı çıkmaz.
 
 Uyarı çıkarsa oku: `missing_src` varlık yolu yanlış demek, `unknown_color` palet anahtarı yok demek. Devam etmeden düzelt.
 
@@ -2773,7 +2807,7 @@ $introMs = 0;
         beim Original, wo sie als max-w-sm mitten auf der Buehne liegt.
       */ ?>
       <div class="absolute inset-0 flex items-center justify-center px-6">
-        <div class="d-card t-card relative w-full max-w-sm overflow-hidden"
+        <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
              data-speed="<?= $tempo ?>"
              style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);"><?= $karte ?></div>
       </div>
@@ -3159,6 +3193,16 @@ Beklenen: PASS, `design_store` **atlanmamış** olmalı.
 Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
 
 İki sekme: `http://localhost:8080/de/designs/elysee` (eski) ve `http://localhost:8080/de/v2/designs/elysee` (yeni).
+
+> **Neyi karşılaştırdığını bil.** Eski sayfadaki `.t-card` 632 x 1554 px — bir kart değil,
+> davetiyenin tamamı: selamlama, isimler, tarih, mekân, sonra metin, geri sayım, program, galeri,
+> RSVP. Alt kısmın tamamı **bölüm** (`sections`) ve bölümler bu spec'te Faz 3'e bırakıldı.
+>
+> Karşılaştırma **açılış görünümüyle** sınırlı: zarf, ve zarf açılınca kartın üst 490 px'i
+> (selamlama, iki isim, gün, tarih, saat, mekân, adres). Aşağısı Faz 1'in iddiası değil ve
+> Step 5'te isim isim "üretilmedi" diye yazılacak.
+>
+> Bu bir ödün değil, spec'in kendi faz ayrımı: `sections` alanı Faz 1'de bilerek boş bırakıldı.
 
 - [ ] 1440 px (masaüstü) — kart oranı, yaprak parçalarının yeri, renk lekeleri, isim/tarih/mekân aynı
 - [ ] 820 px (tablet) — aynı
