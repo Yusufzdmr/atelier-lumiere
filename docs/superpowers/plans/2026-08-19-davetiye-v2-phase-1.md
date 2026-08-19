@@ -467,8 +467,11 @@ final class Design
         $el['src']   = (string) $el['src'];
 
         // Unbekannte Namen bleiben stehen: warnings() soll sie melden koennen.
-        // Nur Sonderzeichen fliegen raus.
-        $el['bind'] = (string) preg_replace('/[^a-z_]/', '', strtolower((string) $el['bind']));
+        // Nur Sonderzeichen fliegen raus – Leerzeichen werden zum Unterstrich
+        // und nicht geloescht (dieselbe Logik wie key(), nur mit "_" statt "-").
+        $bind = strtolower(trim((string) $el['bind']));
+        $bind = (string) preg_replace('/\s+/', '_', $bind);
+        $el['bind'] = (string) preg_replace('/[^a-z_]/', '', $bind);
 
         $text = is_array($el['text']) ? $el['text'] : [];
         $el['text'] = ['de' => (string) ($text['de'] ?? ''), 'en' => (string) ($text['en'] ?? '')];
