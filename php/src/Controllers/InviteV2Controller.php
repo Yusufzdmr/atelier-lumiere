@@ -47,7 +47,17 @@ final class InviteV2Controller
 
         $designs = Design::all('active');
         if ($designs === []) {
-            View::page('pages/not-found', ['meta' => Seo::forPage('einladung2', ['noindex' => true])]);
+            // pages/not-found liest $locale unbedingt (not-found.php:10) und
+            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
+            // Variablen und die Seite kommt auf Englisch heraus, egal in welcher
+            // Sprache sie aufgerufen wurde. DesignController::preview() gibt sie
+            // aus genau diesem Grund mit.
+            http_response_code(404);
+            View::page('pages/not-found', [
+                'locale' => $locale,
+                'path'   => I18n::path('/v2/einladung'),
+                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+            ]);
             return;
         }
 
