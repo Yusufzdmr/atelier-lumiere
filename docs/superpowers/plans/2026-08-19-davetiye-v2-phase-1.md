@@ -518,10 +518,20 @@ final class Design
         return $out;
     }
 
-    /** Kennung: nur Kleinbuchstaben, Ziffern und Bindestrich. */
+    /**
+     * Kennung: nur Kleinbuchstaben, Ziffern und Bindestrich.
+     *
+     * Leerzeichen werden zum Bindestrich, nicht geloescht: aus „Golden Garden"
+     * soll „golden-garden" werden und nicht „goldengarden". Die Kennung steht
+     * in der Adresszeile, und dort ist der Bindestrich die Wortgrenze.
+     */
     private static function key(string $value): string
     {
-        return (string) preg_replace('/[^a-z0-9-]/', '', strtolower(trim($value)));
+        $value = strtolower(trim($value));
+        $value = (string) preg_replace('/[\s_]+/', '-', $value);
+        $value = (string) preg_replace('/[^a-z0-9-]/', '', $value);
+        $value = (string) preg_replace('/-{2,}/', '-', $value);
+        return trim($value, '-');
     }
 }
 ```
