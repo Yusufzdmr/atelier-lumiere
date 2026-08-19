@@ -23,6 +23,12 @@
 - **Ölçüler yüzde.** Yeni formatta piksel yok. `x`,`y` −50…150; `w` 1…200; `h` 0…200 (0 = otomatik); `rotate` −180…180; `opacity` 0…100; `delay`,`duration` 0…20000 ms.
 - **Aralık dışı değer kırpılır, reddedilmez.** Bozuk bir sayı yüzünden tasarım açılmaz olmamalı.
 - **Yorumlar Almanca** (mevcut `php/src/` kalıbı). Panel/site metinleri sözlükten.
+- **Palet ve font jetonlarının anahtarları hep küçük harftir.** `Design::key()` küçültüyor, yani
+  temanın `accentSoft` alanı dokümanda `accentsoft`, CSS'te `--d-accentsoft` olur. Şablonda
+  `var(--d-accentSoft)` yazmak **sessizce** yedek değere düşer — hata vermez, sadece yanlış renk
+  çıkar. Üretilen değişkenlerin tam listesi: `--d-bg`, `--d-paper`, `--d-paperedge`, `--d-fg`,
+  `--d-soft`, `--d-accent`, `--d-accentsoft`, `--d-envelope`, `--d-envelopeflap`,
+  `--d-envelopeedge`, `--d-seal`, `--d-sealtext`, `--d-petal`.
 
 ---
 
@@ -2275,7 +2281,7 @@ $ebenen = [
     // 1. Die weichen Farbflecken (frueher .scene-wash-a / -b)
     ['id' => 'washa', 'label' => 'Farbfleck oben links', 'type' => 'shape', 'spot' => 'page',
      'box' => ['x' => -16, 'y' => -10, 'w' => 58, 'h' => 58, 'rotate' => 0, 'opacity' => 30],
-     'style' => ['color' => 'accentSoft', 'blur' => 46, 'radius' => 50],
+     'style' => ['color' => 'accentsoft', 'blur' => 46, 'radius' => 50],
      'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
 
     ['id' => 'washb', 'label' => 'Farbfleck unten rechts', 'type' => 'shape', 'spot' => 'page',
@@ -2643,7 +2649,7 @@ $introMs = 0;
                 class="absolute inset-0 h-full w-full cursor-pointer"
                 aria-label="<?= $locale === 'de' ? 'Einladung öffnen' : 'Open the invitation' ?>">
           <span class="env-flap absolute inset-x-0 top-0 block h-1/2"
-                style="background: var(--d-envelopeFlap, var(--d-envelope));"></span>
+                style="background: var(--d-envelopeflap, var(--d-envelope));"></span>
           <span class="env-seal absolute left-1/2 top-1/2 block h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
                 style="background: var(--d-seal);"></span>
           <?= $kuvert ?>
