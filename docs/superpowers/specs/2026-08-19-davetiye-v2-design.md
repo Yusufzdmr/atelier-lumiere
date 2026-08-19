@@ -65,6 +65,37 @@ Faz 3'te doldurulacak, format o zaman değişmesin diye şimdiden ayrılıyor.
 `v2/` öneki bilerek geçici. Karşılaştırma bitip yeni sistem seçilince önek
 kaldırılır ve eski rotalar kapatılır — o iş tek dosyada, birkaç satır.
 
+### Menüde görünürlük
+
+Bu bir **değişim değil, ekleme**. Eski davetiye menüde durduğu yerde kalır;
+yanına ikincisi gelir, ikisi aynı anda gezilebilsin diye:
+
+`templates/partials/header.php` içindeki `$extra` dizisi (altın renkli, "kendi
+ürünümüz" grubu) tek satır uzar:
+
+```php
+$extra = [
+    [$p('/einladung'), I18n::t('nav.invitation')],
+    [$p('/v2/designs'), I18n::t('nav.invitation2')],   // ← yeni
+];
+```
+
+Aynı satır `templates/partials/footer.php` için de geçerli.
+
+Yeni sözlük anahtarı `nav.invitation2`, `php/data/dict.php` içinde üç dil
+kümesine de eklenir: `de` → "Einladung 2", `en` → "Invitation 2", `tr` →
+"Davetiye 2".
+
+Dosyanın başındaki "elle düzenlemeyin, `scripts/export-to-php.mjs` üretir"
+notu artık geçerli değil: sözlük Next.js sürümünden ayrışmış (site DE+EN'e
+geçerken panel DE+TR'de kaldı; bugün `de` 344, `en` 344, `tr` 342 anahtar).
+PHP tarafında elle bakılıyor. Bu faz **anahtar eklemekle** yetiniyor, hiçbir
+mevcut anahtara dokunmuyor — o yüzden var olan hiçbir metin değişemez. Notun
+kendisi ayrı bir iş, bu spec'in kapsamında değil.
+
+Karşılaştırma bitip karar verilince menüden **biri** silinir. Hangisi olacağı
+bu spec'in konusu değil; iki girdinin yan yana durabiliyor olması konusu.
+
 Panelde yeni sekme, `Admin::TABS` dizisine bir kayıt:
 
 ```php
@@ -314,9 +345,19 @@ Olduğu gibi kullanılanlar: `Media` (alfa koruyan WebP + SVG temizleme),
 
 ## 6. Yeni dosyalar
 
-Hepsi yeni dosya. Mevcut dosyalardan yalnızca üçü, sadece **ek** satır alarak
-değişir: `public/index.php` (iki rota), `src/Admin.php` (bir sekme kaydı),
-`schema.sql` (iki tablo). Mevcut hiçbir satır silinmez ya da düzenlenmez.
+Hepsi yeni dosya. Mevcut dosyalar yalnızca **ek** satır alır:
+
+| Dosya | Eklenen |
+|---|---|
+| `php/public/index.php` | iki rota |
+| `php/src/Admin.php` | bir sekme kaydı |
+| `php/schema.sql` | iki tablo |
+| `php/templates/partials/header.php` | bir menü satırı |
+| `php/templates/partials/footer.php` | bir menü satırı |
+| `php/data/dict.php` | bir anahtar × üç dil |
+
+Mevcut hiçbir satır silinmez ya da düzenlenmez. Bu, gözden geçirmede
+doğrulanabilir bir iddia: bu fazın diff'inde `-` ile başlayan satır olmamalı.
 
 ```
 php/src/Design.php
