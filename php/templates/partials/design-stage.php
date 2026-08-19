@@ -30,6 +30,7 @@
  * @var string $idle
  * @var string $initialen
  * @var list<array{kind:string,element:string,detail:string}> $warnings
+ * @var bool $fest
  */
 
 use function Atelier\e;
@@ -59,7 +60,15 @@ use function Atelier\e;
     </ul>
   <?php endif; ?>
 
-  <div class="<?= e($scope) ?> d-stage fixed inset-0 z-50 overflow-hidden"
+<?php /*
+  Zwei Rollen, eine Buehne. Im Schaufenster liegt sie ueber allem: dort ist
+  die Karte das Einzige, was zaehlt. Auf einer echten Einladung steht sie im
+  Fluss, damit die Abschnitte darunter scrollen koennen - fixed inset-0
+  liesse darunter nichts zu. Alles INNERHALB ist absolute inset-0, also an
+  der Buehne aufgehaengt und nicht am Fenster: beide Rollen funktionieren
+  ohne weitere Aenderung.
+*/ ?>
+  <div class="<?= e($scope) ?> d-stage <?= $fest ? 'fixed inset-0 z-50' : 'relative min-h-screen' ?> overflow-hidden"
        style="background: var(--d-bg, #EFE7DC);">
 
       <!-- Die Seite: Hintergrund und Zeichnung, immer sichtbar. -->

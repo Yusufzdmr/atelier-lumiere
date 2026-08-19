@@ -49,4 +49,7 @@ use Atelier\View;
     'initialen' => $initialen,
     // Immer leer: eine echte Einladung zeigt keine Vorlagenmaengel an.
     'warnings'  => $warnings,
+    // Auf der Einladung steht die Buehne im Fluss - darunter kommen die
+    // Abschnitte.
+    'fest'      => false,
 ]) ?>
