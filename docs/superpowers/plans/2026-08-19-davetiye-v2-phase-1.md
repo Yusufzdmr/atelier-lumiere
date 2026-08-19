@@ -2267,6 +2267,18 @@ Dokuz satır not al. Aşağıdaki betikteki sayılar **başlangıç tahminidir**
 > Ölçümü **1440 px masaüstü genişliğinde** yap (`max-width` üst sınırlarının devrede olduğu yer)
 > ve Task 12'de dar ekrandaki sapmayı rakamla kaydet: eski taraf `vw` ile ölçekleniyor, yeni
 > taraf yüzdeyle, ve bu ikisi tanım gereği ayrışıyor.
+> **Formatın bilinen sınırı — köşeye yapışma.**
+>
+> Eski parçalar köşelere **yapışıyor**: `.scene-tr` sağa (`right:0`), `.scene-bl` alta
+> (`bottom:0`). Doküman formatı ise her kutuyu sol üstten `x`/`y` ile ölçüyor; "sağa yapış"
+> diye bir kavramı yok. Sağ/alt yapışık bir parçayı ifade etmek için `x = 100 - genişlik`,
+> `y = 100 - yükseklik` hesaplamak gerekiyor — ve otomatik yükseklikli bir görselde o ikinci
+> değer kabın en-boy oranıyla birlikte kayar.
+>
+> Bu fazda **hesaplayıp yaz**, sonra Task 12'de farklı yüksekliklerde ne kadar kaydığını ölç.
+> Formata `anchor` alanı eklemek (`top-left` / `top-right` / `bottom-left` / `bottom-right`)
+> doğru çözüm ama Faz 2'ye ait: `blur`/`radius` olmadan tasarım **hiç** çizilemiyordu, bu ise
+> yalnızca referans dışı yüksekliklerde hassasiyet kaybettiriyor. Faz 1'in kanıtını bloke etmiyor.
 
 - [ ] **Step 2: Tohumlama betiğini yaz**
 
@@ -3221,5 +3233,10 @@ Faz 1 bitti. Faz 2 (panelde tasarım kataloğu ve form editörü) kendi spec'i v
 2. **Task 12 Step 5'in listesi** — mühür, zarf hareketi, partiküller. Hepsi tasarım verisi olmalı,
    şablon süsü değil.
 
-Ve formatın bilinen eksiği: sahne parçaları için `maxWidth`. Task 12'nin telefon ölçümü buna
-karar verecek.
+Ve formatın iki bilinen eksiği, ikisi de Faz 1'de ölçülüp kayda geçti:
+
+1. **`maxWidth`** — eski sahne `vw` ile ölçekleniyor ve bir piksel tavanı var; yeni format sadece
+   yüzde biliyor. Task 12'nin telefon ölçümü buna karar verecek.
+2. **`anchor`** — köşeye yapışma (`top-right`, `bottom-left`…). Bugün her kutu sol üstten
+   ölçülüyor, o yüzden sağ/alt yapışık bir parça `100 - genişlik` diye hesaplanıyor ve kabın
+   en-boy oranı değişince kayıyor. Köşe süslemesi en yaygın kalıp olduğu için bu erken gelmeli.
