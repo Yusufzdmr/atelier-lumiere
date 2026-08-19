@@ -159,6 +159,12 @@ final class InviteV2Controller
         if ($slug === '') {
             $slug = 'einladung-' . bin2hex(random_bytes(3));
         }
+        // Die Spalte ist VARCHAR(96). Der Umweg ueber die Namen kann laenger
+        // werden als das - ae, oe und ue machen aus einem Zeichen zwei -, und
+        // ohne Ausnahmebehandlung im Router bekaeme ein Paar mit langen Namen
+        // eine Fehlerseite statt einer Einladung. 90 laesst Platz fuer das
+        // Suffix, das eine Kollision anhaengt.
+        $slug = mb_substr($slug, 0, 90);
         if (!InvitationsV2::slugAvailable($slug)) {
             $slug .= '-' . bin2hex(random_bytes(2));
         }
