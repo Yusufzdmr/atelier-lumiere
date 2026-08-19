@@ -17,6 +17,7 @@
  * @var string $locale
  */
 
+use Atelier\I18n;
 use function Atelier\e;
 
 $ratio = str_replace(':', ' / ', (string) $design['canvas']['ratio']);
@@ -147,6 +148,7 @@ $idle = (string) $design['animation']['idle'];
       </div>
   </div>
 
+  <?php if ($intern) : ?>
   <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">
     <span><?= e($design['name'][$locale] ?? $design['name']['de']) ?></span>
     <span><?= e($design['category']) ?></span>
@@ -156,3 +158,20 @@ $idle = (string) $design['animation']['idle'];
     <span>Karte <?= e($karteAn) ?> (<?= $tempo ?> ms)</span>
     <span><?= $locale === 'de' ? 'Kuvert anklicken' : 'click the envelope' ?></span>
   </div>
+  <?php else : ?>
+    <?php /*
+       Fuer den Gast: keine Fassungsnummer, keine Ebenenzahl. Zwei Wege - zurueck
+       zur Auswahl, oder mit dieser Vorlage anfangen.
+    */ ?>
+    <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-6 bg-ink/80 px-6 py-4 text-[0.62rem] uppercase tracking-[0.16em] text-cream">
+      <a href="<?= e(I18n::path('/v2/designs', $locale)) ?>" class="transition-colors hover:text-gold">
+        <?= $locale === 'de' ? 'Alle Designs' : 'All designs' ?>
+      </a>
+      <?php if ($machbar) : ?>
+        <a href="<?= e(I18n::path('/einladung', $locale) . '?design=' . rawurlencode((string) $design['slug'])) ?>"
+           class="border border-cream px-5 py-2.5 transition-colors hover:bg-cream hover:text-ink">
+          <?= $locale === 'de' ? 'Mit diesem Design erstellen' : 'Create with this design' ?>
+        </a>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Atelier\Controllers;
 
+use Atelier\Admin;
 use Atelier\Config;
 use Atelier\Design;
 use Atelier\I18n;
@@ -129,6 +130,14 @@ final class DesignController
             'kuvert'   => Design::html($design, $values, $locale, 'envelope'),
             'karte'    => Design::html($design, $values, $locale, 'card'),
             'warnings' => Design::warnings($design),
+            // Der Balken unten ist ein Entwicklerbalken: Fassung, Ebenenzahl,
+            // Bewegungsachsen. Wer angemeldet ist, arbeitet an der Vorlage; wer
+            // nicht, will sie ansehen und braucht zwei Links statt sieben Zahlen.
+            'intern'   => Admin::isLoggedIn(),
+            'machbar'  => Design::creatable([$design], array_map(
+                static fn (array $t): string => (string) ($t['id'] ?? ''),
+                Themes::all()
+            ))[$design['slug']] ?? false,
         ]);
     }
 }
