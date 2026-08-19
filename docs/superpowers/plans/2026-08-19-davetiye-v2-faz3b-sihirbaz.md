@@ -1756,14 +1756,29 @@ git commit -m "Publishing freezes the personalised document, not a list of edits
 
 use Atelier\View;
 ?>
+<?php /*
+   Dreizehn Werte, nicht sieben. Die Buehne liest ratio, tempo, karteAn,
+   introMs, idle, initialen und warnings zusaetzlich - fehlt einer, meldet PHP
+   eine undefinierte Variable, das Seitenverhaeltnis bleibt leer, die Karte
+   bewegt sich nicht, und weil null !== [] wahr ist, stuende auf jeder echten
+   Einladung eine leere Warnungsbox. Der Aufrufer rechnet sie aus (show()),
+   die Buehne leitet nichts selbst ab.
+*/ ?>
 <?= View::partial('partials/design-stage', [
-    'design' => $design,
-    'scope'  => $scope,
-    'styles' => $styles,
-    'seite'  => $seite,
-    'kuvert' => $kuvert,
-    'karte'  => $karte,
-    'locale' => $locale,
+    'design'    => $design,
+    'scope'     => $scope,
+    'styles'    => $styles,
+    'seite'     => $seite,
+    'kuvert'    => $kuvert,
+    'karte'     => $karte,
+    'locale'    => $locale,
+    'ratio'     => $ratio,
+    'tempo'     => $tempo,
+    'karteAn'   => $karteAn,
+    'introMs'   => $introMs,
+    'idle'      => $idle,
+    'initialen' => $initialen,
+    'warnings'  => $warnings,
 ]) ?>
 ```
 
