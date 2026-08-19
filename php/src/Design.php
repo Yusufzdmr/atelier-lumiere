@@ -145,6 +145,14 @@ final class Design
             'idle'     => (string) ($animation['idle'] ?? 'none'),
             'reveal'   => (string) ($animation['reveal'] ?? 'up'),
             'particle' => (string) ($animation['particle'] ?? 'none'),
+            // Wie die Karte hereinkommt und wie die Namen erscheinen. Beides
+            // steht im alten Motor in eigenen Feldern und wurde hier zuerst
+            // vergessen - ohne sie laesst sich die Abfolge „Siegel bricht,
+            // Karte steigt auf" nicht nachbauen.
+            'card'     => (string) ($animation['card'] ?? 'none'),
+            'nameMove' => (string) ($animation['nameMove'] ?? 'none'),
+            'speed'    => max(0, min(20000, (int) ($animation['speed'] ?? 1200))),
+            'delay'    => max(0, min(20000, (int) ($animation['delay'] ?? 0))),
         ];
 
         return $doc;
@@ -635,11 +643,18 @@ final class Design
             'version'   => max(1, (int) ($theme['version'] ?? 1)),
             'palette'   => $palette,
             'layers'    => array_merge($back, $front),
+            // Achtung, zwei Bedeutungen: das Thema hat ein skalares Feld
+            // "animation" (der Karteneinzug); das Dokument nennt so den
+            // ganzen Block. Deshalb landet der Wert hier unter "card".
             'animation' => [
                 'intro'    => (string) ($theme['intro'] ?? 'none'),
                 'idle'     => (string) ($theme['idle'] ?? 'none'),
                 'reveal'   => (string) ($theme['reveal'] ?? 'up'),
                 'particle' => (string) ($theme['particle'] ?? 'none'),
+                'card'     => (string) ($theme['animation'] ?? 'none'),
+                'nameMove' => (string) ($theme['nameAnimation'] ?? 'none'),
+                'speed'    => (int) ($theme['animationSpeed'] ?? 1200),
+                'delay'    => (int) ($theme['animationDelay'] ?? 0),
             ],
         ]);
     }

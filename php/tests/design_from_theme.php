@@ -96,3 +96,48 @@ assert_same('petal', $doc['animation']['particle'], 'fromTheme: particle bleibt'
 $doc = Design::fromTheme(['id' => 'x']);
 assert_same('draft', $doc['status'], 'fromTheme: Ergebnis ist vollstaendig');
 assert_same([], $doc['sections'], 'fromTheme: sections bleibt leer (Faz 3)');
+
+/* --- Die Bewegung der Karte und der Namen geht mit --- */
+
+$doc = Design::fromTheme([
+    'id' => 'x', 'animation' => 'seal', 'nameAnimation' => 'letters',
+    'animationSpeed' => 1400, 'animationDelay' => 250,
+]);
+
+assert_same('seal', $doc['animation']['card'], 'fromTheme: Karteneinzug geht mit');
+assert_same('letters', $doc['animation']['nameMove'], 'fromTheme: Namensbewegung geht mit');
+assert_same(1400, $doc['animation']['speed'], 'fromTheme: Tempo geht mit');
+assert_same(250, $doc['animation']['delay'], 'fromTheme: Verzoegerung geht mit');
+
+/* --- complete() wirft sie nicht wieder weg --- */
+
+$roh = ['id' => 'y', 'animation' => ['card' => 'curtain', 'nameMove' => 'rise', 'speed' => 900]];
+$fertig = Design::complete($roh);
+
+assert_same('curtain', $fertig['animation']['card'], 'complete: card ueberlebt');
+assert_same('rise', $fertig['animation']['nameMove'], 'complete: nameMove ueberlebt');
+assert_same(900, $fertig['animation']['speed'], 'complete: speed ueberlebt');
+assert_same(0, $fertig['animation']['delay'], 'complete: delay hat einen Standard');
+
+/* --- Und beschneidet, statt zu verwerfen --- */
+
+$fertig = Design::complete(['id' => 'z', 'animation' => ['speed' => 999999, 'delay' => -5]]);
+assert_same(20000, $fertig['animation']['speed'], 'complete: speed wird beschnitten');
+assert_same(0, $fertig['animation']['delay'], 'complete: delay wird unten beschnitten');
+
+/* --- Das echte Élysée traegt seinen Siegelauftakt --- */
+
+if (needs_db()) {
+    // bin/test.php hat den Autoloader schon registriert und View.php schon
+    // per require geladen (nicht require_once) - src/bootstrap.php wuerde
+    // View.php ein zweites Mal einbinden und e() doppelt erklaeren. Deshalb
+    // hier nur das eine Stueck aus bootstrap.php nachholen, das wirklich
+    // fehlt: die Konfiguration fuer die Datenbankverbindung.
+    Atelier\Config::load(dirname(__DIR__) . '/config.php');
+
+    $elysee = Atelier\Themes::find('elysee');
+    if ($elysee !== null) {
+        $doc = Design::fromTheme($elysee);
+        assert_same('seal', $doc['animation']['card'], 'fromTheme: Élysée behaelt seal');
+    }
+}
