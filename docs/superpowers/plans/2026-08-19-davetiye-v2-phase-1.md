@@ -2540,6 +2540,12 @@ final class DesignController
                 'title'     => $design['name'][$locale] ?? $design['name']['de'],
                 'noindex'   => true,
                 'canonical' => Config::url() . I18n::path('/v2/designs/' . $design['slug'], $locale),
+                // Die Choreografie wird geteilt, nicht nachgebaut: dasselbe
+                // Skript wie bei der ersten Fassung. Es kennt keine Farben und
+                // keine Formen - es oeffnet ein Kuvert und laesst eine Karte
+                // aufsteigen. Das ist Verhalten des Betrachters, nicht Teil
+                // des Designs, und gehoert deshalb nicht ins Dokument.
+                'scripts'   => ['/assets/invitation.js'],
             ]),
             'design'   => $design,
             'scope'    => ltrim($scope, '.'),
@@ -2584,6 +2590,9 @@ $intro = (string) $design['animation']['intro'];
 // Wie die Karte hereinkommt - beim Original steht das in data-animation.
 $karteAn = (string) $design['animation']['card'];
 $tempo = (int) $design['animation']['speed'];
+// Wie lange eine Auftaktszene laeuft. Die zweite Fassung hat noch keine
+// eigenen Szenen, also null - das Skript ueberspringt sie dann.
+$introMs = 0;
 ?>
 <style><?= $styles ?></style>
 
@@ -2610,19 +2619,52 @@ $tempo = (int) $design['animation']['speed'];
   <?php endif; ?>
 
   <div class="mt-10 flex justify-center">
-    <div class="<?= e($scope) ?> d-stage d-intro-<?= e($intro) ?> relative w-full max-w-sm overflow-hidden"
-         data-animation="<?= e($karteAn) ?>" data-speed="<?= $tempo ?>"
+    <div class="<?= e($scope) ?> d-stage relative w-full max-w-sm overflow-hidden"
          style="aspect-ratio: <?= $ratio ?>; background: var(--d-bg, #EFE7DC);">
 
+      <!-- Die Seite: Hintergrund und Zeichnung, immer sichtbar. -->
       <div class="d-page absolute inset-0"><?= $seite ?></div>
 
-      <?php if (trim($kuvert) !== ''): ?>
-        <div class="d-envelope absolute inset-0"><?= $kuvert ?></div>
-      <?php endif; ?>
+      <!--
+        Das Kuvert. Die Attribute sind der Vertrag von invitation.js:
+        [data-envelope] ist die Huelle, [data-envelope-open] der Anklickpunkt,
+        data-animation waehlt die Bewegung der Karte, data-intro-ms sagt, wie
+        lange eine Auftaktszene laeuft. Die Klassen env-flap und env-seal
+        werden von [data-open=true] im bestehenden Stylesheet aufgeklappt.
 
-      <div class="d-card absolute inset-0"><?= $karte ?></div>
+        Was hier NICHT steht: Farben und Formen. Die Lasche traegt die
+        Palettenmarke, das Siegel ebenso, und was sonst auf dem Kuvert liegt,
+        kommt aus den Ebenen mit spot=envelope.
+      -->
+      <div class="d-envelope absolute inset-0" data-envelope
+           data-animation="<?= e($karteAn) ?>"
+           data-intro-ms="<?= $introMs ?>">
+        <button type="button" data-envelope-open
+                class="absolute inset-0 h-full w-full cursor-pointer"
+                aria-label="<?= $locale === 'de' ? 'Einladung öffnen' : 'Open the invitation' ?>">
+          <span class="env-flap absolute inset-x-0 top-0 block h-1/2"
+                style="background: var(--d-envelopeFlap, var(--d-envelope));"></span>
+          <span class="env-seal absolute left-1/2 top-1/2 block h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style="background: var(--d-seal);"></span>
+          <?= $kuvert ?>
+        </button>
+      </div>
+
+      <!--
+        Die Karte. Der Klassenname t-card ist der Haken, an dem invitation.js
+        sie findet; die Bewegung selbst macht es ueber die Web Animations API,
+        es braucht dafuer kein Stylesheet. data-speed kommt aus dem Dokument.
+      -->
+      <div class="d-card t-card absolute inset-0" data-speed="<?= $tempo ?>"
+           style="background: var(--d-paper);"><?= $karte ?></div>
     </div>
   </div>
+
+  <p class="mt-4 text-center text-xs text-ink/50">
+    <?= $locale === 'de'
+      ? 'Auf das Kuvert klicken, um die Karte zu öffnen.'
+      : 'Click the envelope to open the card.' ?>
+  </p>
 </section>
 ```
 
