@@ -299,9 +299,13 @@ düğmesi yeter. Sürükleme kendi başına bir iş ve bu fazın konusu değil.
 | `personalize()` izinsiz bölüm kapatmayı düşürüyor | **güvenlik sınırı** |
 | `personalize()` izinli kapatmayı belgeye işliyor | izin verilen gerçekten çalışsın |
 
-Ayrıca `tests/design_admin.php`'deki sınır testi güncellenir ve
-`tests/design_stage.php` (yeni) vitrinin `$fest = true` çıktısının
-değişmediğini tutar.
+Ayrıca `tests/design_admin.php`'deki sınır testi güncellenir (§11).
+
+Sahnenin `$fest = true` dalını bir PHP testi **tutmuyor**; onu vitrin
+sayfasının bayt bayt karşılaştırması tutuyor (`curl` + `diff`, Faz 3B'de
+kurulan yöntem). Gerekçe: bir birim testi yalnızca sınıf dizesini
+doğrulayabilirdi, oysa karşılaştırma bütün sayfanın değişmediğini gösteriyor —
+kapsamı geniş olan kazandı.
 
 ## 13. Kapsam dışı ve nedeni
 
