@@ -155,15 +155,28 @@ use function Atelier\e;
 
 <?= $auf($tr ? '7 · Müşteri izinleri' : '7 · Kundenrechte') ?>
   <p class="<?= $label ?>">
-    <?= $tr ? 'Faz 3 sihirbazı bu bayrakları okuyacak: müşteri neye dokunabilir.' : 'Der Assistent der dritten Phase liest diese Haken: was der Kunde anfassen darf.' ?>
+    <?= $tr
+        ? 'Sihirbaz bu bayrakları okur. "Düzenlenebilir" ana şalterdir: kapalıyken diğer beşi sayılmaz.'
+        : 'Der Assistent liest diese Haken. „Bearbeitbar" ist der Hauptschalter: ist er aus, zählen die anderen fünf nicht.' ?>
   </p>
+  <?php
+  // Mapping der Berechtigungsnamen zu Etiketten in Deutsch und Türkisch
+  $rechteNamen = [
+      'edit'  => ['de' => 'Bearbeitbar', 'tr' => 'Düzenlenebilir'],
+      'color' => ['de' => 'Farbe',       'tr' => 'Renk'],
+      'font'  => ['de' => 'Schrift',     'tr' => 'Yazı tipi'],
+      'photo' => ['de' => 'Bild',        'tr' => 'Görsel'],
+      'text'  => ['de' => 'Text',        'tr' => 'Metin'],
+      'hide'  => ['de' => 'Ausblendbar', 'tr' => 'Gizlenebilir'],
+  ];
+  ?>
   <?php foreach ($design['layers'] as $ebene) : ?>
     <div class="flex flex-wrap items-center gap-4 border-b border-sand-deep py-2">
       <span class="w-56 text-sm text-ink"><?= e($ebene['label'] ?: $ebene['id']) ?></span>
       <?php foreach (Design::PERMISSIONS as $recht) : ?>
-        <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+        <label class="flex items-center gap-2 text-[0.66rem] <?= $recht === 'edit' ? 'text-ink' : 'text-muted' ?>">
           <input type="checkbox" name="perm_<?= e($recht) ?>_<?= e($ebene['id']) ?>" <?= $ebene['permissions'][$recht] ? 'checked' : '' ?>>
-          <?= e($recht) ?>
+          <?= e($rechteNamen[$recht][$tr ? 'tr' : 'de']) ?>
         </label>
       <?php endforeach; ?>
     </div>
