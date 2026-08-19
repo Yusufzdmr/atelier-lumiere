@@ -52,7 +52,7 @@ final class DesignWizard
      * Alles, was der Assistent zu diesem Design anbieten darf.
      *
      * @param array<string,mixed> $doc
-     * @return array{fields:list<string>,palette:array<string,mixed>,fonts:array<string,mixed>,layers:array<string,array<string,bool>>}
+     * @return array{fields:list<string>,palette:array<string,mixed>,fonts:array<string,mixed>,layers:array<string,array<string,bool>>,sections:array<string,array<string,mixed>>}
      */
     public static function choices(array $doc): array
     {
@@ -99,7 +99,39 @@ final class DesignWizard
             }
         }
 
-        return ['fields' => $fields, 'palette' => $palette, 'fonts' => $fonts, 'layers' => $layers];
+        /*
+         * Abschnitte: dieselbe Weissliste wie bei den Ebenen. edit ist der
+         * Hauptschalter; ohne ihn wird der Abschnitt gar nicht angeboten.
+         * fields sagt, wonach der Assistent fragen muss - location und
+         * countdown stehen nicht darin, weil sie von den Angaben leben, die
+         * ohnehin gefragt werden.
+         */
+        $sections = [];
+        foreach (DesignSections::complete($doc)['sections'] as $abschnitt) {
+            if (!$abschnitt['permissions']['edit']) {
+                continue;
+            }
+            // Ein abgeschalteter Abschnitt wird nicht angeboten: sonst
+            // fuellte der Kunde ein Feld, das visible() beim Drucken ohnehin
+            // wegwirft - eingegebener Inhalt, der spurlos verschwindet.
+            if (!$abschnitt['enabled']) {
+                continue;
+            }
+            $sections[(string) $abschnitt['id']] = [
+                'type'   => (string) $abschnitt['type'],
+                // Der Titel des Grafikers, nicht die interne Kennung - die
+                // Vorlage soll dem Kunden nicht "prog-1" vorsetzen muessen.
+                'title'  => $abschnitt['title'],
+                'hide'   => (bool) $abschnitt['permissions']['hide'],
+                'fields' => match ((string) $abschnitt['type']) {
+                    'family'  => ['families'],
+                    'program' => ['program'],
+                    default   => [],
+                },
+            ];
+        }
+
+        return ['fields' => $fields, 'palette' => $palette, 'fonts' => $fonts, 'layers' => $layers, 'sections' => $sections];
     }
 
     /**
@@ -121,6 +153,18 @@ final class DesignWizard
         foreach ($w['layers'] as $rechte) {
             if ($rechte['photo']) {
                 $schritte[] = 'bilder';
+                break;
+            }
+        }
+
+        // Inhalt vor Aussehen: erst was draufsteht, dann wie es aussieht.
+        // Ein Abschnitt mit edit=true, hide=false und ohne fields (z.B.
+        // location oder countdown) hat aber keine einzige Kontrolle im
+        // Schritt - dann bliebe nur eine Ueberschrift ueber einem leeren
+        // Bildschirm stehen, und ein leerer Schritt ist verboten.
+        foreach ($w['sections'] as $abschnitt) {
+            if ($abschnitt['hide'] || $abschnitt['fields'] !== []) {
+                $schritte[] = 'abschnitte';
                 break;
             }
         }
@@ -162,6 +206,7 @@ final class DesignWizard
     public static function personalize(array $doc, array $wahl): array
     {
         $doc  = Design::complete($doc);
+        $doc  = DesignSections::complete($doc);
         $darf = self::choices($doc);
 
         foreach ((array) ($wahl['palette'] ?? []) as $key => $wert) {
@@ -254,10 +299,28 @@ final class DesignWizard
         // Reihenfolge ist der z-Index, also wird neu gezaehlt und nicht sortiert.
         $doc['layers'] = array_values($doc['layers']);
 
-        // Noch einmal durch complete(): die gepraegten Marken bekommen ihre
-        // Standardfelder, und der Schnappschuss hat garantiert die Form, die
-        // Design::css() und Design::html() erwarten.
-        return Design::complete($doc);
+        /*
+         * Ein abgeschalteter Abschnitt wird nicht geloescht, sondern auf
+         * enabled=false gesetzt: das Dokument behaelt, was der Grafiker
+         * aufgestellt hat, und beim spaeteren Bearbeiten steht der Abschnitt
+         * wieder zur Wahl.
+         */
+        $sekWahl = (array) ($wahl['sections'] ?? []);
+        foreach ($doc['sections'] as $j => $abschnitt) {
+            $id = (string) $abschnitt['id'];
+            if (!isset($darf['sections'][$id]) || !$darf['sections'][$id]['hide']) {
+                continue;
+            }
+            if (!empty($sekWahl[$id]['hidden'])) {
+                $doc['sections'][$j]['enabled'] = false;
+            }
+        }
+
+        // Noch einmal durch beide Normalisierer: die gepraegten Marken
+        // bekommen ihre Standardfelder, und der Schnappschuss hat garantiert
+        // die Form, die Design::css(), Design::html() und die Vorlage der
+        // Abschnitte erwarten.
+        return DesignSections::complete(Design::complete($doc));
     }
 
     /**

@@ -636,7 +636,7 @@ Beklenen: `Call to undefined method Atelier\DesignSections::css()`.
 
             $out .= match ($typ) {
                 'location'  => self::ort($data, $locale),
-                'countdown' => self::countdown($data),
+                'countdown' => self::countdown($data, $locale),
                 'family'    => self::familien($data),
                 'program'   => self::programm($data),
                 default     => '',
@@ -678,12 +678,12 @@ Beklenen: `Call to undefined method Atelier\DesignSections::css()`.
      *
      * @param array<string,mixed> $data
      */
-    private static function countdown(array $data): string
+    private static function countdown(array $data, string $locale): string
     {
         $datum = trim((string) ($data['date'] ?? ''));
 
         return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'
-            . e(Dates::long($datum, 'de')) . '</p>';
+            . e(Dates::long($datum, $locale)) . '</p>';
     }
 
     /** @param array<string,mixed> $data */

@@ -6,14 +6,14 @@
  * Beispieldaten - und ohne Leiste darunter: wer diese Seite oeffnet, ist
  * eingeladen und nicht auf Vorlagensuche.
  *
- * Die Buehne (partials/design-stage) liest dreizehn Werte, nicht nur die
+ * Die Buehne (partials/design-stage) liest fünfzehn Werte, nicht nur die
  * sieben Kernwerte design/scope/styles/seite/kuvert/karte/locale - ratio,
- * tempo, karteAn, introMs, idle, initialen und warnings fehlten hier einmal,
- * und das ergab eine leere Seitenverhaeltnis-Angabe, eine stillstehende
- * Animation, ein Siegel ohne Initialen und - weil null !== [] wahr ist -
- * eine leere Warnungsbox auf jeder echten Einladung. Der Controller
- * (InviteV2Controller::show) rechnet alle dreizehn vor, diese Vorlage gibt
- * sie nur weiter.
+ * tempo, karteAn, introMs, idle, initialen, warnings und fest fehlten hier
+ * einmal, und das ergab eine leere Seitenverhaeltnis-Angabe, eine
+ * stillstehende Animation, ein Siegel ohne Initialen und - weil null !== []
+ * wahr ist - eine leere Warnungsbox auf jeder echten Einladung. Der
+ * Controller (InviteV2Controller::show) rechnet alle fünfzehn vor, diese
+ * Vorlage gibt sie nur weiter.
  *
  * @var array<string,mixed> $design
  * @var string $scope
@@ -29,8 +29,10 @@
  * @var string $idle
  * @var string $initialen
  * @var list<array{kind:string,element:string,detail:string}> $warnings
+ * @var string $abschnitte
  */
 
+use function Atelier\e;
 use Atelier\View;
 ?>
 <?= View::partial('partials/design-stage', [
@@ -49,4 +51,17 @@ use Atelier\View;
     'initialen' => $initialen,
     // Immer leer: eine echte Einladung zeigt keine Vorlagenmaengel an.
     'warnings'  => $warnings,
+    // Auf der Einladung steht die Buehne im Fluss - darunter kommen die
+    // Abschnitte.
+    'fest'      => false,
 ]) ?>
+<?php /*
+   Unter der Buehne, nicht darin: die Karte hat einen festen Rahmen, die
+   Abschnitte haben eine variable Laenge. Ist nichts auszugeben, steht hier
+   auch nichts - kein leerer Kasten.
+*/ ?>
+<?php if ($abschnitte !== '') : ?>
+  <div class="<?= e($scope) ?> d-sections mx-auto max-w-2xl px-6 py-16">
+    <?= $abschnitte ?>
+  </div>
+<?php endif; ?>

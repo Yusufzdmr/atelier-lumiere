@@ -6,6 +6,7 @@ namespace Atelier\Controllers;
 
 use Atelier\Config;
 use Atelier\Design;
+use Atelier\DesignSections;
 use Atelier\DesignWizard;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
@@ -228,6 +229,40 @@ final class InviteV2Controller
             }
         }
 
+        // Abschnitte: das Zu- und Abschalten geht ins Dokument, der Inhalt in
+        // die Daten. Dieselbe Trennung wie bei den Ebenen.
+        $wahl['sections'] = [];
+        foreach ($darf['sections'] as $sid => $abschnitt) {
+            if ($abschnitt['hide'] && isset($_POST['sec_hidden_' . $sid])) {
+                $wahl['sections'][$sid] = ['hidden' => true];
+            }
+
+            if (in_array('families', $abschnitt['fields'], true)) {
+                $braut = Security::clean($_POST['family_bride'] ?? '', 120);
+                $mann  = Security::clean($_POST['family_groom'] ?? '', 120);
+                if ($braut !== '' || $mann !== '') {
+                    $data['families'] = ['bride' => $braut, 'groom' => $mann];
+                }
+            }
+
+            if (in_array('program', $abschnitt['fields'], true)) {
+                $zeilen = [];
+                for ($z = 0; $z < 8; $z++) {
+                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
+                    if ($titel === '') {
+                        continue;
+                    }
+                    $zeilen[] = [
+                        'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
+                        'title' => $titel,
+                    ];
+                }
+                if ($zeilen !== []) {
+                    $data['program'] = $zeilen;
+                }
+            }
+        }
+
         $snapshot = DesignWizard::personalize($design, $wahl);
 
         $data['slug']      = $slug;
@@ -292,7 +327,7 @@ final class InviteV2Controller
                 // Dieselbe Choreografie wie in der Design-Vorschau: Kuvert
                 // oeffnen, Karte aufsteigen lassen. Ohne dieses Skript bleibt
                 // das Kuvert zu.
-                'scripts' => ['/assets/invitation.js'],
+                'scripts' => ['/assets/invitation.js', '/assets/invite-v2-countdown.js'],
             ]),
             'design' => $doc,
             // OHNE Punkt. Design::css() bekommt den Selektor (".d-elysee"),
@@ -302,7 +337,9 @@ final class InviteV2Controller
             // Einladung kaeme voellig ungestylt heraus. DesignController::
             // preview() macht es aus demselben Grund so (DesignController.php:125).
             'scope'  => ltrim($scope, '.'),
-            'styles' => Design::css($doc, $scope),
+            // Die Abschnittsregeln haengen an denselben Marken wie die Karte,
+            // also gehoeren sie in denselben Stilblock.
+            'styles' => Design::css($doc, $scope) . DesignSections::css($doc, $scope),
             // Die fuenf Bewegungswerte rechnet sonst design-preview.php aus.
             // Die Buehne liest sie, leitet sie aber nicht selbst ab - eine
             // Rechnung, eine Quelle der Wahrheit (Aufgabe 5).
@@ -322,6 +359,9 @@ final class InviteV2Controller
             'seite'  => Design::html($doc, $values, $locale, 'page'),
             'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
             'karte'  => Design::html($doc, $values, $locale, 'card'),
+            // Rohdaten, nicht gebundene Werte: die Abschnitte binden ihre
+            // eigenen Platzhalter (Adresse, Countdown-Datum) selbst.
+            'abschnitte' => DesignSections::html($doc, $einladung['data'], $locale),
         ]);
     }
 }
