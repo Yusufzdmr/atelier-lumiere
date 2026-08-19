@@ -399,18 +399,72 @@ Bu bir ödün değil; spec'in kendi faz ayrımının gerçekle buluşması. Ama 
 iddiası bu yüzden "davetiyenin tamamı veriden sürülüyor" değil, **"açılış
 görünümü veriden sürülüyor"**.
 
-### Kontrol listesi
+### Kontrol listesi — 2026-08-19'da ölçüldü
 
-- [ ] Masaüstü (1440 px) — açılış görünümü aynı
-- [ ] Tablet (820 px) — aynı
-- [ ] Telefon (390 px) — **sapma bekleniyor**, ölçülüp rakamla yazılacak
-- [ ] Zarf → mühür → kart açılış sırası ve zamanlaması aynı
-- [ ] Uzun isim ikisinde de aynı davranıyor
-- [ ] `prefers-reduced-motion` açıkken ikisi de duruyor
-- [ ] Üretilmeyen her şey isim isim listelendi (mühür yazısı, partiküller,
-      bölümler…) ve Faz 2/3'e devredildi
-- [ ] Eski rotalar ve panel sekmelerinin tamamı uyarısız 200 dönüyor
-- [ ] `git diff master` çıktısında mevcut dosyalardan silinen satır yok
+Ölçüm, iki sayfa hedef genişlikte birer iframe'e konarak yapıldı (tarayıcı
+penceresini yeniden boyutlandırmak bu ortamda CSS görünümünü değiştirmiyordu);
+her satırın yeri ve puntosu kart genişliğine bölünerek karşılaştırıldı.
+
+- [x] **Masaüstü (1440 px)** — sekiz satırın **mutlak** yerleri ±6 px içinde
+      örtüşüyor. Kart 672 × 521 px, eski kart 632 × 490 px: oran ikisinde de
+      **1,29**, ölçek %6,3 büyük. Oransal olarak tarih bloğu (gün/tarih/saat/
+      mekân/adres) %4,5 yukarıda. Kabul edildi, gerekçesi aşağıda.
+- [x] **Tablet (820 px)** — iki taraf da tavanda; sayılar 1440'takiyle birebir.
+- [x] **Telefon (390 px)** — sapma ölçüldü, rakamları aşağıda.
+- [x] **Zarf → mühür → kart açılış sırası** — aynı `invitation.js`, aynı `t-*`
+      sınıfları ve aynı zamanlama; tıklamada `data-open` null → true.
+- [x] **Uzun isim** ("Charlotte-Sophie") — v2'de 672'lik kartta 551 px metin,
+      iki yanda 57 / 64 px pay; eskisinde 632'lik kartta 404 px, 114 px pay.
+      İkisi de tek satır, iki tarafta da taşma yok.
+- [x] **`prefers-reduced-motion`** — v2 kendi kuralını yazıyor
+      (`@media (prefers-reduced-motion: reduce){.d-elysee .d-el{animation:none;}}`)
+      ve animasyonlu 14 elemanın hepsi `.d-el`; eski sayfa `style.css`'teki
+      `.t-*` / `.foil` / `.iv` bloklarıyla duruyor. İşletim sistemi ayarı bu
+      ortamda açılamadı; doğrulama kural düzeyinde yapıldı.
+- [x] **Üretilmeyenler** isim isim aşağıda, Faz 2/3'e devredildi.
+- [x] **Eski rotalar** — 16 yol denendi (genel sayfalar, eski davetiye ve
+      katalog, üç panel sekmesi): hepsi 200, bilinmeyen slug 404, 500 yok.
+- [x] **`git diff master`** — 6441 ekleme, **0 silme**. Mevcut dosyalardan
+      yalnızca altısı değişti: `public/index.php`, `schema.sql`, `src/Admin.php`,
+      `templates/partials/header.php`, `templates/partials/footer.php`,
+      `data/dict.php`. `app/`, `lib/`, `components/`, `scripts/` hiç
+      dokunulmadı.
+
+### Telefondaki sapma (390 px, ölçülen rakamlar)
+
+| Ölçü | Eski | v2 | Fark |
+|---|---|---|---|
+| Kart genişliği | 340 px | 332 px | −%2,4 |
+| İsim puntosu | 49,6 px | 36,9 px | **−%25,6** |
+| İlk ismin üst boşluğu | 99 px | 51 px | **−%48** |
+
+Sebep ölçüldü: v2 ölçekten bağımsız — `y/genişlik` ve `punto/genişlik` değerleri
+1440, 820 ve 390'da **birebir aynı**. Eski sayfa ise dikey boşluklarını px
+olarak sabit tutuyor ve puntoyu kırılma noktasında basamaklıyor. Yani telefonda
+eski davetiye orantısız büyür, v2 masaüstündeki tasarımın küçültülmüşüdür.
+Faz 2'de formata `maxWidth` eklenecekse karar bu rakamlara bakarak verilecek.
+
+### Masaüstündeki ölçek farkı neden kabul edildi
+
+v2 kartı 672 px'de tavanlanıyor (`max-w-2xl`), eskisi 632'de. Oran aynı olduğu
+için tasarım birebir aynı, yalnızca %6,3 daha büyük basılıyor; ve iki oranın
+(672/632 ile 521/490) birbirini götürmesi sayesinde satırların **mutlak**
+yerleri 6 px içinde çakışıyor. Kartı 632'ye sabitlemek oransal farkı da
+kapatırdı ama spec'in ölçülmüş tasarım sözleşmesini (632:490) değiştirirdi;
+Faz 2 onun üstüne kuracağı için sözleşme korundu, fark rakamıyla buraya yazıldı.
+
+### Üretilmeyenler — Faz 2/3'e devredildi
+
+| Ne | Neden yok | Faz |
+|---|---|---|
+| Taç yaprağı partikülleri (eski sahnede 13 `.t-petal`) | Formatta partikül ekseni yok | 2 |
+| Boşta hareketler: `washDrift`, `bouquetIn/bouquetSway`, `floatUp` | Format yalnızca giriş hareketi biliyor (`d-move-fade`, `d-move-rise`); eskisinde 26, v2'de 14 animasyonlu eleman | 2 |
+| Zarfın üstündeki "Marie & Jonas" el yazısı satırı | v2 zarfı baş harfleri gösteriyor | 2 |
+| "&" kursiv değil | Format `italic` alanı bilmiyor | 2 |
+| "Route planen" bağlantısı ve altındaki her şey (metin, geri sayım, program, galeri, RSVP) | Bölümler (`sections`) | 3 |
+
+Kapatılanlar (Faz 1 içinde, yalnızca veriyle): isimlerin el yazısı (Great Vibes,
+`script` yazı markası) ve isimlerin arasındaki altın "&".
 
 ### Telefondaki sapma neden bekleniyor
 
