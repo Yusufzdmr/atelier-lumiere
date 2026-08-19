@@ -338,8 +338,11 @@ Olduğu gibi kullanılanlar: `Media` (alfa koruyan WebP + SVG temizleme),
   scope'u koyar, doküman içinden ham seçici kabul etmez
 - `Design::html` hiçbir alanı ham HTML olarak basmaz
 - CSP `script-src 'self'` korunur: renderer satır içi `<script>` ya da
-  `onclick=` üretmez. Üretilen CSS `<style nonce>` ile gider (mevcut
-  `Http`/`View` düzeni)
+  `onclick=` üretmez
+- Üretilen CSS düz bir `<style>` bloğu olarak gider. **Nonce gerekmiyor** —
+  mevcut politika `style-src 'self' 'unsafe-inline'` (bkz. `src/Http.php`),
+  çünkü temalar renklerini zaten stil bloğu olarak getiriyor. Nonce yalnızca
+  `script-src` tarafında kullanılıyor
 
 ---
 
