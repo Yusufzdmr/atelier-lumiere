@@ -788,6 +788,133 @@ final class Design
      *
      * @param array<string,mixed> $doc
      */
+    /**
+     * Das Formular auf ein bestehendes Dokument legen.
+     *
+     * Rein: keine Datenbank, keine Session, kein Zugriff auf $_POST. Was nicht
+     * im Formular steht, bleibt wie es war - ein leeres Feld ist kein
+     * Loeschbefehl.
+     *
+     * Was hier NICHT steht, steht mit Absicht nicht hier: box, canvas und
+     * sections. Die Kaesten gehoeren der vierten Phase, die Abschnitte der
+     * dritten. tests/design_admin.php haelt diese Grenze.
+     *
+     * @param array<string,mixed> $doc  das gespeicherte Dokument
+     * @param array<string,mixed> $post rohe Formularwerte
+     * @return array<string,mixed>
+     */
+    public static function fromPost(array $doc, array $post): array
+    {
+        $doc = self::complete($doc);
+        $text = static fn (string $key): ?string
+            => isset($post[$key]) ? Security::clean((string) $post[$key], 200) : null;
+
+        foreach (['de', 'en'] as $sprache) {
+            $wert = $text('name_' . $sprache);
+            if ($wert !== null && $wert !== '') {
+                $doc['name'][$sprache] = $wert;
+            }
+        }
+
+        $kategorie = $text('category');
+        if ($kategorie !== null) {
+            $doc['category'] = $kategorie;
+        }
+        if (isset($post['sort'])) {
+            $doc['sort'] = (int) $post['sort'];
+        }
+        if (isset($post['tags'])) {
+            $roh = explode(',', (string) $post['tags']);
+            $doc['tags'] = array_values(array_filter(
+                array_map(static fn (string $t): string => Security::clean(trim($t), 40), $roh),
+                static fn (string $t): bool => $t !== ''
+            ));
+        }
+
+        foreach (array_keys($doc['palette']) as $marke) {
+            $wert = $text('palette_' . $marke);
+            if ($wert !== null && $wert !== '') {
+                $doc['palette'][$marke]['value'] = $wert;
+            }
+            foreach (['de' => 'palette_label_de_', 'tr' => 'palette_label_tr_'] as $sprache => $prefix) {
+                $etikett = $text($prefix . $marke);
+                if ($etikett !== null && $etikett !== '') {
+                    $doc['palette'][$marke]['label'][$sprache] = $etikett;
+                }
+            }
+            $doc['palette'][$marke]['customer'] = isset($post['palette_customer_' . $marke]);
+        }
+
+        foreach (array_keys($doc['fonts']) as $marke) {
+            $familie = $text('font_family_' . $marke);
+            if ($familie !== null && $familie !== '') {
+                $doc['fonts'][$marke]['family'] = $familie;
+            }
+            foreach ([
+                'weight'     => 'font_weight_',
+                'tracking'   => 'font_tracking_',
+                'lineHeight' => 'font_line_',
+                'size'       => 'font_size_',
+            ] as $feld => $prefix) {
+                if (isset($post[$prefix . $marke])) {
+                    $doc['fonts'][$marke][$feld] = (int) $post[$prefix . $marke];
+                }
+            }
+            $doc['fonts'][$marke]['customer'] = isset($post['font_customer_' . $marke]);
+        }
+
+        foreach ($doc['layers'] as $i => $ebene) {
+            $id = (string) $ebene['id'];
+
+            foreach (['de', 'en'] as $sprache) {
+                $wert = $text('text_' . $sprache . '_' . $id);
+                if ($wert !== null && $wert !== '') {
+                    $doc['layers'][$i]['text'][$sprache] = $wert;
+                }
+            }
+
+            $quelle = $text('src_' . $id);
+            if ($quelle !== null && $quelle !== '') {
+                $doc['layers'][$i]['src'] = $quelle;
+            }
+
+            if (isset($post['move_' . $id])) {
+                $doc['layers'][$i]['motion']['move'] = (string) $post['move_' . $id];
+            }
+            foreach (['delay' => 'delay_', 'duration' => 'duration_'] as $feld => $prefix) {
+                if (isset($post[$prefix . $id])) {
+                    $doc['layers'][$i]['motion'][$feld] = (int) $post[$prefix . $id];
+                }
+            }
+
+            foreach (self::PERMISSIONS as $recht) {
+                $doc['layers'][$i]['permissions'][$recht] = isset($post['perm_' . $recht . '_' . $id]);
+            }
+        }
+
+        foreach ([
+            'intro'    => 'anim_intro',
+            'idle'     => 'anim_idle',
+            'card'     => 'anim_card',
+            'nameMove' => 'anim_name',
+            'particle' => 'anim_particle',
+            'reveal'   => 'anim_reveal',
+        ] as $feld => $name) {
+            if (isset($post[$name])) {
+                $doc['animation'][$feld] = (string) $post[$name];
+            }
+        }
+        foreach (['speed' => 'anim_speed', 'delay' => 'anim_delay'] as $feld => $name) {
+            if (isset($post[$name])) {
+                $doc['animation'][$feld] = (int) $post[$name];
+            }
+        }
+
+        // complete() zieht die Grenzen: unbekannte Enums fallen auf die
+        // Voreinstellung, Zahlen werden geklemmt, Rechte zu Wahrheitswerten.
+        return self::complete($doc);
+    }
+
     public static function save(array $doc): void
     {
         $doc = self::complete($doc);
