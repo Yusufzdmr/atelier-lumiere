@@ -324,6 +324,59 @@ site ayağa kalkmış değil. `atelier-lumiere.de` de checkdomain'de park hâlin
 (sertifikası `*.checkdomain.de`), `atelier.newbornshooting-babydream.de` ise
 kasserver'a düşüyor ama kendi sertifikası yok.
 
+## 19 Ağustos — Davetiye v2 Faz 2: tasarım artık panelden düzenleniyor
+
+Faz 1 belgeyi kurmuştu ama değiştirmenin tek yolu `php bin/seed-designs.php`'ti.
+Faz 2 bunu panele taşıdı. Spec `docs/superpowers/specs/2026-08-19-davetiye-v2-faz2-panel-design.md`,
+plan `docs/superpowers/plans/2026-08-19-davetiye-v2-faz2.md`, sekiz görev, hepsi bitti.
+
+**Ne var:**
+
+- **Katalog** (`/{locale}/admin/designs`) — kartlar tasarımın kendisini basıyor
+  (`Design::css()` + `html()`, genel katalogla aynı yol). Kategori süzgeci
+  adreste taşınıyor. Kart başına: düzenle, önizle, kopyala, aktif/pasif.
+- **Editör** (`/{locale}/admin/designs/{slug}`) — sekiz bölüm (`design-edit.php`
+  iskelet + önizleme, `design-edit-sections.php` alanlar), hepsi kapalı doğuyor.
+- **Canlı önizleme** — `public/assets/design-editor.js`. Yalnızca CSS
+  değişkenlerine ve metin düğümlerine dokunuyor; keyframe üretimi sunucuda
+  kalıyor. Bunun mümkün olması için `Design::css()` artık yazı ağırlığını,
+  laufweite'yi ve satır yüksekliğini `--dfw-*`, `--dft-*`, `--dfl-*`
+  değişkenlerine yazıyor (eskiden her eleman kuralına sabit sayıydı).
+- **Yayın** — uyarı sayısını sunucuda yeniden hesaplayıp soruyor, engellemiyor.
+- **Yeni tasarım** — kopyalama, ve "temadan oluştur". İkincisi *yerleşimi bir
+  tasarımdan, rengi/yazıyı/hareketi temadan* alıyor (`Design::dress()`), çünkü
+  hiçbir temada kartın metin katmanları yok — onlar Faz 1'de elle ölçüldü.
+
+**Fazın sınırı testle bekçili:** `tests/design_admin.php`, POST'a `box_x`,
+`canvas_ratio`, `sections` ve komple bir katman listesi koyup belgenin
+kımıldamadığını gösteriyor. Geometri Faz 4'e ait.
+
+**Bu turda düzelen gerçek hatalar** (hepsi testli):
+
+| Ne | Neydi |
+|---|---|
+| `Design::fromTheme()` | Temanın yazı markalarını hiç taşımıyordu; canvas `9:16` kalıyordu. Artık aileleri + ölçülmüş ağırlık/laufweite/satır yüksekliği ve `632:490` geliyor |
+| `Design::key()` ve `Themes::slug()` | `strtolower` bayt bazlı olduğu için "Élysée"→`lysee`, "Şafak Işık"→`afak-isik`. İkisi de `mb_strtolower` + ortak harita |
+| Format: aynalama | Eski motor `scale:-1 1` kullanıyor; kutuda yalnızca `rotate` vardı. `flipx`/`flipy` eklendi |
+| Format: köşeye yapışma | Sağ/alt parçalar `100 - genişlik` diye hesaplanıyordu ve oran değişince kayıyordu (1920x1080'de 31 px). `anchor` eklendi |
+
+**Test:** `php bin/test.php` → 269 kontrol.
+
+**Yükleme:** demo sunucusuna (`45-147-46-177.sslip.io`) alındı, şema değişikliği
+yok, yeniden tohumlama gerekmedi.
+
+**Bekleyenler:**
+
+1. **Panelde göz kontrolü** — geliştiricide panel şifresi olmadığı için editörün
+   canlı önizlemesi ve iki sekmeli çakışma reddi giriş altındaki katmanda
+   sınandı; formun kendi bağlantısını gözle görmek kaldı.
+2. **Kalp şeklinde harita** — `docs/backlog/2026-08-19-kalp-seklinde-harita.md`,
+   Ayhan'a üç soru.
+3. **Faz 3** — müşteri tarafı. Kendi spec'iyle başlamalı. Faz 2'den devredilen
+   iki not: tasarım silme akışı ("bu tasarımdan kaç davetiye çıktı" sayacıyla)
+   ve `texture` (her temada var, PHP tarafında kimse okumuyor, yalnızca Next.js
+   sürümü kullanıyor).
+
 ## 17 Ağustos — kullanım kolaylığı ve SEO
 
 Hepsi „sahibi teknik değil, telefondan yönetecek" ölçütüyle yapıldı.
