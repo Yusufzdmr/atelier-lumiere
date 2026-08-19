@@ -774,8 +774,13 @@ final class Themes
 
     public static function slug(string $value): string
     {
-        $value = strtolower(trim($value));
-        $map = ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss', 'ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ç' => 'c', 'é' => 'e', 'è' => 'e'];
+        // mb_strtolower, nicht strtolower: das eine arbeitet auf Zeichen, das
+        // andere auf Bytes. Byteweise blieb aus "Élysée" das grosse É stehen,
+        // das die Zeile darunter als Nicht-ASCII wegwarf - die Kennung hiess
+        // "lysee", und aus "Şafak Işık" wurde "afak-isik". Aufgefallen an der
+        // Schwesterfunktion Design::key(), die denselben Fehler hatte.
+        $value = mb_strtolower(trim($value), 'UTF-8');
+        $map = ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss', 'ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ç' => 'c', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'à' => 'a', 'â' => 'a', 'î' => 'i'];
         $value = strtr($value, $map);
         $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
         return trim($value, '-') ?: 'thema';
