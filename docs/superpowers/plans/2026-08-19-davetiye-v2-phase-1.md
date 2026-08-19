@@ -1404,7 +1404,10 @@ Beklenen: `Call to undefined method Atelier\Design::fromTheme()`.
             'slug'      => (string) ($theme['id'] ?? ''),
             'name'      => ['de' => (string) ($theme['name'] ?? ''), 'en' => (string) ($theme['name'] ?? '')],
             'family'    => (string) ($theme['family'] ?? ''),
-            'version'   => max(1, (int) ($theme['version'] ?? 1)),
+            // KEIN version aus dem Thema: dessen Zaehler gehoert zu seiner
+            // eigenen Bearbeitungsgeschichte. Ein frisches Dokument faengt bei 1
+            // an, sonst wird Élysée als „Fassung 7" geboren und die Zahl sagt
+            // nichts mehr darueber, wie weit eine Einladung abgedriftet ist.
             'palette'   => $palette,
             'layers'    => array_merge($back, $front),
             'animation' => [
