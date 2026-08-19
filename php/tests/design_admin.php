@@ -7,8 +7,9 @@ use Atelier\Design;
  * Faz 2: Was das Formular mit dem Dokument macht.
  *
  * Die Zusammenfuehrung liegt absichtlich in einer reinen Funktion und nicht im
- * Controller: die Grenze dieser Phase - dass hier nichts an box, canvas oder
- * sections schreibt - haelt nur, wenn ein Test sie aussprechen kann.
+ * Controller: die Grenze dieser Phase - dass box und canvas unangetastet
+ * bleiben, waehrend sections aus dem Formular gelesen wird - haelt nur, wenn
+ * ein Test sie aussprechen kann.
  */
 
 $basis = Design::complete([

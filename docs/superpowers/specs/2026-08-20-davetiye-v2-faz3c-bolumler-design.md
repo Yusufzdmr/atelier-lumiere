@@ -232,9 +232,11 @@ basmak için, sihirbaz "bu bölüm için içerik sormalı mıyım" diye.
 ## 9. Sihirbazın kazandığı adım
 
 `DesignWizard::steps()` beşinci anahtarı öğrenir: `abschnitte`. Görünme kuralı
-bugünküyle **aynı mantıkta** — belgede müşterinin dokunabileceği bir bölüm
-(`edit`+`hide`) ya da doldurması gereken içerik (`family`, `program`) varsa
-görünür, yoksa görünmez. Boş adım yasağı sürüyor.
+bugünküyle **aynı mantıkta**: `edit` burada da ana anahtardır — katmanlardaki
+gibi, `edit` kapalıyken bir bölüm hiç sunulmaz, ne dokunulabilir ne
+doldurulabilir olur. Adım ancak `choices()`'ın sunduğu bölümlerden en az
+biri müşteriye açıp kapatacak bir şey (`hide`) ya da dolduracağı bir içerik
+(`family`, `program` için `fields`) taşıyorsa görünür. Boş adım yasağı sürüyor.
 
 `choices()` bir anahtar daha döndürür:
 
@@ -266,8 +268,7 @@ ve `Security::clean()` ile sınırlanır. Program satırı sayısı ve satır uz
 ## 11. Panel editörü
 
 Faz 2'nin editörü sekiz bölümlüydü; dokuzuncusu geliyor: **Bölümler**.
-Tür ekle/sil, yukarı/aşağı sırala, başlık (de/en), renk ve yazı jetonu,
-`edit`/`hide` kutuları.
+Tür ekle/sil, başlık (de/en), renk ve yazı jetonu, `edit`/`hide` kutuları.
 
 `Design::fromPost()` bugün `sections`'a **bilerek dokunmuyor**
 (`Design.php:869`: "die Abschnitte der dritten [Phase]"), ve o sınırı
@@ -275,8 +276,11 @@ Tür ekle/sil, yukarı/aşağı sırala, başlık (de/en), renk ve yazı jetonu,
 değiştirir; test dosyasına neden değiştiğini yazar. Sınırın kaldırıldığı gün
 kayda geçsin diye.
 
-Sürükle-sırala arayüzü **yok**: sıra tasarımcıda ve panelde yukarı/aşağı
-düğmesi yeter. Sürükleme kendi başına bir iş ve bu fazın konusu değil.
+Editör düz bir satır listesidir: yukarı/aşağı düğmesi **yok**, sürükle-sırala
+arayüzü de **yok**. Sıra, panel formundaki satırların sırasıdır — sırayı
+değiştirmek satırları düzenlemek demektir (bir satırı silip yeniden eklemek
+ya da alanları elle taşımak). Düğmeli sıralama ve sürükleme ikisi de sonraki
+bir iyileştirme; bu fazın konusu değil.
 
 ## 12. Testler
 
@@ -314,15 +318,16 @@ kapsamı geniş olan kazandı.
 | RSVP bölümü | tek yazan bölüm; kendi POST yolu ve güvenlik yüzeyi (§3.2) | C2 |
 | Menü, müzik, video | fiyatlı; fiyat hesabı D'nin konusu (§3.2) | D |
 | Çok etkinlik (`events[]`) | `bindValues()` sözleşmesini değiştirir, ayrı karar | sonra |
-| Sürükle-sırala arayüzü | sıra tasarımcıda; yukarı/aşağı yeter (§11) | — |
+| Düğmeli/sürükle-sırala arayüzü | sıra, panel formundaki satır sırası; sonraki bir iyileştirme (§11) | — |
 | Müşterinin sıra değiştirmesi | §3.1 ile **iptal edildi**, ertelenmedi | — |
 | Vitrindeki düğmenin v2'ye çevrilmesi | ödemesiz kapı açar; 3B'nin kararı sürüyor | D |
 | Bölüm başına arka plan görseli | katman değil bölüm; gerekirse ayrı karar | sonra |
 
 ## 14. Bitti sayılma ölçütü
 
-- [ ] Panelde bir tasarıma dört türün dördü de eklenebiliyor, sıralanabiliyor,
-      başlık ve jeton verilebiliyor.
+- [ ] Panelde bir tasarıma dört türün dördü de eklenebilir, başlık ve jeton
+      verilebilir; sıra, satırların form içindeki sırasıdır (düğmeli
+      sıralama yok, bkz. §11).
 - [ ] `edit`+`hide` verilen bölüm sihirbazda görünüyor; verilmeyen görünmüyor.
 - [ ] Sihirbaz `family` ve `program` için içerik soruyor, `location` ve
       `countdown` için sormuyor — ikisi 3B'nin zaten sorduğu alanlardan besleniyor.

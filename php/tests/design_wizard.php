@@ -391,14 +391,49 @@ assert_same(false, $auf['sections']['ort-1']['hide'], 'choices: ohne hide kein h
 assert_same(['program'], $auf['sections']['prog-1']['fields'], 'choices: das Programm braucht Inhalt');
 assert_same([], $auf['sections']['ort-1']['fields'], 'choices: der Ort lebt von den Angaben');
 
+/*
+ * Ein abgeschalteter, aber sonst erlaubter Abschnitt wird nicht angeboten.
+ * Ohne diese Regel fragte der Assistent nach Inhalt, den visible() beim
+ * Drucken ohnehin wegwirft - der Kunde tippt ein Programm, und es
+ * verschwindet spurlos.
+ */
+$aus = DesignWizard::choices(wiz_sec([
+    ['id' => 'prog-1', 'type' => 'program', 'enabled' => false, 'permissions' => ['edit' => true, 'hide' => true]],
+    ['id' => 'ort-1',  'type' => 'location', 'permissions' => ['edit' => true]],
+]));
+assert_same(['ort-1'], array_keys($aus['sections']), 'choices: ein abgeschalteter Abschnitt wird nicht angeboten, obwohl edit steht');
+
+// Der Titel des Grafikers kommt mit - der Assistent soll nicht die interne
+// Kennung anzeigen muessen.
+$mitTitel = DesignWizard::choices(wiz_sec([
+    ['id' => 'prog-1', 'type' => 'program', 'title' => ['de' => 'Ablauf', 'en' => 'Schedule'],
+     'permissions' => ['edit' => true]],
+]));
+assert_same(['de' => 'Ablauf', 'en' => 'Schedule'], $mitTitel['sections']['prog-1']['title'], 'choices: der Titel wird mitgegeben');
+
 // Der Schritt kommt nur, wenn es dort etwas zu tun gibt.
 assert_same(['angaben', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
     ['id' => 'ort-1', 'type' => 'location'],
 ])), 'steps: ohne Rechte kein Abschnitte-Schritt');
 
+/*
+ * Ein angebotener Abschnitt ohne jede Kontrolle darf den Schritt nicht
+ * oeffnen: location hat edit=true, aber hide=false und keine fields - dann
+ * bliebe im Schritt nur eine Ueberschrift ueber einem leeren Bildschirm
+ * stehen, und ein leerer Schritt ist verboten.
+ */
+assert_same(['angaben', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
+    ['id' => 'ort-1', 'type' => 'location', 'permissions' => ['edit' => true]],
+])), 'steps: edit ohne hide und ohne fields bringt keinen leeren Abschnitte-Schritt');
+
 assert_same(['angaben', 'abschnitte', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
     ['id' => 'fam-1', 'type' => 'family', 'permissions' => ['edit' => true]],
 ])), 'steps: ein Abschnitt mit Inhalt bringt den Schritt');
+
+// hide allein (ohne fields) reicht auch - der Kunde hat etwas zu schalten.
+assert_same(['angaben', 'abschnitte', 'veroeffentlichen'], DesignWizard::steps(wiz_sec([
+    ['id' => 'ort-1', 'type' => 'location', 'permissions' => ['edit' => true, 'hide' => true]],
+])), 'steps: edit+hide ohne fields bringt den Schritt trotzdem');
 
 // Die Reihenfolge: Inhalt vor Aussehen.
 $voll = DesignWizard::steps(wiz_sec(

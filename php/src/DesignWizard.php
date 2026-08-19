@@ -111,8 +111,17 @@ final class DesignWizard
             if (!$abschnitt['permissions']['edit']) {
                 continue;
             }
+            // Ein abgeschalteter Abschnitt wird nicht angeboten: sonst
+            // fuellte der Kunde ein Feld, das visible() beim Drucken ohnehin
+            // wegwirft - eingegebener Inhalt, der spurlos verschwindet.
+            if (!$abschnitt['enabled']) {
+                continue;
+            }
             $sections[(string) $abschnitt['id']] = [
                 'type'   => (string) $abschnitt['type'],
+                // Der Titel des Grafikers, nicht die interne Kennung - die
+                // Vorlage soll dem Kunden nicht "prog-1" vorsetzen muessen.
+                'title'  => $abschnitt['title'],
                 'hide'   => (bool) $abschnitt['permissions']['hide'],
                 'fields' => match ((string) $abschnitt['type']) {
                     'family'  => ['families'],
@@ -149,8 +158,15 @@ final class DesignWizard
         }
 
         // Inhalt vor Aussehen: erst was draufsteht, dann wie es aussieht.
-        if ($w['sections'] !== []) {
-            $schritte[] = 'abschnitte';
+        // Ein Abschnitt mit edit=true, hide=false und ohne fields (z.B.
+        // location oder countdown) hat aber keine einzige Kontrolle im
+        // Schritt - dann bliebe nur eine Ueberschrift ueber einem leeren
+        // Bildschirm stehen, und ein leerer Schritt ist verboten.
+        foreach ($w['sections'] as $abschnitt) {
+            if ($abschnitt['hide'] || $abschnitt['fields'] !== []) {
+                $schritte[] = 'abschnitte';
+                break;
+            }
         }
 
         $design = $w['palette'] !== [] || $w['fonts'] !== [];

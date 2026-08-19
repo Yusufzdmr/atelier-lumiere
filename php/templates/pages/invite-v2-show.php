@@ -6,14 +6,14 @@
  * Beispieldaten - und ohne Leiste darunter: wer diese Seite oeffnet, ist
  * eingeladen und nicht auf Vorlagensuche.
  *
- * Die Buehne (partials/design-stage) liest dreizehn Werte, nicht nur die
+ * Die Buehne (partials/design-stage) liest vierzehn Werte, nicht nur die
  * sieben Kernwerte design/scope/styles/seite/kuvert/karte/locale - ratio,
- * tempo, karteAn, introMs, idle, initialen und warnings fehlten hier einmal,
- * und das ergab eine leere Seitenverhaeltnis-Angabe, eine stillstehende
- * Animation, ein Siegel ohne Initialen und - weil null !== [] wahr ist -
- * eine leere Warnungsbox auf jeder echten Einladung. Der Controller
- * (InviteV2Controller::show) rechnet alle dreizehn vor, diese Vorlage gibt
- * sie nur weiter.
+ * tempo, karteAn, introMs, idle, initialen, warnings und fest fehlten hier
+ * einmal, und das ergab eine leere Seitenverhaeltnis-Angabe, eine
+ * stillstehende Animation, ein Siegel ohne Initialen und - weil null !== []
+ * wahr ist - eine leere Warnungsbox auf jeder echten Einladung. Der
+ * Controller (InviteV2Controller::show) rechnet alle vierzehn vor, diese
+ * Vorlage gibt sie nur weiter.
  *
  * @var array<string,mixed> $design
  * @var string $scope

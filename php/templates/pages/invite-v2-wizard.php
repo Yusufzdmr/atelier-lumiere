@@ -127,8 +127,20 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
         <?php if ($key === 'abschnitte') : ?>
           <?php foreach ($choices['sections'] as $sid => $abschnitt) : ?>
+            <?php
+              // Der Titel des Grafikers, falls vorhanden - sonst die
+              // Kennung als letzter Ausweg (siehe DesignSections::html()
+              // fuer dieselbe Regel).
+              $secTitel = (string) ($abschnitt['title'][$locale] ?? '');
+              if ($secTitel === '') {
+                  $secTitel = (string) ($abschnitt['title']['de'] ?? '');
+              }
+              if ($secTitel === '') {
+                  $secTitel = $sid;
+              }
+            ?>
             <div class="border-t border-sand-deep pt-6">
-              <div class="<?= $label ?>"><?= e($sid) ?></div>
+              <div class="<?= $label ?>"><?= e($secTitel) ?></div>
 
               <?php if ($abschnitt['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">

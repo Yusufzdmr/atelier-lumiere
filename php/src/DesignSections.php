@@ -196,6 +196,10 @@ final class DesignSections
         $doc = self::complete($doc);
         $css = '';
 
+        if ($doc['sections'] !== []) {
+            $css .= self::baseline($scope);
+        }
+
         foreach ($doc['sections'] as $abschnitt) {
             $regeln = '';
             $farbe  = (string) $abschnitt['style']['color'];
@@ -219,6 +223,27 @@ final class DesignSections
     }
 
     /**
+     * Grundstil, einmal, bevor die abschnittsweisen Regeln kommen.
+     *
+     * Tailwinds Preflight setzt h1..h6 auf geerbte Groesse und Gewicht
+     * zurueck und p auf margin:0 - ohne diesen Block sind Abschnitte eine
+     * ununterschiedene Textwand unter einer typografierten Karte. Bewusst
+     * ohne Farbe: die kommt aus den Marken des Designs, nicht von hier.
+     * Jeder Selektor haengt am $scope - zwei Designs auf einer Seite duerfen
+     * sich sonst gegenseitig umfaerben (siehe Design::css()).
+     */
+    private static function baseline(string $scope): string
+    {
+        return $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
+            . $scope . ' .d-sec:first-child{margin-top:0;}'
+            . $scope . ' .d-sec-title{font-size:1.25rem;font-weight:600;line-height:1.3;margin-bottom:0.75rem;}'
+            . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
+            . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto 1fr;gap:0.375rem 1.25rem;}'
+            . $scope . ' .d-sec-program dt{font-weight:600;}'
+            . $scope . ' .d-sec-program dd{margin:0;}';
+    }
+
+    /**
      * Die Abschnitte als Markup.
      *
      * @param array<string,mixed> $doc
@@ -234,7 +259,14 @@ final class DesignSections
 
             $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ) . '">';
 
-            $titel = (string) ($abschnitt['title'][$locale] ?? $abschnitt['title']['de'] ?? '');
+            // Explizit auf '' pruefen, nicht mit ?? verketten: complete()
+            // schreibt beide Sprachen immer als String, also feuert ?? nie -
+            // ein leeres "en" ergaebe sonst gar keinen Titel statt des
+            // deutschen.
+            $titel = (string) ($abschnitt['title'][$locale] ?? '');
+            if ($titel === '') {
+                $titel = (string) ($abschnitt['title']['de'] ?? '');
+            }
             if ($titel !== '') {
                 $out .= '<h2 class="d-sec-title">' . e($titel) . '</h2>';
             }
@@ -278,8 +310,15 @@ final class DesignSections
      * Der Countdown traegt sein Datum als Attribut.
      *
      * Gerechnet wird im Browser - eine auf dem Server gerenderte Zahl waere
-     * in dem Moment falsch, in dem die Seite eine Minute alt ist. Ohne Skript
-     * steht trotzdem das Datum da (siehe Aufgabe 8).
+     * in dem Moment falsch, in dem die Seite eine Minute alt ist. Die Sprache
+     * aber kommt vom Server, nicht aus dem Skript: sonst gaebe es zwei
+     * Quellen fuer "Tage" gegen Dates - eine im PHP, eine im JavaScript, die
+     * irgendwann auseinanderlaufen. Deshalb steckt hier ein leerer Span mit
+     * data-label; das Skript fuellt nur die Zahl.
+     *
+     * Ohne Skript bleibt der Span leer, aber das gedruckte Datum steht
+     * trotzdem da (siehe Aufgabe 8) - der Countdown ist eine Zugabe, keine
+     * Voraussetzung, um zu wissen, wann gefeiert wird.
      *
      * @param array<string,mixed> $data
      */
@@ -288,6 +327,8 @@ final class DesignSections
         $datum = trim((string) ($data['date'] ?? ''));
 
         return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'
+            . '<span class="d-sec-days" data-countdown-days data-label="'
+            . e($locale === 'de' ? 'Tage' : 'days') . '"></span>'
             . e(Dates::long($datum, $locale)) . '</p>';
     }
 

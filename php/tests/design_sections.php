@@ -149,6 +149,36 @@ assert_contains($css, 'color:var(--d-accent)', 'css: Farbe kommt als Marke');
 assert_contains($css, 'font-family:var(--df-display)', 'css: Schrift kommt als Marke');
 assert_not_contains($css, '.d-sec-fam-1{', 'css: ohne Stil keine Regel');
 
+/*
+ * Der Grundstil: ohne ihn setzt Tailwinds Preflight h1..h6 auf geerbte
+ * Groesse zurueck und p auf margin:0 - Abschnitte wuerden zu einer
+ * ununterschiedenen Textwand. Der Block steht einmal, vor den
+ * abschnittsweisen Regeln, und jeder Selektor darin haengt am $scope, damit
+ * zwei Designs auf einer Seite sich nicht gegenseitig umfaerben.
+ */
+assert_same(1, substr_count($css, '.d-elysee .d-sec{'), 'css: der Grundstil wird nur einmal ausgegeben');
+assert_contains($css, '.d-elysee .d-sec-title{', 'css: die Ueberschrift bekommt einen Grundstil');
+assert_contains($css, '.d-elysee .d-sec-program{', 'css: das Programm bekommt eine Zweispaltenregel');
+assert_contains($css, '.d-elysee .d-sec-program dt{', 'css: dt bekommt eine Regel');
+assert_contains($css, '.d-elysee .d-sec-program dd{', 'css: dd bekommt eine Regel');
+
+// Jeder Selektor des Grundstils steht unter dem Bereich - keine nackte
+// Klasse ohne $scope davor. Ein Selektor ohne Bereich ist genau dann drin,
+// wenn er ohne das vorangestellte "$scope " im CSS vorkaeme; hier wird
+// direkt geprueft, dass jede erwartete Regel *mit* dem Bereich davor steht.
+foreach (['.d-sec{', '.d-sec:first-child{', '.d-sec-title{', '.d-sec p{', '.d-sec-program{', '.d-sec-program dt{', '.d-sec-program dd{'] as $sel) {
+    assert_contains($css, '.d-elysee ' . $sel, 'css: Grundstil-Selektor "' . $sel . '" ist am Bereich verankert');
+}
+
+// Ein zweites Design im selben Dokument bekommt seinen eigenen Bereich -
+// zwei Designs auf einer Seite duerfen sich nicht gegenseitig umfaerben.
+$cssZwei = DesignSections::css($stil, '.d-noir');
+assert_contains($cssZwei, '.d-noir .d-sec{', 'css: ein zweiter Bereich bekommt seinen eigenen Grundstil');
+assert_not_contains($cssZwei, '.d-elysee .d-sec{', 'css: der Grundstil des ersten Bereichs bleibt aussen vor');
+
+// Ohne Abschnitte kein Grundstil - es gibt nichts, das er stuetzen muesste.
+assert_same('', DesignSections::css(sec_doc([]), '.d-elysee'), 'css: ohne Abschnitte kein Grundstil');
+
 $daten = [
     'address'  => 'Elmau 2, 82493 Krün',
     'date'     => '2027-06-12',
@@ -170,6 +200,10 @@ assert_not_contains($html, '<h2 class="d-sec-title"></h2>', 'html: leerer Titel 
 assert_contains($html, 'Elmau 2', 'html: die Adresse steht da');
 assert_contains($html, 'google.com/maps', 'html: der Kartenlink wird gebaut');
 assert_contains($html, 'data-countdown="2027-06-12"', 'html: der Countdown traegt sein Datum');
+// Der Countdown braucht einen Kind-Span fuer die Zahl: ein Attribut auf dem
+// <p> selbst wird von keinem Selektor gelesen (siehe invite-v2-countdown.js).
+assert_contains($html, 'data-countdown-days', 'html: der Countdown hat einen Span fuer die Tageszahl');
+assert_contains($html, 'data-label="Tage"', 'html: das deutsche Wort steht im Span, nicht im Skript');
 assert_contains($html, 'Familie Weber', 'html: die Familie steht da');
 assert_contains($html, 'Trauung', 'html: die Programmzeile steht da');
 assert_contains($html, '15:00', 'html: die Uhrzeit steht da');
@@ -179,6 +213,18 @@ $en = DesignSections::html(sec_doc([
     ['id' => 'ort-1', 'type' => 'location', 'title' => ['de' => 'Ort', 'en' => 'Place']],
 ]), $daten, 'en', '2027-01-01');
 assert_contains($en, 'Place', 'html: englischer Titel auf der englischen Seite');
+
+/*
+ * Ein nur-deutscher Titel darf auf der englischen Seite nicht verschwinden.
+ * complete() schreibt 'en' immer als String (auch als '') - ein ?? auf
+ * $abschnitt['title']['en'] faende also immer einen Wert (den leeren) und
+ * fiele nie auf 'de' zurueck. Erst ein explizites !== ''-Fallback rettet
+ * den deutschen Titel.
+ */
+$nurDeutsch = DesignSections::html(sec_doc([
+    ['id' => 'ort-1', 'type' => 'location', 'title' => ['de' => 'Ort', 'en' => '']],
+]), $daten, 'en', '2027-01-01');
+assert_contains($nurDeutsch, '<h2 class="d-sec-title">Ort</h2>', 'html: nur-deutscher Titel steht auch auf der englischen Seite');
 
 // Alles, was aus den Daten kommt, wird maskiert.
 $boese = DesignSections::html(sec_doc([
