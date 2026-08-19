@@ -2674,6 +2674,11 @@ final class DesignController
             http_response_code(404);
             View::page('pages/not-found', [
                 'locale' => I18n::locale(),
+                // layout.php liest $path ohne Absicherung (canonical, hreflang,
+                // Kopfzeile). Fehlt er, wirft jede unbekannte Adresse drei
+                // Warnungen - dieselbe Zeile steht deshalb in
+                // PageController::notFound.
+                'path'   => I18n::path(''),
                 'meta'   => ['title' => '404', 'noindex' => true],
             ]);
             return;
@@ -2949,7 +2954,7 @@ use Atelier\Controllers\DesignController;
 Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
 
 - [ ] `http://localhost:8080/de/v2/designs` → Élysée kartı ızgarada, yapraklar ve renk lekeleri görünüyor
-- [ ] `http://localhost:8080/de/v2/designs/elysee` → tam sayfa, 8 katman, uyarı kutusu yok
+- [ ] `http://localhost:8080/de/v2/designs/elysee` → tam sayfa, alt çubukta **13 Ebenen** (5 sayfa + 8 kart), uyarı kutusu yok
 - [ ] `http://localhost:8080/de/v2/designs/gibtesnicht` → 404
 - [ ] `http://localhost:8080/de/designs/elysee` → **eski sayfa hâlâ çalışıyor**
 
