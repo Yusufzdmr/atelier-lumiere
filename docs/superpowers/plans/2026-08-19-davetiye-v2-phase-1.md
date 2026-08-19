@@ -2273,10 +2273,28 @@ Faz 1'in üretebileceği kısım **açılış görünümü**: kartın üst **490
 | `datum` | `wedding_date` | 8 | 77 | 85 | 38 |
 | `saat` | `wedding_time` | 8 | 84 | 85 | 23 |
 | `ort` | `location_name` | 8 | 91 | 85 | 24 |
-| `adres` | `location_address` | 8 | 96 | 85 | 22 |
+| `und` | sabit "&" | 8 | 34 | 85 | 47 |
+| `adres` | `location_address` | 8 | 95 | 85 | 22 |
 
 `x` ve `w` kart genişliğinin yüzdesi, `y` **kahraman bölgenin** (490 px) yüzdesi. `size`,
 ölçülen `cqw` değerinin on katı (Task 6'daki `size / 10` kuralı): isimler 11,14 cqw -> 111.
+
+### Plan duzeltmesi 6 — 2026-08-19, Task 12'nin karsilastirmasindan donen uc duzeltme
+
+Yan yana olcum uc eksik gosterdi; ucu de yalnizca tohum verisi:
+
+1. **Isimlerin yazi tipi.** Tablo `marie`/`jonas` icin `display` diyor, ama
+   olculen orijinal isimleri **Great Vibes** el yazisiyla diziyor (agirlik 400,
+   laufweite yok, satir yuksekligi 1,056). `display` (Cormorant Garamond) ayni
+   dizeyi belirgin daha genis basiyor. Belgeye ucuncu bir yazi markasi eklendi:
+   `script`. Font projede kendi icinde (`/fonts/greatvibes-latin.woff2`).
+2. **Isimlerin arasindaki "&" hic yoktu.** Orijinalde kendi elementi
+   (`invitation.php:289`), altin ve serifli — isimlerin el yazisinda degil.
+   Tabloya `und` satiri olarak girdi. Format **kursiv bilmiyor**; orijinal
+   kursiv, yeni hali dik duruyor ve bu spec'e "uretilmedi" olarak yazildi.
+3. **`adres` y 96 degil 95.** 96 %, 521 px'lik kartta 500 px demek; satirin
+   alt uzantilari 522'de bitiyor ve kart (`overflow:hidden`) bir pikselini
+   kesiyordu. 95 % ile 4 px pay kaliyor.
 
 **İsimler iki ayrı satır**, tek "Marie & Jonas" dizesi değil. O yüzden `couple_names` değil,
 `bride_name` ve `groom_name` kullanılıyor.
