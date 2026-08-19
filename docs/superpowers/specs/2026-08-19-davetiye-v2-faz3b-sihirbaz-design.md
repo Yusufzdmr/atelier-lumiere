@@ -423,17 +423,24 @@ Hepsi mevcut yardımcılarla, yenisi icat edilmiyor:
 | Sel | `Security::throttle('invite-v2-create', 8, 900)` — eskisiyle aynı ölçü, **ayrı anahtar** (biri diğerini kilitlemesin) |
 | Metin | `Security::clean()` alan başına sınırla |
 | Yükleme | `Media::store()` — dosya adına değil **içeriğe** bakar (`getimagesize`), klasör `einladungen/v2/{slug}` |
-| Görsel yolu | `Design::safeSrc()` zaten `/uploads` ve `/assets` dışını reddediyor; yüklenen dosya oradan geçer |
+| Görsel yolu | `Design::safeSrc()` — `/uploads` ve `/assets` dışını, yüzde kodlamasını ve `..`'yi reddeder; **yazım anında** çalışır, süzgeçten geçmeyen yol belgeye hiç girmez |
 | Renk / yazı | `Design::safeColor()`, `safeFont()` — bastırılan jetonun değeri (§5.1) yazılmadan **önce** buradan geçer |
 
-`safeColor()` ve `safeFont()` bugün `private` ve yalnızca `css()` içinde, yani
-**basım anında** çalışıyor. Sihirbaz da onları kullanacağı için `public`
-oluyorlar. Alternatifi (`DesignWizard`'a ikinci bir renk kuralı yazmak) "geçerli
-renk nedir" sorusuna iki cevap üretirdi. Gövdeleri değişmiyor, yalnızca
-görünürlükleri.
+`safeColor()`, `safeFont()` ve `safeSrc()` bugün `private` ve yalnızca `css()`
+ile `html()` içinde, yani **basım anında** çalışıyor. Sihirbaz da onları
+kullanacağı için üçü de `public` oluyor. Alternatifi (`DesignWizard`'a ikinci
+bir renk kuralı yazmak) "geçerli renk nedir" sorusuna iki cevap üretirdi.
+Gövdeleri değişmiyor, yalnızca görünürlükleri.
 
-Böylece geçersiz bir renk basım anında değil **yazım anında** `transparent`
-oluyor: snapshot'ta hiçbir zaman çöp değer durmuyor.
+Böylece geçersiz bir değer basım anında değil **yazım anında** eleniyor:
+snapshot'ta hiçbir zaman çöp durmuyor. Renk `transparent` olur, yazı tipi
+`inherit`; görsel yolu ise **düşer** — katman kendi özgün görselini korur,
+boş bir `src` ile görünmez olmaz.
+
+`safeSrc()` bu listeye sonradan katıldı. İlk hâlde yalnızca renk ve yazı tipi
+yazım anında süzülüyordu, görsel yolu ise basım anına bırakılmıştı; adversaryal
+inceleme bunun kendi doktrinimizle çeliştiğini gösterdi. Basım anındaki kontrol
+yerinde kalıyor — ikisi birlikte, tek başına değil.
 
 ### İzin süzgeci
 

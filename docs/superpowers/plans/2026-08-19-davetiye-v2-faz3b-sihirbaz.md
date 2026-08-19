@@ -29,11 +29,15 @@ ALL-INKL paylaşımlı hosting.
   `php/templates/pages/designs.php`.
 - **`invitations_v2` şeması değişmez:** `(slug, design_id, design_snapshot, data, created_at)`.
   Yeni alan gerekiyorsa `data` JSON'unun içine girer.
-- **`Design.php`'de yalnızca iki değişiklik, ikisi de adı geçen görevde:**
-  (1) `safeColor()` ve `safeFont()` `private` → `public` (Görev 3) — gövdeleri
-  değişmez; (2) `html()` metin elementine `data-bind` niteliği basar (Görev 9)
-  — canlı önizlemenin `bind` haritasını tarayıcıya ayrıca göndermemesi için.
-  Başka satır değişmez.
+- **`Design.php`'de yalnızca iki tür değişiklik, ikisi de adı geçen görevde:**
+  (1) `safeColor()`, `safeFont()` ve `safeSrc()` `private` → `public` (Görev 3)
+  — **gövdeleri değişmez**, yalnızca görünürlük ve doküman yorumu. Üçü de
+  müşteri değerinin belgeye inmeden önce süzülmesi için gerekli: spec §9'un
+  doktrini "yazım anında temizle, basım anında değil"; `safeSrc()` bu listeye
+  Görev 3'ün adversaryal incelemesinden sonra eklendi, çünkü fotoğraf yolu tek
+  başına dışarıda kalmıştı. (2) `html()` metin elementine `data-bind` niteliği
+  basar (Görev 9) — canlı önizlemenin `bind` haritasını tarayıcıya ayrıca
+  göndermemesi için. Başka satır değişmez.
 - **Testler veritabanısız çalışır.** `bin/test.php` `config.php` yüklemez;
   `tests/design_wizard.php` yalnızca saf fonksiyon test eder. Veritabanı gerektiren
   test `needs_db()` ile korunur.
