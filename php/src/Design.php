@@ -366,4 +366,146 @@ final class Design
         }
         return $value;
     }
+
+    /**
+     * Die Elemente eines Designs als Markup.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,string> $values  Ergebnis von bindValues()
+     */
+    public static function html(array $doc, array $values, string $locale): string
+    {
+        $doc = self::complete($doc);
+        $out = '';
+
+        foreach ($doc['layers'] as $el) {
+            $class = 'd-el d-el-' . $el['id'] . ' d-spot-' . $el['spot'];
+
+            if ($el['type'] === 'text' || $el['type'] === 'button') {
+                $text = self::resolveText($el, $values, $locale);
+                if ($text === '') {
+                    continue;
+                }
+                $out .= '<div class="' . e($class) . '">' . e($text) . '</div>';
+                continue;
+            }
+
+            if ($el['type'] === 'image' || $el['type'] === 'photo') {
+                $src = self::safeSrc($el['src']);
+                if ($src === '') {
+                    continue;
+                }
+                // Schmuck ist Schmuck: fuer die Vorlesesoftware nicht vorhanden.
+                $out .= '<img class="' . e($class) . '" src="' . e($src) . '" alt="" aria-hidden="true">';
+                continue;
+            }
+
+            if ($el['type'] === 'shape') {
+                $out .= '<div class="' . e($class) . '" aria-hidden="true"></div>';
+            }
+
+            // video: Faz 3. Bis dahin wird das Element still uebersprungen.
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<string,mixed> $el
+     * @param array<string,string> $values
+     */
+    private static function resolveText(array $el, array $values, string $locale): string
+    {
+        if ($el['bind'] !== '') {
+            // Unbekannter Name wird leer – niemals der Name selbst, sonst
+            // steht „couple_names" auf der Einladung.
+            return (string) ($values[$el['bind']] ?? '');
+        }
+        return (string) ($el['text'][$locale] ?? $el['text']['de'] ?? '');
+    }
+
+    /**
+     * Nur Pfade, die wir selbst vergeben haben.
+     *
+     * Ein Design kann aus dem Panel kommen oder als JSON eingespielt werden.
+     * Ohne diese Pruefung liesse sich ueber die Bildquelle ein fremder Host
+     * einbinden – und das faellt genau dann auf, wenn es zu spaet ist.
+     */
+    private static function safeSrc(string $src): string
+    {
+        $src = trim($src);
+        if ($src === '' || str_contains($src, '..') || str_contains($src, ':')) {
+            return '';
+        }
+        if (!str_starts_with($src, '/uploads/') && !str_starts_with($src, '/assets/')) {
+            return '';
+        }
+        return $src;
+    }
+
+    /**
+     * Die dynamischen Felder aus den Daten einer Einladung.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,string>
+     */
+    public static function bindValues(array $data, string $locale): array
+    {
+        $bride = trim((string) ($data['bride'] ?? ''));
+        $groom = trim((string) ($data['groom'] ?? ''));
+        $date  = trim((string) ($data['date'] ?? ''));
+
+        $couple = $bride;
+        if ($bride !== '' && $groom !== '') {
+            $couple = $bride . ' & ' . $groom;
+        } elseif ($bride === '') {
+            $couple = $groom;
+        }
+
+        return [
+            'couple_names'     => $couple,
+            'bride_name'       => $bride,
+            'groom_name'       => $groom,
+            'initials'         => mb_substr($bride, 0, 1) . mb_substr($groom, 0, 1),
+            'wedding_date'     => $date !== '' ? Dates::long($date, $locale) : '',
+            'wedding_time'     => trim((string) ($data['time'] ?? '')),
+            'location_name'    => trim((string) ($data['venue'] ?? '')),
+            'location_address' => trim((string) ($data['address'] ?? '')),
+            'invitation_text'  => trim((string) ($data['message'] ?? '')),
+            'hashtag'          => trim((string) ($data['hashtag'] ?? '')),
+        ];
+    }
+
+    /**
+     * Was an einem Design noch fehlt.
+     *
+     * Faz 2 haengt daran die Veroeffentlichungspruefung; hier entsteht nur die
+     * Liste. Sie meldet, statt zu blockieren – ein halbfertiges Design soll
+     * sich ansehen lassen.
+     *
+     * @param array<string,mixed> $doc
+     * @return list<array{kind:string,element:string,detail:string}>
+     */
+    public static function warnings(array $doc): array
+    {
+        $doc = self::complete($doc);
+        $out = [];
+
+        foreach ($doc['layers'] as $el) {
+            if ($el['bind'] !== '' && !in_array($el['bind'], self::BINDS, true)) {
+                $out[] = ['kind' => 'unknown_bind', 'element' => $el['id'], 'detail' => $el['bind']];
+            }
+            if (($el['type'] === 'image' || $el['type'] === 'photo') && self::safeSrc($el['src']) === '') {
+                $out[] = ['kind' => 'missing_src', 'element' => $el['id'], 'detail' => $el['src']];
+            }
+            if ($el['style']['color'] !== '' && !isset($doc['palette'][$el['style']['color']])) {
+                $out[] = ['kind' => 'unknown_color', 'element' => $el['id'], 'detail' => $el['style']['color']];
+            }
+            if ($el['style']['font'] !== '' && !isset($doc['fonts'][$el['style']['font']])) {
+                $out[] = ['kind' => 'unknown_font', 'element' => $el['id'], 'detail' => $el['style']['font']];
+            }
+        }
+
+        return $out;
+    }
 }
