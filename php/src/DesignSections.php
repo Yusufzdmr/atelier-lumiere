@@ -182,4 +182,140 @@ final class DesignSections
             default     => false,
         };
     }
+
+    /**
+     * Stilregeln der Abschnitte.
+     *
+     * Wie bei den Ebenen: alles unter dem Bereich, damit zwei Designs auf
+     * derselben Seite stehen koennen, ohne sich umzufaerben.
+     *
+     * @param array<string,mixed> $doc
+     */
+    public static function css(array $doc, string $scope): string
+    {
+        $doc = self::complete($doc);
+        $css = '';
+
+        foreach ($doc['sections'] as $abschnitt) {
+            $regeln = '';
+            $farbe  = (string) $abschnitt['style']['color'];
+            $schrift = (string) $abschnitt['style']['font'];
+
+            if ($farbe !== '') {
+                $regeln .= 'color:var(--d-' . $farbe . ');';
+            }
+            if ($schrift !== '') {
+                $regeln .= 'font-family:var(--df-' . $schrift . ');'
+                    . 'font-weight:var(--dfw-' . $schrift . ');'
+                    . 'letter-spacing:var(--dft-' . $schrift . ');'
+                    . 'line-height:var(--dfl-' . $schrift . ');';
+            }
+            if ($regeln !== '') {
+                $css .= $scope . ' .d-sec-' . $abschnitt['id'] . '{' . $regeln . '}';
+            }
+        }
+
+        return $css;
+    }
+
+    /**
+     * Die Abschnitte als Markup.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,mixed> $data
+     */
+    public static function html(array $doc, array $data, string $locale, string $heute = ''): string
+    {
+        $out = '';
+
+        foreach (self::visible($doc, $data, $heute) as $abschnitt) {
+            $id = (string) $abschnitt['id'];
+            $typ = (string) $abschnitt['type'];
+
+            $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ) . '">';
+
+            $titel = (string) ($abschnitt['title'][$locale] ?? $abschnitt['title']['de'] ?? '');
+            if ($titel !== '') {
+                $out .= '<h2 class="d-sec-title">' . e($titel) . '</h2>';
+            }
+
+            $out .= match ($typ) {
+                'location'  => self::ort($data, $locale),
+                'countdown' => self::countdown($data, $locale),
+                'family'    => self::familien($data),
+                'program'   => self::programm($data),
+                default     => '',
+            };
+
+            $out .= '</section>';
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $data */
+    private static function ort(array $data, string $locale): string
+    {
+        $adresse = trim((string) ($data['address'] ?? ''));
+        $ort = trim((string) ($data['venue'] ?? ''));
+
+        $out = '';
+        if ($ort !== '') {
+            $out .= '<p class="d-sec-venue">' . e($ort) . '</p>';
+        }
+        $out .= '<p class="d-sec-address">' . e($adresse) . '</p>';
+
+        // Der Link geht zur Routenplanung, nicht auf eine Karte: wer die
+        // Adresse liest, will hinfahren.
+        $out .= '<a class="d-sec-map" rel="noopener noreferrer" target="_blank" href="'
+            . e('https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse))
+            . '">' . e($locale === 'de' ? 'Route planen' : 'Plan route') . '</a>';
+
+        return $out;
+    }
+
+    /**
+     * Der Countdown traegt sein Datum als Attribut.
+     *
+     * Gerechnet wird im Browser - eine auf dem Server gerenderte Zahl waere
+     * in dem Moment falsch, in dem die Seite eine Minute alt ist. Ohne Skript
+     * steht trotzdem das Datum da (siehe Aufgabe 8).
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function countdown(array $data, string $locale): string
+    {
+        $datum = trim((string) ($data['date'] ?? ''));
+
+        return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'
+            . e(Dates::long($datum, $locale)) . '</p>';
+    }
+
+    /** @param array<string,mixed> $data */
+    private static function familien(array $data): string
+    {
+        $familien = is_array($data['families'] ?? null) ? $data['families'] : [];
+        $out = '';
+
+        foreach (['bride', 'groom'] as $seite) {
+            $name = trim((string) ($familien[$seite] ?? ''));
+            if ($name !== '') {
+                $out .= '<p class="d-sec-family">' . e($name) . '</p>';
+            }
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $data */
+    private static function programm(array $data): string
+    {
+        $out = '<dl class="d-sec-program">';
+
+        foreach (self::programRows($data) as $zeile) {
+            $out .= '<dt>' . e($zeile['time']) . '</dt><dd>' . e($zeile['title']) . '</dd>';
+        }
+
+        return $out . '</dl>';
+    }
 }

@@ -128,3 +128,86 @@ for ($i = 0; $i < 40; $i++) {
     $viele[] = ['time' => '10:00', 'title' => 'Punkt ' . $i];
 }
 assert_same(DesignSections::PROGRAM_MAX, count(DesignSections::programRows(['program' => $viele])), 'programRows: Obergrenze greift');
+
+/*
+ * Gedruckt wird gegen Markennamen, nicht gegen Werte.
+ *
+ * Dieselbe Lehre wie in Phase 3B: der Renderer schreibt var(--d-<name>).
+ * Stuende dort ein roher Wert, ergaebe das var(--d-#B08D57) - ungueltiges CSS
+ * und ein farbloses Element, das niemandem auffaellt.
+ */
+
+$stil = sec_doc([
+    ['id' => 'prog-1', 'type' => 'program',
+     'style' => ['color' => 'accent', 'font' => 'display']],
+    ['id' => 'fam-1', 'type' => 'family'],
+]);
+
+$css = DesignSections::css($stil, '.d-elysee');
+assert_contains($css, '.d-elysee .d-sec-prog-1{', 'css: Abschnitt wird im Bereich adressiert');
+assert_contains($css, 'color:var(--d-accent)', 'css: Farbe kommt als Marke');
+assert_contains($css, 'font-family:var(--df-display)', 'css: Schrift kommt als Marke');
+assert_not_contains($css, '.d-sec-fam-1{', 'css: ohne Stil keine Regel');
+
+$daten = [
+    'address'  => 'Elmau 2, 82493 Krün',
+    'date'     => '2027-06-12',
+    'families' => ['bride' => 'Familie Weber', 'groom' => 'Familie Yılmaz'],
+    'program'  => [['time' => '15:00', 'title' => 'Trauung']],
+];
+
+$html = DesignSections::html(sec_doc([
+    ['id' => 'ort-1',  'type' => 'location',  'title' => ['de' => 'Ort', 'en' => 'Place']],
+    ['id' => 'cd-1',   'type' => 'countdown', 'title' => ['de' => '', 'en' => '']],
+    ['id' => 'fam-1',  'type' => 'family',    'title' => ['de' => 'Familien', 'en' => 'Families']],
+    ['id' => 'prog-1', 'type' => 'program',   'title' => ['de' => 'Ablauf', 'en' => 'Schedule']],
+]), $daten, 'de', '2027-01-01');
+
+assert_contains($html, 'class="d-sec d-sec-ort-1 d-sec-location"', 'html: Kennung und Art stehen in der Klasse');
+assert_contains($html, '<h2', 'html: Titel wird gedruckt');
+assert_contains($html, 'Ort', 'html: der deutsche Titel');
+assert_not_contains($html, '<h2 class="d-sec-title"></h2>', 'html: leerer Titel wird nicht gedruckt');
+assert_contains($html, 'Elmau 2', 'html: die Adresse steht da');
+assert_contains($html, 'google.com/maps', 'html: der Kartenlink wird gebaut');
+assert_contains($html, 'data-countdown="2027-06-12"', 'html: der Countdown traegt sein Datum');
+assert_contains($html, 'Familie Weber', 'html: die Familie steht da');
+assert_contains($html, 'Trauung', 'html: die Programmzeile steht da');
+assert_contains($html, '15:00', 'html: die Uhrzeit steht da');
+
+// Englisch nimmt den englischen Titel.
+$en = DesignSections::html(sec_doc([
+    ['id' => 'ort-1', 'type' => 'location', 'title' => ['de' => 'Ort', 'en' => 'Place']],
+]), $daten, 'en', '2027-01-01');
+assert_contains($en, 'Place', 'html: englischer Titel auf der englischen Seite');
+
+// Alles, was aus den Daten kommt, wird maskiert.
+$boese = DesignSections::html(sec_doc([
+    ['id' => 'fam-1', 'type' => 'family'],
+]), ['families' => ['bride' => '<script>alert(1)</script>']], 'de', '2027-01-01');
+assert_not_contains($boese, '<script>', 'html: kein rohes Markup aus den Daten');
+assert_contains($boese, '&lt;script&gt;', 'html: und zwar sichtbar maskiert');
+
+// Nichts Sichtbares, nichts Gedrucktes.
+assert_same('', DesignSections::html(sec_doc([['id' => 'p', 'type' => 'program']]), [], 'de', '2027-01-01'), 'html: ohne Inhalt kein Markup');
+
+/*
+ * programRows() schneidet time und title mit mb_substr auf PROGRAM_LEN ab -
+ * aber kein Test hat das bisher geprueft. Wuerden beide mb_substr-Aufrufe
+ * geloescht, liefe die ganze Suite trotzdem gruen.
+ *
+ * Der mehrbytige Fall wird getrennt geprueft: ein byteweiser Schnitt mitten
+ * durch ein zweibytiges Zeichen ergaebe eine kaputte Zeichenkette, die erst
+ * auf der Seite auffaellt - mb_strlen allein wuerde das nicht immer zeigen,
+ * aber mb_check_encoding schon.
+ */
+
+$lang = DesignSections::programRows(['program' => [
+    ['time' => '15:00', 'title' => str_repeat('A', 90)],
+]]);
+assert_same(80, mb_strlen($lang[0]['title']), 'programRows: Titel wird auf PROGRAM_LEN gekuerzt');
+
+$mehrbytig = DesignSections::programRows(['program' => [
+    ['time' => '15:00', 'title' => str_repeat('üş', 60)],
+]]);
+assert_same(80, mb_strlen($mehrbytig[0]['title']), 'programRows: mehrbytiger Titel wird auf PROGRAM_LEN gekuerzt');
+assert_same(true, mb_check_encoding($mehrbytig[0]['title'], 'UTF-8'), 'programRows: mehrbytiger Schnitt bleibt gueltiges UTF-8');
