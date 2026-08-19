@@ -29,11 +29,15 @@ ALL-INKL paylaşımlı hosting.
   `php/templates/pages/designs.php`.
 - **`invitations_v2` şeması değişmez:** `(slug, design_id, design_snapshot, data, created_at)`.
   Yeni alan gerekiyorsa `data` JSON'unun içine girer.
-- **`Design.php`'de yalnızca iki değişiklik, ikisi de adı geçen görevde:**
-  (1) `safeColor()` ve `safeFont()` `private` → `public` (Görev 3) — gövdeleri
-  değişmez; (2) `html()` metin elementine `data-bind` niteliği basar (Görev 9)
-  — canlı önizlemenin `bind` haritasını tarayıcıya ayrıca göndermemesi için.
-  Başka satır değişmez.
+- **`Design.php`'de yalnızca iki tür değişiklik, ikisi de adı geçen görevde:**
+  (1) `safeColor()`, `safeFont()` ve `safeSrc()` `private` → `public` (Görev 3)
+  — **gövdeleri değişmez**, yalnızca görünürlük ve doküman yorumu. Üçü de
+  müşteri değerinin belgeye inmeden önce süzülmesi için gerekli: spec §9'un
+  doktrini "yazım anında temizle, basım anında değil"; `safeSrc()` bu listeye
+  Görev 3'ün adversaryal incelemesinden sonra eklendi, çünkü fotoğraf yolu tek
+  başına dışarıda kalmıştı. (2) `html()` metin elementine `data-bind` niteliği
+  basar (Görev 9) — canlı önizlemenin `bind` haritasını tarayıcıya ayrıca
+  göndermemesi için. Başka satır değişmez.
 - **Testler veritabanısız çalışır.** `bin/test.php` `config.php` yüklemez;
   `tests/design_wizard.php` yalnızca saf fonksiyon test eder. Veritabanı gerektiren
   test `needs_db()` ile korunur.
@@ -1105,13 +1109,42 @@ use Atelier\View;
  */
 final class InviteV2Controller
 {
+    /**
+     * Damit die Vorschau ueberhaupt Knoten hat.
+     *
+     * Ein gebundenes Textelement ohne Wert wird nicht gezeichnet. Stuende hier
+     * nichts, faende das Skript in Aufgabe 9 keine [data-bind]-Knoten und die
+     * Live-Vorschau bliebe still - ein Fehler, den man auf einem Bildschirmfoto
+     * nicht sieht. Dieselben Felder wie im Schaufenster.
+     */
+    private const BEISPIEL = [
+        'bride'   => 'Sophia',
+        'groom'   => 'Maximilian',
+        'date'    => '2027-09-12',
+        'time'    => '18:00',
+        'venue'   => 'Schloss Hohenstein',
+        'address' => 'Schlossstraße 1, 89312 Günzburg',
+        'message' => 'Wir heiraten und wünschen uns, dass ihr dabei seid.',
+        'hashtag' => '#sophiaundmaximilian',
+    ];
+
     public function wizard(): void
     {
         $locale = I18n::locale();
 
         $designs = Design::all('active');
         if ($designs === []) {
-            View::page('pages/not-found', ['meta' => Seo::forPage('einladung2', ['noindex' => true])]);
+            // pages/not-found liest $locale unbedingt (not-found.php:10) und
+            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
+            // Variablen und die Seite kommt auf Englisch heraus, egal in
+            // welcher Sprache sie aufgerufen wurde. DesignController::preview()
+            // gibt sie aus genau diesem Grund mit.
+            http_response_code(404);
+            View::page('pages/not-found', [
+                'locale' => $locale,
+                'path'   => I18n::path('/v2/einladung'),
+                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+            ]);
             return;
         }
 
@@ -1141,7 +1174,12 @@ final class InviteV2Controller
             'values'  => [],
             'scope'   => $scope,
             'styles'  => Design::css($design, $scope),
-            'karte'   => Design::html($design, Design::bindValues([], $locale), $locale, 'card'),
+            // Beispieldaten, nicht leer. Design::html() ueberspringt ein
+            // gebundenes Textelement, dessen Wert leer ist (Design.php:487) -
+            // mit leeren Daten stuenden vier der sechs Elemente gar nicht erst
+            // im DOM, und die Vorschau in Aufgabe 9 fuellte etwas, das es nicht
+            // gibt. Das Skript leert sie beim ersten Lauf wieder.
+            'karte'   => Design::html($design, Design::bindValues(self::BEISPIEL, $locale), $locale, 'card'),
             'csrf'    => Security::csrf(),
             'error'   => '',
             'done'    => null,
@@ -1278,13 +1316,33 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
             </div>
           <?php endforeach; ?>
 
+          <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
+            <div>
+              <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
+              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>">
+                <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                  <option value="<?= e($familie) ?>" <?= (string) $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          <?php endforeach; ?>
+
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
-            <?php if (!$rechte['color'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
+            <?php if (!$rechte['color'] && !$rechte['font'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
             <div class="border-t border-sand-deep pt-6">
               <div class="<?= $label ?>"><?= e($id) ?></div>
 
               <?php if ($rechte['color']) : ?>
                 <input type="color" name="layer_color_<?= e($id) ?>" class="<?= $field ?> h-12">
+              <?php endif; ?>
+
+              <?php if ($rechte['font']) : ?>
+                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>">
+                  <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
+                  <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                    <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+                  <?php endforeach; ?>
+                </select>
               <?php endif; ?>
 
               <?php if ($rechte['text']) : ?>
@@ -1471,6 +1529,13 @@ başa eklenir):
             }
         }
 
+        foreach (array_keys($darf['fonts']) as $marke) {
+            $wert = Security::clean($_POST['fonts_' . $marke] ?? '', 64);
+            if ($wert !== '') {
+                $wahl['fonts'][$marke] = $wert;
+            }
+        }
+
         foreach ($darf['layers'] as $id => $rechte) {
             $eintrag = [];
 
@@ -1478,6 +1543,12 @@ başa eklenir):
                 $wert = Security::clean($_POST['layer_color_' . $id] ?? '', 32);
                 if ($wert !== '') {
                     $eintrag['color'] = $wert;
+                }
+            }
+            if ($rechte['font']) {
+                $wert = Security::clean($_POST['layer_font_' . $id] ?? '', 64);
+                if ($wert !== '') {
+                    $eintrag['font'] = $wert;
                 }
             }
             if ($rechte['text']) {
@@ -1596,8 +1667,17 @@ git commit -m "Publishing freezes the personalised document, not a list of edits
         $einladung = InvitationsV2::find($params['slug'] ?? '');
 
         if ($einladung === null) {
+            // pages/not-found liest $locale unbedingt (not-found.php:10) und
+            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
+            // Variablen und die Seite kommt auf Englisch heraus, egal in
+            // welcher Sprache sie aufgerufen wurde. DesignController::preview()
+            // gibt sie aus genau diesem Grund mit.
             http_response_code(404);
-            View::page('pages/not-found', ['meta' => Seo::forPage('einladung2', ['noindex' => true])]);
+            View::page('pages/not-found', [
+                'locale' => $locale,
+                'path'   => I18n::path('/v2/einladung'),
+                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+            ]);
             return;
         }
 
@@ -1609,15 +1689,42 @@ git commit -m "Publishing freezes the personalised document, not a list of edits
 
         View::page('pages/invite-v2-show', [
             'locale' => $locale,
+            'path'   => I18n::path('/v2/einladung/' . $einladung['slug'], $locale),
             'meta'   => Seo::forPage('einladung2', [
                 'title' => $namen !== '' ? $namen : I18n::t('invitation2.wizardTitle'),
                 // Eine Einladung gehoert nicht in den Index. Der Link ist
                 // fuer die Gaeste, nicht fuer die Suche.
                 'noindex' => true,
+                // Dieselbe Choreografie wie in der Design-Vorschau: Kuvert
+                // oeffnen, Karte aufsteigen lassen. Ohne dieses Skript bleibt
+                // das Kuvert zu.
+                'scripts' => ['/assets/invitation.js'],
             ]),
             'design' => $doc,
-            'scope'  => $scope,
+            // OHNE Punkt. Design::css() bekommt den Selektor (".d-elysee"),
+            // die Vorlage bekommt den Klassennamen ("d-elysee") - sie schreibt
+            // ihn in ein class-Attribut. Mit Punkt entstuende die Klasse
+            // ".d-elysee", die der Selektor .d-elysee niemals trifft, und die
+            // Einladung kaeme voellig ungestylt heraus. DesignController::
+            // preview() macht es aus demselben Grund so (DesignController.php:125).
+            'scope'  => ltrim($scope, '.'),
             'styles' => Design::css($doc, $scope),
+            // Die fuenf Bewegungswerte rechnet sonst design-preview.php aus.
+            // Die Buehne liest sie, leitet sie aber nicht selbst ab - eine
+            // Rechnung, eine Quelle der Wahrheit (Aufgabe 5).
+            'ratio'   => str_replace(':', ' / ', (string) $doc['canvas']['ratio']),
+            'karteAn' => (string) $doc['animation']['card'],
+            'tempo'   => (int) $doc['animation']['speed'],
+            'introMs' => 0,
+            'idle'    => (string) $doc['animation']['idle'],
+            // Die Initialen stehen auf dem Siegel. Sie kommen aus den Daten
+            // des Paares, nicht aus dem Dokument.
+            'initialen' => $values['initials'],
+            // Leer, und zwar immer. Die Buehne zeigt Warnungen ungeprueft an
+            // (design-stage.php:50) - auf einer echten Einladung hat ein Gast
+            // nichts mit den Maengeln einer Vorlage zu tun. Waere der Wert gar
+            // nicht gesetzt, stuende dort eine leere Box: null !== [] ist wahr.
+            'warnings' => [],
             'seite'  => Design::html($doc, $values, $locale, 'page'),
             'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
             'karte'  => Design::html($doc, $values, $locale, 'card'),
@@ -1649,14 +1756,29 @@ git commit -m "Publishing freezes the personalised document, not a list of edits
 
 use Atelier\View;
 ?>
+<?php /*
+   Dreizehn Werte, nicht sieben. Die Buehne liest ratio, tempo, karteAn,
+   introMs, idle, initialen und warnings zusaetzlich - fehlt einer, meldet PHP
+   eine undefinierte Variable, das Seitenverhaeltnis bleibt leer, die Karte
+   bewegt sich nicht, und weil null !== [] wahr ist, stuende auf jeder echten
+   Einladung eine leere Warnungsbox. Der Aufrufer rechnet sie aus (show()),
+   die Buehne leitet nichts selbst ab.
+*/ ?>
 <?= View::partial('partials/design-stage', [
-    'design' => $design,
-    'scope'  => $scope,
-    'styles' => $styles,
-    'seite'  => $seite,
-    'kuvert' => $kuvert,
-    'karte'  => $karte,
-    'locale' => $locale,
+    'design'    => $design,
+    'scope'     => $scope,
+    'styles'    => $styles,
+    'seite'     => $seite,
+    'kuvert'    => $kuvert,
+    'karte'     => $karte,
+    'locale'    => $locale,
+    'ratio'     => $ratio,
+    'tempo'     => $tempo,
+    'karteAn'   => $karteAn,
+    'introMs'   => $introMs,
+    'idle'      => $idle,
+    'initialen' => $initialen,
+    'warnings'  => $warnings,
 ]) ?>
 ```
 
@@ -1775,20 +1897,9 @@ sorulduğu sunucuda belli. Betik yalnızca görünürlük ve önizleme.
 
   /*
    * Vorschau: die gebundenen Felder heissen im Dokument anders als im
-   * Formular, deshalb die Karte. Sie ist die einzige Stelle, an der der
-   * Browser etwas ueber bind-Namen wissen muss.
+   * Formular. Diese Zuordnung ist die einzige Stelle, an der der Browser
+   * etwas ueber bind-Namen wissen muss.
    */
-  var bindOf = {
-    bride: ['bride_name', 'couple_names', 'initials'],
-    groom: ['groom_name', 'couple_names', 'initials'],
-    date: ['wedding_date', 'wedding_weekday'],
-    time: ['wedding_time'],
-    venue: ['location_name'],
-    address: ['location_address'],
-    message: ['invitation_text'],
-    hashtag: ['hashtag']
-  };
-
   var preview = form.querySelector('[data-preview]');
   if (!preview) return;
 
@@ -1813,15 +1924,12 @@ sorulduğu sunucuda belli. Betik yalnızca görünürlük ve önizleme.
       hashtag: werte.hashtag || ''
     };
 
-    // Die Elemente tragen ihre Kennung in der Klasse (d-el-<id>), aber welches
-    // bind dahintersteht, steht nur im Dokument. Deshalb bekommt die Vorschau
-    // ihre Zuordnung beim ersten Lauf aus dem gerenderten Markup: jedes
-    // gebundene Element hat dort bereits den Beispielwert stehen.
-    Object.keys(bindOf).forEach(function (feld) {
-      bindOf[feld].forEach(function (bind) {
-        var ziel = preview.querySelector('[data-bind="' + bind + '"]');
-        if (ziel) ziel.textContent = text[bind];
-      });
+    // Welches Element welches bind traegt, steht im Markup (data-bind, siehe
+    // Schritt 2) - nicht hier. Ein Design ohne wedding_time hat die Zeile
+    // nicht, und dann findet querySelector nichts. Das ist richtig so.
+    Object.keys(text).forEach(function (bind) {
+      var ziel = preview.querySelector('[data-bind="' + bind + '"]');
+      if (ziel) ziel.textContent = text[bind];
     });
   }
 

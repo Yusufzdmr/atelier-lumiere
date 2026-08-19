@@ -320,7 +320,25 @@ formata `closing_text` eklemek C'nin işi.
 Bir `bind` sorulup boş bırakılırsa `Design::resolveText()` zaten boş dize
 döndürür ve `html()` o elementi hiç basmaz (`Design.php:487`). Yani eksik alan
 davetiyeyi bozmaz, o satır görünmez. Zorunlu olan yalnızca ikisi: `bride` ve
-`groom` — ikisi de boşsa davetiyenin kime ait olduğu belirsiz kalır.
+`groom` — ve yalnızca **tasarım onları soruyorsa**; ikisi de boşsa davetiyenin
+kime ait olduğu belirsiz kalır.
+
+### `bind` → form alanı
+
+Sorulan alan sayısı `bind` sayısından az: dört `bind` aynı iki alandan türüyor.
+`DesignWizard` bu haritayı taşır, şablon değil:
+
+| `bind` | sorulan alan |
+|---|---|
+| `couple_names`, `initials` | `bride` + `groom` |
+| `bride_name` | `bride` |
+| `groom_name` | `groom` |
+| `wedding_date`, `wedding_weekday` | `date` |
+| `wedding_time` | `time` |
+| `location_name` | `venue` |
+| `location_address` | `address` |
+| `invitation_text` | `message` |
+| `hashtag` | `hashtag` |
 
 ## 8. Rotalar ve dosyalar
 
@@ -405,17 +423,24 @@ Hepsi mevcut yardımcılarla, yenisi icat edilmiyor:
 | Sel | `Security::throttle('invite-v2-create', 8, 900)` — eskisiyle aynı ölçü, **ayrı anahtar** (biri diğerini kilitlemesin) |
 | Metin | `Security::clean()` alan başına sınırla |
 | Yükleme | `Media::store()` — dosya adına değil **içeriğe** bakar (`getimagesize`), klasör `einladungen/v2/{slug}` |
-| Görsel yolu | `Design::safeSrc()` zaten `/uploads` ve `/assets` dışını reddediyor; yüklenen dosya oradan geçer |
+| Görsel yolu | `Design::safeSrc()` — `/uploads` ve `/assets` dışını, yüzde kodlamasını ve `..`'yi reddeder; **yazım anında** çalışır, süzgeçten geçmeyen yol belgeye hiç girmez |
 | Renk / yazı | `Design::safeColor()`, `safeFont()` — bastırılan jetonun değeri (§5.1) yazılmadan **önce** buradan geçer |
 
-`safeColor()` ve `safeFont()` bugün `private` ve yalnızca `css()` içinde, yani
-**basım anında** çalışıyor. Sihirbaz da onları kullanacağı için `public`
-oluyorlar. Alternatifi (`DesignWizard`'a ikinci bir renk kuralı yazmak) "geçerli
-renk nedir" sorusuna iki cevap üretirdi. Gövdeleri değişmiyor, yalnızca
-görünürlükleri.
+`safeColor()`, `safeFont()` ve `safeSrc()` bugün `private` ve yalnızca `css()`
+ile `html()` içinde, yani **basım anında** çalışıyor. Sihirbaz da onları
+kullanacağı için üçü de `public` oluyor. Alternatifi (`DesignWizard`'a ikinci
+bir renk kuralı yazmak) "geçerli renk nedir" sorusuna iki cevap üretirdi.
+Gövdeleri değişmiyor, yalnızca görünürlükleri.
 
-Böylece geçersiz bir renk basım anında değil **yazım anında** `transparent`
-oluyor: snapshot'ta hiçbir zaman çöp değer durmuyor.
+Böylece geçersiz bir değer basım anında değil **yazım anında** eleniyor:
+snapshot'ta hiçbir zaman çöp durmuyor. Renk `transparent` olur, yazı tipi
+`inherit`; görsel yolu ise **düşer** — katman kendi özgün görselini korur,
+boş bir `src` ile görünmez olmaz.
+
+`safeSrc()` bu listeye sonradan katıldı. İlk hâlde yalnızca renk ve yazı tipi
+yazım anında süzülüyordu, görsel yolu ise basım anına bırakılmıştı; adversaryal
+inceleme bunun kendi doktrinimizle çeliştiğini gösterdi. Basım anındaki kontrol
+yerinde kalıyor — ikisi birlikte, tek başına değil.
 
 ### İzin süzgeci
 
@@ -468,6 +493,7 @@ alınmışsa sonuna dört haneli onaltılık eklenir, eski motordaki davranış.
 | Panelde v2 davetiye listesi | `/admin/einladungen` eski tabloyu okuyor; yeni davetiyeleri **görmez** | D |
 | Animasyon seçimi (eski adım 1) | v2'de tasarımın `animation` alanında, müşteri seçimi ayrı bir izin sorusu | sonra |
 | OG görseli | `OgImage` eski kayıt şemasına bağlı | sonra |
+| Canlı önizlemede haftanın gününün (`wedding_weekday`) eşlenmemesi | tarayıcıda `Dates::weekday()`'in ikinci bir uygulaması olurdu; ikisi birbirinden farklı sonuç verebilir | — |
 
 **Panel v2 davetiyelerini görmüyor** — kararlar belgesinin uyardığı nokta. 3B
 bunu bilerek bırakıyor: `/admin/einladungen` eski tabloyu okuyor ve ona
@@ -476,12 +502,20 @@ yalnızca kendi adreslerinden görünür. D bunu ele alacak.
 
 ## 12. Bitti sayılma ölçütü
 
-- [ ] `/de/v2/einladung` açılıyor; tasarım `?design=<slug>` ile geliyor,
-      gelmiyorsa aktif tasarımlardan seçtiriliyor.
-- [ ] Élysée seçilince **iki adım** görünüyor (künye, yayınlama) — çünkü
-      izinleri kapalı. Boş bir "Design" adımı yok.
-- [ ] Panelden bir katmana `edit`+`color` verilince sihirbaz **üç adım**
-      gösteriyor; tarayıcı tazelemesi dışında hiçbir şey yapılmadan.
+- [ ] `/de/v2/einladung` açılıyor; tasarım `?design=<slug>` ile geliyor —
+      bilinmeyen ya da eksik değer sessizce ilk aktif tasarıma düşüyor, bir
+      seçtirme ekranı yok. Bu doğru: bu fazda sihirbaz hiçbir yerden
+      bağlanmıyor, ona ulaşılan tek yol Schaufenster'dan gelen `?design=`.
+      Seçtirme ekranı, sihirbazı bağlayacak sonraki fazın işi.
+- [ ] Élysée seçilince **üç adım** görünüyor (künye, tasarım, yayınlama).
+      Ölçüldü 2026-08-19: canlı veride `palette.accent.customer` **açık**,
+      katman izinlerinin hepsi kapalı — yani "Tasarım" adımını tek başına bir
+      renk jetonu açıyor. Adım listesinin gerçekten belgeden türediğinin
+      kanıtı bu: kodda hiçbir yerde "üç adım" yazmıyor.
+      (Spec'in ilk hâli burada "iki adım" diyordu; tohumdaki izinlerin hepsinin
+      kapalı olduğu varsayılmıştı. Panelde jeton açılmış, varsayım yanlıştı.)
+- [ ] Jeton izni kapatılınca sihirbaz **iki adıma** iniyor, açılınca geri
+      üçe çıkıyor — kod değişmeden, yalnızca tarayıcı tazelenerek.
 - [ ] Yalnızca dokümanda geçen `bind`'lar soruluyor.
 - [ ] Yayınla: `invitations_v2`'de satır var, `design_snapshot` dolu ve
       `Design::complete()` şeklinde.

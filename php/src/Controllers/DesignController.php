@@ -106,6 +106,9 @@ final class DesignController
         $locale = I18n::locale();
         $scope = '.d-' . $design['id'];
         $values = Design::bindValues(self::BEISPIEL, $locale);
+        // Einmal abgefragt, zweimal gebraucht: fuer den Entwicklerbalken
+        // unten und dafuer, ob Warnungen ueberhaupt herausgehen.
+        $intern = Admin::isLoggedIn();
 
         View::page('pages/design-preview', [
             'locale'   => $locale,
@@ -129,11 +132,15 @@ final class DesignController
             'seite'    => Design::html($design, $values, $locale, 'page'),
             'kuvert'   => Design::html($design, $values, $locale, 'envelope'),
             'karte'    => Design::html($design, $values, $locale, 'card'),
-            'warnings' => Design::warnings($design),
+            // Warnungen sind ein Arbeitsvermerk fuer den, der die Vorlage
+            // bearbeitet - nicht etwas, das einen Kunden angeht, der eine
+            // Karte im Schaufenster anschaut. Nur angemeldet zeigen, sonst
+            // leer.
+            'warnings' => $intern ? Design::warnings($design) : [],
             // Der Balken unten ist ein Entwicklerbalken: Fassung, Ebenenzahl,
             // Bewegungsachsen. Wer angemeldet ist, arbeitet an der Vorlage; wer
             // nicht, will sie ansehen und braucht zwei Links statt sieben Zahlen.
-            'intern'   => Admin::isLoggedIn(),
+            'intern'   => $intern,
             'machbar'  => Design::creatable([$design], array_map(
                 static fn (array $t): string => (string) ($t['id'] ?? ''),
                 Themes::all()

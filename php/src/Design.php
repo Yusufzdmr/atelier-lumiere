@@ -438,8 +438,12 @@ final class Design
      *
      * Der Wert kommt aus dem Panel und landet ungefiltert in einem Stilblock.
      * Ohne diese Pruefung reicht ein „}" im Feld, um die Seite umzubauen.
+     *
+     * Oeffentlich, weil der Assistent denselben Massstab braucht: eine Farbe
+     * wird beim Schreiben geklaert, nicht erst beim Drucken. Zwei Antworten
+     * auf "was ist eine gueltige Farbe" waeren eine zu viel.
      */
-    private static function safeColor(string $value): string
+    public static function safeColor(string $value): string
     {
         $value = trim($value);
         if (preg_match('/^#[0-9A-Fa-f]{3,8}$/', $value) === 1) {
@@ -451,8 +455,14 @@ final class Design
         return 'transparent';
     }
 
-    /** Schriftname aus demselben Grund: nur Buchstaben, Ziffern, Leerzeichen, Komma, Bindestrich. */
-    private static function safeFont(string $value): string
+    /**
+     * Schriftname aus demselben Grund wie safeColor(): nur Buchstaben, Ziffern,
+     * Leerzeichen, Komma, Bindestrich.
+     *
+     * Oeffentlich aus demselben Grund: der Assistent klaert eine Schriftfamilie
+     * beim Schreiben, nicht der Renderer beim Drucken.
+     */
+    public static function safeFont(string $value): string
     {
         $value = trim($value);
         if ($value === '' || preg_match('/^[A-Za-z0-9 ,\-]+$/', $value) !== 1) {
@@ -486,7 +496,9 @@ final class Design
                 if ($text === '') {
                     continue;
                 }
-                $out .= '<div class="' . e($class) . '">' . e($text) . '</div>';
+                $out .= '<div class="' . e($class) . '"'
+                    . ($el['bind'] !== '' ? ' data-bind="' . e($el['bind']) . '"' : '')
+                    . '>' . e($text) . '</div>';
                 continue;
             }
 
@@ -530,8 +542,12 @@ final class Design
      * Ein Design kann aus dem Panel kommen oder als JSON eingespielt werden.
      * Ohne diese Pruefung liesse sich ueber die Bildquelle ein fremder Host
      * einbinden – und das faellt genau dann auf, wenn es zu spaet ist.
+     *
+     * Oeffentlich aus demselben Grund wie safeColor()/safeFont(): der
+     * Assistent klaert einen Bildpfad beim Schreiben, nicht der Renderer
+     * beim Drucken.
      */
-    private static function safeSrc(string $src): string
+    public static function safeSrc(string $src): string
     {
         $src = trim($src);
         if ($src === '') {
