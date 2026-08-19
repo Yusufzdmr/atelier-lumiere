@@ -2772,6 +2772,23 @@ $introMs = 0;
       <!-- Die Seite: Hintergrund und Zeichnung, immer sichtbar. -->
       <div class="d-page absolute inset-0"><?= $seite ?></div>
 
+      <?php /*
+        Die Karte behaelt ihr Seitenverhaeltnis und ihre Breite - wie beim
+        Original, wo sie mitten auf der Buehne liegt.
+
+        container-type steht hier ein zweites Mal, und das ist kein Versehen:
+        cqw rechnet gegen den NAECHSTEN Kasten mit container-type. Stuende es
+        nur auf der Buehne, waeren 11 cqw elf Prozent der Fensterbreite statt
+        elf Prozent der Karte - die Namen kaemen dreifach zu gross heraus.
+        Die Schriftgroessen sind an der Karte gemessen, also muss die Karte
+        der Bezug sein.
+      */ ?>
+      <div class="absolute inset-0 flex items-center justify-center px-6">
+        <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
+             data-speed="<?= $tempo ?>"
+             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
+                    container-type: inline-size;"><?= $karte ?></div>
+      </div>
       <!--
         Das Kuvert. Die Attribute sind der Vertrag von invitation.js:
         [data-envelope] ist die Huelle, [data-envelope-open] der Anklickpunkt,
@@ -2782,6 +2799,11 @@ $introMs = 0;
         Was hier NICHT steht: Farben und Formen. Die Lasche traegt die
         Palettenmarke, das Siegel ebenso, und was sonst auf dem Kuvert liegt,
         kommt aus den Ebenen mit spot=envelope.
+
+        Das Kuvert steht ZULETZT im Markup, also ueber der Karte - so wie im
+        Original, wo die Buehne mit z-50 ueber allem liegt und die Karte
+        ausserhalb von ihr steht. Stuende die Karte darueber, waere das
+        Kuvert nicht anklickbar und nichts wuerde sich je oeffnen.
       -->
       <div class="d-envelope absolute inset-0" data-envelope
            data-animation="<?= e($karteAn) ?>"
@@ -2802,23 +2824,6 @@ $introMs = 0;
         sie findet; die Bewegung selbst macht es ueber die Web Animations API,
         es braucht dafuer kein Stylesheet. data-speed kommt aus dem Dokument.
       -->
-      <?php /*
-        Die Karte behaelt ihr Seitenverhaeltnis und ihre Breite - wie beim
-        Original, wo sie mitten auf der Buehne liegt.
-
-        container-type steht hier ein zweites Mal, und das ist kein Versehen:
-        cqw rechnet gegen den NAECHSTEN Kasten mit container-type. Stuende es
-        nur auf der Buehne, waeren 11 cqw elf Prozent der Fensterbreite statt
-        elf Prozent der Karte - die Namen kaemen dreifach zu gross heraus.
-        Die Schriftgroessen sind an der Karte gemessen, also muss die Karte
-        der Bezug sein.
-      */ ?>
-      <div class="absolute inset-0 flex items-center justify-center px-6">
-        <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
-             data-speed="<?= $tempo ?>"
-             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
-                    container-type: inline-size;"><?= $karte ?></div>
-      </div>
   </div>
 
   <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">
