@@ -40,6 +40,9 @@ $links = [
 // Abgesetzt und in Gold: das ist das eigene Produkt, nicht eine Seite mehr.
 $extra = [
     [$p('/einladung'), I18n::t('nav.invitation')],
+    // Zweite Fassung, zum Vergleich daneben. Eine der beiden faellt weg,
+    // sobald entschieden ist.
+    [$p('/v2/designs'), I18n::t('nav.invitation2')],
 ];
 
 // /de/preise → /tr/preise

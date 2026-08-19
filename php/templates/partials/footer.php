@@ -41,6 +41,7 @@ $navLinks = [
     [$p('/ratgeber'), I18n::t('blog.nav')],
     [$p('/galerie'), I18n::t('nav.gallery')],
     [$p('/einladung'), I18n::t('nav.invitation')],
+    [$p('/v2/designs'), I18n::t('nav.invitation2')],
     [$p('/designs'), 'Designs'],
     [$p('/kontakt'), I18n::t('nav.contact')],
 ];
