@@ -1661,31 +1661,468 @@ invitations already in the world."
 
 ---
 
-## Task 6: Élysée'yi tohumla
+## Değişiklik notu — 2026-08-19, Task 5'ten sonra
+
+Task 1–5 bitti. Task 6'ya geçmeden önce şu ortaya çıktı: **Élysée'de taşınacak tasarım verisi yok.**
+Doğrulandı — `decorations: 0`, `image: ''`, `envelopeImage: ''`, `scene: 'botanical'`. 16 temanın
+sadece birinde (`azur`) tek bir süsleme var. Élysée'nin görünüşünün tamamı kod: `Scenes.php`
+konumlandırılmış SVG parçaları üretiyor, zarf/mühür/kart iskeleti davetiye şablonunda.
+
+Yani `Design::fromTheme('elysee')` palet + **sıfır katman** veriyordu; eski Task 6 bunun üstüne üç
+metin elementi ekliyordu. O hâliyle karşılaştırma "renkli zeminde 3 yazı" ile "zarf + mühür + kart +
+botanik desen + taç yaprakları" arasında olurdu, ve spec'in §7 ölçütü ulaşılamazdı.
+
+Karar (proje sahibi): **sanat da veriye taşınacak.** Eski Task 6–10 yerine Task 6–12 geliyor:
+
+| Yeni | İçerik | Eski karşılığı |
+|---|---|---|
+| 6 | Format büyür: `shape` elementine `blur` + `radius` | — (yeni) |
+| 7 | Sahne sanatını SVG varlıklarına dök | — (yeni) |
+| 8 | Élysée'yi tohumla — palet, font, yıkama lekeleri, sahne katmanları, metinler | eski 6 |
+| 9 | Rotalar, kontrolör, katalog + önizleme şablonu (üç yuva + açılış koreografisi) | eski 7 |
+| 10 | Menü girişleri ve sözlük anahtarı | eski 8 |
+| 11 | Panelde salt okunur liste | eski 9 |
+| 12 | Yan yana karşılaştırma + "sadece ekleme" doğrulaması | eski 10 |
+
+Bu genişlemenin sebebi kapsam kayması değil: kanıt testi formatı **yanlışladı**. İki eksik çıktı —
+bulanık yuvarlak lekeler için `blur`/`radius` yok, ve sanat `vw` ile ölçekleniyorken format yüzde
+kullanıyor. İkisi de Task 6 ve Task 12'de karşılanıyor.
+
+---
+
+## Task 6: `shape` elementi — bulanıklık ve köşe yuvarlaklığı
+
+**Files:**
+- Create: `php/tests/design_shape.php`
+- Modify: `php/src/Design.php` (append only — `completeElement()` içindeki `style` bloğu ve `css()` içindeki shape dalı)
+
+**Interfaces:**
+- Consumes: `Design::complete()`, `Design::css()` (Task 1, 2).
+- Produces: `style.blur` (0…100, px) ve `style.radius` (0…50, %) alanları; `css()` bunları yalnız `type: shape` elementleri için yazar.
+
+Élysée'nin arka planındaki iki renk lekesi (`.scene-wash-a`, `.scene-wash-b`) `filter: blur(46px)` ve
+`border-radius: 50%` ile çiziliyor. Format bugün ikisini de ifade edemiyor. Task 8 bunlara muhtaç.
+
+> **Dikkat:** bu görev `Design.php`'de mevcut iki bloğa dokunuyor (`completeElement`'in `style`
+> haritası, `css()`'in element döngüsü). "Sadece ekleme" kuralı **dosya bazında** geçerli —
+> `php/src/Design.php` zaten bu fazda yaratılmış bir dosya, mevcut sistemden değil. Task 12'nin
+> denetlediği altı dosyaya dokunulmuyor.
+
+- [ ] **Step 1: Başarısız testi yaz**
+
+`php/tests/design_shape.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Atelier\Design;
+
+/* --- Standardwerte: kein Weichzeichner, keine Rundung --- */
+
+$el = Design::completeElement(['id' => 'a', 'type' => 'shape']);
+
+assert_same(0, $el['style']['blur'], 'shape: ohne Angabe kein Weichzeichner');
+assert_same(0, $el['style']['radius'], 'shape: ohne Angabe keine Rundung');
+
+/* --- Werte werden uebernommen und beschnitten --- */
+
+$el = Design::completeElement(['id' => 'a', 'type' => 'shape', 'style' => ['blur' => 46, 'radius' => 50]]);
+
+assert_same(46, $el['style']['blur'], 'shape: blur bleibt');
+assert_same(50, $el['style']['radius'], 'shape: radius bleibt');
+
+$el = Design::completeElement(['id' => 'a', 'style' => ['blur' => 900, 'radius' => 900]]);
+
+assert_same(100, $el['style']['blur'], 'shape: blur wird beschnitten');
+assert_same(50, $el['style']['radius'], 'shape: radius wird beschnitten');
+
+$el = Design::completeElement(['id' => 'a', 'style' => ['blur' => -20, 'radius' => -20]]);
+
+assert_same(0, $el['style']['blur'], 'shape: blur wird unten beschnitten');
+assert_same(0, $el['style']['radius'], 'shape: radius wird unten beschnitten');
+
+/* --- css() schreibt sie, aber nur fuer shape --- */
+
+$css = Design::css([
+    'id'      => 'x',
+    'palette' => ['petal' => ['value' => '#E2CFAF']],
+    'layers'  => [
+        ['id' => 'wash', 'type' => 'shape',
+         'box' => ['x' => -16, 'y' => -10, 'w' => 58, 'h' => 58],
+         'style' => ['color' => 'petal', 'blur' => 46, 'radius' => 50]],
+    ],
+], '.d-x');
+
+assert_contains($css, 'filter:blur(46px)', 'css: shape bekommt den Weichzeichner');
+assert_contains($css, 'border-radius:50%', 'css: shape bekommt die Rundung');
+assert_contains($css, 'background:var(--d-petal)', 'css: shape nimmt seine Farbe als Flaeche');
+
+/* --- Ein Bild bekommt nichts davon --- */
+
+$css = Design::css([
+    'id'     => 'y',
+    'layers' => [
+        ['id' => 'bild', 'type' => 'image', 'src' => '/uploads/a.webp',
+         'style' => ['blur' => 46, 'radius' => 50]],
+    ],
+], '.d-y');
+
+assert_not_contains($css, 'filter:blur', 'css: ein Bild wird nicht weichgezeichnet');
+assert_not_contains($css, 'border-radius', 'css: ein Bild wird nicht gerundet');
+
+/* --- blur 0 schreibt keine leere Regel --- */
+
+$css = Design::css([
+    'id'     => 'z',
+    'layers' => [['id' => 's', 'type' => 'shape', 'style' => ['blur' => 0, 'radius' => 0]]],
+], '.d-z');
+
+assert_not_contains($css, 'filter:blur(0px)', 'css: kein Weichzeichner ohne Wert');
+assert_not_contains($css, 'border-radius:0', 'css: keine Rundung ohne Wert');
+
+/* --- Ein shape ohne Farbe bekommt keine Flaeche --- */
+
+$css = Design::css([
+    'id'     => 'w',
+    'layers' => [['id' => 's', 'type' => 'shape', 'style' => ['blur' => 10]]],
+], '.d-w');
+
+assert_not_contains($css, 'background:var(--d-)', 'css: shape ohne Farbmarke bekommt keine Flaeche');
+```
+
+- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+
+Çalıştır: `cd php && php bin/test.php design_shape`
+Beklenen: FAIL — `shape: ohne Angabe kein Weichzeichner` (dizi anahtarı yok).
+
+- [ ] **Step 3: `completeElement()`'in style bloğuna iki alan ekle**
+
+`php/src/Design.php` içinde, `completeElement()` metodundaki `$el['style'] = [...]` haritasına iki satır ekle. Mevcut satırları değiştirme, sadece ekle:
+
+```php
+        $el['style'] = [
+            'font'       => self::key((string) ($style['font'] ?? '')),
+            'color'      => self::key((string) ($style['color'] ?? '')),
+            'size'       => max(1, min(500, (int) ($style['size'] ?? 100))),
+            'align'      => in_array($style['align'] ?? '', self::ALIGNS, true) ? (string) $style['align'] : 'center',
+            'autoShrink' => (bool) ($style['autoShrink'] ?? true),
+            // Nur fuer shape: die weichen Farbflecken hinter der Karte. Ohne
+            // die beiden laesst sich ein bestehendes Design nicht abbilden –
+            // das ist beim Umzug von Élysée aufgefallen.
+            'blur'       => max(0, min(100, (int) ($style['blur'] ?? 0))),
+            'radius'     => max(0, min(50, (int) ($style['radius'] ?? 0))),
+        ];
+```
+
+- [ ] **Step 4: `css()`'e shape dalını ekle**
+
+`php/src/Design.php` içinde `css()` metodunda, mevcut `if ($el['type'] === 'text') { … }` bloğunun **hemen altına** ekle:
+
+```php
+            if ($el['type'] === 'shape') {
+                $style = $el['style'];
+                $rules = '';
+                if ($style['color'] !== '') {
+                    $rules .= 'background:var(--d-' . $style['color'] . ');';
+                }
+                if ($style['blur'] > 0) {
+                    $rules .= 'filter:blur(' . $style['blur'] . 'px);';
+                }
+                if ($style['radius'] > 0) {
+                    $rules .= 'border-radius:' . $style['radius'] . '%;';
+                }
+                if ($rules !== '') {
+                    $css .= $selector . '{' . $rules . '}';
+                }
+            }
+```
+
+- [ ] **Step 5: Testleri çalıştır**
+
+Çalıştır: `cd php && php bin/test.php design_shape`
+Beklenen: PASS.
+
+Çalıştır: `cd php && php bin/test.php`
+Beklenen: PASS — Task 1–3'ün testleri de hâlâ geçiyor.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add php/tests/design_shape.php php/src/Design.php
+git commit -m "The format grows a blur, because a real design asked for one
+
+Élysée's background is two blurred circles of colour. The document format
+could not say that, which is the proof test doing its job: a shape now
+carries blur and corner radius, and only a shape gets them."
+```
+
+---
+
+## Task 7: Sahne sanatını varlık dosyalarına dök
+
+**Files:**
+- Create: `php/bin/export-scene-art.php`
+- Create (betiğin çıktısı, git'e girer): `php/public/assets/designs/elysee-1.svg`, `-2.svg`, `-3.svg`
+
+**Interfaces:**
+- Consumes: mevcut `Atelier\Scenes::html(string $id, array $theme): string` ve `Atelier\Themes::find()`.
+- Produces: her sahne parçası için tek başına duran bir SVG dosyası + konsola bir **ölçü tablosu** (sınıf adı → CSS'ten okunan geometri). Task 8 o tabloyu kullanıyor.
+
+`Scenes::pieces()` **private**; onu public yapmıyoruz (bkz. Ruling 5). Bunun yerine public
+`Scenes::html()` çağrılıp dönen işaretleme `DOMDocument` ile ayrıştırılıyor. Böylece
+`php/src/Scenes.php` hiç değişmiyor.
+
+- [ ] **Step 1: Dışa aktarıcıyı yaz**
+
+`php/bin/export-scene-art.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+/**
+ * Die gezeichnete Szene eines Themas als eigenstaendige SVG-Dateien.
+ *
+ *   php bin/export-scene-art.php elysee --dry
+ *   php bin/export-scene-art.php elysee
+ *
+ * Warum ueberhaupt: die Szene ist heute Code. Scenes::html() setzt sie bei
+ * jedem Aufruf neu zusammen, mit den Farben des Themas. Ein Design der zweiten
+ * Fassung besteht aber aus Daten – also muss die Zeichnung einmal zu einer
+ * Datei werden, auf die eine Ebene zeigen kann.
+ *
+ * Der Preis steht hier, damit ihn niemand spaeter suchen muss: die Farben der
+ * Zeichnung frieren dabei ein. Sie folgen der Palette nicht mehr. Fuer den
+ * Umzug ist das richtig – die echten Vorlagen kommen ohnehin als fertige
+ * Dateien vom Grafiker.
+ *
+ * Scenes::pieces() ist private und bleibt es. Wir nehmen die oeffentliche
+ * Scenes::html() und zerlegen ihre Ausgabe.
+ */
+
+require __DIR__ . '/../src/bootstrap.php';
+
+use Atelier\Scenes;
+use Atelier\Themes;
+
+if (PHP_SAPI !== 'cli') {
+    exit('Nur über die Kommandozeile.');
+}
+
+$id = '';
+foreach (array_slice($argv, 1) as $arg) {
+    if ($arg !== '--dry') {
+        $id = $arg;
+    }
+}
+$dry = in_array('--dry', $argv, true);
+
+if ($id === '') {
+    exit("Aufruf: php bin/export-scene-art.php <themen-id> [--dry]\n");
+}
+
+$theme = Themes::find($id);
+if ($theme === null) {
+    exit("Thema „{$id}\" nicht gefunden.\n");
+}
+
+$scene = (string) ($theme['scene'] ?? '');
+$html = Scenes::html($scene, $theme);
+
+if (trim($html) === '') {
+    exit("Thema „{$id}\" hat keine gezeichnete Szene (scene = „{$scene}\").\n");
+}
+
+$dom = new DOMDocument();
+// Die Ausgabe ist ein Fragment und enthaelt Umlaute; ohne die Angabe liest
+// DOMDocument sie als Latin-1 und macht aus „é" zwei Zeichen.
+$ok = @$dom->loadHTML(
+    '<?xml encoding="UTF-8"?><div id="wurzel">' . $html . '</div>',
+    LIBXML_NOERROR | LIBXML_NOWARNING
+);
+if (!$ok) {
+    exit("Die Szene liess sich nicht lesen.\n");
+}
+
+$dir = __DIR__ . '/../public/assets/designs';
+if (!$dry && !is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+    exit("Ordner {$dir} liess sich nicht anlegen.\n");
+}
+
+/** Was die Stilvorlage zu den Klassen sagt – Task 8 misst damit die Kaesten. */
+$geometrie = [
+    'scene-tl'     => 'width:38vw max:240px  top:0    left:0',
+    'scene-tr'     => 'width:38vw max:240px  top:0    right:0',
+    'scene-bl'     => 'width:32vw max:200px  bottom:0 left:0',
+    'scene-br'     => 'width:32vw max:200px  bottom:0 right:0',
+    'scene-left'   => 'width:42vw max:280px  top:6%   left:0',
+    'scene-ml'     => 'width:20vw max:120px  top:18%  left:0',
+    'scene-mr'     => 'width:22vw max:130px  top:30%  right:4%',
+    'scene-top'    => 'width:100%            top:0    left:0',
+    'scene-bottom' => 'width:100%            bottom:0 left:0',
+    'scene-wide'   => 'width:46vw max:290px',
+    'scene-flip'   => 'rotate:180deg',
+    'scene-mirror' => 'scale:-1 1',
+    'scene-updown' => 'scale:1 -1',
+];
+
+$svgs = $dom->getElementsByTagName('svg');
+$n = 0;
+$zeilen = [];
+
+// getElementsByTagName liefert eine lebende Liste – erst einsammeln, dann
+// schreiben, sonst verschiebt sich der Index unter den Fuessen.
+$knoten = [];
+foreach ($svgs as $svg) {
+    $knoten[] = $svg;
+}
+
+foreach ($knoten as $svg) {
+    $n++;
+    $klassen = trim($svg->getAttribute('class'));
+    $box = trim($svg->getAttribute('viewBox'));
+    $stil = trim($svg->getAttribute('style'));
+
+    // Die Datei traegt nur die Zeichnung: viewBox bleibt, Klassen und Stil der
+    // Seite gehoeren nicht hinein – die Ebene bringt ihre eigene Geometrie mit.
+    $inhalt = '';
+    foreach ($svg->childNodes as $kind) {
+        $inhalt .= $dom->saveXML($kind);
+    }
+
+    $datei = sprintf('%s-%d.svg', $id, $n);
+    $pfad = $dir . '/' . $datei;
+
+    $svgDatei = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'
+        . ($box !== '' ? $box : '0 0 100 100') . '">' . $inhalt . '</svg>';
+
+    if (!$dry) {
+        file_put_contents($pfad, $svgDatei);
+    }
+
+    $hinweise = [];
+    foreach (explode(' ', $klassen) as $klasse) {
+        if (isset($geometrie[$klasse])) {
+            $hinweise[] = $klasse . ' → ' . $geometrie[$klasse];
+        }
+    }
+
+    $zeilen[] = [
+        'datei'  => '/assets/designs/' . $datei,
+        'klasse' => $klassen,
+        'box'    => $box,
+        'stil'   => $stil,
+        'geo'    => $hinweise === [] ? '(keine Regel gefunden)' : implode(' + ', $hinweise),
+        'bytes'  => strlen($svgDatei),
+    ];
+}
+
+echo "\n", $dry ? 'Probelauf' : 'Geschrieben', ": ", count($zeilen), " Teile\n\n";
+
+foreach ($zeilen as $z) {
+    echo $z['datei'], "  (", $z['bytes'], " Bytes)\n";
+    echo "  Klasse : ", $z['klasse'], "\n";
+    echo "  viewBox: ", $z['box'], "\n";
+    echo "  Stil   : ", $z['stil'], "\n";
+    echo "  Lage   : ", $z['geo'], "\n\n";
+}
+
+echo "Die Farbflecken hinter der Szene stehen NICHT in diesen Dateien –\n";
+echo "sie sind shape-Ebenen mit blur und radius (siehe Task 8).\n";
+```
+
+- [ ] **Step 2: Kuru çalıştır**
+
+Çalıştır: `cd php && php bin/export-scene-art.php elysee --dry`
+Beklenen: 3 parça listelenir, sınıfları `scene-tl`, `scene-tr`, `scene-bl scene-flip`, hepsinin viewBox'ı `0 0 100 100`, ve her birinin `animation-delay` içeren bir stili.
+
+Üç parça çıkmıyorsa devam etme — `Scenes::html()` beklenenden farklı bir şey döndürmüş demektir, raporla.
+
+- [ ] **Step 3: Yaz**
+
+Çalıştır: `cd php && php bin/export-scene-art.php elysee`
+Beklenen: `php/public/assets/designs/elysee-1.svg`, `-2.svg`, `-3.svg` oluşur.
+
+- [ ] **Step 4: Dosyaların gerçekten geçerli SVG olduğunu doğrula**
+
+Çalıştır:
+```bash
+cd php && for f in public/assets/designs/elysee-*.svg; do
+  php -r '
+    $f = $argv[1];
+    $x = @simplexml_load_file($f);
+    printf("%-40s %s  %s\n", $f, $x === false ? "UNGUELTIG" : "gueltig", $x === false ? "" : (string) $x["viewBox"]);
+  ' "$f"
+done
+```
+Beklenen: üçü de `gueltig`, viewBox `0 0 100 100`.
+
+Ayrıca tarayıcıda tek tek aç ve gerçekten yaprak deseni göründüğünü gör:
+`http://localhost:8080/assets/designs/elysee-1.svg`
+
+- [ ] **Step 5: `.gitignore` bu klasörü engelliyor mu, kontrol et**
+
+Çalıştır: `git check-ignore -v php/public/assets/designs/elysee-1.svg || echo "izleniyor - iyi"`
+
+`uploads` klasörü ignore'da ama `assets` olmamalı. Engelleniyorsa raporla — varlıkların repoda durması gerekiyor, yükleme klasöründe değil.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add php/bin/export-scene-art.php php/public/assets/designs/
+git commit -m "The drawn scene becomes three files it can be pointed at
+
+Scenes::html() rebuilds the artwork from code on every request. A design
+made of data needs something a layer can reference, so the pieces are
+written out once as standalone SVG.
+
+The cost is stated in the script rather than discovered later: the colours
+freeze at export and stop following the palette. For the move that is the
+right trade — real templates arrive from the designer as files anyway.
+
+Scenes::pieces() stays private; the exporter takes the public html() and
+takes it apart, so php/src/Scenes.php is not touched at all."
+```
+
+---
+
+## Task 8: Élysée'yi tohumla
 
 **Files:**
 - Create: `php/bin/seed-designs.php`
 
 **Interfaces:**
-- Consumes: `Design::fromTheme()` (Task 4), `Design::save()`, `Design::findById()` (Task 5), `Atelier\Themes::find(string $id): ?array` (mevcut).
-- Produces: `designs` tablosunda `elysee` kaydı — `status = 'active'`.
+- Consumes: `Design::fromTheme()` (Task 4), `Design::save()` / `findById()` (Task 5), `style.blur`/`style.radius` (Task 6), `/assets/designs/elysee-*.svg` (Task 7), `Themes::find()`.
+- Produces: `designs` tablosunda `elysee` kaydı, `status = 'active'`.
 
-Bu görev `fromTheme()`'in ürettiği dokümanın üzerine **metin elementlerini** ekliyor: isim, tarih, mekân. Kutu değerleri mevcut Élysée kartından ölçülüyor.
+Bu görev üç şeyi bir araya getiriyor: `fromTheme()`'in verdiği palet, Task 7'nin varlıkları, ve
+elle ölçülen kutular. Ölçüm gerçek iş — tahmin edilen değerler başlangıç noktası.
 
-- [ ] **Step 1: Mevcut kartın yerleşimini ölç**
+- [ ] **Step 1: Eski kartı aç ve ölç**
 
 Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
 Tarayıcıda aç: `http://localhost:8080/de/designs/elysee`
 
-Geliştirici araçlarıyla kart alanının kutusunu ve içindeki isim / tarih / mekân satırlarının kutularını oku. Her biri için kart alanına göre **yüzde** hesapla:
+Geliştirici araçlarında kart alanının kutusunu al, sonra şunların her biri için kart alanına göre yüzde hesapla:
 
 ```
 x = (element.left - kart.left) / kart.width  * 100
 y = (element.top  - kart.top)  / kart.height * 100
 w =  element.width             / kart.width  * 100
+h =  element.height            / kart.height * 100
 ```
 
-Bu üç satırı bir yere not et; sonraki adımda betiğe girecek. Aşağıdaki betikte duran değerler **başlangıç tahminidir** ve ölçümle değiştirilmelidir.
+Ölçülecekler:
+1. `.scene-wash-a` ve `.scene-wash-b` (bulanık renk lekeleri)
+2. `.scene-tl`, `.scene-tr`, `.scene-bl` (yaprak parçaları)
+3. İsim satırı, tarih satırı, mekân satırı
+
+Dokuz satır not al. Aşağıdaki betikteki sayılar **başlangıç tahminidir**, ölçümle değiştirilecek.
+
+> Not: sahne parçaları eski sayfada `vw` ile ölçekleniyor (`38vw`, üst sınır `240px`), yeni format
+> ise kartın yüzdesi. İkisi genişlikle birlikte farklı davranır. **Masaüstü genişliğinde** ölç
+> (üst sınırın devrede olduğu yer) ve Task 12'de dar ekrandaki sapmayı kaydet.
 
 - [ ] **Step 2: Tohumlama betiğini yaz**
 
@@ -1704,11 +2141,13 @@ declare(strict_types=1);
  * Das Thema selbst bleibt unberuehrt und laeuft weiter. Hier entsteht daneben
  * ein Eintrag in `designs`, damit sich beide nebeneinander ansehen lassen.
  *
- * Warum die Textkaesten hier stehen und nicht in Design::fromTheme(): im alten
- * Motor liegen Namen, Datum und Ort nicht als Daten vor, sondern entstehen im
- * Kartenschablone aus dem Fluss des Satzes. Ihre Kaesten lassen sich nur am
- * fertigen Bild abmessen – und eine gemessene Zahl gehoert an die Stelle, an
- * der jemand sie nachmessen kann, nicht in eine allgemeine Umrechnung.
+ * Die Kaesten stehen als Zahlen hier und nicht in Design::fromTheme(): im
+ * alten Motor liegen weder die Szene noch die Namen als Daten vor. Die Szene
+ * kommt aus Scenes.php, die Namen aus dem Fluss des Kartensatzes. Beide lassen
+ * sich nur am fertigen Bild abmessen – und eine gemessene Zahl gehoert dorthin,
+ * wo jemand sie nachmessen kann.
+ *
+ * Voraussetzung: php bin/export-scene-art.php elysee ist gelaufen.
  */
 
 require __DIR__ . '/../src/bootstrap.php';
@@ -1727,6 +2166,13 @@ if ($theme === null) {
     exit("Thema „elysee\" nicht gefunden.\n");
 }
 
+foreach (['elysee-1', 'elysee-2', 'elysee-3'] as $stueck) {
+    $pfad = __DIR__ . '/../public/assets/designs/' . $stueck . '.svg';
+    if (!is_file($pfad)) {
+        exit("Es fehlt {$stueck}.svg – erst „php bin/export-scene-art.php elysee\" laufen lassen.\n");
+    }
+}
+
 $doc = Design::fromTheme($theme);
 
 $doc['status']   = 'active';
@@ -1735,50 +2181,83 @@ $doc['tags']     = ['creme', 'gold'];
 $doc['sort']     = 1;
 $doc['name']     = ['de' => 'Élysée', 'en' => 'Élysée'];
 
-// Schriften des Themas als Marken. Der Kunde darf sie zunaechst nicht
-// aendern – Faz 3 schaltet einzelne davon frei.
+// Die Schriften des Themas als Marken.
 $doc['fonts'] = [
     'display' => ['family' => 'Cormorant Garamond', 'size' => 100, 'weight' => 300,
                   'tracking' => 4, 'lineHeight' => 115, 'customer' => false],
-    'body'    => ['family' => 'Inter', 'size' => 100, 'weight' => 400,
+    'body'    => ['family' => 'Jost', 'size' => 100, 'weight' => 400,
                   'tracking' => 0, 'lineHeight' => 150, 'customer' => false],
 ];
 
-// Das Gold darf der Kunde spaeter waehlen, deshalb steht die Marke offen.
+// Das Gold darf der Kunde spaeter waehlen.
 if (isset($doc['palette']['accent'])) {
     $doc['palette']['accent']['customer'] = true;
     $doc['palette']['accent']['label'] = ['de' => 'Gold', 'tr' => 'Altın'];
 }
 
 /*
- * Gemessen an /de/designs/elysee, Kartenflaeche als Bezug.
- * Wer die Karte umbaut, misst hier nach.
+ * Alle Zahlen gemessen an /de/designs/elysee auf Desktopbreite.
+ * Wer die Karte umbaut, misst nach.
+ *
+ * Reihenfolge ist Stapelreihenfolge: Farbflecken ganz hinten, dann die
+ * Zeichnung, dann der Text.
  */
-$texte = [
-    ['id' => 'namen', 'label' => 'Namen', 'bind' => 'couple_names',
-     'box' => ['x' => 8, 'y' => 34, 'w' => 84, 'rotate' => 0, 'opacity' => 100],
+$ebenen = [
+    // 1. Die weichen Farbflecken (frueher .scene-wash-a / -b)
+    ['id' => 'washa', 'label' => 'Farbfleck oben links', 'type' => 'shape', 'spot' => 'page',
+     'box' => ['x' => -16, 'y' => -10, 'w' => 58, 'h' => 58, 'rotate' => 0, 'opacity' => 30],
+     'style' => ['color' => 'accentSoft', 'blur' => 46, 'radius' => 50],
+     'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
+
+    ['id' => 'washb', 'label' => 'Farbfleck unten rechts', 'type' => 'shape', 'spot' => 'page',
+     'box' => ['x' => 62, 'y' => 56, 'w' => 52, 'h' => 52, 'rotate' => 0, 'opacity' => 34],
+     'style' => ['color' => 'petal', 'blur' => 46, 'radius' => 50],
+     'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
+
+    // 2. Die gezeichnete Szene (frueher Scenes::html)
+    ['id' => 'szenetl', 'label' => 'Blattwerk oben links', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/elysee-1.svg',
+     'box' => ['x' => 0, 'y' => 0, 'w' => 62, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'motion' => ['move' => 'rise', 'delay' => 200, 'duration' => 1600]],
+
+    ['id' => 'szenetr', 'label' => 'Blattwerk oben rechts', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/elysee-2.svg',
+     'box' => ['x' => 38, 'y' => 0, 'w' => 62, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'motion' => ['move' => 'rise', 'delay' => 350, 'duration' => 1600]],
+
+    ['id' => 'szenebl', 'label' => 'Blattwerk unten links', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/elysee-3.svg',
+     'box' => ['x' => 0, 'y' => 48, 'w' => 52, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
+     'motion' => ['move' => 'rise', 'delay' => 500, 'duration' => 1600]],
+
+    // 3. Der Text der Karte
+    ['id' => 'namen', 'label' => 'Namen', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'couple_names',
+     'box' => ['x' => 8, 'y' => 34, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 260,
                  'align' => 'center', 'autoShrink' => true],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
-     'permissions' => ['text' => false, 'color' => true, 'font' => false]],
+     'permissions' => ['color' => true]],
 
-    ['id' => 'datum', 'label' => 'Datum', 'bind' => 'wedding_date',
-     'box' => ['x' => 8, 'y' => 52, 'w' => 84, 'rotate' => 0, 'opacity' => 100],
+    ['id' => 'datum', 'label' => 'Datum', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'wedding_date',
+     'box' => ['x' => 8, 'y' => 52, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'fg', 'size' => 100,
                  'align' => 'center', 'autoShrink' => true],
      'motion' => ['move' => 'fade', 'delay' => 700, 'duration' => 1000],
      'permissions' => []],
 
-    ['id' => 'ort', 'label' => 'Ort', 'bind' => 'location_name',
-     'box' => ['x' => 8, 'y' => 62, 'w' => 84, 'rotate' => 0, 'opacity' => 100],
+    ['id' => 'ort', 'label' => 'Ort', 'type' => 'text', 'spot' => 'card',
+     'bind' => 'location_name',
+     'box' => ['x' => 8, 'y' => 62, 'w' => 84, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'soft', 'size' => 90,
                  'align' => 'center', 'autoShrink' => true],
      'motion' => ['move' => 'fade', 'delay' => 900, 'duration' => 1000],
      'permissions' => []],
 ];
 
-foreach ($texte as $text) {
-    $doc['layers'][] = array_merge(['type' => 'text', 'spot' => 'card'], $text);
+foreach ($ebenen as $ebene) {
+    $doc['layers'][] = $ebene;
 }
 
 $doc = Design::complete($doc);
@@ -1790,11 +2269,17 @@ foreach ($meldungen as $meldung) {
     echo "\n";
 }
 
-echo count($doc['layers']), " Elemente, ", count($doc['palette']), " Farbmarken, ",
+echo count($doc['layers']), " Ebenen, ", count($doc['palette']), " Farbmarken, ",
      count($doc['fonts']), " Schriftmarken.\n";
 
+foreach ($doc['layers'] as $i => $ebene) {
+    printf("  %2d. %-9s %-8s %-22s x%4d y%4d w%4d\n",
+        $i + 1, $ebene['type'], $ebene['spot'], $ebene['label'] ?: $ebene['id'],
+        $ebene['box']['x'], $ebene['box']['y'], $ebene['box']['w']);
+}
+
 if ($dry) {
-    echo "Probelauf – nichts geschrieben.\n";
+    echo "\nProbelauf – nichts geschrieben.\n";
     exit(0);
 }
 
@@ -1802,52 +2287,106 @@ $vorher = Design::findById($doc['id']);
 Design::save($doc);
 $nachher = Design::findById($doc['id']);
 
-echo $vorher === null ? "Angelegt" : "Aktualisiert",
+echo "\n", $vorher === null ? "Angelegt" : "Aktualisiert",
      ": ", $doc['id'], " (Fassung ", $nachher['version'], ")\n";
 ```
 
 - [ ] **Step 3: Kuru çalıştır**
 
 Çalıştır: `cd php && php bin/seed-designs.php --dry`
-Beklenen: Element/marka sayıları yazılır, `missing_src` dışında uyarı çıkmaz (Élysée'de yüklü süsleme yoksa hiç element de olmayabilir — o durumda üç metin elementi görünür).
+Beklenen: 8 katman listelenir (2 shape, 3 image, 3 text), uyarı çıkmaz.
 
-- [ ] **Step 4: Yaz**
+Uyarı çıkarsa oku: `missing_src` varlık yolu yanlış demek, `unknown_color` palet anahtarı yok demek. Devam etmeden düzelt.
+
+- [ ] **Step 4: Yaz ve iki kez çalıştırıp sürümü kontrol et**
 
 Çalıştır: `cd php && php bin/seed-designs.php`
 Beklenen: `Angelegt: elysee (Fassung 1)`
 
-- [ ] **Step 5: İkinci kez çalıştır — versiyon artmamalı**
+Çalıştır tekrar: `cd php && php bin/seed-designs.php`
+Beklenen: `Aktualisiert: elysee (Fassung 1)` — sürüm **1** kalmalı. Artıyorsa `save()`'in karşılaştırması bozuk.
 
-Çalıştır: `cd php && php bin/seed-designs.php`
-Beklenen: `Aktualisiert: elysee (Fassung 1)` — sürüm **1** kalmalı. Artıyorsa `save()`'in karşılaştırması bozuk demektir.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add php/bin/seed-designs.php
-git commit -m "Élysée moves into the new format, text boxes measured by hand
+git commit -m "Élysée moves in with its artwork, measured off the rendered card
 
-The names, date and place have no coordinates in the old engine — they
-fall out of the flow of the card template. So they are measured off the
-rendered card and written down here, where the next person can measure
-again, rather than hidden inside a general conversion."
+Eight layers: two blurred colour fields, three pieces of drawn foliage,
+three lines of text bound to the invitation's fields. Nothing about
+Élysée is code on the new side any more.
+
+The numbers are measured rather than derived, because neither the scene
+nor the names have coordinates in the old engine — the scene comes from
+Scenes.php and the names fall out of the flow of the card. They are
+written here, where the next person can measure again."
 ```
 
 ---
 
-## Task 7: Rotalar, kontrolör ve şablonlar
+## Task 9: Rotalar, kontrolör ve şablonlar
 
 **Files:**
 - Create: `php/src/Controllers/DesignController.php`
 - Create: `php/templates/pages/designs-v2.php`
 - Create: `php/templates/pages/design-preview.php`
-- Modify: `php/public/index.php` (iki rota ekle)
+- Modify: `php/public/index.php` (iki rota + bir `use`)
 
 **Interfaces:**
-- Consumes: `Design::all('active')`, `Design::find()`, `Design::css()`, `Design::html()`, `Design::bindValues()`; mevcut `Atelier\I18n::locale()`, `I18n::path(string $path, string $locale)`, `Atelier\Seo::forPage()`, `Atelier\Config::url()`, `Atelier\View::page()`.
-- Produces: `Atelier\Controllers\DesignController::index(): void` ve `::preview(array $params): void`.
+- Consumes: `Design::all('active')`, `Design::find()`, `Design::css()`, `Design::html()`, `Design::bindValues()`, `Design::warnings()`; mevcut `I18n::locale()`, `I18n::path()`, `Seo::forPage()`, `Config::url()`, `View::page()`.
+- Produces: `Atelier\Controllers\DesignController::index(): void`, `::preview(array $params): void`.
 
-- [ ] **Step 1: Kontrolörü yaz**
+Önizleme şablonu **üç yuvayı** iç içe kuruyor — `page` (sayfa zemini), `envelope` (zarf), `card`
+(kart) — ve açılış koreografisini `animation.intro` alanından sürüyor. Element `spot`'una göre
+doğru kabın içine giriyor.
+
+- [ ] **Step 1: `Design::html()`'i yuvaya göre süzülebilir yap**
+
+`php/src/Design.php` içinde `html()` metodunun imzasına isteğe bağlı bir dördüncü parametre ekle ve döngünün başına bir satır koy. Mevcut çağrılar (dört parametresiz) aynı şekilde çalışmaya devam etmeli.
+
+```php
+    public static function html(array $doc, array $values, string $locale, string $spot = ''): string
+    {
+        $doc = self::complete($doc);
+        $out = '';
+
+        foreach ($doc['layers'] as $el) {
+            // Leer = alle Ebenen. Sonst nur die eines Ortes: die Vorschau baut
+            // Seite, Kuvert und Karte getrennt und schachtelt sie ineinander.
+            if ($spot !== '' && $el['spot'] !== $spot) {
+                continue;
+            }
+
+            $class = 'd-el d-el-' . $el['id'] . ' d-spot-' . $el['spot'];
+            // … der Rest bleibt unveraendert
+```
+
+Ve `php/tests/design_html.php` sonuna ekle:
+
+```php
+/* --- Nach Ort filtern --- */
+
+$doc = ['id' => 'x', 'layers' => [
+    ['id' => 'a', 'type' => 'text', 'spot' => 'page', 'text' => ['de' => 'SEITE']],
+    ['id' => 'b', 'type' => 'text', 'spot' => 'card', 'text' => ['de' => 'KARTE']],
+    ['id' => 'c', 'type' => 'text', 'spot' => 'envelope', 'text' => ['de' => 'KUVERT']],
+]];
+
+$alle = Design::html($doc, [], 'de');
+assert_contains($alle, 'SEITE', 'html: ohne Filter kommt alles');
+assert_contains($alle, 'KARTE', 'html: ohne Filter kommt alles (2)');
+
+$nurKarte = Design::html($doc, [], 'de', 'card');
+assert_contains($nurKarte, 'KARTE', 'html: Filter laesst den Ort durch');
+assert_not_contains($nurKarte, 'SEITE', 'html: Filter haelt andere Orte zurueck');
+assert_not_contains($nurKarte, 'KUVERT', 'html: Filter haelt andere Orte zurueck (2)');
+
+assert_same('', Design::html($doc, [], 'de', 'gibtesnicht'), 'html: unbekannter Ort ist leer');
+```
+
+Çalıştır: `cd php && php bin/test.php design_html` — geçmeli.
+
+- [ ] **Step 2: Kontrolörü yaz**
 
 `php/src/Controllers/DesignController.php`:
 
@@ -1871,7 +2410,7 @@ use Atelier\View;
  */
 final class DesignController
 {
-    /** Testdaten für die Vorschau: lang genug, um Umbrueche zu zeigen. */
+    /** Testdaten fuer die Vorschau: lang genug, um Umbrueche zu zeigen. */
     private const BEISPIEL = [
         'bride'   => 'Sophia',
         'groom'   => 'Maximilian',
@@ -1923,11 +2462,12 @@ final class DesignController
 
         $locale = I18n::locale();
         $scope = '.d-' . $design['id'];
+        $values = Design::bindValues(self::BEISPIEL, $locale);
 
         View::page('pages/design-preview', [
-            'locale'  => $locale,
-            'path'    => I18n::path('/v2/designs/' . $design['slug'], $locale),
-            'meta'    => Seo::forPage('design-preview', [
+            'locale'   => $locale,
+            'path'     => I18n::path('/v2/designs/' . $design['slug'], $locale),
+            'meta'     => Seo::forPage('design-preview', [
                 'title'     => $design['name'][$locale] ?? $design['name']['de'],
                 'noindex'   => true,
                 'canonical' => Config::url() . I18n::path('/v2/designs/' . $design['slug'], $locale),
@@ -1935,14 +2475,17 @@ final class DesignController
             'design'   => $design,
             'scope'    => ltrim($scope, '.'),
             'styles'   => Design::css($design, $scope),
-            'body'     => Design::html($design, Design::bindValues(self::BEISPIEL, $locale), $locale),
+            // Drei Ebenenlisten statt einer: die Vorschau schachtelt sie.
+            'seite'    => Design::html($design, $values, $locale, 'page'),
+            'kuvert'   => Design::html($design, $values, $locale, 'envelope'),
+            'karte'    => Design::html($design, $values, $locale, 'card'),
             'warnings' => Design::warnings($design),
         ]);
     }
 }
 ```
 
-- [ ] **Step 2: Şablonları yaz**
+- [ ] **Step 3: Önizleme şablonunu yaz**
 
 `php/templates/pages/design-preview.php`:
 
@@ -1951,15 +2494,24 @@ final class DesignController
 /**
  * Eine Vorlage der zweiten Fassung, in voller Groesse.
  *
+ * Drei Ebenen ineinander, wie beim Original: die Seite traegt Hintergrund und
+ * Zeichnung, darauf liegt das Kuvert, darin die Karte. Welche Ebene wohin
+ * gehoert, sagt ihr `spot` – der Controller hat sie schon getrennt.
+ *
  * @var array<string,mixed> $design
  * @var string $scope
  * @var string $styles
- * @var string $body
+ * @var string $seite
+ * @var string $kuvert
+ * @var string $karte
  * @var list<array{kind:string,element:string,detail:string}> $warnings
  * @var string $locale
  */
 
 use function Atelier\e;
+
+$ratio = str_replace(':', ' / ', (string) $design['canvas']['ratio']);
+$intro = (string) $design['animation']['intro'];
 ?>
 <style><?= $styles ?></style>
 
@@ -1969,7 +2521,7 @@ use function Atelier\e;
   </h1>
   <p class="mt-2 text-sm text-ink/60">
     <?= e($design['category']) ?> · Fassung <?= (int) $design['version'] ?> ·
-    <?= count($design['layers']) ?> Elemente
+    <?= count($design['layers']) ?> Ebenen · Auftakt: <?= e($intro) ?>
   </p>
 
   <?php if ($warnings !== []): ?>
@@ -1985,14 +2537,22 @@ use function Atelier\e;
   <?php endif; ?>
 
   <div class="mt-10 flex justify-center">
-    <div class="<?= e($scope) ?> relative w-full max-w-sm overflow-hidden"
-         style="aspect-ratio: <?= e(str_replace(':', ' / ', (string) $design['canvas']['ratio'])) ?>;
-                background: var(--d-bg, #EFE7DC);">
-      <?= $body ?>
+    <div class="<?= e($scope) ?> d-stage d-intro-<?= e($intro) ?> relative w-full max-w-sm overflow-hidden"
+         style="aspect-ratio: <?= $ratio ?>; background: var(--d-bg, #EFE7DC);">
+
+      <div class="d-page absolute inset-0"><?= $seite ?></div>
+
+      <?php if (trim($kuvert) !== ''): ?>
+        <div class="d-envelope absolute inset-0"><?= $kuvert ?></div>
+      <?php endif; ?>
+
+      <div class="d-card absolute inset-0"><?= $karte ?></div>
     </div>
   </div>
 </section>
 ```
+
+- [ ] **Step 4: Katalog şablonunu yaz**
 
 `php/templates/pages/designs-v2.php`:
 
@@ -2008,6 +2568,7 @@ use function Atelier\e;
  */
 
 use Atelier\Design;
+use Atelier\I18n;
 use function Atelier\e;
 ?>
 <style><?= $styles ?></style>
@@ -2018,7 +2579,7 @@ use function Atelier\e;
   </h1>
   <p class="mt-2 max-w-xl text-sm text-ink/60">
     <?= $locale === 'de'
-      ? 'Dieselben Vorlagen, aber vollstaendig aus Daten gebaut. Steht zum Vergleich neben der ersten Fassung.'
+      ? 'Dieselben Vorlagen, aber vollständig aus Daten gebaut. Steht zum Vergleich neben der ersten Fassung.'
       : 'The same templates, built entirely from data. Here for comparison beside the first version.' ?>
   </p>
 
@@ -2031,10 +2592,9 @@ use function Atelier\e;
 
   <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
     <?php foreach ($designs as $design): ?>
-      <a href="<?= e(Atelier\I18n::path('/v2/designs/' . $design['slug'], $locale)) ?>"
-         class="group block">
+      <a href="<?= e(I18n::path('/v2/designs/' . $design['slug'], $locale)) ?>" class="group block">
         <div class="d-<?= e($design['id']) ?> relative overflow-hidden"
-             style="aspect-ratio: <?= e(str_replace(':', ' / ', (string) $design['canvas']['ratio'])) ?>;
+             style="aspect-ratio: <?= str_replace(':', ' / ', (string) $design['canvas']['ratio']) ?>;
                     background: var(--d-bg, #EFE7DC);">
           <?= Design::html($design, $values, $locale) ?>
         </div>
@@ -2050,9 +2610,9 @@ use function Atelier\e;
 </section>
 ```
 
-- [ ] **Step 3: Rotaları ekle**
+- [ ] **Step 5: Rotaları ekle**
 
-`php/public/index.php` içinde, mevcut `/{locale}/designs/{thema}` satırının **hemen altına** iki satır ekle (mevcut satırlara dokunma):
+`php/public/index.php`, mevcut `/{locale}/designs/{thema}` satırının **hemen altına** (mevcut satırlara dokunma):
 
 ```php
 // Zweite Fassung der Einladung – laeuft neben der ersten, bis verglichen ist.
@@ -2060,37 +2620,41 @@ $router->get('/{locale}/v2/designs', $page_(static fn (array $p) => (new DesignC
 $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new DesignController())->preview($p)));
 ```
 
-Aynı dosyanın başındaki `use` bloğuna ekle:
+Dosyanın başındaki `use` bloğuna ekle:
 
 ```php
 use Atelier\Controllers\DesignController;
 ```
 
-- [ ] **Step 4: Tarayıcıda kontrol et**
+- [ ] **Step 6: Tarayıcıda kontrol et**
 
 Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
 
-Aç ve gör:
-- `http://localhost:8080/de/v2/designs` → Élysée kartı ızgarada görünüyor
-- `http://localhost:8080/de/v2/designs/elysee` → tam sayfa, isim/tarih/mekân yerinde
-- `http://localhost:8080/de/v2/designs/gibtesnicht` → 404
-- `http://localhost:8080/de/designs/elysee` → **eski sayfa hâlâ çalışıyor**
+- [ ] `http://localhost:8080/de/v2/designs` → Élysée kartı ızgarada, yapraklar ve renk lekeleri görünüyor
+- [ ] `http://localhost:8080/de/v2/designs/elysee` → tam sayfa, 8 katman, uyarı kutusu yok
+- [ ] `http://localhost:8080/de/v2/designs/gibtesnicht` → 404
+- [ ] `http://localhost:8080/de/designs/elysee` → **eski sayfa hâlâ çalışıyor**
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Bütün testleri çalıştır ve commit et**
+
+Çalıştır: `cd php && php bin/test.php` — hepsi geçmeli.
 
 ```bash
-git add php/src/Controllers/DesignController.php php/templates/pages/designs-v2.php php/templates/pages/design-preview.php php/public/index.php
-git commit -m "The second catalogue opens at its own address
+git add php/src/Controllers/DesignController.php php/src/Design.php php/tests/design_html.php \
+        php/templates/pages/designs-v2.php php/templates/pages/design-preview.php php/public/index.php
+git commit -m "The second catalogue opens at its own address, in three layers
 
 Two routes under a v2 prefix, deliberately ugly and deliberately easy to
-delete. Both pages are noindex: they exist to be compared against, not to
-be found. The controller sits beside InviteController rather than inside
-it, so the two versions never touch while we are choosing."
+delete. Both pages are noindex: they exist to be compared against.
+
+html() can now be asked for one spot at a time, so the preview nests page,
+envelope and card the way the original does instead of flattening them
+into a single box."
 ```
 
 ---
 
-## Task 8: Menü girişleri ve sözlük anahtarı
+## Task 10: Menü girişleri ve sözlük anahtarı
 
 **Files:**
 - Modify: `php/data/dict.php` (üç dile birer anahtar)
@@ -2185,7 +2749,7 @@ a route nobody can reach is not something you compare against."
 
 ---
 
-## Task 9: Panelde salt okunur liste
+## Task 11: Panelde salt okunur liste
 
 **Files:**
 - Create: `php/templates/admin/designs.php`
@@ -2339,60 +2903,62 @@ publish checklist will grow from."
 
 ---
 
-## Task 10: Yan yana karşılaştırma ve "sadece ekleme" doğrulaması
+## Task 12: Yan yana karşılaştırma ve "sadece ekleme" doğrulaması
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-08-19-davetiye-v2-design.md` (bitti ölçütü kutularını işaretle)
+- Modify: `docs/superpowers/specs/2026-08-19-davetiye-v2-design.md` (bitti ölçütü)
 
 **Interfaces:**
-- Consumes: Task 1–9'un tamamı.
-- Produces: doğrulanmış bitti ölçütü. Kod üretmez.
+- Consumes: Task 1–11'in tamamı. Kod üretmez.
 
 - [ ] **Step 1: Bütün testleri çalıştır**
 
 Çalıştır: `cd php && php bin/test.php`
-Beklenen: PASS, ve `design_store` **atlanmamış** olmalı.
+Beklenen: PASS, `design_store` **atlanmamış** olmalı.
 
 - [ ] **Step 2: Üç genişlikte yan yana karşılaştır**
 
 Çalıştır: `cd php && php -S localhost:8080 -t public public/dev-router.php`
 
-İki sekme aç:
-- `http://localhost:8080/de/designs/elysee` (eski)
-- `http://localhost:8080/de/v2/designs/elysee` (yeni)
+İki sekme: `http://localhost:8080/de/designs/elysee` (eski) ve `http://localhost:8080/de/v2/designs/elysee` (yeni).
 
-Her genişlikte ikisini karşılaştır ve kutuyu işaretle:
-
-- [ ] 390 px (telefon) — kart oranı, isim büyüklüğü, tarih ve mekân satırlarının yeri aynı
+- [ ] 1440 px (masaüstü) — kart oranı, yaprak parçalarının yeri, renk lekeleri, isim/tarih/mekân aynı
 - [ ] 820 px (tablet) — aynı
-- [ ] 1440 px (masaüstü) — aynı
+- [ ] 390 px (telefon) — **sapma bekleniyor**, ölç ve yaz
 
-Fark varsa: `bin/seed-designs.php` içindeki metin kutularını ölçüp düzelt, betiği yeniden çalıştır, tekrar bak. Bu döngü bu görevin işi.
+> **Bilinen ve kabul edilen sapma.** Eski sahne `vw` ile ölçekleniyor (`38vw`, üst sınır `240px`);
+> yeni format kartın yüzdesini kullanıyor. İkisi dar ekranda ayrışır. Ölçüt bu yüzden şudur:
+> **masaüstü ve tablette aynı; telefonda sapma ölçülür ve rakamla kaydedilir.** Sapmayı gizlemek
+> değil, büyüklüğünü bilmek istiyoruz — Faz 2'de formata `maxWidth` eklenip eklenmeyeceğine o
+> rakam karar verecek.
+
+Telefon genişliğindeki sapmayı şu şekilde yaz: her sahne parçası için eski ve yeni genişlik (px), ve fark yüzdesi.
 
 - [ ] **Step 3: Uzun isimle kontrol et**
 
-`php/src/Controllers/DesignController.php` içindeki `BEISPIEL` sabitini geçici olarak değiştir:
-
-```php
-        'bride'   => 'Charlotte-Sophie',
-        'groom'   => 'Maximilian',
-```
+`DesignController::BEISPIEL` içinde geçici olarak `'bride' => 'Charlotte-Sophie'` yap.
 
 - [ ] Uzun isim v2 tarafında kartın dışına taşmıyor
 - [ ] Eski taraftaki davranışla aynı
 
-Sonra sabiti eski hâline geri al (`'bride' => 'Sophia'`).
+Sonra geri al.
 
-- [ ] **Step 4: Hareket kısıtlamasını kontrol et**
+- [ ] **Step 4: Hareket kısıtlaması**
 
-Tarayıcının geliştirici araçlarında `prefers-reduced-motion: reduce`'u aç (Chrome: Rendering paneli → "Emulate CSS media feature prefers-reduced-motion").
+Geliştirici araçlarında `prefers-reduced-motion: reduce` aç.
 
-- [ ] v2 sayfasında elementler animasyonsuz, yerinde duruyor
+- [ ] v2 sayfasında katmanlar animasyonsuz, yerinde
 - [ ] Eski sayfa da öyle
 
-- [ ] **Step 5: Eskisinin bozulmadığını doğrula**
+- [ ] **Step 5: Neyin üretilmediğini açıkça yaz**
 
-Şu adreslerin hepsi uyarısız 200 dönmeli:
+Karşılaştırmada eski sayfada olup yeni sayfada **olmayan** her şeyi listele. Beklenenler: mühür,
+zarf açılma hareketi, taç yaprağı partikülleri, `sheen` idle hareketi. Her biri için tek satır:
+ne, neden yok, hangi faza ait.
+
+Bu liste Faz 2'nin girdisidir. Boş bırakmak "hepsi üretildi" demektir — öyle değilse yazılmalı.
+
+- [ ] **Step 6: Eskisinin bozulmadığını doğrula**
 
 ```bash
 cd php && for p in \
@@ -2404,51 +2970,56 @@ cd php && for p in \
 done
 ```
 
-- [ ] Panel yolları 302 (girişe yönlendirme) ya da 200 döndü, 500 yok
-- [ ] Genel yollar 200 döndü
+- [ ] Genel yollar 200; panel yolları 200 ya da 302; hiçbiri 500 değil
 
-- [ ] **Step 6: Diff'in gerçekten ekleme olduğunu doğrula**
+- [ ] **Step 7: Diff'in gerçekten ekleme olduğunu doğrula**
 
-Çalıştır:
 ```bash
 git diff master --stat -- php/
 ```
 
-- [ ] Mevcut dosyalardan yalnızca altısı listede: `public/index.php`, `src/Admin.php`, `schema.sql`, `templates/partials/header.php`, `templates/partials/footer.php`, `data/dict.php`
+- [ ] Mevcut (bu daldan önce var olan) dosyalardan yalnızca altısı listede: `public/index.php`, `src/Admin.php`, `schema.sql`, `templates/partials/header.php`, `templates/partials/footer.php`, `data/dict.php`
 
-Sonra silinen satır var mı diye bak:
 ```bash
 git diff master -- php/public/index.php php/src/Admin.php php/schema.sql \
   php/templates/partials/header.php php/templates/partials/footer.php php/data/dict.php \
   | grep '^-' | grep -v '^---'
 ```
 
-- [ ] Çıktı **boş**. Boş değilse, silinen her satır ya geri konur ya da neden gerektiği yazılıp burada belgelenir.
+- [ ] Çıktı **boş**.
 
-Ve Next.js tarafına dokunulmadığını doğrula:
 ```bash
 git diff master --stat -- app lib components scripts
 ```
 
 - [ ] Çıktı **boş**.
 
-- [ ] **Step 7: Spec'teki ölçütü işaretle ve commit et**
+- [ ] **Step 8: Spec'i güncelle ve commit et**
 
-`docs/superpowers/specs/2026-08-19-davetiye-v2-design.md` içindeki "Bitti sayılma ölçütü" listesinde doğrulanan kutuları `- [x]` yap.
+`docs/superpowers/specs/2026-08-19-davetiye-v2-design.md` içindeki "Bitti sayılma ölçütü" bölümünü gerçekleşen hâliyle güncelle: doğrulanan kutuları işaretle, telefon sapmasını rakamıyla yaz, Step 5'teki "üretilmeyenler" listesini ekle.
 
 ```bash
 git add docs/superpowers/specs/2026-08-19-davetiye-v2-design.md
-git commit -m "Both Élysées look the same, and the diff only adds
+git commit -m "Both Élysées compared, and the gap written down rather than glossed
 
-Checked at three widths, with a long name, and with reduced motion on.
-The old routes still answer. The diff against master touches six existing
-files and removes no line from any of them, which was the promise."
+Desktop and tablet match. The phone diverges by construction — the old
+scene scales in vw with a pixel cap, the new one in percent of the card —
+so the criterion measures that gap instead of pretending it is not there.
+Whatever was not reproduced is listed by name and handed to Phase 2."
 ```
 
 ---
 
 ## Sonraki adım
 
-Faz 1 bitti. Faz 2 (panelde tasarım kataloğu ve form editörü) kendi spec'i ve kendi planıyla başlar — bu planın devamı değil.
+Faz 1 bitti. Faz 2 (panelde tasarım kataloğu ve form editörü) kendi spec'i ve planıyla başlar.
 
-Spec'in 9. bölümündeki risk hâlâ açık: format yalnızca Élysée ile sınandı. Faz 2'ye geçmeden **Noir**'ı da aktarmak gerekiyor (koyu zemin, farklı partikül, farklı foil). O iş `bin/seed-designs.php`'yi bir tasarım daha alacak şekilde genişletmek — küçük, ama Faz 2'nin ilk görevi olmalı.
+İki şey Faz 2'nin ilk masasında duruyor:
+
+1. **İkinci bir tasarım aktarılmalı** — format yalnızca Élysée ile sınandı. Noir en farklı olanı
+   (koyu zemin, `deco` sahnesi, `spark` partikülü).
+2. **Task 12 Step 5'in listesi** — mühür, zarf hareketi, partiküller. Hepsi tasarım verisi olmalı,
+   şablon süsü değil.
+
+Ve formatın bilinen eksiği: sahne parçaları için `maxWidth`. Task 12'nin telefon ölçümü buna
+karar verecek.
