@@ -11,6 +11,7 @@ use Atelier\Http;
 use Atelier\Controllers\AdminController;
 use Atelier\Controllers\ContentAdminController;
 use Atelier\Controllers\CustomerAdminController;
+use Atelier\Controllers\DesignController;
 use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\InviteAdminController;
 use Atelier\Controllers\InviteController;
@@ -101,6 +102,10 @@ $router->get('/{locale}/auswahl/{token}', $page_(static fn (array $p) => (new Se
 // entweder die eigene Karte oder diese Seite unerreichbar gemacht.
 $router->get('/{locale}/designs', $page_(static fn (array $p) => (new InviteController())->designs()));
 $router->get('/{locale}/designs/{thema}', $page_(static fn (array $p) => (new InviteController())->designPreview($p)));
+
+// Zweite Fassung der Einladung – laeuft neben der ersten, bis verglichen ist.
+$router->get('/{locale}/v2/designs', $page_(static fn (array $p) => (new DesignController())->index()));
+$router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new DesignController())->preview($p)));
 
 $router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
 $router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));

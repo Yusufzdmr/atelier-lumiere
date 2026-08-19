@@ -409,12 +409,18 @@ final class Design
      * @param array<string,mixed> $doc
      * @param array<string,string> $values  Ergebnis von bindValues()
      */
-    public static function html(array $doc, array $values, string $locale): string
+    public static function html(array $doc, array $values, string $locale, string $spot = ''): string
     {
         $doc = self::complete($doc);
         $out = '';
 
         foreach ($doc['layers'] as $el) {
+            // Leer = alle Ebenen. Sonst nur die eines Ortes: die Vorschau baut
+            // Seite, Kuvert und Karte getrennt und schachtelt sie ineinander.
+            if ($spot !== '' && $el['spot'] !== $spot) {
+                continue;
+            }
+
             $class = 'd-el d-el-' . $el['id'] . ' d-spot-' . $el['spot'];
 
             if ($el['type'] === 'text' || $el['type'] === 'button') {

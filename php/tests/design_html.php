@@ -147,3 +147,22 @@ assert_true(str_contains($werte['wedding_date'], '2027'), 'bindValues: Datum tra
 assert_true(!str_contains($werte['wedding_date'], 'Sonntag'), 'bindValues: das Datum traegt den Tag NICHT');
 assert_same('Sonntag', $werte['wedding_weekday'], 'bindValues: der Wochentag kommt getrennt');
 assert_same('', Design::bindValues([], 'de')['wedding_weekday'], 'bindValues: ohne Datum kein Wochentag');
+
+/* --- Nach Ort filtern --- */
+
+$doc = ['id' => 'x', 'layers' => [
+    ['id' => 'a', 'type' => 'text', 'spot' => 'page', 'text' => ['de' => 'SEITE']],
+    ['id' => 'b', 'type' => 'text', 'spot' => 'card', 'text' => ['de' => 'KARTE']],
+    ['id' => 'c', 'type' => 'text', 'spot' => 'envelope', 'text' => ['de' => 'KUVERT']],
+]];
+
+$alle = Design::html($doc, [], 'de');
+assert_contains($alle, 'SEITE', 'html: ohne Filter kommt alles');
+assert_contains($alle, 'KARTE', 'html: ohne Filter kommt alles (2)');
+
+$nurKarte = Design::html($doc, [], 'de', 'card');
+assert_contains($nurKarte, 'KARTE', 'html: Filter laesst den Ort durch');
+assert_not_contains($nurKarte, 'SEITE', 'html: Filter haelt andere Orte zurueck');
+assert_not_contains($nurKarte, 'KUVERT', 'html: Filter haelt andere Orte zurueck (2)');
+
+assert_same('', Design::html($doc, [], 'de', 'gibtesnicht'), 'html: unbekannter Ort ist leer');
