@@ -988,6 +988,47 @@ final class Design
         return self::complete($doc);
     }
 
+    /**
+     * Einer gemessenen Anordnung ein Thema anziehen.
+     *
+     * fromTheme() bringt Farben, Schriften und Bewegung mit, aber keine Karte:
+     * die Textebenen wurden am gerenderten Original gemessen und stehen in
+     * keinem Thema. Wer aus einem Thema eine neue Vorlage macht, nimmt deshalb
+     * die Anordnung einer vorhandenen und zieht ihr das Thema an - so wird
+     * keine einzige Zahl erfunden.
+     *
+     * Die gezeichnete Szene wechselt mit, wenn das Thema eine eigene
+     * exportiert hat. Hat es keine, bleibt die alte stehen: fremdes Blattwerk
+     * ist besser als leere Ecken, und die Meldung im Panel sagt es.
+     *
+     * @param array<string,mixed> $basis   die Vorlage, deren Anordnung bleibt
+     * @param array<string,mixed> $thema   ein Dokument aus fromTheme()
+     * @param list<string>        $kunst   Pfade der exportierten Szenenteile
+     * @return array<string,mixed>
+     */
+    public static function dress(array $basis, array $thema, array $kunst): array
+    {
+        $basis = self::complete($basis);
+        $thema = self::complete($thema);
+
+        $basis['palette']   = $thema['palette'];
+        $basis['fonts']     = $thema['fonts'];
+        $basis['animation'] = $thema['animation'];
+
+        $i = 0;
+        foreach ($basis['layers'] as $n => $ebene) {
+            if ($ebene['type'] !== 'image' || !str_starts_with((string) $ebene['src'], '/assets/designs/')) {
+                continue;
+            }
+            if (isset($kunst[$i])) {
+                $basis['layers'][$n]['src'] = (string) $kunst[$i];
+            }
+            $i++;
+        }
+
+        return self::complete($basis);
+    }
+
     public static function save(array $doc): void
     {
         $doc = self::complete($doc);

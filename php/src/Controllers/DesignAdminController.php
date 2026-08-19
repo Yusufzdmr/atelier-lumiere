@@ -131,31 +131,61 @@ final class DesignAdminController
         return 'ok=kopiert';
     }
 
-    /** Ein altes Thema als neues Dokument. */
+    /**
+     * Ein altes Thema ueber die Anordnung einer vorhandenen Vorlage.
+     *
+     * Nicht fromTheme() allein: das Thema kennt Farben, Schriften und Bewegung,
+     * aber keine Karte. Die Anordnung kommt deshalb aus einer Vorlage, die
+     * jemand gemessen hat - erfunden wird nichts.
+     */
     private function ausThema(): string
     {
         $thema = Themes::find(Security::clean($_POST['thema'] ?? '', 64));
+        $basis = Design::findById(Security::clean($_POST['basis'] ?? '', 64));
         $name  = Security::clean($_POST['neuer_name'] ?? '', 60);
 
         if ($thema === null) {
             return 'fehler=thema';
         }
+        if ($basis === null) {
+            return 'fehler=basis';
+        }
         if ($name === '') {
             return 'fehler=name';
         }
 
-        $neu = Design::copy(Design::fromTheme($thema), $name, ['de' => $name, 'en' => $name]);
+        // Die gezeichnete Szene liegt als Datei vor, nicht im Dokument. Hat das
+        // Thema keine, behaelt die neue Vorlage die der Basis - und die Meldung
+        // sagt es, sonst sucht jemand die Ecken.
+        $kunst = glob(__DIR__ . '/../../public/assets/designs/' . $thema['id'] . '-*.svg') ?: [];
+        sort($kunst);
+        $pfade = array_map(static fn (string $p): string => '/assets/designs/' . basename($p), $kunst);
+
+        $neu = Design::copy(
+            Design::dress($basis, Design::fromTheme($thema), $pfade),
+            $name,
+            ['de' => $name, 'en' => $name]
+        );
 
         if ($neu['id'] === '' || Design::findById($neu['id']) !== null) {
             return 'fehler=belegt';
         }
 
-        // Die gezeichnete Szene liegt als Datei vor, nicht im Dokument. Fehlt
-        // sie, entsteht die Vorlage trotzdem - aber die Meldung sagt, was noch
-        // fehlt, sonst sucht jemand eine halbe Stunde nach leeren Ecken.
-        $kunst = glob(__DIR__ . '/../../public/assets/designs/' . $thema['id'] . '-*.svg') ?: [];
-
         Design::save($neu);
-        return $kunst === [] ? 'ok=uebernommen_ohne_kunst' : 'ok=uebernommen';
+
+        // Wie viele Ecken hat die Basis, und wie viele bringt das Thema mit?
+        // Zwei Teile ueber drei Ecken heisst: eine bleibt fremd, und das gehoert
+        // gesagt statt entdeckt.
+        $ecken = 0;
+        foreach ($basis['layers'] as $ebene) {
+            if ($ebene['type'] === 'image' && str_starts_with((string) $ebene['src'], '/assets/designs/')) {
+                $ecken++;
+            }
+        }
+
+        if ($pfade === []) {
+            return 'ok=uebernommen_ohne_kunst';
+        }
+        return count($pfade) < $ecken ? 'ok=uebernommen_teilweise' : 'ok=uebernommen';
     }
 }

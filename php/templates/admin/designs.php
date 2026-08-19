@@ -31,12 +31,16 @@ $meldungen = [
     'kopiert'                => $tr ? 'Kopyalandı.' : 'Kopiert.',
     'uebernommen'            => $tr ? 'Temadan oluşturuldu.' : 'Aus dem Thema übernommen.',
     'uebernommen_ohne_kunst' => $tr
-        ? 'Oluşturuldu — ama bu temanın çizilmiş sahnesi yok: php bin/export-scene-art.php ile dışa aktar.'
-        : 'Übernommen – aber dieses Thema hat keine exportierte Szene: php bin/export-scene-art.php.',
+        ? 'Oluşturuldu — ama bu temanın çizilmiş sahnesi yok, köşeler taban tasarımdan kaldı: php bin/export-scene-art.php ile dışa aktar.'
+        : 'Übernommen – aber dieses Thema hat keine exportierte Szene; die Ecken blieben die der Basis: php bin/export-scene-art.php.',
+    'uebernommen_teilweise' => $tr
+        ? 'Oluşturuldu — ama temanın sahnesi taban tasarımdan az parça içeriyor; artan köşeler tabandan kaldı.'
+        : 'Übernommen – aber die Szene des Themas hat weniger Teile als die Basis Ecken; die übrigen blieben die der Basis.',
     'aktiv'     => $tr ? 'Yayında.' : 'Veröffentlicht.',
     'inaktiv'   => $tr ? 'Yayından kaldırıldı.' : 'Aus der Veröffentlichung genommen.',
     'quelle'    => $tr ? 'Kaynak tasarım bulunamadı.' : 'Die Quellvorlage wurde nicht gefunden.',
     'thema'     => $tr ? 'Tema bulunamadı.' : 'Das Thema wurde nicht gefunden.',
+    'basis'     => $tr ? 'Yerleşimi alınacak tasarım bulunamadı.' : 'Die Vorlage fuer die Anordnung wurde nicht gefunden.',
     'name'      => $tr ? 'Ad boş olamaz.' : 'Der Name darf nicht leer sein.',
     'belegt'    => $tr ? 'Bu adla bir tasarım zaten var.' : 'Unter diesem Namen gibt es schon eine Vorlage.',
     'csrf'      => $tr ? 'Oturum düştü, sayfayı tazele.' : 'Die Sitzung ist abgelaufen, bitte neu laden.',
@@ -64,7 +68,7 @@ $meldungen = [
 
   <details class="border border-sand-deep">
     <summary class="cursor-pointer p-5 <?= $label ?>">
-      <?= $tr ? 'Temadan yeni tasarım' : 'Neues Design aus einem Thema' ?>
+      <?= $tr ? 'Temadan yeni tasarım (yerleşim bir tasarımdan, renkler temadan)' : 'Neues Design aus einem Thema (Anordnung von einer Vorlage, Farben vom Thema)' ?>
     </summary>
     <form method="post" class="flex flex-wrap items-end gap-4 border-t border-sand-deep p-5">
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
@@ -74,6 +78,14 @@ $meldungen = [
         <select name="thema" class="mt-1 block border border-sand-deep bg-transparent px-3 py-2 text-sm text-ink">
           <?php foreach ($themen as $t) : ?>
             <option value="<?= e((string) $t['id']) ?>"><?= e((string) $t['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="<?= $label ?>">
+        <?= $tr ? 'Yerleşim' : 'Anordnung von' ?>
+        <select name="basis" class="mt-1 block border border-sand-deep bg-transparent px-3 py-2 text-sm text-ink">
+          <?php foreach ($designs as $d) : ?>
+            <option value="<?= e((string) $d['id']) ?>"><?= e($d['name']['de']) ?></option>
           <?php endforeach; ?>
         </select>
       </label>

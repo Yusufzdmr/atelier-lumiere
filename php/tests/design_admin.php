@@ -113,3 +113,51 @@ assert_same('gruss', $kopie['layers'][0]['id'], 'copy: die Ebenen kommen mit');
 // Die Quelle darf sich nicht veraendern - sie liegt in der Datenbank.
 assert_same('elysee', $quelle['id'], 'copy: die Quelle bleibt, wie sie war');
 assert_same(7, $quelle['version'], 'copy: die Quelle behaelt ihre Fassung');
+
+/* --- Ein Thema ueber eine gemessene Anordnung ziehen --- */
+
+// Aufgefallen beim Bauen des Panels: fromTheme() liefert Farben, Schriften und
+// Bewegung, aber keine Karte - die Textebenen der Karte wurden in Faz 1 von
+// Hand gemessen und stehen in keinem Thema. Wer aus einem Thema eine neue
+// Vorlage macht, nimmt deshalb die Anordnung einer vorhandenen und zieht ihr
+// das Thema an. Erfunden wird dabei keine einzige Zahl.
+
+$anordnung = Design::complete([
+    'id' => 'basis', 'slug' => 'basis',
+    'canvas'  => ['ratio' => '632:490', 'safe' => 6],
+    'palette' => ['accent' => ['value' => '#B08D57'], 'bg' => ['value' => '#EFE7DC']],
+    'fonts'   => ['display' => ['family' => 'Cormorant Garamond', 'weight' => 300]],
+    'animation' => ['intro' => 'sealLight', 'card' => 'seal'],
+    'layers'  => [
+        ['id' => 'szenetl', 'type' => 'image', 'spot' => 'page', 'src' => '/assets/designs/elysee-1.svg',
+         'box' => ['x' => 0, 'y' => 0, 'w' => 17]],
+        ['id' => 'marie', 'type' => 'text', 'spot' => 'card', 'bind' => 'bride_name',
+         'box' => ['x' => 8, 'y' => 20, 'w' => 85],
+         'style' => ['font' => 'display', 'color' => 'accent', 'size' => 111]],
+    ],
+]);
+
+$thema = Design::fromTheme([
+    'id' => 'noir', 'bg' => '#15161B', 'accent' => '#C9A24B', 'fg' => '#F2E7D2',
+    'fonts' => ['display' => 'cormorant', 'body' => 'jost', 'script' => 'greatvibes'],
+    'intro' => 'darkroom', 'animation' => 'flip',
+]);
+
+$angezogen = Design::dress($anordnung, $thema, ['/assets/designs/noir-1.svg']);
+
+assert_same('#C9A24B', $angezogen['palette']['accent']['value'], 'dress: die Farbe kommt vom Thema');
+assert_same('darkroom', $angezogen['animation']['intro'], 'dress: die Bewegung kommt vom Thema');
+assert_same('Great Vibes', $angezogen['fonts']['script']['family'], 'dress: die Schriften kommen vom Thema');
+
+// Die Anordnung bleibt: Kaesten, Bindungen, Reihenfolge.
+assert_same(20, $angezogen['layers'][1]['box']['y'], 'dress: der Kasten bleibt, wie er gemessen wurde');
+assert_same('bride_name', $angezogen['layers'][1]['bind'], 'dress: die Bindung bleibt');
+assert_same('632:490', $angezogen['canvas']['ratio'], 'dress: das Seitenverhaeltnis bleibt');
+assert_same(2, count($angezogen['layers']), 'dress: es kommen keine Ebenen dazu');
+
+// Die gezeichnete Szene wechselt mit, wenn das Thema eine eigene hat.
+assert_same('/assets/designs/noir-1.svg', $angezogen['layers'][0]['src'], 'dress: die Szene wechselt zum Thema');
+
+// Hat es keine, bleibt die alte stehen - lieber fremdes Blattwerk als leere Ecken.
+$ohne = Design::dress($anordnung, $thema, []);
+assert_same('/assets/designs/elysee-1.svg', $ohne['layers'][0]['src'], 'dress: ohne eigene Szene bleibt die alte');
