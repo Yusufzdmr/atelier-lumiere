@@ -133,3 +133,75 @@ $karte = $spiegel->getConstant('BIND_FIELDS');
 $a = array_keys($karte); sort($a);
 $b = Design::BINDS; sort($b);
 assert_same($b, $a, 'BIND_FIELDS deckt genau Design::BINDS ab');
+
+/*
+ * personalize() ist die Grenze.
+ *
+ * Was hier durchkommt, steht gleich im design_snapshot und wird ausgeliefert.
+ * Ein POST, der ein gesperrtes Recht behauptet, faellt still - nicht mit einer
+ * Fehlerseite: das Recht kann im Panel zugegangen sein, waehrend das Formular
+ * offen stand. Der Kunde bekommt dann das Design, wie es gedacht ist.
+ */
+
+$basis = wizard_doc(
+    [
+        ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names',
+         'style' => ['color' => 'ink'],
+         'permissions' => ['edit' => true, 'color' => true]],
+        ['id' => 'siegel', 'type' => 'image', 'src' => '/assets/designs/elysee-1.svg',
+         'permissions' => []],
+    ],
+    ['ink'    => ['value' => '#1A1A1A', 'customer' => false],
+     'accent' => ['value' => '#B08D57', 'customer' => true]]
+);
+
+// Erlaubte Ebenenfarbe: eine eigene Marke wird gepraegt, weil der Renderer
+// nur Markennamen kennt (Design.php:371).
+$rot = DesignWizard::personalize($basis, ['layers' => ['namen' => ['color' => '#8B0000']]]);
+assert_same('kunde-namen', $rot['layers'][0]['style']['color'], 'personalize: die Ebene zeigt auf die eigene Marke');
+assert_same('#8B0000', $rot['palette']['kunde-namen']['value'], 'personalize: die Marke traegt die Farbe');
+assert_same(false, $rot['palette']['kunde-namen']['customer'], 'personalize: die gepraegte Marke wird nicht wieder angeboten');
+assert_contains(Design::css($rot, '.t'), 'color:var(--d-kunde-namen)', 'personalize: der Renderer schreibt die Marke');
+
+// Zweimal dieselbe Ebene: dieselbe Marke, kein Wildwuchs.
+$zweimal = DesignWizard::personalize($rot, ['layers' => ['namen' => ['color' => '#004400']]]);
+assert_same('#004400', $zweimal['palette']['kunde-namen']['value'], 'personalize: zweite Farbe ueberschreibt dieselbe Marke');
+assert_same(1, count(array_filter(array_keys($zweimal['palette']), static fn ($k) => str_starts_with((string) $k, 'kunde-'))), 'personalize: nur eine gepraegte Marke');
+
+// Unsinn wird nicht gespeichert - er wird beim Schreiben geklaert, nicht erst
+// beim Drucken.
+$mist = DesignWizard::personalize($basis, ['layers' => ['namen' => ['color' => 'javascript:alert(1)']]]);
+assert_same('transparent', $mist['palette']['kunde-namen']['value'], 'personalize: ungueltige Farbe wird transparent');
+
+// Gesperrte Ebene: faellt still.
+$gesperrt = DesignWizard::personalize($basis, ['layers' => ['siegel' => ['color' => '#8B0000']]]);
+assert_same([], array_filter(array_keys($gesperrt['palette']), static fn ($k) => str_starts_with((string) $k, 'kunde-')), 'personalize: ohne edit-Recht keine Marke');
+
+// Erfundene Kennung: faellt still.
+$erfunden = DesignWizard::personalize($basis, ['layers' => ['gibtesnicht' => ['color' => '#8B0000']]]);
+assert_same(count($basis['layers']), count($erfunden['layers']), 'personalize: erfundene Ebene fuegt nichts hinzu');
+
+// Angehakte Marke: darf.
+$marke = DesignWizard::personalize($basis, ['palette' => ['accent' => '#8B0000']]);
+assert_same('#8B0000', $marke['palette']['accent']['value'], 'personalize: angehakte Marke wird gesetzt');
+
+// Nicht angehakte Marke: faellt still.
+$sperre = DesignWizard::personalize($basis, ['palette' => ['ink' => '#8B0000']]);
+assert_same('#1A1A1A', $sperre['palette']['ink']['value'], 'personalize: Marke ohne Haken bleibt');
+
+// text auf einer gebundenen Ebene: faellt still.
+$text = DesignWizard::personalize($basis, ['layers' => ['namen' => ['text' => ['de' => 'X', 'en' => 'X']]]]);
+assert_same('', $text['layers'][0]['text']['de'], 'personalize: fester Text auf gebundener Ebene wird verworfen');
+
+// Ausblenden ohne Recht: faellt still.
+$weg = DesignWizard::personalize($basis, ['layers' => ['siegel' => ['hidden' => true]]]);
+assert_same(2, count($weg['layers']), 'personalize: ohne hide-Recht bleibt die Ebene stehen');
+
+// Die Form bleibt die eines vollstaendigen Dokuments - der Schnappschuss geht
+// unveraendert an den Renderer.
+assert_same(Design::complete($rot), $rot, 'personalize: das Ergebnis ist bereits vollstaendig');
+
+// Rein: dasselbe Design traegt zwei Einladungen.
+$vorher = $basis;
+DesignWizard::personalize($basis, ['layers' => ['namen' => ['color' => '#8B0000']]]);
+assert_same($vorher, $basis, 'personalize: die Vorlage bleibt unberuehrt');

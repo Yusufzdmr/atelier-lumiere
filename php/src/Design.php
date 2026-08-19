@@ -434,12 +434,13 @@ final class Design
     }
 
     /**
-     * Eine Farbe, die keine Regel schliessen kann.
+     * Nur was als Farbe durchgeht.
      *
-     * Der Wert kommt aus dem Panel und landet ungefiltert in einem Stilblock.
-     * Ohne diese Pruefung reicht ein „}" im Feld, um die Seite umzubauen.
+     * Oeffentlich, weil der Assistent denselben Massstab braucht: eine Farbe
+     * wird beim Schreiben geklaert, nicht erst beim Drucken. Zwei Antworten
+     * auf "was ist eine gueltige Farbe" waeren eine zu viel.
      */
-    private static function safeColor(string $value): string
+    public static function safeColor(string $value): string
     {
         $value = trim($value);
         if (preg_match('/^#[0-9A-Fa-f]{3,8}$/', $value) === 1) {
@@ -452,7 +453,7 @@ final class Design
     }
 
     /** Schriftname aus demselben Grund: nur Buchstaben, Ziffern, Leerzeichen, Komma, Bindestrich. */
-    private static function safeFont(string $value): string
+    public static function safeFont(string $value): string
     {
         $value = trim($value);
         if ($value === '' || preg_match('/^[A-Za-z0-9 ,\-]+$/', $value) !== 1) {

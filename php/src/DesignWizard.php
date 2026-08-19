@@ -138,4 +138,102 @@ final class DesignWizard
 
         return $schritte;
     }
+
+    /**
+     * Die Wahl des Kunden auf das Design legen.
+     *
+     * Das Ergebnis ist der design_snapshot: ein vollstaendiges Dokument, das
+     * der Renderer aus Phase 1 ohne eine einzige neue Zeile druckt. Es wird
+     * bewusst keine Liste "was der Kunde geaendert hat" gefuehrt - die muesste
+     * der Renderer, die Vorschau, das Panel und der spaetere Bearbeiten-
+     * Bildschirm jeweils einzeln verstehen.
+     *
+     * Weissliste: gefragt wird immer zuerst choices(). Was dort nicht steht,
+     * faellt still - siehe Kommentar im Test.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,mixed> $wahl
+     * @return array<string,mixed>
+     */
+    public static function personalize(array $doc, array $wahl): array
+    {
+        $doc  = Design::complete($doc);
+        $darf = self::choices($doc);
+
+        foreach ((array) ($wahl['palette'] ?? []) as $key => $wert) {
+            if (isset($darf['palette'][$key])) {
+                $doc['palette'][$key]['value'] = Design::safeColor((string) $wert);
+            }
+        }
+
+        foreach ((array) ($wahl['fonts'] ?? []) as $key => $wert) {
+            if (isset($darf['fonts'][$key])) {
+                $doc['fonts'][$key]['family'] = Design::safeFont((string) $wert);
+            }
+        }
+
+        $layers = (array) ($wahl['layers'] ?? []);
+
+        foreach ($doc['layers'] as $i => $el) {
+            $id = (string) $el['id'];
+            $rechte = $darf['layers'][$id] ?? null;
+            $gewaehlt = $layers[$id] ?? null;
+
+            if ($rechte === null || !is_array($gewaehlt)) {
+                continue;
+            }
+
+            // Eine eigene Farbe wird eine eigene Marke. Der Renderer kennt nur
+            // Markennamen: color:var(--d-<name>). Ein roher Wert ergaebe
+            // var(--d-#8B0000) - ungueltiges CSS und ein farbloses Element.
+            if ($rechte['color'] && isset($gewaehlt['color'])) {
+                $marke = 'kunde-' . $id;
+                $doc['palette'][$marke] = [
+                    'value'    => Design::safeColor((string) $gewaehlt['color']),
+                    'label'    => ['de' => 'Eigene Farbe', 'tr' => 'Kendi rengi'],
+                    // Das Ergebnis der Wahl, nicht eine Wahl, die man wieder
+                    // anbietet: sonst stuende sie beim Bearbeiten doppelt da.
+                    'customer' => false,
+                ];
+                $doc['layers'][$i]['style']['color'] = $marke;
+            }
+
+            if ($rechte['font'] && isset($gewaehlt['font'])) {
+                $marke = 'kunde-' . $id;
+                $doc['fonts'][$marke] = [
+                    'family'     => Design::safeFont((string) $gewaehlt['font']),
+                    'size'       => $doc['fonts'][$el['style']['font']]['size'] ?? 100,
+                    'weight'     => $doc['fonts'][$el['style']['font']]['weight'] ?? 400,
+                    'tracking'   => $doc['fonts'][$el['style']['font']]['tracking'] ?? 0,
+                    'lineHeight' => $doc['fonts'][$el['style']['font']]['lineHeight'] ?? 120,
+                    'customer'   => false,
+                ];
+                $doc['layers'][$i]['style']['font'] = $marke;
+            }
+
+            if ($rechte['text'] && isset($gewaehlt['text']) && is_array($gewaehlt['text'])) {
+                $doc['layers'][$i]['text'] = [
+                    'de' => Security::clean($gewaehlt['text']['de'] ?? '', 600),
+                    'en' => Security::clean($gewaehlt['text']['en'] ?? '', 600),
+                ];
+            }
+
+            if ($rechte['photo'] && isset($gewaehlt['src'])) {
+                $doc['layers'][$i]['src'] = (string) $gewaehlt['src'];
+            }
+
+            if ($rechte['hide'] && !empty($gewaehlt['hidden'])) {
+                unset($doc['layers'][$i]);
+            }
+        }
+
+        // Nach dem Entfernen einer Ebene sind die Schluessel loechrig; die
+        // Reihenfolge ist der z-Index, also wird neu gezaehlt und nicht sortiert.
+        $doc['layers'] = array_values($doc['layers']);
+
+        // Noch einmal durch complete(): die gepraegten Marken bekommen ihre
+        // Standardfelder, und der Schnappschuss hat garantiert die Form, die
+        // Design::css() und Design::html() erwarten.
+        return Design::complete($doc);
+    }
 }
