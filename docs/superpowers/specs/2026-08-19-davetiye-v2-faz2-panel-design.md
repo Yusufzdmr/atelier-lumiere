@@ -148,10 +148,13 @@ bir doğruluk olur — ve ikisi zamanla ayrışır.
   kaydedilmez: "bu tasarım sen açtıktan sonra başka bir yerde değiştirildi".
 - **Yayın onayı.** Aktife alma POST'unda uyarılar sunucuda yeniden hesaplanır.
   Uyarı varsa düğme sayıyı söyler ve onay ister; onaylanınca geçer.
-- **Görsel yükleme** mevcut `Media` sınıfından geçer ve yalnızca
-  `public/uploads/` altına yazar. `public/assets/designs/` klasörüne panelden
-  dokunulmaz: orası `bin/export-scene-art.php`'nin ürettiği yer, elle yazılan
-  dosyayı bir sonraki dışa aktarma sessizce ezer.
+- **Görsel yükleme Faz 2'de yok.** Görseller bölümü katmanın dosya yolunu
+  gösterir ve düzenletir, ama dosya yüklemez. Sebebi kapsam değil ihtiyaç:
+  bugünkü iki tasarımın görsel katmanlarının hepsi
+  `bin/export-scene-art.php`'nin ürettiği SVG'ler, ve onları elle değiştirmek
+  zaten yanlış — bir sonraki dışa aktarma sessizce ezer. Gerçek bir fotoğraf
+  katmanı (`type=photo`) ilk kez gerektiğinde yükleme eklenir ve **o zaman da**
+  mevcut `Media` sınıfından geçer, yalnızca `public/uploads/` altına yazar.
 
 ## 9. Testler
 
