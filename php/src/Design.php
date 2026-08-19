@@ -1036,6 +1036,32 @@ final class Design
         return self::complete($basis);
     }
 
+    /**
+     * Welche Vorlage kann heute in den alten Assistenten?
+     *
+     * Er prueft ?design= gegen die Themen-Kennungen und ignoriert still, was er
+     * nicht kennt. Eine im Panel kopierte Vorlage hat kein Thema desselben
+     * Namens - fuer sie gibt es deshalb keinen Knopf, sondern einen Satz. Mit
+     * dem eigenen Assistenten (Faz 3B) faellt diese Frage ganz weg, und sie
+     * faellt an einer Stelle weg, weil sie nur hier steht.
+     *
+     * @param list<array<string,mixed>> $designs
+     * @param list<string>              $themeIds
+     * @return array<string,bool>
+     */
+    public static function creatable(array $designs, array $themeIds): array
+    {
+        $karte = [];
+        foreach ($designs as $design) {
+            $slug = (string) ($design['slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+            $karte[$slug] = in_array($slug, $themeIds, true);
+        }
+        return $karte;
+    }
+
     public static function save(array $doc): void
     {
         $doc = self::complete($doc);
