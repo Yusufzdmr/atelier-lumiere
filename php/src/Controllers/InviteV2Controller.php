@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Atelier\Controllers;
 
+use Atelier\Config;
 use Atelier\Design;
 use Atelier\DesignWizard;
 use Atelier\I18n;
+use Atelier\InvitationsV2;
+use Atelier\Media;
 use Atelier\Security;
 use Atelier\Seo;
 use Atelier\View;
@@ -61,10 +64,9 @@ final class InviteV2Controller
             return;
         }
 
-        // Aus dem Schaufenster kommt die Wahl mit. Was wir nicht kennen, wird
-        // nicht uebernommen, sondern durch die erste Vorlage ersetzt - eine
-        // fremde Angabe steht nicht im Formular.
-        $wunsch = Security::clean($_GET['design'] ?? '', 96);
+        // Nach dem Absenden steht die Wahl im Formular, nicht mehr in der
+        // Adresse - sonst waehlte ein Neuladen ein anderes Design.
+        $wunsch = Security::clean($_POST['design'] ?? $_GET['design'] ?? '', 96);
         $design = $wunsch !== '' ? Design::find($wunsch) : null;
         if ($design === null || (string) $design['status'] !== 'active') {
             $design = $designs[0];
@@ -72,6 +74,18 @@ final class InviteV2Controller
         $design = Design::complete($design);
 
         $scope = '.d-' . $design['id'];
+
+        $error = '';
+        $done  = null;
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $ergebnis = $this->publish($design);
+            if (isset($ergebnis['error'])) {
+                $error = (string) $ergebnis['error'];
+            } else {
+                $done = $ergebnis;
+            }
+        }
 
         View::page('pages/invite-v2-wizard', [
             'locale'  => $locale,
@@ -85,7 +99,11 @@ final class InviteV2Controller
             'steps'   => DesignWizard::steps($design),
             'choices' => DesignWizard::choices($design),
             'values'  => [],
-            'scope'   => $scope,
+            // css() braucht den gepunkteten CSS-Selektor (".d-elysee"), aber die
+            // Klasse im Markup darf den Punkt nicht tragen - class=".d-elysee"
+            // waere ein ungueltiger Klassenname und die Regeln griffen nie.
+            // DesignController::preview() macht denselben Unterschied.
+            'scope'   => ltrim($scope, '.'),
             'styles'  => Design::css($design, $scope),
             // Beispieldaten, nicht leer. Design::html() ueberspringt ein
             // gebundenes Textelement, dessen Wert leer ist (Design.php:487) -
@@ -94,8 +112,128 @@ final class InviteV2Controller
             // gibt. Das Skript leert sie beim ersten Lauf wieder.
             'karte'   => Design::html($design, Design::bindValues(self::BEISPIEL, $locale), $locale, 'card'),
             'csrf'    => Security::csrf(),
-            'error'   => '',
-            'done'    => null,
+            'error'   => $error,
+            'done'    => $done,
         ]);
+    }
+
+    /**
+     * Die Einladung anlegen.
+     *
+     * Was der Kunde gewaehlt hat, wird nicht als Liste gespeichert, sondern auf
+     * das Design gelegt: das Ergebnis ist der Schnappschuss. Damit ist das
+     * Anzeigen spaeter genau Phase 1 - css() und html(), sonst nichts.
+     *
+     * @param array<string,mixed> $design
+     * @return array<string,mixed>
+     */
+    private function publish(array $design): array
+    {
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            return ['error' => 'csrf'];
+        }
+        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
+        // aussperren und umgekehrt.
+        if (Security::throttle('invite-v2-create', 8, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        $darf = DesignWizard::choices($design);
+
+        $data = [];
+        foreach ($darf['fields'] as $feld) {
+            $data[$feld] = Security::clean($_POST[$feld] ?? '', $feld === 'message' ? 600 : 160);
+        }
+
+        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
+        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das ist.
+        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
+        if ($brauchtNamen && ($data['bride'] ?? '') === '' && ($data['groom'] ?? '') === '') {
+            return ['error' => 'names'];
+        }
+
+        $slug = InvitationsV2::slug(Security::clean($_POST['slug'] ?? '', 96));
+        if ($slug === '') {
+            $slug = InvitationsV2::slug(($data['bride'] ?? '') . '-' . ($data['groom'] ?? ''));
+        }
+        if ($slug === '') {
+            $slug = 'einladung-' . bin2hex(random_bytes(3));
+        }
+        if (!InvitationsV2::slugAvailable($slug)) {
+            $slug .= '-' . bin2hex(random_bytes(2));
+        }
+
+        // Die Wahl einsammeln. Was hier hineingeht, wird in personalize()
+        // noch einmal gegen die Rechte geprueft - diese Schleife ist Bequem-
+        // lichkeit, nicht Sicherheit.
+        $wahl = ['palette' => [], 'fonts' => [], 'layers' => []];
+
+        foreach (array_keys($darf['palette']) as $marke) {
+            $wert = Security::clean($_POST['palette_' . $marke] ?? '', 32);
+            if ($wert !== '') {
+                $wahl['palette'][$marke] = $wert;
+            }
+        }
+
+        foreach (array_keys($darf['fonts']) as $marke) {
+            $wert = Security::clean($_POST['fonts_' . $marke] ?? '', 64);
+            if ($wert !== '') {
+                $wahl['fonts'][$marke] = $wert;
+            }
+        }
+
+        foreach ($darf['layers'] as $id => $rechte) {
+            $eintrag = [];
+
+            if ($rechte['color']) {
+                $wert = Security::clean($_POST['layer_color_' . $id] ?? '', 32);
+                if ($wert !== '') {
+                    $eintrag['color'] = $wert;
+                }
+            }
+            if ($rechte['font']) {
+                $wert = Security::clean($_POST['layer_font_' . $id] ?? '', 64);
+                if ($wert !== '') {
+                    $eintrag['font'] = $wert;
+                }
+            }
+            if ($rechte['text']) {
+                $wert = Security::clean($_POST['layer_text_' . $id] ?? '', 600);
+                if ($wert !== '') {
+                    $eintrag['text'] = ['de' => $wert, 'en' => $wert];
+                }
+            }
+            if ($rechte['hide'] && isset($_POST['layer_hidden_' . $id])) {
+                $eintrag['hidden'] = true;
+            }
+            if ($rechte['photo']) {
+                // Media::store() sieht in die Datei, nicht auf ihren Namen.
+                $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
+                if ($pfad !== null) {
+                    $eintrag['src'] = $pfad;
+                }
+            }
+
+            if ($eintrag !== []) {
+                $wahl['layers'][$id] = $eintrag;
+            }
+        }
+
+        $snapshot = DesignWizard::personalize($design, $wahl);
+
+        $data['slug']      = $slug;
+        $data['locale']    = I18n::locale();
+        $data['paid']      = false;
+        // Kein Bildschirm dafuer in dieser Phase - aber der Schluessel muss
+        // von Anfang an dastehen. Nachtraeglich eingefuehrt sperrt er jede
+        // bis dahin veroeffentlichte Einladung aus.
+        $data['manageKey'] = bin2hex(random_bytes(16));
+        $data['createdAt'] = date('c');
+
+        InvitationsV2::create($slug, (string) $design['id'], $snapshot, $data);
+
+        $path = I18n::path('/v2/einladung/' . $slug);
+
+        return ['slug' => $slug, 'path' => $path, 'url' => Config::url() . $path];
     }
 }
