@@ -3163,8 +3163,9 @@ a route nobody can reach is not something you compare against."
      */
     public function admin(string $locale): void
     {
+        // recordVisit() NICHT von Hand: requireLogin() zaehlt den Besuch
+        // schon, aus dem Pfad. Ein zweiter Aufruf zaehlt doppelt.
         Admin::requireLogin($locale);
-        Admin::recordVisit('/designs');
 
         $designs = Design::all();
         $warnings = [];
@@ -3182,6 +3183,17 @@ a route nobody can reach is not something you compare against."
         ]);
     }
 ```
+
+### Plan duzeltmesi 4 — 2026-08-19, ziyaret iki kez sayiliyordu
+
+Step 2 `requireLogin()` ile `recordVisit('/designs')`'i birlikte cagiriyordu.
+Ama `Admin::requireLogin()` (src/Admin.php:415) girisli GET isteklerinde
+sekmeyi zaten yolun kendisinden cikarip sayiyor: `/de/admin/designs` →
+`/designs`. Ikinci cagri `admin_usage.hits`'i bir yerine iki artiriyor, ve o
+sayac `pinnedTabs()` ile kenar cubugunun "sik kullanilanlar" siralamasini
+belirliyor — yeni sekme, hak etmedigi bir ustunlukle one gecerdi. Panelin
+diger yedi kontroloru de yalnizca `requireLogin()` cagiriyor, elle sayan yok.
+Satir kaldirildi.
 
 - [ ] **Step 3: Panel şablonunu yaz**
 
