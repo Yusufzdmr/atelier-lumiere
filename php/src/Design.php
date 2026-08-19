@@ -248,4 +248,122 @@ final class Design
         $value = (string) preg_replace('/-{2,}/', '-', $value);
         return trim($value, '-');
     }
+
+    /* ------------------------------ Darstellung ------------------------------ */
+
+    /**
+     * Stilblock eines Designs.
+     *
+     * Alles wird vom Bereich ($scope) eingeschlossen: zwei Designs koennen auf
+     * derselben Seite stehen (Katalog!), ohne sich gegenseitig umzufaerben.
+     *
+     * @param array<string,mixed> $doc
+     */
+    public static function css(array $doc, string $scope): string
+    {
+        $doc = self::complete($doc);
+        $css = '';
+
+        $vars = '';
+        foreach ($doc['palette'] as $key => $entry) {
+            $vars .= '--d-' . $key . ':' . self::safeColor((string) $entry['value']) . ';';
+        }
+        foreach ($doc['fonts'] as $key => $entry) {
+            $vars .= '--df-' . $key . ':' . self::safeFont((string) $entry['family']) . ';';
+        }
+        if ($vars !== '') {
+            $css .= $scope . '{' . $vars . '}';
+        }
+
+        $moves = [];
+
+        foreach (array_values($doc['layers']) as $index => $el) {
+            $selector = $scope . ' .d-el-' . $el['id'];
+            $box = $el['box'];
+
+            $css .= $selector . '{'
+                . 'position:absolute;'
+                . 'left:' . $box['x'] . '%;'
+                . 'top:' . $box['y'] . '%;'
+                . 'width:' . $box['w'] . '%;'
+                . ($box['h'] > 0 ? 'height:' . $box['h'] . '%;' : 'height:auto;')
+                . 'opacity:' . rtrim(rtrim(number_format($box['opacity'] / 100, 2, '.', ''), '0'), '.') . ';'
+                . 'transform:rotate(' . $box['rotate'] . 'deg);'
+                . 'transform-origin:center;'
+                // Die Stapelreihenfolge ist die Reihenfolge der Liste. Ein
+                // eigenes Feld dafuer waere eine zweite Wahrheit.
+                . 'z-index:' . ($index + 1) . ';'
+                . '}';
+
+            if ($el['type'] === 'text') {
+                $style = $el['style'];
+                $css .= $selector . '{'
+                    . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
+                    . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
+                    . 'font-size:' . $style['size'] . '%;'
+                    . 'text-align:' . $style['align'] . ';'
+                    . '}';
+            }
+
+            if ($el['motion']['move'] !== 'none') {
+                $moves[$el['motion']['move']] = true;
+                $css .= $selector . '{'
+                    . 'animation:d-move-' . $el['motion']['move'] . ' '
+                    . $el['motion']['duration'] . 'ms ease-out '
+                    . $el['motion']['delay'] . 'ms both;'
+                    . '}';
+            }
+        }
+
+        foreach (array_keys($moves) as $move) {
+            $css .= self::moveKeyframes((string) $move);
+        }
+
+        if ($moves !== []) {
+            $css .= '@media (prefers-reduced-motion: reduce){' . $scope . ' .d-el{animation:none;}}';
+        }
+
+        return $css;
+    }
+
+    /** Dieselben Bewegungen wie im bestehenden Themenmotor, eigener Namensraum. */
+    private static function moveKeyframes(string $move): string
+    {
+        return match ($move) {
+            'fade'  => '@keyframes d-move-fade{from{opacity:0}}',
+            'rise'  => '@keyframes d-move-rise{from{opacity:0;transform:translateY(14px)}}',
+            'float' => '@keyframes d-move-float{from{opacity:0;transform:translateY(-10px)}}',
+            'sway'  => '@keyframes d-move-sway{from{opacity:0;transform:rotate(-4deg)}}',
+            'zoom'  => '@keyframes d-move-zoom{from{opacity:0;transform:scale(0.94)}}',
+            default => '',
+        };
+    }
+
+    /**
+     * Eine Farbe, die keine Regel schliessen kann.
+     *
+     * Der Wert kommt aus dem Panel und landet ungefiltert in einem Stilblock.
+     * Ohne diese Pruefung reicht ein „}" im Feld, um die Seite umzubauen.
+     */
+    private static function safeColor(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^#[0-9A-Fa-f]{3,8}$/', $value) === 1) {
+            return $value;
+        }
+        if (preg_match('/^rgba?\(\s*[0-9.,%\s]+\)$/', $value) === 1) {
+            return $value;
+        }
+        return 'transparent';
+    }
+
+    /** Schriftname aus demselben Grund: nur Buchstaben, Ziffern, Leerzeichen, Komma, Bindestrich. */
+    private static function safeFont(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '' || preg_match('/^[A-Za-z0-9 ,\-]+$/', $value) !== 1) {
+            return 'inherit';
+        }
+        return $value;
+    }
 }
