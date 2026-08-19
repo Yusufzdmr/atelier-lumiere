@@ -46,7 +46,14 @@ $tasarimlar = [
         'kategorie' => 'luxury',
         'tags'      => ['creme', 'gold'],
         'sort'      => 1,
-        'kunst'     => ['elysee-1', 'elysee-2', 'elysee-3'],
+        // Datei, Kasten und Kippung je Teil. Élysée zeichnet jede Ecke
+        // einzeln, deshalb drei verschiedene Dateien und keine Spiegelung
+        // ausser unten links.
+        'parcalar'  => [
+            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'elysee-1', 'x' => 0,  'y' => 0,  'w' => 17, 'delay' => 200],
+            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'elysee-2', 'x' => 83, 'y' => 0,  'w' => 17, 'delay' => 350],
+            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'elysee-3', 'x' => 0,  'y' => 78, 'w' => 14, 'flipy' => 1, 'delay' => 500],
+        ],
         'kunstwort' => 'Blattwerk',
         'y'         => ['gruss' => 12, 'marie' => 20, 'und' => 34, 'jonas' => 44,
                         'tag' => 73, 'datum' => 77, 'saat' => 84, 'ort' => 91, 'adres' => 95],
@@ -55,7 +62,16 @@ $tasarimlar = [
         'kategorie' => 'modern',
         'tags'      => ['dunkel', 'gold'],
         'sort'      => 2,
-        'kunst'     => ['noir-1', 'noir-2', 'noir-3', 'noir-4'],
+        // Noir stellt zwei Zeichnungen in vier Ecken: gespiegelt und
+        // gedreht. Seit die Kiste flipx/flipy kennt, braucht es dafuer auch
+        // nur zwei Dateien - noir-2 und noir-4 waren Kopien von noir-1 und
+        // noir-3 und sind geloescht.
+        'parcalar'  => [
+            ['id' => 'szenetl', 'wo' => 'oben links',   'datei' => 'noir-1', 'x' => 0,  'y' => 0,  'w' => 17, 'delay' => 200],
+            ['id' => 'szenetr', 'wo' => 'oben rechts',  'datei' => 'noir-1', 'x' => 83, 'y' => 0,  'w' => 17, 'flipx' => 1, 'delay' => 350],
+            ['id' => 'szenebl', 'wo' => 'unten links',  'datei' => 'noir-3', 'x' => 0,  'y' => 78, 'w' => 14, 'flipy' => 1, 'delay' => 500],
+            ['id' => 'szenebr', 'wo' => 'unten rechts', 'datei' => 'noir-3', 'x' => 86, 'y' => 78, 'w' => 14, 'rotate' => 180, 'delay' => 650],
+        ],
         // Noirs Szene zeichnet keine Blaetter, sondern Winkel.
         'kunstwort' => 'Ecke',
         'y'         => ['gruss' => 12, 'marie' => 23, 'und' => 36, 'jonas' => 47,
@@ -78,7 +94,7 @@ if ($theme === null) {
     exit("Thema „{$id}\" nicht gefunden.\n");
 }
 
-foreach ($cfg['kunst'] as $stueck) {
+foreach (array_unique(array_column($cfg['parcalar'], 'datei')) as $stueck) {
     $pfad = __DIR__ . '/../public/assets/designs/' . $stueck . '.svg';
     if (!is_file($pfad)) {
         exit("Es fehlt {$stueck}.svg – erst „php bin/export-scene-art.php {$id}\" laufen lassen.\n");
@@ -137,35 +153,20 @@ $ebenen = [
      'style' => ['color' => 'petal', 'blur' => 46, 'radius' => 50],
      'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
 
-    // 2. Die gezeichnete Szene (frueher Scenes::html)
-    ['id' => 'szenetl', 'label' => $cfg['kunstwort'] . ' oben links', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/' . $cfg['kunst'][0] . '.svg',
-     'box' => ['x' => 0, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
-     'motion' => ['move' => 'rise', 'delay' => 200, 'duration' => 1600]],
-
-    ['id' => 'szenetr', 'label' => $cfg['kunstwort'] . ' oben rechts', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/' . $cfg['kunst'][1] . '.svg',
-     // scene-mirror im Original: an der Senkrechten gespiegelt, nicht gedreht.
-     'box' => ['x' => 83, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'flipx' => 1, 'opacity' => 100],
-     'motion' => ['move' => 'rise', 'delay' => 350, 'duration' => 1600]],
-
-    ['id' => 'szenebl', 'label' => $cfg['kunstwort'] . ' unten links', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/' . $cfg['kunst'][2] . '.svg',
-     // scene-updown im Original: an der Waagerechten gespiegelt. Stand hier
-     // bis zum Umzug von Noir als rotate 180 - das ist etwas anderes und war
-     // nur die naechstbeste Zahl, solange die Kiste nicht spiegeln konnte.
-     'box' => ['x' => 0, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 0, 'flipy' => 1, 'opacity' => 100],
-     'motion' => ['move' => 'rise', 'delay' => 500, 'duration' => 1600]],
-
-    // 2b. Die vierte Ecke. Élysée hat drei Teile, Noir vier - deshalb steht
-    //     sie unter Vorbehalt und nicht als feste Zeile.
-    ...(isset($cfg['kunst'][3]) ? [[
-        'id' => 'szenebr', 'label' => $cfg['kunstwort'] . ' unten rechts', 'type' => 'image', 'spot' => 'page',
-        'src' => '/assets/designs/' . $cfg['kunst'][3] . '.svg',
-        // scene-flip im Original: eine echte Drehung um 180 Grad.
-        'box' => ['x' => 86, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
-        'motion' => ['move' => 'rise', 'delay' => 650, 'duration' => 1600],
-    ]] : []),
+    // 2. Die gezeichnete Szene (frueher Scenes::html). Aus der Tabelle oben,
+    //    damit eine Vorlage mit vier Ecken keine vierte Zeile Code braucht.
+    ...array_map(static fn (array $p): array => [
+        'id'     => $p['id'],
+        'label'  => $cfg['kunstwort'] . ' ' . $p['wo'],
+        'type'   => 'image',
+        'spot'   => 'page',
+        'src'    => '/assets/designs/' . $p['datei'] . '.svg',
+        'box'    => ['x' => $p['x'], 'y' => $p['y'], 'w' => $p['w'], 'h' => 0,
+                     'rotate' => $p['rotate'] ?? 0,
+                     'flipx' => $p['flipx'] ?? 0, 'flipy' => $p['flipy'] ?? 0,
+                     'opacity' => 100],
+        'motion' => ['move' => 'rise', 'delay' => $p['delay'], 'duration' => 1600],
+    ], $cfg['parcalar']),
 
     // 3. Der Kopf der Karte. Alle Zahlen am gerenderten Original gemessen:
     //    x und w in Prozent der Kartenbreite, y in Prozent der 490 px hohen
