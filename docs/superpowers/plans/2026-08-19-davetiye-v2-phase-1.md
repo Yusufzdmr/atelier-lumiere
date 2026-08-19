@@ -2920,7 +2920,10 @@ use function Atelier\e;
 ?>
 <style><?= $styles ?></style>
 
-<section class="mx-auto max-w-6xl px-6 py-16">
+<!-- Der Kopf ist fixiert und 94 px hoch; py-16 sind 64 und die
+     Ueberschrift verschwindet darunter. Die anderen Seiten holen den
+     Abstand aus Ui::pageHero, diese hat keinen. -->
+<section class="mx-auto max-w-6xl px-6 pb-24 pt-32">
   <h1 class="font-display text-3xl font-light text-ink">
     <?= $locale === 'de' ? 'Designs (zweite Fassung)' : 'Designs (second version)' ?>
   </h1>
@@ -2956,6 +2959,17 @@ use function Atelier\e;
   </div>
 </section>
 ```
+
+### Plan düzeltmesi — 2026-08-19, Task 10'dan sonra
+
+Yukarıdaki `py-16` ölçülmedi, varsayıldı. Tarayıcıda ölçüldü: `#site-header`
+`fixed ... py-6` ile **93,6 px** yer kaplıyor, `py-16` ise 64 px üst boşluk
+veriyor — `h1` başlığın altında kalıyor ve `elementFromPoint()` başlığın
+üstünde `HEADER`'ı döndürüyor, yani yazı hem görünmüyor hem seçilemiyor.
+Diğer genel sayfalar bu boşluğu `Ui::pageHero`'nun tam genişlikteki
+görselinden alıyor; bu sayfada hero yok, o yüzden boşluğu kendisi vermeli.
+`pt-32` (128 px) 93,6'yı rahat aşıyor. Önizleme sayfası etkilenmiyor:
+`d-stage` `fixed inset-0 z-50` ile başlığın üstünde tam ekran duruyor.
 
 - [ ] **Step 5: Rotaları ekle**
 
