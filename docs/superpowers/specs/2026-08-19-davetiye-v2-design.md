@@ -172,7 +172,7 @@ alınacak: slug çakışması riski var, ayrı tablo mu ortak mı orada karara b
 | `sections` | `Section[]` | Faz 3'e kadar boş dizi |
 | `animation` | `{intro, idle, reveal, particle, card, nameMove, speed, delay}` | mevcut `Themes` sabitleri aynen. `card` temanın skaler `animation` alanı (kartın giriş hareketi), `nameMove` ise `nameAnimation` — ikisi de adları çakıştığı için yeniden adlandırıldı |
 
-`canvas.ratio` başlangıçta `"9:16"`. `canvas.safe` kenar boşluğu yüzdesi —
+`canvas.ratio` varsayılanı `"9:16"`, ama her tasarım kendi oranını yazar — Élysée ölçüldüğünde `"632:490"` çıktı (yatay). `canvas.safe` kenar boşluğu yüzdesi —
 yayın kontrolünde (Faz 2) "isim güvenli alanın dışına taşıyor" uyarısı buradan
 üretilecek.
 
@@ -377,20 +377,50 @@ php/tests/design_*.php                   test dosyaları
 
 ## 7. Bitti sayılma ölçütü
 
-`/{locale}/v2/designs/elysee` ile `/{locale}/designs/elysee` yan yana açıldığında
-**aynı görünecek** — ama v2 tarafı tamamen `designs.doc` verisinden sürülüyor
-olacak; Élysée'ye ait tek satır PHP kodu olmayacak.
+> **Bu bölüm 2026-08-19'da, uygulama sırasında ölçüm yapıldıktan sonra
+> güncellendi.** İlk hâli "iki sayfa birebir aynı görünecek" diyordu; o ölçüt
+> ulaşılamazdı ve nedeni aşağıda.
 
-Kontrol listesi:
+`/{locale}/v2/designs/elysee` ile `/{locale}/designs/elysee` yan yana açılacak.
+v2 tarafı tamamen `designs.data` verisinden sürülüyor olacak; Élysée'ye ait tek
+satır PHP kodu olmayacak.
 
-- [ ] Telefon genişliğinde (390 px) iki sayfa aynı
-- [ ] Tablet ve masaüstünde aynı
-- [ ] Zarf → mühür → kart açılış animasyonu aynı zamanlamada
-- [ ] Uzun isim ("Maximilian & Charlotte-Sophie") ikisinde de aynı davranıyor
+### Neyin karşılaştırıldığı
+
+Eski sayfadaki `.t-card` ölçüldü: **632 × 1554 px**. Bu bir kart değil,
+davetiyenin tamamı — selamlama, isimler, tarih, mekân, sonra metin, geri sayım,
+program, galeri, RSVP. Alt kısmın tamamı **bölüm** (`sections`) ve bölümler bu
+spec'in kendi faz tablosunda Faz 3'e ait.
+
+Karşılaştırma bu yüzden **açılış görünümüyle** sınırlı: zarf, ve zarf açılınca
+kartın üst **490 px**'i. Kutu oranı 632 : 490 — yatay, `9:16` değil.
+
+Bu bir ödün değil; spec'in kendi faz ayrımının gerçekle buluşması. Ama Faz 1'in
+iddiası bu yüzden "davetiyenin tamamı veriden sürülüyor" değil, **"açılış
+görünümü veriden sürülüyor"**.
+
+### Kontrol listesi
+
+- [ ] Masaüstü (1440 px) — açılış görünümü aynı
+- [ ] Tablet (820 px) — aynı
+- [ ] Telefon (390 px) — **sapma bekleniyor**, ölçülüp rakamla yazılacak
+- [ ] Zarf → mühür → kart açılış sırası ve zamanlaması aynı
+- [ ] Uzun isim ikisinde de aynı davranıyor
 - [ ] `prefers-reduced-motion` açıkken ikisi de duruyor
+- [ ] Üretilmeyen her şey isim isim listelendi (mühür yazısı, partiküller,
+      bölümler…) ve Faz 2/3'e devredildi
 - [ ] Eski rotalar ve panel sekmelerinin tamamı uyarısız 200 dönüyor
+- [ ] `git diff master` çıktısında mevcut dosyalardan silinen satır yok
 
-Son madde şartın kendisi: eskisine dokunulmadığının kanıtı.
+### Telefondaki sapma neden bekleniyor
+
+Sahne sanatı ve renk lekeleri eski sayfada `vw` ile ölçekleniyor ve bir piksel
+tavanı var (`38vw`, üst sınır `240px`). Yeni format yalnızca yüzde biliyor. Bu
+ikisi genişlikle birlikte **tanım gereği** ayrışıyor. Ölçüt sapmayı gizlemek
+yerine büyüklüğünü kaydediyor; Faz 2'de formata `maxWidth` eklenip
+eklenmeyeceğine o rakam karar verecek.
+
+Son iki madde şartın kendisi: eskisine dokunulmadığının kanıtı.
 
 ---
 
