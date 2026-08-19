@@ -2,10 +2,15 @@
 declare(strict_types=1);
 
 /**
- * Élysée als Dokument der zweiten Fassung anlegen.
+ * Ein Thema als Dokument der zweiten Fassung anlegen.
  *
- *   php bin/seed-designs.php --dry   nur zeigen
- *   php bin/seed-designs.php         schreiben
+ *   php bin/seed-designs.php              Élysée schreiben
+ *   php bin/seed-designs.php noir         Noir schreiben
+ *   php bin/seed-designs.php noir --dry   nur zeigen
+ *
+ * Zwei Vorlagen, weil eine nichts beweist: Élysée ist hell, floral und ruhig,
+ * Noir dunkel und geometrisch. Was das Format nur bei einer von beiden kann,
+ * kann es nicht.
  *
  * Das Thema selbst bleibt unberuehrt und laeuft weiter. Hier entsteht daneben
  * ein Eintrag in `designs`, damit sich beide nebeneinander ansehen lassen.
@@ -16,7 +21,7 @@ declare(strict_types=1);
  * sich nur am fertigen Bild abmessen – und eine gemessene Zahl gehoert dorthin,
  * wo jemand sie nachmessen kann.
  *
- * Voraussetzung: php bin/export-scene-art.php elysee ist gelaufen.
+ * Voraussetzung: php bin/export-scene-art.php <id> ist gelaufen.
  */
 
 require __DIR__ . '/../src/bootstrap.php';
@@ -30,25 +35,65 @@ if (PHP_SAPI !== 'cli') {
 
 $dry = in_array('--dry', $argv, true);
 
-$theme = Themes::find('elysee');
+/*
+ * Was sich zwischen zwei Vorlagen unterscheidet, steht hier; alles andere ist
+ * geteilt. Die y-Werte sind Prozente der Kopfzone, gemessen am gerenderten
+ * Original. Sie unterscheiden sich, weil der Namensblock von Noir enger sitzt
+ * als der von Élysée - die Karte ist eben nicht themenunabhaengig.
+ */
+$tasarimlar = [
+    'elysee' => [
+        'kategorie' => 'luxury',
+        'tags'      => ['creme', 'gold'],
+        'sort'      => 1,
+        'kunst'     => ['elysee-1', 'elysee-2', 'elysee-3'],
+        'kunstwort' => 'Blattwerk',
+        'y'         => ['gruss' => 12, 'marie' => 20, 'und' => 34, 'jonas' => 44,
+                        'tag' => 73, 'datum' => 77, 'saat' => 84, 'ort' => 91, 'adres' => 95],
+    ],
+    'noir' => [
+        'kategorie' => 'modern',
+        'tags'      => ['dunkel', 'gold'],
+        'sort'      => 2,
+        'kunst'     => ['noir-1', 'noir-2', 'noir-3', 'noir-4'],
+        // Noirs Szene zeichnet keine Blaetter, sondern Winkel.
+        'kunstwort' => 'Ecke',
+        'y'         => ['gruss' => 12, 'marie' => 23, 'und' => 36, 'jonas' => 47,
+                        'tag' => 73, 'datum' => 77, 'saat' => 84, 'ort' => 91, 'adres' => 95],
+    ],
+];
+
+$id = 'elysee';
+foreach (array_slice($argv, 1) as $arg) {
+    if ($arg !== '--dry') { $id = $arg; }
+}
+if (!isset($tasarimlar[$id])) {
+    exit("Unbekannt: {$id}. Bekannt: " . implode(', ', array_keys($tasarimlar)) . PHP_EOL);
+}
+$cfg = $tasarimlar[$id];
+$y   = $cfg['y'];
+
+$theme = Themes::find($id);
 if ($theme === null) {
-    exit("Thema „elysee\" nicht gefunden.\n");
+    exit("Thema „{$id}\" nicht gefunden.\n");
 }
 
-foreach (['elysee-1', 'elysee-2', 'elysee-3'] as $stueck) {
+foreach ($cfg['kunst'] as $stueck) {
     $pfad = __DIR__ . '/../public/assets/designs/' . $stueck . '.svg';
     if (!is_file($pfad)) {
-        exit("Es fehlt {$stueck}.svg – erst „php bin/export-scene-art.php elysee\" laufen lassen.\n");
+        exit("Es fehlt {$stueck}.svg – erst „php bin/export-scene-art.php {$id}\" laufen lassen.\n");
     }
 }
 
 $doc = Design::fromTheme($theme);
 
 $doc['status']   = 'active';
-$doc['category'] = 'luxury';
-$doc['tags']     = ['creme', 'gold'];
-$doc['sort']     = 1;
-$doc['name']     = ['de' => 'Élysée', 'en' => 'Élysée'];
+$doc['category'] = $cfg['kategorie'];
+$doc['tags']     = $cfg['tags'];
+$doc['sort']     = $cfg['sort'];
+// Den Namen traegt fromTheme() nicht mit - es kennt nur Farben, Schriften
+// und Bewegung. Er kommt deshalb hier aus dem Thema.
+$doc['name']     = ['de' => (string) $theme['name'], 'en' => (string) $theme['name']];
 // Gemessen, nicht gewaehlt: der Kopf der Karte ist 632 x 490 - quer, nicht
 // hochkant. Was darunter liegt, sind Abschnitte und gehoert nach Faz 3.
 $doc['canvas']   = ['ratio' => '632:490', 'safe' => 6];
@@ -93,27 +138,41 @@ $ebenen = [
      'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
 
     // 2. Die gezeichnete Szene (frueher Scenes::html)
-    ['id' => 'szenetl', 'label' => 'Blattwerk oben links', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/elysee-1.svg',
+    ['id' => 'szenetl', 'label' => $cfg['kunstwort'] . ' oben links', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/' . $cfg['kunst'][0] . '.svg',
      'box' => ['x' => 0, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 200, 'duration' => 1600]],
 
-    ['id' => 'szenetr', 'label' => 'Blattwerk oben rechts', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/elysee-2.svg',
-     'box' => ['x' => 83, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+    ['id' => 'szenetr', 'label' => $cfg['kunstwort'] . ' oben rechts', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/' . $cfg['kunst'][1] . '.svg',
+     // scene-mirror im Original: an der Senkrechten gespiegelt, nicht gedreht.
+     'box' => ['x' => 83, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'flipx' => 1, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 350, 'duration' => 1600]],
 
-    ['id' => 'szenebl', 'label' => 'Blattwerk unten links', 'type' => 'image', 'spot' => 'page',
-     'src' => '/assets/designs/elysee-3.svg',
-     'box' => ['x' => 0, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
+    ['id' => 'szenebl', 'label' => $cfg['kunstwort'] . ' unten links', 'type' => 'image', 'spot' => 'page',
+     'src' => '/assets/designs/' . $cfg['kunst'][2] . '.svg',
+     // scene-updown im Original: an der Waagerechten gespiegelt. Stand hier
+     // bis zum Umzug von Noir als rotate 180 - das ist etwas anderes und war
+     // nur die naechstbeste Zahl, solange die Kiste nicht spiegeln konnte.
+     'box' => ['x' => 0, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 0, 'flipy' => 1, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 500, 'duration' => 1600]],
+
+    // 2b. Die vierte Ecke. Élysée hat drei Teile, Noir vier - deshalb steht
+    //     sie unter Vorbehalt und nicht als feste Zeile.
+    ...(isset($cfg['kunst'][3]) ? [[
+        'id' => 'szenebr', 'label' => $cfg['kunstwort'] . ' unten rechts', 'type' => 'image', 'spot' => 'page',
+        'src' => '/assets/designs/' . $cfg['kunst'][3] . '.svg',
+        // scene-flip im Original: eine echte Drehung um 180 Grad.
+        'box' => ['x' => 86, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
+        'motion' => ['move' => 'rise', 'delay' => 650, 'duration' => 1600],
+    ]] : []),
 
     // 3. Der Kopf der Karte. Alle Zahlen am gerenderten Original gemessen:
     //    x und w in Prozent der Kartenbreite, y in Prozent der 490 px hohen
     //    Kopfzone, size als Zehnfaches des gemessenen cqw-Werts.
     ['id' => 'gruss', 'label' => 'Gruss', 'type' => 'text', 'spot' => 'card',
      'text' => ['de' => 'Wir heiraten', 'en' => 'We are getting married'],
-     'box' => ['x' => 8, 'y' => 12, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['gruss'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'soft', 'size' => 15, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 300, 'duration' => 1000],
      'permissions' => ['text' => true]],
@@ -124,7 +183,7 @@ $ebenen = [
      // Volle Textbreite, nicht die gemessene Breite des kurzen Namens:
      // gemessen wurde "Marie", und ein langer Name laeuft aus einem
      // 27%-Kasten nach beiden Seiten heraus. Zentriert wird per text-align.
-     'box' => ['x' => 8, 'y' => 20, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['marie'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'script', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 400, 'duration' => 1200],
      'permissions' => ['color' => true]],
@@ -136,42 +195,42 @@ $ebenen = [
     // deshalb aufrecht, und das ist in der Spec vermerkt.
     ['id' => 'und', 'label' => 'Und-Zeichen', 'type' => 'text', 'spot' => 'card',
      'text' => ['de' => '&', 'en' => '&'],
-     'box' => ['x' => 8, 'y' => 34, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['und'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'accent', 'size' => 47, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 475, 'duration' => 1200],
      'permissions' => []],
 
     ['id' => 'jonas', 'label' => 'Braeutigam', 'type' => 'text', 'spot' => 'card',
      'bind' => 'groom_name',
-     'box' => ['x' => 8, 'y' => 44, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['jonas'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'script', 'color' => 'accent', 'size' => 111, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 550, 'duration' => 1200],
      'permissions' => ['color' => true]],
 
     ['id' => 'tag', 'label' => 'Wochentag', 'type' => 'text', 'spot' => 'card',
      'bind' => 'wedding_weekday',
-     'box' => ['x' => 8, 'y' => 73, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['tag'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'soft', 'size' => 18, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 700, 'duration' => 1000],
      'permissions' => []],
 
     ['id' => 'datum', 'label' => 'Datum', 'type' => 'text', 'spot' => 'card',
      'bind' => 'wedding_date',
-     'box' => ['x' => 8, 'y' => 77, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['datum'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'display', 'color' => 'fg', 'size' => 38, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 800, 'duration' => 1000],
      'permissions' => []],
 
     ['id' => 'saat', 'label' => 'Uhrzeit', 'type' => 'text', 'spot' => 'card',
      'bind' => 'wedding_time',
-     'box' => ['x' => 8, 'y' => 84, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['saat'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'fg', 'size' => 23, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 880, 'duration' => 1000],
      'permissions' => []],
 
     ['id' => 'ort', 'label' => 'Ort', 'type' => 'text', 'spot' => 'card',
      'bind' => 'location_name',
-     'box' => ['x' => 8, 'y' => 91, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['ort'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'fg', 'size' => 24, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 960, 'duration' => 1000],
      'permissions' => []],
@@ -180,7 +239,7 @@ $ebenen = [
      'bind' => 'location_address',
      // 96 % waeren 500 px, und die Unterlaengen von "Guenzburg" enden bei
      // 522 - einen Pixel unter der 521 px hohen Karte, die sie abschneidet.
-     'box' => ['x' => 8, 'y' => 95, 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 8, 'y' => $y['adres'], 'w' => 85, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'style' => ['font' => 'body', 'color' => 'soft', 'size' => 22, 'align' => 'center'],
      'motion' => ['move' => 'fade', 'delay' => 1040, 'duration' => 1000],
      'permissions' => []],

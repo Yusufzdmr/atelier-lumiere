@@ -93,3 +93,42 @@ assert_same(
     substr_count($doc2, '.d-x .d-el-a'),
     'css: keine Regel ohne den Bereich davor'
 );
+
+/* --- Spiegeln: das Original kippt Szenenteile mit scale(-1 1) --- */
+
+// Der alte Motor stellt die vier Ecken derselben Zeichnung mit drei
+// CSS-Klassen auf: scene-mirror (scale:-1 1), scene-updown (scale:1 -1) und
+// scene-flip (rotate:180deg). Eine Drehung um 180 Grad ist etwas anderes als
+// eine Spiegelung, deshalb kennt die Kiste beides.
+
+$ohne = Design::css(['id' => 'sp', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10]],
+]], '.d-sp');
+
+assert_contains($ohne, 'transform:rotate(0deg);', 'css: ohne Spiegelung bleibt es bei der Drehung');
+assert_not_contains($ohne, 'scale(', 'css: ohne Spiegelung wird kein scale geschrieben');
+
+$quer = Design::css(['id' => 'sp', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10, 'flipx' => 1]],
+]], '.d-sp');
+
+assert_contains($quer, 'transform:rotate(0deg) scale(-1,1);', 'css: flipx spiegelt an der Senkrechten');
+
+$hoch = Design::css(['id' => 'sp', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10, 'flipy' => 1]],
+]], '.d-sp');
+
+assert_contains($hoch, 'transform:rotate(0deg) scale(1,-1);', 'css: flipy spiegelt an der Waagerechten');
+
+// Gedreht UND gespiegelt: die Reihenfolge ist dieselbe wie bei den
+// Einzeleigenschaften des Originals - erst drehen, dann spiegeln.
+$beides = Design::css(['id' => 'sp', 'layers' => [
+    ['id' => 'a', 'src' => '/uploads/a.webp', 'box' => ['x' => 0, 'y' => 0, 'w' => 10, 'rotate' => 180, 'flipx' => 1, 'flipy' => 1]],
+]], '.d-sp');
+
+assert_contains($beides, 'transform:rotate(180deg) scale(-1,-1);', 'css: Drehung vor Spiegelung');
+
+// Ein unsinniger Wert darf das Dokument nicht unlesbar machen.
+$box = Design::completeBox(['flipx' => 7, 'flipy' => -3]);
+assert_same($box['flipx'], 1, 'box: flipx wird auf 1 begrenzt');
+assert_same($box['flipy'], 0, 'box: flipy wird auf 0 begrenzt');

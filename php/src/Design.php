@@ -46,6 +46,12 @@ final class Design
         'h'       => [0, 200, 0],
         'rotate'  => [-180, 180, 0],
         'opacity' => [0, 100, 100],
+        // Spiegeln ist keine Drehung. Der alte Motor stellt dieselbe
+        // Zeichnung mit scale:-1 1 bzw. scale:1 -1 in die vier Ecken; ohne
+        // die beiden Schalter laesst sich das nicht abbilden - aufgefallen
+        // beim Umzug von Noir, dessen Szene vier Ecken hat.
+        'flipx'   => [0, 1, 0],
+        'flipy'   => [0, 1, 0],
     ];
 
     /**
@@ -305,7 +311,13 @@ final class Design
                 . 'width:' . $box['w'] . '%;'
                 . ($box['h'] > 0 ? 'height:' . $box['h'] . '%;' : 'height:auto;')
                 . 'opacity:' . rtrim(rtrim(number_format($box['opacity'] / 100, 2, '.', ''), '0'), '.') . ';'
-                . 'transform:rotate(' . $box['rotate'] . 'deg);'
+                . 'transform:rotate(' . $box['rotate'] . 'deg)'
+                // Reihenfolge wie bei den Einzeleigenschaften des Originals:
+                // erst drehen, dann spiegeln.
+                . ($box['flipx'] || $box['flipy']
+                    ? ' scale(' . ($box['flipx'] ? '-1' : '1') . ',' . ($box['flipy'] ? '-1' : '1') . ')'
+                    : '')
+                . ';'
                 . 'transform-origin:center;'
                 // Die Stapelreihenfolge ist die Reihenfolge der Liste. Ein
                 // eigenes Feld dafuer waere eine zweite Wahrheit.

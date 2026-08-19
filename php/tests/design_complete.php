@@ -30,7 +30,11 @@ assert_same('golden-garden', Design::complete(['id' => 'Golden Garden!'])['id'],
 
 $box = Design::completeBox([]);
 
-assert_same(['x' => 4, 'y' => 4, 'w' => 20, 'h' => 0, 'rotate' => 0, 'opacity' => 100], $box,
+// flipx/flipy kamen mit dem zweiten Design dazu: Noirs Szene stellt
+// dieselbe Zeichnung gespiegelt in vier Ecken, und Spiegeln ist keine
+// Drehung. Voreingestellt ist beides aus.
+assert_same(['x' => 4, 'y' => 4, 'w' => 20, 'h' => 0, 'rotate' => 0, 'opacity' => 100,
+             'flipx' => 0, 'flipy' => 0], $box,
     'completeBox: Standardwerte');
 
 /* --- Kasten: Werte ausserhalb des Bereichs werden beschnitten, nicht verworfen --- */

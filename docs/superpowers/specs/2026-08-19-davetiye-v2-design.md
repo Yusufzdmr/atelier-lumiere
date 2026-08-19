@@ -509,6 +509,27 @@ grafikerden gelecek katmanlı bir tasarım. Azaltma: Faz 2'ye geçmeden ikinci b
 tasarım daha aktarılır — tercihen mevcutlar arasında en farklı olanı (Noir,
 koyu zemin + farklı partikül).
 
+> **Yapıldı — 2026-08-19.** Noir aktarıldı (`php bin/seed-designs.php noir`,
+> 15 katman). Ölçüm sonucu: v2 Noir, eski Noir'ın açılış görünümüyle oransal
+> olarak **%0,3 içinde** örtüşüyor. Bu Élysée'deki ~%4,5'lik sapmadan belirgin
+> daha iyi ve sebebi de anlaşıldı: **kart yerleşimi temadan bağımsız değil.**
+> Noir'ın isim bloğu Élysée'ninkinden dar; planın ölçüm tablosu (73/77/84/91/96)
+> aslında Noir'ın geometrisiydi. Her tasarım kendi ölçüsünü istiyor — format
+> bunu kutu bazında zaten tutuyor.
+>
+> Aktarım üç eksik gösterdi, biri aynı gün kapatıldı:
+>
+> | Bulgu | Durum |
+> |---|---|
+> | **Aynalama.** Eski motor aynı çizimi dört köşeye `scale:-1 1` ve `scale:1 -1` ile koyuyor; kutuda yalnızca `rotate` vardı ve 180° dönüş ayna değildir. Élysée'nin sol alt yaprağı da bu yüzden yaklaşık duruyordu. | **Kapatıldı:** kutuya `flipx`/`flipy` eklendi, `css()` `rotate()` yanına `scale()` yazıyor, testleri var (199 kontrol). İki tasarım da yeniden tohumlandı. |
+> | **`texture`.** Noir zemininde data-URI'li bir gürültü deseni taşıyor; `Design::fromTheme()` bu alanı hiç görmüyor, format da bir desen/doku katmanı bilmiyor. | Faz 2 |
+> | **`fromTheme()` temanın adını taşımıyor.** Yalnızca renk, yazı ve hareket geçiyor; ad tohumda elle veriliyordu ve ilk Noir kaydı "Élysée" adıyla açıldı. | Tohumda düzeltildi; `fromTheme()` tarafı Faz 2 |
+>
+> Ayrıca Noir'ın miras aldığı hareket eksenleri (`spark` partikülü, `darkroom`
+> girişi, `pulse` boşta hareketi, `letters` isim animasyonu, `flip` kart
+> hareketi, `side` açılışı) formatta hâlâ yok — bunlar zaten Faz 1'in
+> "üretilmeyenler" listesinde duruyor ve Noir onları ikinci kez doğruladı.
+
 **Sabit metinlerin element'e çevrilmesi.** Kart şablonundaki yerleşim CSS
 akışıyla üretiliyor; yüzde kutulara dökerken küçük kaymalar çıkabilir. Azaltma:
 bitti ölçütü "yaklaşık aynı" değil "aynı" diyor, ve karşılaştırma üç genişlikte
