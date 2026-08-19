@@ -2279,6 +2279,32 @@ Dokuz satır not al. Aşağıdaki betikteki sayılar **başlangıç tahminidir**
 > Formata `anchor` alanı eklemek (`top-left` / `top-right` / `bottom-left` / `bottom-right`)
 > doğru çözüm ama Faz 2'ye ait: `blur`/`radius` olmadan tasarım **hiç** çizilemiyordu, bu ise
 > yalnızca referans dışı yüksekliklerde hassasiyet kaybettiriyor. Faz 1'in kanıtını bloke etmiyor.
+### `spot: page` katmanları CSS'ten türetildi — ölçmene gerek yok
+
+Aşağıdaki beş katmanın sayıları tarayıcıda ölçülerek değil, `style.css`'ten **hesaplanarak**
+bulundu. Referans: **viewport 1440 × 900**. Türetmeyi kontrol edebilmen için burada duruyor.
+
+| Katman | style.css | px (1440×900) | w | h | x | y |
+|---|---|---|---|---|---|---|
+| `szenetl` | `38vw`, tavan `240px`, `top:0 left:0` | 240 | 240/1440 = **17** | otomatik | **0** | **0** |
+| `szenetr` | aynı, `right:0` | 240 | **17** | otomatik | 100−17 = **83** | **0** |
+| `szenebl` | `32vw`, tavan `200px`, `bottom:0 left:0` | 200 | 200/1440 = **14** | otomatik | **0** | 100−(200/900) = **78** |
+| `washa` | `58vw`, tavan `520px`, `top:-10% left:-16%` | 520 | 520/1440 = **36** | 520/900 = **58** | **−16** | **−10** |
+| `washb` | `52vw`, tavan `460px`, `bottom:-8% right:-14%` | 460 | 460/1440 = **32** | 460/900 = **51** | 100+14−32 = **82** | 100+8−51 = **57** |
+
+Üç noktaya dikkat:
+
+1. **Sahne parçalarında `h = 0` (otomatik).** viewBox kare olduğu için tarayıcı yüksekliği
+   genişlikten türetiyor; elle yazmak kabın oranı değişince bozardı.
+2. **`szenebl`'in `y`'si referansa bağlı.** `bottom:0`'ı format ifade edemiyor (bkz. yukarıdaki
+   köşe yapışması notu), o yüzden `100 − yükseklik` diye hesaplandı. Pencere yüksekliği
+   değişince kayar; Task 12 ne kadar kaydığını ölçecek.
+3. **Lekeler orijinalde daire** (`width` ve `height` ikisi de `vw`). Formatta `w` genişliğin,
+   `h` yüksekliğin yüzdesi olduğu için farklı oranlarda hafif elips oluyorlar. `blur: 46` altında
+   fark görünmüyor, ama bilinerek yapılıyor.
+
+**Sadece üç metin katmanı (`namen`, `datum`, `ort`) gerçekten ölçülecek** — onlar kartın içinde ve
+kartın yüksekliği içeriğe göre değişiyor, hesapla bulunamaz.
 
 - [ ] **Step 2: Tohumlama betiğini yaz**
 
@@ -2361,29 +2387,29 @@ if (isset($doc['palette']['accent'])) {
 $ebenen = [
     // 1. Die weichen Farbflecken (frueher .scene-wash-a / -b)
     ['id' => 'washa', 'label' => 'Farbfleck oben links', 'type' => 'shape', 'spot' => 'page',
-     'box' => ['x' => -16, 'y' => -10, 'w' => 58, 'h' => 58, 'rotate' => 0, 'opacity' => 30],
+     'box' => ['x' => -16, 'y' => -10, 'w' => 36, 'h' => 58, 'rotate' => 0, 'opacity' => 30],
      'style' => ['color' => 'accentsoft', 'blur' => 46, 'radius' => 50],
      'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
 
     ['id' => 'washb', 'label' => 'Farbfleck unten rechts', 'type' => 'shape', 'spot' => 'page',
-     'box' => ['x' => 62, 'y' => 56, 'w' => 52, 'h' => 52, 'rotate' => 0, 'opacity' => 34],
+     'box' => ['x' => 82, 'y' => 57, 'w' => 32, 'h' => 51, 'rotate' => 0, 'opacity' => 34],
      'style' => ['color' => 'petal', 'blur' => 46, 'radius' => 50],
      'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1600]],
 
     // 2. Die gezeichnete Szene (frueher Scenes::html)
     ['id' => 'szenetl', 'label' => 'Blattwerk oben links', 'type' => 'image', 'spot' => 'page',
      'src' => '/assets/designs/elysee-1.svg',
-     'box' => ['x' => 0, 'y' => 0, 'w' => 62, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 0, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 200, 'duration' => 1600]],
 
     ['id' => 'szenetr', 'label' => 'Blattwerk oben rechts', 'type' => 'image', 'spot' => 'page',
      'src' => '/assets/designs/elysee-2.svg',
-     'box' => ['x' => 38, 'y' => 0, 'w' => 62, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
+     'box' => ['x' => 83, 'y' => 0, 'w' => 17, 'h' => 0, 'rotate' => 0, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 350, 'duration' => 1600]],
 
     ['id' => 'szenebl', 'label' => 'Blattwerk unten links', 'type' => 'image', 'spot' => 'page',
      'src' => '/assets/designs/elysee-3.svg',
-     'box' => ['x' => 0, 'y' => 48, 'w' => 52, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
+     'box' => ['x' => 0, 'y' => 78, 'w' => 14, 'h' => 0, 'rotate' => 180, 'opacity' => 100],
      'motion' => ['move' => 'rise', 'delay' => 500, 'duration' => 1600]],
 
     // 3. Der Text der Karte
