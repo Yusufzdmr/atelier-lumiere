@@ -228,3 +228,15 @@ türü. Süit 525 kontrolle yeşil.
 henüz var olmayan veri ortaya çıkınca çalışan kod"du. Bu fazda o sınıfın en
 olası hâli **`wahl` taşımayan eski davetiye** — ve o, üretimde bugün var olan
 tek davetiye türü.
+
+## 14. Bu faz uygulandı — açtığı borç
+
+Uygulama planı: `docs/superpowers/plans/2026-08-20-davetiye-v2-yayin-sonrasi-duzenleme.md`
+
+Sonraki dilime devreden, §9'da yazılıydı ve bu faz onu **büyüttü**:
+
+- **`manageKey` yenileme/iptal.** Anahtar artık yazma yetkisi veriyor. Yanlış
+  kişiye gitmiş bir link artık sadece yanıtları okutmuyor, davetiyeyi de
+  değiştirtiyor. Yenileme kendi kararı, ama artık ertelenebilir değil.
+- **Davetiyeyi silme.** Düzenleme ekranı varken "sil" düğmesinin yokluğu
+  görünür bir eksik hâline geldi.
