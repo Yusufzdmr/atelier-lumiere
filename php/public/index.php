@@ -112,7 +112,10 @@ $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new 
 // Der Assistent der zweiten Fassung. Die feste Adresse steht vor dem Muster
 // {slug} - sonst liest der Router "einladung" als Namen einer Einladung.
 $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new InviteV2Controller())->wizard()));
-$router->get('/{locale}/v2/einladung/{slug}', $page_(static fn (array $p) => (new InviteV2Controller())->show($p)));
+// any und nicht get: die Einladung nimmt ihre eigene Antwort entgegen
+// (DesignSections druckt ein Formular ohne action). Ein eigener Endpunkt
+// muesste erst wieder herausfinden, zu welcher Einladung er gehoert.
+$router->any('/{locale}/v2/einladung/{slug}', $page_(static fn (array $p) => (new InviteV2Controller())->show($p)));
 
 $router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
 $router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));

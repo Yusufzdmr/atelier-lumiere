@@ -310,6 +310,15 @@ final class InviteV2Controller
             return;
         }
 
+        // Erst antworten, dann zeichnen: die Seite, die nach dem Absenden
+        // erscheint, soll den Dank zeigen und nicht noch einmal das leere
+        // Formular. Waere die Reihenfolge umgekehrt, saehe der Gast seine
+        // eigene Antwort nicht und schickte sie ein zweites Mal.
+        $gesendet = false;
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $gesendet = $this->saveReply((string) $einladung['slug'], $einladung['data']);
+        }
+
         $doc = Design::complete($einladung['design_snapshot']);
         $values = Design::bindValues($einladung['data'], $locale);
         $scope = '.d-' . $doc['id'];
@@ -361,7 +370,86 @@ final class InviteV2Controller
             'karte'  => Design::html($doc, $values, $locale, 'card'),
             // Rohdaten, nicht gebundene Werte: die Abschnitte binden ihre
             // eigenen Platzhalter (Adresse, Countdown-Datum) selbst.
-            'abschnitte' => DesignSections::html($doc, $einladung['data'], $locale),
+            //
+            // $form ist alles, was DesignSections nicht selbst wissen darf:
+            // das CSRF-Zeichen kommt aus der Sitzung, und ob gerade
+            // geantwortet wurde, weiss nur diese Anfrage. Das leere vierte
+            // Argument laesst das Bezugsdatum bei date('Y-m-d') - eine echte
+            // Einladung schaut auf die echte Uhr.
+            'abschnitte' => DesignSections::html($doc, $einladung['data'], $locale, '', [
+                'csrf' => Security::csrf(),
+                'sent' => $gesendet,
+            ]),
         ]);
+    }
+
+    /**
+     * Die Antwort eines Gastes.
+     *
+     * Sie geht in die Tabelle rsvps und nirgendwo sonst - weder in
+     * design_snapshot noch in invitations_v2.data. Das ist die Regel aus
+     * Phase 3B ("das Dokument einer veroeffentlichten Einladung friert ein"),
+     * und sie haelt hier ein Versprechen, das mehr wert ist als Bequemlich-
+     * keit: nichts, was ein Gast tippt, kann das Aussehen der Einladung
+     * veraendern. Deshalb steht hier kein einziger Schreibzugriff auf die
+     * Einladung selbst.
+     *
+     * Falsch heisst still: ein abgelaufenes Zeichen, eine Flut oder ein
+     * leerer Name geben false zurueck und die Seite erscheint einfach ohne
+     * Dank. Das ist wenig - aber die Alternative waere, einem Gast eine
+     * Fehlermeldung ueber CSRF zu zeigen.
+     *
+     * @param array<string,mixed> $data die Daten der Einladung, nicht des Gastes
+     */
+    private function saveReply(string $slug, array $data): bool
+    {
+        // Erste Kontrolle, vor allem anderen.
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            return false;
+        }
+
+        // Eigener Schluessel, getrennt vom alten Motor: eine Flut auf
+        // /einladung/{slug} soll /v2/einladung/{slug} nicht mitsperren. Das
+        // Mass ist das des alten Motors - 20 in zehn Minuten je Einladung
+        // reicht einer grossen Hochzeit und stoppt ein Skript.
+        if (Security::throttle('rsvp-v2-' . $slug, 20, 600)) {
+            return false;
+        }
+
+        // Ohne Namen keine Antwort: bis zur Gaesteliste in Phase D ist der
+        // Name die einzige Kennung, die wir haben. Eine namenlose Zeile
+        // koennte weder angezeigt noch ersetzt werden.
+        $name = Security::clean($_POST['name'] ?? '', 60);
+        if ($name === '') {
+            return false;
+        }
+
+        // Dieselbe Regel wie in DesignSections::visible(), hier ein zweites
+        // Mal - und das ist Absicht. Dort entscheidet sie, ob gedruckt wird;
+        // hier, ob angenommen wird. Ein POST braucht keine gedruckte Seite:
+        // ein alter Tab oder eine von Hand gestellte Anfrage kaeme sonst noch
+        // Jahre nach der Hochzeit durch. Eine Regel, die nur im Markup steht,
+        // ist keine Regel.
+        $datum = trim((string) ($data['date'] ?? ''));
+        if ($datum !== '' && $datum < date('Y-m-d')) {
+            return false;
+        }
+
+        InvitationsV2::saveRsvp($slug, [
+            'slug'   => $slug,
+            'name'   => $name,
+            // Alles ausser "1" heisst nein - so ist ein fehlendes Feld eine
+            // Absage und keine stille Zusage.
+            'coming' => (string) ($_POST['coming'] ?? '1') === '1',
+            // Beschnitten, nicht abgelehnt: wer sich vertippt und 50 schreibt,
+            // soll eine Einladung sehen und keine Fehlerseite.
+            'count'  => max(1, min(20, (int) ($_POST['count'] ?? 1))),
+            'note'   => Security::clean($_POST['note'] ?? '', 300),
+            // Im Dokument, nicht nur in der Spalte: rsvps() liest ueber
+            // Db::jsonList() und bekommt die Spalte at gar nicht zu sehen.
+            'at'     => date('c'),
+        ]);
+
+        return true;
     }
 }
