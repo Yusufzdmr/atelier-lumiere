@@ -104,14 +104,49 @@ use function Atelier\e;
     <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda görsel katman yok.' : 'Diese Vorlage hat keine Bildebene.' ?></p>
   <?php endif; ?>
   <?php foreach ($bildEbenen as $ebene) : ?>
-    <label class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?>
-      <input name="src_<?= e($ebene['id']) ?>" value="<?= e((string) $ebene['src']) ?>"
-             class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+    <?php $bildQuelle = Design::safeSrc((string) $ebene['src']); ?>
+    <div class="border-t border-sand-deep pt-5 first:border-0 first:pt-0">
+      <div class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?></div>
+
+      <div class="mt-3 flex items-start gap-5">
+        <?php /*
+           Was heute an dieser Stelle steht. Der Pfad allein sagt es nicht:
+           "elysee-3.svg" ist kein Bild, das man wiedererkennt, und wer eine
+           von vierzehn Ebenen tauschen will, muss sehen, welche.
+
+           safeSrc() statt des rohen Wertes: im Feld darunter darf jemand
+           tippen, was er will, und das landete sonst ungeprueft in einem
+           src-Attribut. Dieselbe Pruefung, die auch die Karte anwendet.
+        */ ?>
+        <div class="w-24 shrink-0">
+          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+            <?php if ($bildQuelle !== '') : ?>
+              <img src="<?= e($bildQuelle) ?>" alt="" class="h-full w-full object-contain">
+            <?php else : ?>
+              <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+                <?= $tr ? 'görsel yok' : 'kein Bild' ?>
+              </span>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="w-full">
+          <label class="<?= $label ?>"><?= $tr ? 'Yeni görsel yükle' : 'Neues Bild hochladen' ?>
+            <input type="file" name="bild_<?= e($ebene['id']) ?>"
+                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                   class="<?= $feld ?>"></label>
+
+          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol' : 'oder Pfad' ?>
+            <input name="src_<?= e($ebene['id']) ?>" value="<?= e((string) $ebene['src']) ?>"
+                   class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+        </div>
+      </div>
+    </div>
   <?php endforeach; ?>
   <p class="<?= $label ?>">
     <?= $tr
-      ? 'assets/designs/ altındaki dosyalar dışa aktarma betiğinin ürünü; elle değiştirme, sonraki export ezer.'
-      : 'Was unter assets/designs/ liegt, erzeugt das Exportskript; von Hand geändert, überschreibt es der nächste Export.' ?>
+      ? 'Yükleme uploads/designs/ altına gider ve yol alanını kendisi doldurur; SVG temizlenip geçirilir, diğerleri saydamlığı koruyarak küçültülür. assets/designs/ altındakiler ise dışa aktarma betiğinin ürünü — elle değiştirme, sonraki export ezer.'
+      : 'Ein Upload landet unter uploads/designs/ und schreibt das Pfadfeld selbst; SVG wird geputzt durchgereicht, alles andere mit Transparenz verkleinert. Was unter assets/designs/ liegt, erzeugt dagegen das Exportskript; von Hand geändert, überschreibt es der nächste Export.' ?>
   </p>
 <?= $zu ?>
 

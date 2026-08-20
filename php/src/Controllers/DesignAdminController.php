@@ -6,6 +6,7 @@ namespace Atelier\Controllers;
 use Atelier\Admin;
 use Atelier\Design;
 use Atelier\I18n;
+use Atelier\Media;
 use Atelier\Security;
 use Atelier\Themes;
 use Atelier\View;
@@ -263,6 +264,57 @@ final class DesignAdminController
     }
 
     /** @param array<string,mixed> $design */
+    /**
+     * Hochgeladene Bilder in die Eingaben einsetzen, bevor fromPost sie liest.
+     *
+     * Der Weg ueber $_POST ist Absicht: Design::fromPost() schreibt das Feld
+     * `src_<id>` ohnehin schon in die Ebene, und dort steht die einzige Stelle,
+     * die entscheidet, was ein gueltiger Pfad ist. Ein zweiter Schreibweg
+     * daneben waere eine zweite Wahrheit - der Upload sagt nur, was in dem
+     * Feld stehen soll, als haette es jemand hineingetippt.
+     *
+     * Ohne Datei bleibt das getippte Feld unangetastet: so kann ein Grafiker
+     * weiterhin einen Pfad aus assets/designs/ eintragen, wie bisher.
+     *
+     * Das ersetzte Bild wird NICHT geloescht, und das ist der Unterschied zur
+     * Einladung, wo genau das richtig ist. Eine Vorlage steht eingefroren in
+     * jedem design_snapshot bereits veroeffentlichter Einladungen; die zeigen
+     * weiter auf die alte Datei. Sie wegzuraeumen risse das Bild aus Karten,
+     * die laengst bei den Gaesten sind - dieselbe Ueberlegung wie in Spec §14
+     * zu den drei Pruefern, die jetzt bei jeder Ansicht laufen. Was liegen
+     * bleibt, kostet Platz; was fehlt, kostet eine Einladung.
+     *
+     * @param array<string,mixed> $design
+     * @param array<string,mixed> $post
+     * @return array<string,mixed>
+     */
+    private function mitHochgeladenenBildern(array $design, array $post): array
+    {
+        foreach (Design::complete($design)['layers'] as $ebene) {
+            if (!in_array((string) ($ebene['type'] ?? ''), ['image', 'photo'], true)) {
+                continue;
+            }
+
+            $id   = (string) $ebene['id'];
+            $file = $_FILES['bild_' . $id] ?? null;
+            if (!is_array($file) || ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            // storeGraphic und nicht store: die Vorlagen arbeiten mit SVG, und
+            // getimagesize() erkennt SVG nicht - store() gaebe hier fuer jede
+            // Zeichnung null zurueck. storeGraphic putzt das SVG und behaelt
+            // bei allem anderen den Alphakanal, den eine Ebene ueber der Karte
+            // braucht.
+            $pfad = Media::storeGraphic($file, 'designs');
+            if ($pfad !== null) {
+                $post['src_' . $id] = $pfad;
+            }
+        }
+
+        return $post;
+    }
+
     private function speichere(string $locale, array $design): void
     {
         $ziel = I18n::path('/admin/designs/' . $design['slug'], $locale);
@@ -281,7 +333,7 @@ final class DesignAdminController
             exit;
         }
 
-        Design::save(Design::fromPost($design, $_POST));
+        Design::save(Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST)));
 
         header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
         exit;

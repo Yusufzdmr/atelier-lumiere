@@ -65,7 +65,13 @@ $bildEbenen = array_filter($design['layers'], static fn (array $l): bool => in_a
   <?php endif; ?>
 
   <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-    <form method="post" class="space-y-4" data-design-form>
+    <?php /*
+       enctype ist Pflicht, seit der Bilder-Abschnitt hochladen kann: ohne
+       diese Angabe schickt der Browser nur die Dateinamen, $_FILES bleibt
+       leer, und das Speichern meldet trotzdem Erfolg. Ein Fehler, den man
+       nicht sieht, sondern nur daran merkt, dass sich nie etwas aendert.
+    */ ?>
+    <form method="post" enctype="multipart/form-data" class="space-y-4" data-design-form>
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
       <input type="hidden" name="was" value="kaydet">
       <input type="hidden" name="version" value="<?= (int) $design['version'] ?>">
