@@ -454,7 +454,7 @@ $einBlock = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), ['
 
 Keine Turnschuhe"],
 ]], 'de', '2027-01-01');
-assert_same(2, substr_count($einBlock, '<p class="d-sec-text">'), 'html: zwei Absaetze werden zwei Absaetze');
+assert_same(2, substr_count($einBlock, '<p class="d-sec-absatz">'), 'html: zwei Absaetze werden zwei Absaetze');
 assert_same(1, substr_count($textHtml, 'Parkplaetze hinter der Kirche'), 'html: der zweite Block steht genau einmal da');
 
 // Was der Kunde tippt, wird maskiert - auch hier.
@@ -463,3 +463,12 @@ $boeserText = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), 
 ]], 'de', '2027-01-01');
 assert_not_contains($boeserText, '<script>', 'html: kein rohes Markup aus dem Text');
 assert_contains($boeserText, '&lt;script&gt;', 'html: und zwar sichtbar maskiert');
+
+// Die Absaetze heissen anders als der Abschnitt. Die <section> traegt
+// d-sec-<typ>, also d-sec-text; hiesse der Absatz genauso, faerbte eine Regel
+// fuer ihn auch den Kasten um. Derselbe Grund wie bei d-sec-form.
+$kollision = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), ['sections' => [
+    'dc' => ['text' => 'Dunkler Anzug'],
+]], 'de', '2027-01-01');
+assert_same(1, substr_count($kollision, 'd-sec-text'), 'html: d-sec-text steht nur an der section, nicht am Absatz');
+assert_contains($kollision, '<p class="d-sec-absatz">', 'html: der Absatz hat seinen eigenen Namen');

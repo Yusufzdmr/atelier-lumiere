@@ -451,7 +451,11 @@ final class DesignSections
         $out = '';
 
         foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
-            $out .= '<p class="d-sec-text">' . e($absatz) . '</p>';
+            // d-sec-absatz und nicht d-sec-text: die <section> traegt bereits
+            // d-sec-<typ>, also d-sec-text. Eine Regel fuer die Absaetze
+            // faerbte sonst auch den Kasten um - derselbe Grund, aus dem das
+            // rsvp-Formular d-sec-form heisst und nicht d-sec-rsvp.
+            $out .= '<p class="d-sec-absatz">' . e($absatz) . '</p>';
         }
 
         return $out;
