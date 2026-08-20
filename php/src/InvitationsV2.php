@@ -297,4 +297,105 @@ final class InvitationsV2
 
         Db::run('DELETE FROM invite_drafts WHERE token = ?', [$token]);
     }
+
+    /* ----------------------- Nachtraegliches Bearbeiten ---------------------- */
+
+    /**
+     * Oeffnet dieser Schluessel diese Einladung?
+     *
+     * Seit dieser Phase oeffnet manageKey drei Tueren: die Antworten lesen, die
+     * Einladung bearbeiten und - bald - die Gaesteliste. Die Regel steht
+     * deshalb einmal hier und nicht in jedem Bildschirm noch einmal.
+     *
+     * hash_equals statt ===: der Schluessel ist 32 Hexadezimalzeichen und die
+     * einzige Sicherung dieser Seiten. Ein Vergleich, der beim ersten
+     * ungleichen Zeichen abbricht, verraet ueber die Laufzeit, wie weit ein
+     * Rateversuch gekommen ist.
+     *
+     * Der leere Schluessel wird ausdruecklich VOR hash_equals abgefangen:
+     * hash_equals('', '') ist WAHR, und eine Einladung ohne manageKey stuende
+     * sonst jedem offen.
+     *
+     * @param array<string,mixed> $data die Daten der Einladung
+     */
+    public static function keyOk(array $data, string $gegeben): bool
+    {
+        // is_string() faengt manageKey aus einem verformten Dokument ab, bevor
+        // ein (string)-Cast auf ein Feld greift.
+        $erwartet = is_string($data['manageKey'] ?? null) ? $data['manageKey'] : '';
+
+        if ($erwartet === '' || $gegeben === '') {
+            return false;
+        }
+
+        return hash_equals($erwartet, $gegeben);
+    }
+
+    /**
+     * Hat jemand anders dazwischen gespeichert?
+     *
+     * Das Paar bearbeitet in zwei Tabs; der zweite Speichervorgang ueberschreibt
+     * sonst den ersten, ohne dass jemand es merkt. Das Formular traegt den
+     * Stand, den es beim Oeffnen vorfand, als verstecktes Feld mit - stimmt er
+     * beim Absenden nicht mehr, wird nicht geschrieben. Der Designeditor im
+     * Panel macht es seit Phase 2 genauso (fehler=veraltet).
+     *
+     * Verglichen wird auf GLEICHHEIT und nicht auf "aelter als": updatedAt ist
+     * eine ISO-Zeichenkette mit Zonenversatz, und zwei Staende aus
+     * verschiedenen Zonen waeren als Zeichenkette falsch geordnet. Gleichheit
+     * beantwortet dieselbe Frage ohne die Falle.
+     *
+     * Eine Einladung von vor dieser Phase hat kein updatedAt. Gegen nichts
+     * laesst sich nicht vergleichen - sonst waere ihre erste Bearbeitung
+     * unmoeglich. Ab dem ersten Speichern steht der Stand dann drin.
+     *
+     * @param array<string,mixed> $data die Daten der Einladung
+     */
+    public static function stale(array $data, string $gesehen): bool
+    {
+        $stand = is_string($data['updatedAt'] ?? null) ? $data['updatedAt'] : '';
+
+        if ($stand === '') {
+            return false;
+        }
+
+        return $gesehen !== $stand;
+    }
+
+    /**
+     * Darf an dieser Einladung noch am Design geschraubt werden?
+     *
+     * Nur wenn die Wahl des Kunden mitgespeichert ist. Ohne sie ist der
+     * Schnappschuss bereits personalisiert (so hat publish() bis zu dieser
+     * Phase geschrieben), und eine neue Auswahl darauf waere verlustbehaftet:
+     * eine ausgeblendete Ebene kaeme nicht zurueck, eine ueberschriebene Farbe
+     * nicht wieder hervor. Der Preis steht in Spec §4 und wird dem Kunden auf
+     * dem Bildschirm gesagt, nicht verschwiegen.
+     *
+     * @param array<string,mixed> $data die Daten der Einladung
+     */
+    public static function canEditDesign(array $data): bool
+    {
+        return is_array($data['wahl'] ?? null);
+    }
+
+    /**
+     * Die Daten einer Einladung neu schreiben.
+     *
+     * Ausdruecklich nur data. design_snapshot steht nicht in diesem UPDATE und
+     * soll dort auch nie stehen: die Vorlage einer veroeffentlichten Einladung
+     * friert ein (Phase 3B), und diese ganze Phase gibt es, um dieses
+     * Versprechen zu halten, waehrend der Kunde trotzdem etwas aendern kann.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function saveData(string $slug, array $data): void
+    {
+        $slug = self::slug($slug);
+        if ($slug === '') {
+            return;
+        }
+
+        Db::run('UPDATE invitations_v2 SET data = ? WHERE slug = ?', [Db::encode($data), $slug]);
+    }
 }
