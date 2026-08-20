@@ -12,14 +12,29 @@ namespace Atelier;
  * ohnehin nicht. Deshalb hier noch einmal, aus dem Programm heraus.
  *
  * Die Richtlinie ist eng, weil die Seite es hergibt: kein einziger
- * `onclick=`-Aufsatz im HTML, alle Skripte liegen als Datei vor, und die
- * einzige eingebettete Fremdquelle sind die Videodienste.
+ * `onclick=`-Aufsatz im HTML, das Verhalten liegt als Datei vor, und die
+ * einzige eingebettete Fremdquelle sind die Videodienste. Zwei eingebettete
+ * Bloecke gibt es doch, und beide tragen die Einmalkennung – siehe nonce().
  */
 final class Http
 {
     private static string $nonce = '';
 
-    /** Einmalkennung dieser Antwort – nur der JSON-LD-Block trägt sie. */
+    /**
+     * Einmalkennung dieser Antwort.
+     *
+     * Wer sie traegt, ist eine kurze und vollstaendige Liste – sie hier zu
+     * fuehren ist kein Ordnungssinn, sondern Vorsicht: fiele der letzte
+     * Traeger weg und mit ihm das `'nonce-…'` aus script-src, stuerbe der
+     * andere Block ohne eine Zeile in der Konsole. Ein Skript ohne gueltige
+     * Kennung fuehrt der Browser gar nicht erst aus.
+     *
+     * 1. Der JSON-LD-Datenblock fuer Suchmaschinen (templates/layout.php).
+     * 2. Das Schrittwechsel-Skript des Bearbeiten-Bildschirms
+     *    (templates/pages/invite-v2-edit.php) – es ruestet die Reiter zu
+     *    Schaltflaechen auf und muss dort stehen, weil es die Reiter genau
+     *    dieser einen Seite bedient.
+     */
     public static function nonce(): string
     {
         if (self::$nonce === '') {
@@ -94,8 +109,9 @@ final class Http
             "object-src 'none'",
             "frame-ancestors 'self'",
             "form-action 'self'",
-            // Skripte nur als Datei – der einzige Block im HTML ist der
-            // Datenblock für Suchmaschinen, und der trägt die Einmalkennung.
+            // Skripte im Regelfall nur als Datei. Die zwei eingebetteten
+            // Bloecke stehen in nonce() namentlich; beide tragen die
+            // Einmalkennung, sonst laufen sie nicht.
             'script-src ' . implode(' ', $scripts),
             // Die Themen bringen ihre Farben als Stilblock mit; die gehen
             // vorher durch Themes::safeCss().

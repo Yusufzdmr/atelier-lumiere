@@ -51,17 +51,7 @@ final class InviteV2Controller
 
         $designs = Design::all('active');
         if ($designs === []) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in welcher
-            // Sprache sie aufgerufen wurde. DesignController::preview() gibt sie
-            // aus genau diesem Grund mit.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+            $this->nichtGefunden();
             return;
         }
 
@@ -186,10 +176,11 @@ final class InviteV2Controller
 
         // Die Abschnitte lesen ihre Inhalte aus anderen Namen, als das
         // Formular sie traegt (families/program statt family_bride,
-        // prog_title_0 ...). Dieselbe Uebersetzung wie in publish() - sie
-        // steht hier ein zweites Mal, weil publish() sie mitten im Speichern
-        // macht und sich nicht herausloesen laesst, ohne den Schreibweg
-        // umzubauen.
+        // prog_title_0 ...). Dieselbe Uebersetzung wie in sammleAngaben() -
+        // sie steht hier ein zweites Mal, weil die Vorschau die Uebersetzung
+        // braucht, bevor ueberhaupt etwas gespeichert ist: sammleAngaben()
+        // liest $_POST fuer den Schreibweg, diese Vorschau arbeitet mit
+        // Werten, die schon vorliegen.
         $braut = (string) ($values['family_bride'] ?? '');
         $mann  = (string) ($values['family_groom'] ?? '');
         if ($braut !== '' || $mann !== '') {
@@ -287,66 +278,137 @@ final class InviteV2Controller
     }
 
     /**
-     * Die Einladung anlegen.
+     * Aus den gespeicherten Daten die Namen machen, die das Formular traegt.
      *
-     * Was der Kunde gewaehlt hat, wird nicht als Liste gespeichert, sondern auf
-     * das Design gelegt: das Ergebnis ist der Schnappschuss. Damit ist das
-     * Anzeigen spaeter genau Phase 1 - css() und html(), sonst nichts.
+     * Die Gegenrichtung von sammleAngaben(): dort werden family_bride und
+     * prog_title_0 zu families und program, hier wieder zurueck. Ohne diesen
+     * Weg stuende der Bearbeiten-Bildschirm mit leeren Feldern da, und ein
+     * Speichern loeschte alles, was der Kunde beim Veroeffentlichen eingegeben
+     * hatte - der schlimmstmoegliche Ausgang fuer einen Bildschirm, der
+     * Tippfehler reparieren soll.
      *
-     * @param array<string,mixed> $design
+     * Ueberall is_string()/is_array(): das Dokument kommt aus JSON und muss
+     * nicht die Form haben, die es haben sollte.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,string>
+     */
+    private function formularWerte(array $data): array
+    {
+        $werte = [];
+
+        foreach (DesignWizard::FIELD_ORDER as $feld) {
+            $werte[$feld] = is_string($data[$feld] ?? null) ? $data[$feld] : '';
+        }
+
+        $familie = is_array($data['families'] ?? null) ? $data['families'] : [];
+        $werte['family_bride'] = is_string($familie['bride'] ?? null) ? $familie['bride'] : '';
+        $werte['family_groom'] = is_string($familie['groom'] ?? null) ? $familie['groom'] : '';
+
+        // array_values, weil das Formular acht feste Zeilen hat und die
+        // gespeicherte Liste loechrige Schluessel tragen koennte.
+        $programm = is_array($data['program'] ?? null) ? array_values($data['program']) : [];
+        for ($z = 0; $z < 8; $z++) {
+            $zeile = is_array($programm[$z] ?? null) ? $programm[$z] : [];
+            $werte['prog_time_' . $z]  = is_string($zeile['time'] ?? null) ? $zeile['time'] : '';
+            $werte['prog_title_' . $z] = is_string($zeile['title'] ?? null) ? $zeile['title'] : '';
+        }
+
+        foreach ((array) ($data['sections'] ?? []) as $sid => $eintrag) {
+            if (is_array($eintrag) && is_string($eintrag['text'] ?? null)) {
+                $werte['sec_text_' . (string) $sid] = $eintrag['text'];
+            }
+        }
+
+        return $werte;
+    }
+
+    /**
+     * Was der Kunde eingetippt hat, in den Namen, die data traegt.
+     *
+     * Herausgeloest aus publish(), weil der Bearbeiten-Bildschirm dieselben
+     * Felder mit denselben Grenzen und denselben Schluesseln lesen muss (Spec
+     * §6). Zwei Kopien liefen auseinander, und die zweite waere die falsche.
+     *
+     * Ein leeres Feld setzt seinen Schluessel NICHT - families, program und
+     * sections stehen nur da, wenn etwas drinsteht. Beim Bearbeiten heisst das
+     * zugleich: ein geleertes Feld loescht seinen Eintrag, weil saveEdit() die
+     * Inhaltsschluessel vorher wegnimmt und dieses Ergebnis darueberlegt.
+     *
+     * @param array{fields:list<string>,sections:array<string,array<string,mixed>>} $darf
      * @return array<string,mixed>
      */
-    private function publish(array $design): array
+    private function sammleAngaben(array $darf): array
     {
-        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Array,
-        // um Security::checkCsrf() unter strict_types einen TypeError werfen
-        // zu lassen - derselbe Fehler wie schon in saveReply() auf dem
-        // Antwortweg.
-        $csrfEingabe = $_POST['csrf'] ?? null;
-        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
-            return ['error' => 'csrf'];
-        }
-        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
-        // aussperren und umgekehrt.
-        if (Security::throttle('invite-v2-create', 8, 900)) {
-            return ['error' => 'throttle'];
-        }
-
-        $darf = DesignWizard::choices($design);
-
         $data = [];
+
         foreach ($darf['fields'] as $feld) {
             $data[$feld] = Security::clean($_POST[$feld] ?? '', $feld === 'message' ? 600 : 160);
         }
 
-        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
-        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das ist.
-        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
-        if ($brauchtNamen && ($data['bride'] ?? '') === '' && ($data['groom'] ?? '') === '') {
-            return ['error' => 'names'];
+        foreach ($darf['sections'] as $sid => $abschnitt) {
+            if (in_array('families', $abschnitt['fields'], true)) {
+                $braut = Security::clean($_POST['family_bride'] ?? '', 120);
+                $mann  = Security::clean($_POST['family_groom'] ?? '', 120);
+                if ($braut !== '' || $mann !== '') {
+                    $data['families'] = ['bride' => $braut, 'groom' => $mann];
+                }
+            }
+
+            if (in_array('program', $abschnitt['fields'], true)) {
+                $zeilen = [];
+                for ($z = 0; $z < 8; $z++) {
+                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
+                    if ($titel === '') {
+                        continue;
+                    }
+                    $zeilen[] = [
+                        'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
+                        'title' => $titel,
+                    ];
+                }
+                if ($zeilen !== []) {
+                    $data['program'] = $zeilen;
+                }
+            }
+
+            if (in_array('text', $abschnitt['fields'], true)) {
+                // Unter der Kennung, nicht unter einem festen Namen: zwei
+                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
+                // teilen und der zweite den ersten ueberschreiben.
+                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
+                if ($text !== '') {
+                    $data['sections'][$sid]['text'] = $text;
+                }
+            }
         }
 
-        $slug = InvitationsV2::slug(Security::clean($_POST['slug'] ?? '', 96));
-        if ($slug === '') {
-            $slug = InvitationsV2::slug(($data['bride'] ?? '') . '-' . ($data['groom'] ?? ''));
-        }
-        if ($slug === '') {
-            $slug = 'einladung-' . bin2hex(random_bytes(3));
-        }
-        // Die Spalte ist VARCHAR(96). Der Umweg ueber die Namen kann laenger
-        // werden als das - ae, oe und ue machen aus einem Zeichen zwei -, und
-        // ohne Ausnahmebehandlung im Router bekaeme ein Paar mit langen Namen
-        // eine Fehlerseite statt einer Einladung. 90 laesst Platz fuer das
-        // Suffix, das eine Kollision anhaengt.
-        $slug = mb_substr($slug, 0, 90);
-        if (!InvitationsV2::slugAvailable($slug)) {
-            $slug .= '-' . bin2hex(random_bytes(2));
-        }
+        return $data;
+    }
 
-        // Die Wahl einsammeln. Was hier hineingeht, wird in personalize()
-        // noch einmal gegen die Rechte geprueft - diese Schleife ist Bequem-
-        // lichkeit, nicht Sicherheit.
-        $wahl = ['palette' => [], 'fonts' => [], 'layers' => []];
+    /**
+     * Was der Kunde am Aussehen gewaehlt hat.
+     *
+     * Weissliste zuerst: gefragt wird immer $darf, und was dort nicht steht,
+     * faellt still. Diese Schleife ist trotzdem Bequemlichkeit und nicht
+     * Sicherheit - personalize() prueft am Ende noch einmal gegen dieselben
+     * Rechte.
+     *
+     * $alt ist die vorhandene Wahl beim Bearbeiten und leer beim
+     * Veroeffentlichen. Sie wird fuer genau eine Sache gebraucht: ein Foto,
+     * das diesmal nicht neu hochgeladen wurde, behaelt seinen Pfad. Alles
+     * andere kommt vollstaendig aus dem Formular - ein nicht gesetzter Haken
+     * ist eine Entscheidung und kein fehlender Wert.
+     *
+     * @param array{palette:array<string,mixed>,fonts:array<string,mixed>,layers:array<string,array<string,bool>>,sections:array<string,array<string,mixed>>} $darf
+     * @param array<string,mixed> $alt
+     * @return array{palette:array<string,string>,fonts:array<string,string>,layers:array<string,mixed>,sections:array<string,mixed>}
+     */
+    private function sammleWahl(array $darf, string $slug, array $alt): array
+    {
+        $altLayers = is_array($alt['layers'] ?? null) ? $alt['layers'] : [];
+
+        $wahl = ['palette' => [], 'fonts' => [], 'layers' => [], 'sections' => []];
 
         foreach (array_keys($darf['palette']) as $marke) {
             $wert = Security::clean($_POST['palette_' . $marke] ?? '', 32);
@@ -391,6 +453,32 @@ final class InviteV2Controller
                 $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
                 if ($pfad !== null) {
                     $eintrag['src'] = $pfad;
+
+                    // Das ersetzte Foto sonst nicht mit aufraeumen: es bliebe
+                    // auf der Platte liegen und unter seiner alten Adresse
+                    // oeffentlich abrufbar, obwohl die Karte es nicht mehr
+                    // zeigt. $alt ist beim Veroeffentlichen immer leer (siehe
+                    // publish(), drittes Argument), dieser Zweig laeuft also
+                    // ausschliesslich beim Bearbeiten, wo tatsaechlich ein
+                    // Vorgaenger existieren kann. Nur loeschen, wenn wirklich
+                    // ein neues Bild da ist, ein altes stand und beide sich
+                    // unterscheiden - sonst risse ein Foto, das jemand einfach
+                    // zweimal hochlaedt, die eigene frische Datei mit weg.
+                    $vorher = $altLayers[$id]['src'] ?? null;
+                    if (is_string($vorher) && $vorher !== '' && $vorher !== $pfad) {
+                        Media::delete($vorher);
+                    }
+                } else {
+                    // Kein neuer Upload heisst nicht "kein Bild". Beim
+                    // Bearbeiten steht der Pfad des vorhandenen Bildes in der
+                    // alten Wahl und muss stehen bleiben - sonst loeschte
+                    // jedes Speichern, bei dem niemand eine Datei auswaehlt,
+                    // das Foto. Beim Veroeffentlichen ist $alt leer, dort
+                    // aendert dieser Zweig nichts.
+                    $vorher = $altLayers[$id]['src'] ?? null;
+                    if (is_string($vorher) && $vorher !== '') {
+                        $eintrag['src'] = $vorher;
+                    }
                 }
             }
 
@@ -400,50 +488,94 @@ final class InviteV2Controller
         }
 
         // Abschnitte: das Zu- und Abschalten geht ins Dokument, der Inhalt in
-        // die Daten. Dieselbe Trennung wie bei den Ebenen.
-        $wahl['sections'] = [];
+        // die Daten (siehe sammleAngaben). Dieselbe Trennung wie bei den Ebenen.
         foreach ($darf['sections'] as $sid => $abschnitt) {
             if ($abschnitt['hide'] && isset($_POST['sec_hidden_' . $sid])) {
                 $wahl['sections'][$sid] = ['hidden' => true];
             }
-
-            if (in_array('families', $abschnitt['fields'], true)) {
-                $braut = Security::clean($_POST['family_bride'] ?? '', 120);
-                $mann  = Security::clean($_POST['family_groom'] ?? '', 120);
-                if ($braut !== '' || $mann !== '') {
-                    $data['families'] = ['bride' => $braut, 'groom' => $mann];
-                }
-            }
-
-            if (in_array('program', $abschnitt['fields'], true)) {
-                $zeilen = [];
-                for ($z = 0; $z < 8; $z++) {
-                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
-                    if ($titel === '') {
-                        continue;
-                    }
-                    $zeilen[] = [
-                        'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
-                        'title' => $titel,
-                    ];
-                }
-                if ($zeilen !== []) {
-                    $data['program'] = $zeilen;
-                }
-            }
-
-            if (in_array('text', $abschnitt['fields'], true)) {
-                // Unter der Kennung, nicht unter einem festen Namen: zwei
-                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
-                // teilen und der zweite den ersten ueberschreiben.
-                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
-                if ($text !== '') {
-                    $data['sections'][$sid]['text'] = $text;
-                }
-            }
         }
 
-        $snapshot = DesignWizard::personalize($design, $wahl);
+        return $wahl;
+    }
+
+    /**
+     * Die Einladung anlegen.
+     *
+     * Was der Kunde gewaehlt hat, wird nicht als Liste gespeichert, sondern auf
+     * das Design gelegt: das Ergebnis ist der Schnappschuss. Damit ist das
+     * Anzeigen spaeter genau Phase 1 - css() und html(), sonst nichts.
+     *
+     * @param array<string,mixed> $design
+     * @return array<string,mixed>
+     */
+    private function publish(array $design): array
+    {
+        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Array,
+        // um Security::checkCsrf() unter strict_types einen TypeError werfen
+        // zu lassen - derselbe Fehler wie schon in saveReply() auf dem
+        // Antwortweg.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
+            return ['error' => 'csrf'];
+        }
+        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
+        // aussperren und umgekehrt.
+        if (Security::throttle('invite-v2-create', 8, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        $darf = DesignWizard::choices($design);
+
+        $data = $this->sammleAngaben($darf);
+
+        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
+        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das ist.
+        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
+        if ($brauchtNamen && ($data['bride'] ?? '') === '' && ($data['groom'] ?? '') === '') {
+            return ['error' => 'names'];
+        }
+
+        $slug = InvitationsV2::slug(Security::clean($_POST['slug'] ?? '', 96));
+        if ($slug === '') {
+            $slug = InvitationsV2::slug(($data['bride'] ?? '') . '-' . ($data['groom'] ?? ''));
+        }
+        if ($slug === '') {
+            $slug = 'einladung-' . bin2hex(random_bytes(3));
+        }
+        // Die Spalte ist VARCHAR(96). Der Umweg ueber die Namen kann laenger
+        // werden als das - ae, oe und ue machen aus einem Zeichen zwei -, und
+        // ohne Ausnahmebehandlung im Router bekaeme ein Paar mit langen Namen
+        // eine Fehlerseite statt einer Einladung. 90 laesst Platz fuer das
+        // Suffix, das eine Kollision anhaengt.
+        $slug = mb_substr($slug, 0, 90);
+        if (!InvitationsV2::slugAvailable($slug)) {
+            $slug .= '-' . bin2hex(random_bytes(2));
+        }
+
+        // Die Wahl einsammeln, mit dem Slug fuer den Bilderordner. Leeres
+        // drittes Argument: beim Veroeffentlichen gibt es keine alte Wahl,
+        // aus der ein Foto uebernommen werden koennte.
+        $wahl = $this->sammleWahl($darf, $slug, []);
+
+        /*
+         * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
+         *
+         * Bis zu dieser Phase stand hier personalize($design, $wahl): das
+         * Ergebnis fror ein, die Eingabe wurde weggeworfen. Damit war
+         * nachtraegliches Bearbeiten unmoeglich - eine zweite Wahl haette auf
+         * einem Sockel gelegen, in dem die erste schon eingebrannt war.
+         *
+         * Jetzt friert die Vorlage ein und die Wahl liegt daneben in
+         * data['wahl']. Gedruckt wird personalize(snapshot, wahl), bei jedem
+         * Aufruf neu (siehe show()). Das Versprechen aus Phase 3B haelt
+         * trotzdem: der Sockel ist eine Kopie in der Zeile, und wer die Vorlage
+         * im Panel spaeter aendert, aendert diese Karte nicht.
+         *
+         * Durch beide Normalisierer, damit in der Spalte genau die Form steht,
+         * die css(), html() und die Abschnittsvorlage erwarten - dieselbe Form,
+         * mit der personalize() ohnehin endet.
+         */
+        $snapshot = DesignSections::complete(Design::complete($design));
 
         $data['slug']      = $slug;
         $data['locale']    = I18n::locale();
@@ -453,6 +585,16 @@ final class InviteV2Controller
         // bis dahin veroeffentlichte Einladung aus.
         $data['manageKey'] = bin2hex(random_bytes(16));
         $data['createdAt'] = date('c');
+        // Was der Kunde gewaehlt hat, bleibt erhalten - sonst waere der Sockel
+        // eine Vorlage, die niemand mehr auf die Karte des Paares abbilden
+        // kann. Ihre Anwesenheit ist zugleich das Zeichen, dass der
+        // Design-Tab beim Bearbeiten offen steht (Spec §4).
+        $data['wahl']      = $wahl;
+        // Der Stand fuer die Zwei-Tabs-Kontrolle. Er steht ab der ersten
+        // Sekunde da, weil er sonst bei der ersten Bearbeitung fehlte und die
+        // Kontrolle genau dann nicht griffe, wenn sie zum ersten Mal gebraucht
+        // wird.
+        $data['updatedAt'] = $data['createdAt'];
 
         InvitationsV2::create($slug, (string) $design['id'], $snapshot, $data);
 
@@ -488,24 +630,32 @@ final class InviteV2Controller
         $einladung = InvitationsV2::find($params['slug'] ?? '');
 
         if ($einladung === null) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in
-            // welcher Sprache sie aufgerufen wurde. DesignController::preview()
-            // gibt sie aus genau diesem Grund mit.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+            $this->nichtGefunden();
             return;
         }
 
         // Vor der Antwort vollstaendig, nicht danach: saveReply() muss wissen,
         // ob die Einladung ueberhaupt einen sichtbaren rsvp-Abschnitt zeigt -
         // dafuer braucht sie das fertige Dokument, nicht den rohen Schnappschuss.
-        $doc = Design::complete($einladung['design_snapshot']);
+        /*
+         * Die Wahl des Kunden auf den eingefrorenen Sockel legen - bei jedem
+         * Aufruf neu.
+         *
+         * Bis zu dieser Phase stand hier Design::complete($snapshot), weil der
+         * Schnappschuss das fertige Dokument war. Jetzt haelt er die Vorlage,
+         * und die Wahl liegt in data['wahl'].
+         *
+         * Eine Einladung von VOR dieser Phase traegt kein wahl. Dann laeuft
+         * personalize($sockel, []) - und das ist die Identitaet, gemessen und
+         * nicht geglaubt (tests/invitations_v2_edit.php). Ihre Ausgabe bleibt
+         * Byte fuer Byte dieselbe; deshalb gibt es zu dieser Aenderung keine
+         * Wanderung und kein Datenumschreiben.
+         *
+         * is_array(): wahl aus einem von Hand veraenderten Dokument koennte
+         * eine Zeichenkette sein, und personalize() erwartet ein Feld.
+         */
+        $wahl = is_array($einladung['data']['wahl'] ?? null) ? $einladung['data']['wahl'] : [];
+        $doc  = DesignWizard::personalize($einladung['design_snapshot'], $wahl);
 
         // Erst antworten, dann zeichnen: die Seite, die nach dem Absenden
         // erscheint, soll den Dank zeigen und nicht noch einmal das leere
@@ -693,50 +843,15 @@ final class InviteV2Controller
     public function replies(array $params): void
     {
         $locale = I18n::locale();
-        $einladung = InvitationsV2::find($params['slug'] ?? '');
 
-        $erwartet = $einladung !== null ? (string) ($einladung['data']['manageKey'] ?? '') : '';
-        $gegeben  = (string) ($params['key'] ?? '');
-
-        /*
-         * 404 und nicht 403.
-         *
-         * Ein 403 bestaetigt, dass es diese Einladung gibt - wer den
-         * Schluessel nicht hat, soll auch das nicht erfahren. "Diese Seite
-         * gibt es nicht" ist die richtige Antwort an jemanden, der nicht
-         * gemeint ist.
-         *
-         * hash_equals statt ===: der Schluessel ist 32 Hexadezimalzeichen und
-         * die einzige Sicherung dieser Seite. Ein Vergleich, der beim ersten
-         * ungleichen Zeichen abbricht, verraet ueber die Laufzeit, wie weit
-         * ein Rateversuch gekommen ist.
-         *
-         * Der leere Schluessel wird ausdruecklich vorher abgefangen:
-         * hash_equals('', '') ist WAHR. Eine Einladung ohne manageKey stuende
-         * sonst jedem offen. Heute schreibt publish() ihn immer - aber "heute
-         * kann das nicht passieren" ist der Satz, nach dem in Phase C drei
-         * Fehler gefunden wurden.
-         */
-        if ($einladung === null || $erwartet === '' || !hash_equals($erwartet, $gegeben)) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in
-            // welcher Sprache sie aufgerufen wurde.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+        // Der Schluessel steht seit Phase 3B in den Daten jeder Einladung. Die
+        // Pruefung - 404 statt 403, hash_equals, der leere Schluessel zuerst,
+        // die Bremse - steht in manageZugang(), weil sie der Bearbeiten-
+        // Bildschirm Wort fuer Wort auch braucht.
+        $einladung = $this->manageZugang($params);
+        if ($einladung === null) {
             return;
         }
-
-        // Diese Seite ist eine geheime Adresse mit einer Gaesteliste
-        // namentlich darauf - sie darf in keinem geteilten Cache landen.
-        // show() bekommt no-store geschenkt, weil Security::csrf() dort eine
-        // Sitzung startet; hier startet keine, also muss der Hinweis von Hand
-        // hinaus.
-        header('Cache-Control: private, no-store');
 
         $antworten = InvitationsV2::rsvps((string) $einladung['slug']);
 
@@ -769,5 +884,338 @@ final class InviteV2Controller
             'antworten' => $antworten,
             'kommen'    => $kommen,
         ]);
+    }
+
+    /**
+     * Eine veroeffentlichte Einladung nachtraeglich aendern.
+     *
+     * Der Bildschirm, den Spec §1 verlangt: heute muss ein Paar wegen eines
+     * Buchstabens eine neue Einladung bauen und den Link erneut verschicken.
+     *
+     * Zwei Tabs, dieselben Felder wie im Assistenten - und ein Sockel, der
+     * sich nicht bewegt. slug, manageKey, die Vorlage, createdAt, paid und die
+     * Antworten der Gaeste stehen nicht auf diesem Formular (Spec §6).
+     *
+     * @param array<string,string> $params
+     */
+    public function edit(array $params): void
+    {
+        $locale = I18n::locale();
+
+        $einladung = $this->manageZugang($params);
+        if ($einladung === null) {
+            return;
+        }
+
+        $slug = (string) $einladung['slug'];
+        // Fuer die Adresse, auf die ein erfolgreiches Speichern umleitet
+        // (Post/Redirect/Get) - manageZugang() hat den Schluessel schon
+        // gegen die Zeile geprueft, hier wird er nur noch fuer den Pfad
+        // gebraucht.
+        $key  = (string) ($params['key'] ?? '');
+        $data = $einladung['data'];
+
+        /*
+         * Das Formular wird auf dem EINGEFRORENEN Sockel gebaut, nicht auf dem
+         * personalisierten Dokument.
+         *
+         * personalize() LOESCHT eine ausgeblendete Ebene (DesignWizard.php:298)
+         * und schaltet einen ausgeblendeten Abschnitt auf enabled=false; und
+         * choices() bietet weder eine geloeschte Ebene noch einen
+         * abgeschalteten Abschnitt an (DesignWizard.php:117). Baute man das
+         * Formular auf dem Ergebnis, waere jedes Ausblenden endgueltig - das
+         * Haekchen zum Wiedereinblenden stuende gar nicht erst auf der Seite.
+         */
+        $sockel = $einladung['design_snapshot'];
+        $darf   = DesignWizard::choices($sockel);
+
+        $wahl = InvitationsV2::canEditDesign($data) ? (array) $data['wahl'] : [];
+
+        // Nur zum Zeichnen der Vorschau - nie als Grundlage des Formulars.
+        $doc = DesignWizard::personalize($sockel, $wahl);
+
+        $error = '';
+        $werte = $this->formularWerte($data);
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $ergebnis = $this->saveEdit($einladung, $darf);
+            if (isset($ergebnis['error'])) {
+                $error = (string) $ergebnis['error'];
+
+                /*
+                 * Bei einem Fehler bleibt stehen, was der Kunde getippt hat.
+                 *
+                 * Ohne das zeigte das Formular nach einem abgelaufenen Zeichen wieder den
+                 * Stand aus der Datenbank - und die Meldung "bitte noch einmal absenden"
+                 * waere eine Luege: das zweite Absenden speicherte die ALTEN Werte. Der
+                 * Assistent macht es auf seinem Veroeffentlichungsweg genauso.
+                 *
+                 * veraltet steht bewusst nicht in dieser Liste: dort hat jemand anders
+                 * gespeichert, und dann ist der frische Stand aus der Zeile genau das,
+                 * was das Paar sehen muss, bevor es entscheidet.
+                 */
+                if (in_array($error, ['csrf', 'throttle', 'names'], true)) {
+                    $werte = array_merge($werte, InvitationsV2::draftValues($_POST));
+                }
+            } else {
+                /*
+                 * Post/Redirect/Get: nur auf dem Erfolgsweg.
+                 *
+                 * Ohne die Umleitung traegt ein F5 auf dieser Seite denselben
+                 * POST-Rumpf noch einmal zum Server - mit dem "stand" von vorher,
+                 * der jetzt einen Schritt hinter der Zeile liegt. Die Zwei-Tabs-
+                 * Kontrolle (stale()) haelt das faelschlich fuer eine fremde
+                 * Aenderung, obwohl niemand sonst gespeichert hat. Der
+                 * Fehlerzweig oben bleibt bewusst ein erneutes Rendern und keine
+                 * Umleitung: er traegt InvitationsV2::draftValues($_POST) und
+                 * eine Umleitung wuerfe genau das wieder weg.
+                 */
+                $ziel = I18n::path('/v2/einladung/' . $slug . '/' . $key . '/bearbeiten');
+                header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
+                exit;
+            }
+        }
+
+        // Nach der Umleitung steht der Erfolg in der Adresse, nicht mehr in
+        // einer lokalen Variable - genau dafuer gibt es Post/Redirect/Get.
+        $okParam = $_GET['ok'] ?? null;
+        $ok      = is_string($okParam) && $okParam === 'gespeichert';
+
+        $scope  = '.d-' . $doc['id'];
+        $values = Design::bindValues($data, $locale);
+        $namen  = trim(((string) ($data['bride'] ?? '')) . ' & ' . ((string) ($data['groom'] ?? '')), ' &');
+
+        View::page('pages/invite-v2-edit', [
+            'locale' => $locale,
+            // Ohne $path meldet layout.php eine undefinierte Variable im
+            // Sprachumschalter. Der Schluessel gehoert NICHT hinein: der
+            // Umschalter schriebe ihn sonst in eine sichtbare Adresse.
+            'path'   => I18n::path('/v2/einladung'),
+            'meta'   => Seo::forPage('einladung2', [
+                'title'       => $namen !== '' ? $namen : I18n::t('invitation2.editTitle'),
+                // Diese Seite IST der Schluessel. Sie gehoert unter keinen
+                // Umstaenden in einen Index.
+                'noindex'     => true,
+                // Dasselbe Skript wie der Assistent, unveraendert: es blendet
+                // [data-step] ein und aus und spiegelt [data-live] in die
+                // Karte. Es entscheidet nichts.
+                'scripts'     => ['/assets/invite-v2.js'],
+            ]),
+            // Der eingefrorene Sockel, vollstaendig: die Vorlage liest daraus
+            // die Ausgangsfarbe einer Ebene.
+            'design'     => Design::complete($sockel),
+            'choices'    => $darf,
+            'values'     => $werte,
+            'wahl'       => $wahl,
+            'darfDesign' => InvitationsV2::canEditDesign($data),
+            'gastPfad'   => I18n::path('/v2/einladung/' . $slug),
+            'stand'      => is_string($data['updatedAt'] ?? null) ? $data['updatedAt'] : '',
+            'scope'      => ltrim($scope, '.'),
+            'styles'     => Design::css($doc, $scope),
+            'sectionCss' => DesignSections::css($doc, $scope),
+            'karte'      => Design::html($doc, $values, $locale, 'card'),
+            'abschnitte' => DesignSections::html($doc, $data, $locale, '', ['csrf' => '', 'sent' => false]),
+            'csrf'       => Security::csrf(),
+            'error'      => $error,
+            'ok'         => $ok,
+        ]);
+    }
+
+    /**
+     * Die Aenderung schreiben.
+     *
+     * Die Reihenfolge ist die Sicherung, nicht eine Geschmacksfrage:
+     *
+     *   1. CSRF - vor allem anderen, wie auf jedem Schreibweg dieser Datei.
+     *   2. Bremse - ein eigener Eimer fuers Schreiben, damit ein Skript nicht
+     *      ueber diesen Weg das Kontingent des Leseschirms aufbraucht.
+     *   3. Stand - hat jemand in einem anderen Tab gespeichert (Spec §7)?
+     *   4. Namen - dieselbe Mindestbedingung wie beim Veroeffentlichen: eine
+     *      Karte ohne jeden Namen gehoert niemandem.
+     *   5. Schreiben.
+     *
+     * Was NICHT geschrieben wird: design_snapshot (die Vorlage friert ein,
+     * Phase 3B), slug (die Adresse ist verschickt), manageKey (die eigene Tuer
+     * des Paares), createdAt und paid (Buchhaltung, nicht Kundenfeld) - und
+     * die Antworten der Gaeste. In dieser Methode steht kein einziger Zugriff
+     * auf rsvps, und das ist Absicht (Spec §8).
+     *
+     * Ein hingenommener Verlust bei einer Einladung von VOR dieser Phase: dort
+     * ist der eingefrorene Sockel schon personalisiert, ein beim
+     * Veroeffentlichen ausgeblendeter Abschnitt traegt also enabled=false.
+     * DesignWizard::choices() bietet einen abgeschalteten Abschnitt gar nicht
+     * erst an, sammleAngaben() liest also nie wieder dessen Text, und das
+     * unset() oben loescht ihn beim ersten Speichern endgueltig. Kein Gast
+     * sieht dadurch etwas anderes - der Abschnitt war schon verborgen -, und
+     * diese Zeilen haben ohnehin keinen Design-Tab, in dem sich das
+     * rueckgaengig machen liesse. Aber der Text ist danach weg.
+     *
+     * @param array{slug:string,design_id:string,design_snapshot:array<string,mixed>,data:array<string,mixed>,created_at:string} $einladung
+     * @param array<string,mixed> $darf choices() auf dem EINGEFRORENEN Sockel
+     * @return array<string,string> leer, wenn geschrieben wurde
+     */
+    private function saveEdit(array $einladung, array $darf): array
+    {
+        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Feld, um
+        // Security::checkCsrf() unter strict_types einen TypeError werfen zu
+        // lassen - derselbe Fehler wie schon auf dem Antwortweg.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
+            return ['error' => 'csrf'];
+        }
+
+        $slug = (string) $einladung['slug'];
+        $alt  = $einladung['data'];
+
+        // Eigener Eimer neben v2-manage-{slug}: das Lesen der Antworten und das
+        // Schreiben an der Einladung sollen einander nicht aussperren.
+        if (Security::throttle('v2-edit-' . $slug, 20, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        // Zwei Tabs. Der zweite Speichervorgang ueberschriebe sonst den ersten,
+        // ohne dass jemand es merkt (Spec §7).
+        $gesehen = Security::clean($_POST['stand'] ?? '', 40);
+        if (InvitationsV2::stale($alt, $gesehen)) {
+            return ['error' => 'veraltet'];
+        }
+
+        $neueAngaben = $this->sammleAngaben($darf);
+
+        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
+        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das
+        // ist. Dieselbe Regel wie in publish().
+        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
+        if ($brauchtNamen && ($neueAngaben['bride'] ?? '') === '' && ($neueAngaben['groom'] ?? '') === '') {
+            return ['error' => 'names'];
+        }
+
+        /*
+         * Die Inhaltsschluessel werden ZUERST weggenommen und dann neu gelegt.
+         *
+         * Ohne das Wegnehmen waere ein geleertes Feld kein Loeschbefehl:
+         * sammleAngaben() setzt families, program und sections nur, wenn etwas
+         * drinsteht, und ein blosses Ueberlegen liesse den alten Wert stehen.
+         * Wer eine Programmzeile loescht, will sie geloescht haben.
+         *
+         * Alles, was NICHT in dieser Liste steht, bleibt unangetastet - slug,
+         * locale, paid, manageKey und createdAt reisen so durch, ohne dass
+         * dieser Weg sie kennen muss.
+         */
+        $neu = $alt;
+        unset($neu['families'], $neu['program'], $neu['sections']);
+        foreach ($darf['fields'] as $feld) {
+            unset($neu[$feld]);
+        }
+
+        $neu = array_merge($neu, $neueAngaben);
+
+        /*
+         * Das Design nur, wenn es ueberhaupt offen steht.
+         *
+         * Serverseitig und nicht nur im Markup: der Design-Tab fehlt bei einer
+         * alten Einladung auf dem Bildschirm, aber eine von Hand gestellte
+         * Anfrage traegt palette_* trotzdem. Wuerde sie hier angenommen, legte
+         * sie eine Wahl auf einen Sockel, in dem eine erste Wahl schon
+         * eingebrannt ist - genau der verlustbehaftete Fall aus Spec §4.
+         *
+         * $alt['wahl'] als drittes Argument: ein Foto, das diesmal nicht neu
+         * hochgeladen wurde, behaelt seinen Pfad (sammleWahl).
+         */
+        if (InvitationsV2::canEditDesign($alt)) {
+            $neu['wahl'] = $this->sammleWahl($darf, $slug, (array) $alt['wahl']);
+        }
+
+        // Der neue Stand fuer die naechste Zwei-Tabs-Kontrolle. Zuletzt, damit
+        // er den Zustand nach dieser Aenderung beschreibt und nicht den davor.
+        $neu['updatedAt'] = date('c');
+
+        // Ausdruecklich noch einmal: was in dieser Zeile unberuehrbar ist (Spec
+        // §6). Heute kann keiner der Namen aus sammleAngaben() mit ihnen
+        // kollidieren - FIELD_ORDER enthaelt keinen davon. "Heute kann das
+        // nicht passieren" ist aber der Satz, nach dem in Phase 3C drei Fehler
+        // gefunden wurden, und diese fuenf Zeilen kosten nichts.
+        $neu['slug']      = $alt['slug']      ?? $slug;
+        $neu['manageKey'] = $alt['manageKey'] ?? '';
+        $neu['createdAt'] = $alt['createdAt'] ?? $neu['updatedAt'];
+        $neu['paid']      = $alt['paid']      ?? false;
+        $neu['locale']    = $alt['locale']    ?? I18n::locale();
+
+        InvitationsV2::saveData($slug, $neu);
+
+        return [];
+    }
+
+    /**
+     * Die 404-Seite dieses Controllers.
+     *
+     * Sie stand bis hierher dreimal wortgleich in dieser Datei. Der Grund fuer
+     * jede der drei Zeilen ist derselbe geblieben: pages/not-found liest
+     * $locale unbedingt (not-found.php:10) und layout.php braucht $path -
+     * fehlen sie, meldet PHP undefinierte Variablen und die Seite kommt auf
+     * Englisch heraus, egal in welcher Sprache sie aufgerufen wurde.
+     */
+    private function nichtGefunden(): void
+    {
+        http_response_code(404);
+        View::page('pages/not-found', [
+            'locale' => I18n::locale(),
+            'path'   => I18n::path('/v2/einladung'),
+            'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+        ]);
+    }
+
+    /**
+     * Die Tuer, die manageKey oeffnet.
+     *
+     * Seit dieser Phase oeffnet derselbe Schluessel mehr als eine Seite: die
+     * Antworten lesen UND die Einladung bearbeiten. Deshalb steht die Pruefung
+     * einmal hier statt in jedem Bildschirm noch einmal - zwei Kopien
+     * derselben Sicherung altern verschieden schnell.
+     *
+     * 404 und nicht 403: ein 403 bestaetigt, dass es diese Einladung gibt, und
+     * wer den Schluessel nicht hat, soll auch das nicht erfahren.
+     *
+     * Die Bremse ist neu und sie ist der Preis dafuer, dass der Schluessel
+     * jetzt Schreibrechte vergibt. Auf dem reinen Leseschirm war "128 Bit sind
+     * nicht zu erraten" ein vertretbares Argument; sobald damit ein fremdes
+     * Dokument geaendert werden kann, ist es keines mehr (Spec §5). Sie steht
+     * VOR dem Vergleich, sonst braemste sie nur die Berechtigten - ein
+     * falscher Schluessel faellt danach ohnehin ins 404.
+     *
+     * Eine ausgeloeste Bremse antwortet ebenfalls mit 404 und nicht mit einer
+     * eigenen Meldung: jede unterscheidbare Antwort waere ein Orakel, an dem
+     * sich ablesen liesse, dass es diese Einladung gibt. Der Preis ist, dass
+     * ein Paar, das sechzigmal in zehn Minuten neu laedt, eine Fehlseite
+     * sieht - bei diesem Mass ein unwahrscheinlicher Fall.
+     *
+     * @param array<string,string> $params
+     * @return array{slug:string,design_id:string,design_snapshot:array<string,mixed>,data:array<string,mixed>,created_at:string}|null
+     */
+    private function manageZugang(array $params): ?array
+    {
+        // Normalisiert, damit "Foo" und "foo" denselben Eimer benutzen - sonst
+        // waere die Bremse mit einer anderen Schreibweise zu umgehen.
+        $slug = InvitationsV2::slug((string) ($params['slug'] ?? ''));
+
+        if ($slug === '' || Security::throttle('v2-manage-' . $slug, 60, 600)) {
+            $this->nichtGefunden();
+            return null;
+        }
+
+        $einladung = InvitationsV2::find($slug);
+
+        if ($einladung === null || !InvitationsV2::keyOk($einladung['data'], (string) ($params['key'] ?? ''))) {
+            $this->nichtGefunden();
+            return null;
+        }
+
+        // Diese Seiten sind eine geheime Adresse mit den Daten eines Paares
+        // darauf - sie duerfen in keinem geteilten Cache landen. show()
+        // bekommt no-store geschenkt, weil Security::csrf() dort eine Sitzung
+        // startet; hier muss der Hinweis von Hand hinaus.
+        header('Cache-Control: private, no-store');
+
+        return $einladung;
     }
 }
