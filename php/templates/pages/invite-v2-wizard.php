@@ -75,13 +75,13 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     <div class="eyebrow">✓</div>
     <h2 class="headline mt-3 text-3xl"><?= e($t('doneTitle')) ?></h2>
     <p class="mt-6 break-all text-sm text-ink">
-      <a class="underline" href="<?= e($done['path']) ?>"><?= e($done['url']) ?></a>
+      <a class="link-underline" href="<?= e($done['path']) ?>"><?= e($done['url']) ?></a>
     </p>
 
     <div class="mt-10 border-t border-sand-deep pt-6">
       <p class="text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= e($t('doneRepliesLabel')) ?></p>
       <p class="mt-3 break-all text-sm text-ink">
-        <a class="underline" href="<?= e($done['managePath']) ?>"><?= e($done['manageUrl']) ?></a>
+        <a class="link-underline" href="<?= e($done['managePath']) ?>"><?= e($done['manageUrl']) ?></a>
       </p>
       <p class="mt-3 text-[0.8rem] text-muted"><?= e($t('doneRepliesWarning')) ?></p>
     </div>
@@ -138,6 +138,14 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
   /* fieldset bringt von Haus aus Rahmen und Innenabstand mit; border-0 gibt es
      in der gebauten Datei nicht. */
   .wz-quiet { margin: 0; border: 0; padding: 0; min-inline-size: 0; }
+
+  /*
+   * hover:border-ink steht nicht in der gebauten Datei (nur .border-ink ohne
+   * hover, und die Hover-Rahmenfarben, die es gibt - gold, muted, sand -
+   * gehoeren zu einer anderen Familie als das text-ink daneben). Dieselbe
+   * Marke wie .border-ink, nur eben beim Hover.
+   */
+  .wz-draft-btn:hover { border-color: var(--color-ink); }
 </style>
 <div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
@@ -245,7 +253,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                    Assistent macht es genauso.
                 */ ?>
                 <?php for ($z = 0; $z < 8; $z++) : ?>
-                  <div class="mt-3 grid gap-3 sm:grid-cols-[8rem_1fr]">
+                  <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
                     <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
                            placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
                     <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
@@ -336,15 +344,15 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     */ ?>
     <div class="mt-8 border-t border-sand-deep pt-6">
       <button type="submit" name="was" value="draft" formnovalidate
-              class="border border-sand-deep px-6 py-3 text-[0.64rem] uppercase tracking-[0.16em] text-muted transition-colors hover:border-ink hover:text-ink">
+              class="wz-draft-btn border border-sand-deep px-6 py-3 text-[0.64rem] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
         <?= e($t('draftSave')) ?>
       </button>
 
       <?php if ($draftLink !== '') : ?>
-        <div class="mt-5 border border-sand-deep bg-cream/60 p-5">
+        <div class="mt-5 border border-sand-deep bg-cream/40 p-5">
           <p class="text-[0.7rem] uppercase tracking-[0.16em] text-muted"><?= e($t('draftSaved')) ?></p>
           <p class="mt-2 break-all text-sm">
-            <a class="text-gold underline" href="<?= e($draftLink) ?>"><?= e($draftLink) ?></a>
+            <a class="text-gold link-underline" href="<?= e($draftLink) ?>"><?= e($draftLink) ?></a>
           </p>
           <p class="mt-3 text-[0.78rem] leading-relaxed text-muted"><?= e($t('draftWarn')) ?></p>
         </div>

@@ -453,6 +453,21 @@ final class InviteV2Controller
                 $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
                 if ($pfad !== null) {
                     $eintrag['src'] = $pfad;
+
+                    // Das ersetzte Foto sonst nicht mit aufraeumen: es bliebe
+                    // auf der Platte liegen und unter seiner alten Adresse
+                    // oeffentlich abrufbar, obwohl die Karte es nicht mehr
+                    // zeigt. $alt ist beim Veroeffentlichen immer leer (siehe
+                    // publish(), drittes Argument), dieser Zweig laeuft also
+                    // ausschliesslich beim Bearbeiten, wo tatsaechlich ein
+                    // Vorgaenger existieren kann. Nur loeschen, wenn wirklich
+                    // ein neues Bild da ist, ein altes stand und beide sich
+                    // unterscheiden - sonst risse ein Foto, das jemand einfach
+                    // zweimal hochlaedt, die eigene frische Datei mit weg.
+                    $vorher = $altLayers[$id]['src'] ?? null;
+                    if (is_string($vorher) && $vorher !== '' && $vorher !== $pfad) {
+                        Media::delete($vorher);
+                    }
                 } else {
                     // Kein neuer Upload heisst nicht "kein Bild". Beim
                     // Bearbeiten steht der Pfad des vorhandenen Bildes in der
@@ -893,6 +908,11 @@ final class InviteV2Controller
         }
 
         $slug = (string) $einladung['slug'];
+        // Fuer die Adresse, auf die ein erfolgreiches Speichern umleitet
+        // (Post/Redirect/Get) - manageZugang() hat den Schluessel schon
+        // gegen die Zeile geprueft, hier wird er nur noch fuer den Pfad
+        // gebraucht.
+        $key  = (string) ($params['key'] ?? '');
         $data = $einladung['data'];
 
         /*
@@ -915,7 +935,6 @@ final class InviteV2Controller
         $doc = DesignWizard::personalize($sockel, $wahl);
 
         $error = '';
-        $ok    = false;
         $werte = $this->formularWerte($data);
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -939,21 +958,28 @@ final class InviteV2Controller
                     $werte = array_merge($werte, InvitationsV2::draftValues($_POST));
                 }
             } else {
-                $ok = true;
-                // Neu lesen: das Formular soll zeigen, was jetzt in der Zeile
-                // steht, und nicht, was vor dem Speichern darin stand - sonst
-                // traegt das versteckte updatedAt einen ueberholten Stand und
-                // das naechste Speichern faellt gegen sich selbst durch.
-                $frisch = InvitationsV2::find($slug);
-                if ($frisch !== null) {
-                    $einladung = $frisch;
-                    $data      = $frisch['data'];
-                    $wahl      = InvitationsV2::canEditDesign($data) ? (array) $data['wahl'] : [];
-                    $doc       = DesignWizard::personalize($sockel, $wahl);
-                    $werte     = $this->formularWerte($data);
-                }
+                /*
+                 * Post/Redirect/Get: nur auf dem Erfolgsweg.
+                 *
+                 * Ohne die Umleitung traegt ein F5 auf dieser Seite denselben
+                 * POST-Rumpf noch einmal zum Server - mit dem "stand" von vorher,
+                 * der jetzt einen Schritt hinter der Zeile liegt. Die Zwei-Tabs-
+                 * Kontrolle (stale()) haelt das faelschlich fuer eine fremde
+                 * Aenderung, obwohl niemand sonst gespeichert hat. Der
+                 * Fehlerzweig oben bleibt bewusst ein erneutes Rendern und keine
+                 * Umleitung: er traegt InvitationsV2::draftValues($_POST) und
+                 * eine Umleitung wuerfe genau das wieder weg.
+                 */
+                $ziel = I18n::path('/v2/einladung/' . $slug . '/' . $key . '/bearbeiten');
+                header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
+                exit;
             }
         }
+
+        // Nach der Umleitung steht der Erfolg in der Adresse, nicht mehr in
+        // einer lokalen Variable - genau dafuer gibt es Post/Redirect/Get.
+        $okParam = $_GET['ok'] ?? null;
+        $ok      = is_string($okParam) && $okParam === 'gespeichert';
 
         $scope  = '.d-' . $doc['id'];
         $values = Design::bindValues($data, $locale);

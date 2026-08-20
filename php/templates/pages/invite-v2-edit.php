@@ -318,7 +318,7 @@ if ($darfDesign) {
 
       <p class="mt-6 text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= e($t('editGuestLink')) ?></p>
       <p class="mt-2 break-all text-sm">
-        <a class="text-gold underline" href="<?= e($gastPfad) ?>"><?= e($gastPfad) ?></a>
+        <a class="text-gold link-underline" href="<?= e($gastPfad) ?>"><?= e($gastPfad) ?></a>
       </p>
     </div>
   </form>

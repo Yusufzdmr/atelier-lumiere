@@ -180,6 +180,123 @@ assert_true(InvitationsV2::canEditDesign(['wahl' => []]), 'canEditDesign: eine l
 assert_true(!InvitationsV2::canEditDesign([]), 'canEditDesign: ohne wahl bleibt das Design zu');
 assert_true(!InvitationsV2::canEditDesign(['wahl' => 'x']), 'canEditDesign: eine Zeichenkette ist keine Wahl');
 
+/*
+ * --- Die Rundreise: sammleAngaben() -> formularWerte() -> sammleAngaben() ---
+ *
+ * Die Eigenschaft, deren Fehlschlagen am teuersten waere: dass sich das
+ * Bearbeiten-Formular aus den gespeicherten Daten fuellt und das naechste
+ * Speichern genau das zurueckschreibt, womit es gefuellt wurde. Bricht das,
+ * rendert der Bildschirm leer und das naechste Speichern loescht, was das
+ * Paar getippt hat - beides ohne eine einzige Fehlermeldung.
+ *
+ * sammleAngaben() und formularWerte() sind private auf InviteV2Controller,
+ * darum per Reflection. Der Konstruktor tut nichts (siehe Klassendoc), also
+ * ist newInstanceWithoutConstructor() hier nur die vorsichtigere der beiden
+ * Varianten und kein Zeichen, dass etwas Besonderes noetig waere.
+ */
+$editController = (new ReflectionClass(\Atelier\Controllers\InviteV2Controller::class))
+    ->newInstanceWithoutConstructor();
+$editSammleAngaben = new ReflectionMethod($editController, 'sammleAngaben');
+$editSammleAngaben->setAccessible(true);
+$editFormularWerte = new ReflectionMethod($editController, 'formularWerte');
+$editFormularWerte->setAccessible(true);
+
+/*
+ * Ein $darf, wie es DesignWizard::choices() tatsaechlich liefert: alle acht
+ * gebundenen Felder, ein family-Abschnitt, ein program-Abschnitt und
+ * mindestens ein text-Abschnitt. sammleAngaben() liest nur ['fields'] und
+ * ['sections'], darum bleiben palette/fonts/layers hier leer - sie wuerden
+ * ohnehin nicht gelesen.
+ */
+$editDarf = [
+    'fields'   => DesignWizard::FIELD_ORDER,
+    'palette'  => [],
+    'fonts'    => [],
+    'layers'   => [],
+    'sections' => [
+        'familie' => ['type' => 'family',  'title' => 'Familien', 'hide' => false, 'fields' => ['families']],
+        'ablauf'  => ['type' => 'program', 'title' => 'Ablauf',   'hide' => false, 'fields' => ['program']],
+        'text-1'  => ['type' => 'text',    'title' => 'Text',     'hide' => false, 'fields' => ['text']],
+    ],
+];
+
+$editPostVorher = $_POST;
+
+$_POST = [
+    'bride'   => 'Zeynep',
+    'groom'   => 'Mehmet',
+    'date'    => '2027-06-18',
+    'time'    => '17:30',
+    'venue'   => 'Yali Bahce',
+    'address' => 'Sahil Yolu No:5, Istanbul',
+    // Zwei Absaetze, wie ein echter Textblock (Aufgabe "Der sechste
+    // Abschnitt: ein Textblock").
+    'message' => "Birlikte olmanizi\n\ndiliyoruz.",
+    'hashtag' => '#zeynepvemehmet',
+    'family_bride' => 'Yilmaz Ailesi',
+    'family_groom' => 'Demir Ailesi',
+    // Zeile 0: Uhrzeit leer, Titel gesetzt - muss ueberleben (sammleAngaben
+    // prueft nur den Titel).
+    'prog_time_0'  => '',
+    'prog_title_0' => 'Nikah Toereni',
+    // Zeile 1: Uhrzeit gesetzt, Titel leer - muss verworfen werden.
+    'prog_time_1'  => '18:00',
+    'prog_title_1' => '',
+    // Zeile 2: der gewoehnliche Fall, beides gesetzt.
+    'prog_time_2'  => '19:30',
+    'prog_title_2' => 'Abendessen',
+    'sec_text_text-1' => "Erster Absatz.\n\nZweiter Absatz.",
+];
+
+$ersteRunde = $editSammleAngaben->invoke($editController, $editDarf);
+
+// formularWerte() traegt die Namen des Formulars - genau die, die
+// sammleAngaben() gleich wieder liest. Damit steht das Formular so da, wie es
+// ein zweites Absenden ohne jede Aenderung abschicken wuerde.
+$editFormularAusRunde1 = $editFormularWerte->invoke($editController, $ersteRunde);
+$_POST = $editFormularAusRunde1;
+$zweiteRunde = $editSammleAngaben->invoke($editController, $editDarf);
+
+// Und noch einmal, um Drift statt eines einmaligen Zufallstreffers
+// auszuschliessen: derselbe Weg von der zweiten zur dritten Runde.
+$editFormularAusRunde2 = $editFormularWerte->invoke($editController, $zweiteRunde);
+$_POST = $editFormularAusRunde2;
+$dritteRunde = $editSammleAngaben->invoke($editController, $editDarf);
+
+$_POST = $editPostVorher;
+
+/*
+ * Verglichen wird mit sortierten Schluesseln, nicht mit dem rohen ===: data
+ * ist ein JSON-Dokument, kein positionsabhaengiges Format - nichts in diesem
+ * Code liest es der Reihe nach. sammleAngaben() und formularWerte() bauen
+ * ihre Felder aus verschiedenen Schleifen (foreach ueber $darf['fields'] hier,
+ * foreach ueber $data['sections'] dort), und deren Reihenfolge ist ein
+ * Umsetzungsdetail, kein Vertrag. Die Listen unter 'program' bleiben davon
+ * unberuehrt: ihre Schluessel sind schon 0,1,2,... und ksort() aendert an
+ * einer bereits aufsteigenden Reihenfolge nichts.
+ */
+function edit_kanonisch(array $wert): array
+{
+    ksort($wert);
+    foreach ($wert as $schluessel => $inhalt) {
+        if (is_array($inhalt)) {
+            $wert[$schluessel] = edit_kanonisch($inhalt);
+        }
+    }
+    return $wert;
+}
+
+assert_same(
+    edit_kanonisch($ersteRunde),
+    edit_kanonisch($zweiteRunde),
+    'sammleAngaben->formularWerte->sammleAngaben: jeder Wert uebersteht die erste Rundreise unveraendert (die leere Uhrzeit bleibt, der leere Titel bleibt draussen)'
+);
+assert_same(
+    edit_kanonisch($zweiteRunde),
+    edit_kanonisch($dritteRunde),
+    'sammleAngaben->formularWerte->sammleAngaben: ein zweiter Durchlauf aendert nichts mehr - keine Drift'
+);
+
 /* --- Ab hier braucht es die Datenbank --- */
 
 if (!needs_db()) {
