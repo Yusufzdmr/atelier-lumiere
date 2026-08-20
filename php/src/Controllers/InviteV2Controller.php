@@ -442,13 +442,16 @@ final class InviteV2Controller
             return false;
         }
 
-        // Dieselbe Regel wie beim Datum weiter unten, und aus demselben
-        // Grund ein zweites Mal: DesignSections::visible() entscheidet, ob
-        // ein rsvp-Abschnitt gedruckt wird - ausgeschaltet vom Paar oder gar
-        // nicht im Design vorhanden. Ohne diese Kontrolle sammelte die
-        // Tabelle Antworten auf eine Frage, die niemand mehr stellt. Nach
-        // CSRF und Flut, damit sie nicht zum Werkzeug wird, mit dem sich von
-        // aussen erraten liesse, welche Einladung rsvp eingeschaltet hat.
+        // DesignSections::visible() entscheidet, ob ein rsvp-Abschnitt
+        // gedruckt wird - ausgeschaltet vom Paar, gar nicht im Design
+        // vorhanden, ODER das Datum bereits vorbei (hatInhalt() prueft die
+        // rsvp-Zeile gegen date('Y-m-d'), dieselbe Regel wie hier). Diese eine
+        // Kontrolle deckt also beides ab: eine abgeschaltete Frage UND eine
+        // Frage, deren Termin verstrichen ist. Ohne sie sammelte die Tabelle
+        // Antworten auf eine Frage, die niemand mehr stellt - serverseitig
+        // durchgesetzt, nicht nur im Markup versteckt. Nach CSRF und Flut,
+        // damit sie nicht zum Werkzeug wird, mit dem sich von aussen erraten
+        // liesse, welche Einladung rsvp eingeschaltet hat.
         $hatRsvp = false;
         foreach (DesignSections::visible($doc, $data) as $abschnitt) {
             if ((string) ($abschnitt['type'] ?? '') === 'rsvp') {
@@ -465,17 +468,6 @@ final class InviteV2Controller
         // koennte weder angezeigt noch ersetzt werden.
         $name = Security::clean($_POST['name'] ?? '', 60);
         if ($name === '') {
-            return false;
-        }
-
-        // Dieselbe Regel wie in DesignSections::visible(), hier ein zweites
-        // Mal - und das ist Absicht. Dort entscheidet sie, ob gedruckt wird;
-        // hier, ob angenommen wird. Ein POST braucht keine gedruckte Seite:
-        // ein alter Tab oder eine von Hand gestellte Anfrage kaeme sonst noch
-        // Jahre nach der Hochzeit durch. Eine Regel, die nur im Markup steht,
-        // ist keine Regel.
-        $datum = trim((string) ($data['date'] ?? ''));
-        if ($datum !== '' && $datum < date('Y-m-d')) {
             return false;
         }
 
