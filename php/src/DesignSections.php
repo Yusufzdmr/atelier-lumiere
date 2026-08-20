@@ -249,6 +249,13 @@ final class DesignSections
      * ist eine Stilfrage und gehoert ins Stylesheet - ein Leerzeichen mitten
      * in einer PHP-Verkettung waere fuer den naechsten Leser unsichtbar und
      * liesse sich unbemerkt wieder loeschen.
+     *
+     * Das Formular braucht denselben Dienst wie die uebrigen Abschnitte, nur
+     * dringender: Preflight nimmt input und button jede Kontur, und ein
+     * Eingabefeld ohne Unterkante ist auf einer typografierten Einladung
+     * unsichtbar. currentColor statt einer Marke - so nimmt das Formular die
+     * Farbe des Abschnitts an, die der Grafiker gesetzt hat, statt eine
+     * zweite Quelle dafuer aufzumachen.
      */
     private static function baseline(string $scope): string
     {
@@ -259,16 +266,29 @@ final class DesignSections
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
             . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto 1fr;gap:0.375rem 1.25rem;}'
             . $scope . ' .d-sec-program dt{font-weight:600;}'
-            . $scope . ' .d-sec-program dd{margin:0;}';
+            . $scope . ' .d-sec-program dd{margin:0;}'
+            . $scope . ' .d-sec-form{display:grid;gap:0.85rem;max-width:26rem;}'
+            . $scope . ' .d-sec-form-row{display:grid;gap:0.3rem;}'
+            . $scope . ' .d-sec-form-row span{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;}'
+            . $scope . ' .d-sec-form input[type=text],'
+            . $scope . ' .d-sec-form input[type=number]{border:0;border-bottom:1px solid currentColor;background:transparent;padding:0.35rem 0;color:inherit;font:inherit;}'
+            . $scope . ' .d-sec-form button{justify-self:start;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}';
     }
 
     /**
      * Die Abschnitte als Markup.
      *
+     * $form traegt, was nur der Controller wissen kann: das CSRF-Zeichen und
+     * ob gerade eben geantwortet wurde. Es kommt aus demselben Grund als
+     * Parameter herein wie $heute - diese Klasse fasst weder Uhr noch Sitzung
+     * an, sonst liefe sie nicht mehr unter bin/test.php. Die vier
+     * Anzeige-Abschnitte lesen es nie.
+     *
      * @param array<string,mixed> $doc
      * @param array<string,mixed> $data
+     * @param array<string,mixed> $form
      */
-    public static function html(array $doc, array $data, string $locale, string $heute = ''): string
+    public static function html(array $doc, array $data, string $locale, string $heute = '', array $form = []): string
     {
         $out = '';
 
@@ -295,6 +315,7 @@ final class DesignSections
                 'countdown' => self::countdown($data, $locale),
                 'family'    => self::familien($data),
                 'program'   => self::programm($data),
+                'rsvp'      => self::formular($form, $locale),
                 default     => '',
             };
 
@@ -377,5 +398,59 @@ final class DesignSections
         }
 
         return $out . '</dl>';
+    }
+
+    /**
+     * Der einzige Abschnitt, der schreibt.
+     *
+     * Kein action-Attribut: die Einladung nimmt ihre eigene Antwort entgegen,
+     * genau wie im alten Motor (InviteController::show -> saveRsvp). Ein
+     * eigener Endpunkt waere eine zweite Adresse fuer dieselbe Sache, und
+     * eine zweite Adresse muesste ihrerseits wissen, zu welcher Einladung
+     * sie gehoert.
+     *
+     * maxlength und min/max sind Hinweise fuer den Browser, keine Sicherung -
+     * gekuerzt und beschnitten wird im Controller, wo ein Absender ohne
+     * Browser genauso ankommt.
+     *
+     * Die Etiketten stehen hier und nicht im Woerterbuch: I18n::t() geht
+     * ueber Texts::get() an die Datenbank, und diese Klasse ist rein.
+     * Dieselbe Entscheidung wie bei "Route planen" und "Tage".
+     *
+     * @param array<string,mixed> $form
+     */
+    private static function formular(array $form, string $locale): string
+    {
+        $de = $locale !== 'en';
+
+        // Nach dem Absenden kein zweites, wieder leeres Formular: das liest
+        // sich wie "nicht angekommen" und der Gast antwortet ein zweites Mal.
+        if (!empty($form['sent'])) {
+            return '<p class="d-sec-form-done">'
+                . e($de ? 'Danke - eure Antwort ist angekommen.' : 'Thank you - your reply has arrived.')
+                . '</p>';
+        }
+
+        return '<form class="d-sec-form" method="post">'
+            . '<input type="hidden" name="csrf" value="' . e((string) ($form['csrf'] ?? '')) . '">'
+            . '<label class="d-sec-form-row"><span>'
+            . e($de ? 'Euer Name' : 'Your name')
+            . '</span><input type="text" name="name" maxlength="60" required></label>'
+            . '<div class="d-sec-form-row">'
+            . '<label><input type="radio" name="coming" value="1" checked> '
+            . e($de ? 'Wir kommen' : 'We are coming')
+            . '</label>'
+            . '<label><input type="radio" name="coming" value="0"> '
+            . e($de ? 'Wir kommen leider nicht' : 'We cannot make it')
+            . '</label>'
+            . '</div>'
+            . '<label class="d-sec-form-row"><span>'
+            . e($de ? 'Wie viele Personen' : 'How many people')
+            . '</span><input type="number" name="count" value="1" min="1" max="20"></label>'
+            . '<label class="d-sec-form-row"><span>'
+            . e($de ? 'Etwas dazu' : 'Anything else')
+            . '</span><input type="text" name="note" maxlength="300"></label>'
+            . '<button type="submit">' . e($de ? 'Absenden' : 'Send') . '</button>'
+            . '</form>';
     }
 }

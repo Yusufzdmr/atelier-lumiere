@@ -300,3 +300,92 @@ assert_same(['rsvp-1'], array_column(DesignSections::visible($fragt, ['date' => 
 assert_same([], DesignSections::visible(sec_doc([
     ['id' => 'rsvp-1', 'type' => 'rsvp', 'enabled' => false],
 ]), [], '2027-01-01'), 'visible: abgeschaltetes Formular bleibt weg');
+
+/*
+ * Das Formular.
+ *
+ * Es ist der einzige Abschnitt, der schreibt, und deshalb der einzige, der
+ * ein Zeichen braucht. Das Zeichen kommt als Parameter herein, nicht aus
+ * Security::csrf(): diese Klasse fasst keine Sitzung an, sonst liefe sie
+ * nicht mehr unter bin/test.php.
+ */
+
+$formular = DesignSections::html(sec_doc([
+    ['id' => 'rsvp-1', 'type' => 'rsvp', 'title' => ['de' => 'Kommt ihr?', 'en' => 'Are you coming?']],
+]), ['date' => '2027-06-12'], 'de', '2027-01-01', ['csrf' => 'ZEICHEN123', 'sent' => false]);
+
+assert_contains($formular, 'class="d-sec d-sec-rsvp-1 d-sec-rsvp"', 'html: Kennung und Art stehen in der Klasse');
+assert_contains($formular, '<h2 class="d-sec-title">Kommt ihr?</h2>', 'html: der Titel des Grafikers steht darueber');
+assert_contains($formular, '<form class="d-sec-form" method="post">', 'html: es ist ein Formular und es sendet per POST');
+
+// Ohne Zeichen kein Schutz: ein Formular, das ohne CSRF-Feld hinausgeht,
+// wuerde vom Controller abgewiesen und der Gast saehe nur, dass nichts
+// passiert. Dieser Test ist die Wache davor.
+assert_contains($formular, '<input type="hidden" name="csrf" value="ZEICHEN123">', 'html: das CSRF-Feld traegt das uebergebene Zeichen');
+
+assert_contains($formular, 'name="name"', 'html: nach dem Namen wird gefragt');
+assert_contains($formular, 'required', 'html: der Name ist Pflicht');
+assert_contains($formular, 'maxlength="60"', 'html: der Name ist begrenzt');
+assert_contains($formular, 'name="coming" value="1"', 'html: zusagen geht');
+assert_contains($formular, 'name="coming" value="0"', 'html: absagen auch');
+assert_contains($formular, 'name="count"', 'html: nach der Anzahl wird gefragt');
+assert_contains($formular, 'min="1" max="20"', 'html: die Anzahl hat Grenzen');
+assert_contains($formular, 'name="note"', 'html: es gibt Platz fuer einen Satz');
+assert_contains($formular, 'maxlength="300"', 'html: auch der ist begrenzt');
+
+// Kein action-Attribut: die Einladung nimmt ihre eigene Antwort entgegen.
+// Ein erfundener Endpunkt waere eine zweite Adresse, die dieselbe Sache tut.
+assert_not_contains($formular, 'action=', 'html: gesendet wird an die eigene Adresse');
+
+// Englisch spricht Englisch - die Etiketten stehen in der Klasse, nicht im
+// Woerterbuch, weil I18n::t() ueber Texts::get() an die Datenbank ginge.
+$formularEn = DesignSections::html(sec_doc([
+    ['id' => 'rsvp-1', 'type' => 'rsvp'],
+]), [], 'en', '2027-01-01', ['csrf' => 'x']);
+assert_contains($formularEn, 'Your name', 'html: englische Etiketten auf der englischen Seite');
+assert_not_contains($formularEn, 'Euer Name', 'html: und dann nicht auch die deutschen');
+
+/*
+ * Das Zeichen wird maskiert wie jeder andere Wert.
+ *
+ * Heute kommt es aus Security::csrf() und ist Hexadezimal - aber der Wert
+ * ist ein Parameter, und ein Parameter ist irgendwann etwas anderes. Was
+ * gedruckt wird, geht durch e(), ohne Ausnahme.
+ */
+$boesesZeichen = DesignSections::html(sec_doc([
+    ['id' => 'r', 'type' => 'rsvp'],
+]), [], 'de', '2027-01-01', ['csrf' => '"><script>alert(1)</script>']);
+assert_not_contains($boesesZeichen, '<script>', 'html: kein rohes Markup aus dem Zeichen');
+assert_contains($boesesZeichen, '&lt;script&gt;', 'html: und zwar sichtbar maskiert');
+
+/*
+ * Nach dem Absenden steht Dank da, kein zweites Formular.
+ *
+ * Ein wieder leeres Formular direkt unter der eigenen Antwort liest sich wie
+ * "nicht angekommen, nochmal" - und genau das taete der Gast dann auch.
+ */
+$danke = DesignSections::html(sec_doc([
+    ['id' => 'r', 'type' => 'rsvp'],
+]), [], 'de', '2027-01-01', ['csrf' => 'x', 'sent' => true]);
+assert_not_contains($danke, '<form', 'html: nach der Antwort kein zweites Formular');
+assert_contains($danke, 'Danke', 'html: sondern ein Dank');
+
+/*
+ * Der Grundstil des Formulars.
+ *
+ * Wie bei den uebrigen Abschnitten: Tailwinds Preflight nimmt input und
+ * button jede Kontur, und ein Formular ohne Kontur ist auf einer
+ * typografierten Einladung eine Reihe unsichtbarer Zeilen. Jeder Selektor
+ * haengt am Bereich.
+ */
+$cssForm = DesignSections::css(sec_doc([['id' => 'rsvp-1', 'type' => 'rsvp']]), '.d-elysee');
+foreach (['.d-sec-form{', '.d-sec-form-row{', '.d-sec-form button{'] as $sel) {
+    assert_contains($cssForm, '.d-elysee ' . $sel, 'css: Formular-Selektor "' . $sel . '" ist am Bereich verankert');
+}
+
+// Die alten vier Aufrufer geben keinen fuenften Parameter mit und muessen
+// weiterlaufen - sonst waere die Signaturaenderung ein Bruch.
+$ohneForm = DesignSections::html(sec_doc([
+    ['id' => 'fam-1', 'type' => 'family'],
+]), ['families' => ['bride' => 'Familie Weber']], 'de', '2027-01-01');
+assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte brauchen den fuenften Parameter nicht');
