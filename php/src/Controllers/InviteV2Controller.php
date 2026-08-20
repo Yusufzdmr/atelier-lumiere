@@ -549,6 +549,13 @@ final class InviteV2Controller
             return;
         }
 
+        // Diese Seite ist eine geheime Adresse mit einer Gaesteliste
+        // namentlich darauf - sie darf in keinem geteilten Cache landen.
+        // show() bekommt no-store geschenkt, weil Security::csrf() dort eine
+        // Sitzung startet; hier startet keine, also muss der Hinweis von Hand
+        // hinaus.
+        header('Cache-Control: private, no-store');
+
         $antworten = InvitationsV2::rsvps((string) $einladung['slug']);
 
         // Zwei Zahlen, weil es zwei Fragen sind: eine Absage ist eine
