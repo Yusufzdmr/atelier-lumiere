@@ -35,6 +35,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Http;
 use Atelier\I18n;
 use Atelier\Ui;
 
@@ -129,21 +130,34 @@ $progOffen = min(7, $progLetzteVoll + 1);
    * erhalten. Diese Regeln haengen deshalb bewusst nur an genau diesen beiden
    * Klassen, nicht an einer eigenen: sie greifen so unveraendert, ob das
    * Skript laeuft oder nicht.
+   *
+   * Bei zwei oder mehr Tabs steckt in jedem <li> ein echtes <button> (siehe
+   * Aufruf weiter unten) - das macht den Tab selbst fokussierbar und
+   * klickbar, bedient von einem eigenen kleinen Skript, das die von
+   * invite-v2.js angehaengten Zurueck/Weiter-Knoepfe anklickt (siehe dort).
+   * Bei nur einem Tab (editLocked) steht dort blosser Text: ohne ein Ziel zum
+   * Umschalten waere ein Knopf mit Zeigefinger-Cursor eine Behauptung ohne
+   * Wirkung. Farbe und Groesse haengen am <li>, nicht am <button>, und werden
+   * von diesem per color:inherit uebernommen.
    */
-  .wz-tabs li[data-step-label] {
+  .wz-tabs [data-step-label] {
     position: relative;
     padding-bottom: .85rem;
     font-family: var(--font-display);
     font-size: 1.05rem;
     letter-spacing: .01em;
   }
-  .wz-tabs li[data-step-label].text-ink { color: var(--color-ink); }
-  .wz-tabs li[data-step-label].text-ink::after {
+  .wz-tabs [data-step-label] > button {
+    border: 0; margin: 0; padding: 0; background: none;
+    font: inherit; color: inherit; cursor: pointer;
+  }
+  .wz-tabs [data-step-label].text-ink { color: var(--color-ink); }
+  .wz-tabs [data-step-label].text-ink::after {
     content: '';
     position: absolute; left: 0; right: 0; bottom: -1px;
     height: 2px; background: var(--color-gold);
   }
-  .wz-tabs li[data-step-label].text-muted { color: var(--color-muted); }
+  .wz-tabs [data-step-label].text-muted { color: var(--color-muted); }
   .wz-tab-num { margin-right: .4em; font-size: .8em; color: var(--color-gold); }
 
   /* Ueberschrift einer Gruppe von Feldern (FAMILIEN, ABLAUF, EBENEN, ...):
@@ -231,7 +245,18 @@ $progOffen = min(7, $progLetzteVoll + 1);
            show() ohnehin nie. So stimmt der erste Tab in allen drei Faellen.
         */ ?>
         <li data-step-label="<?= $i ?>" class="<?= $i === 0 ? 'text-ink' : 'text-muted' ?>">
-          <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?>
+          <?php if (count($tabs) > 1) : ?>
+            <?php /*
+               Ein echtes <button>, kein blosses <li>: nur so ist der Tab per
+               Tastatur erreichbar. type="button" - er darf das Formular nicht
+               absenden. Was ein Klick darauf bewirkt, steht im Skript am Ende
+               dieser Datei, nicht hier.
+            */ ?>
+            <button type="button"><span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?></button>
+          <?php else : ?>
+            <?php // Ein einzelner Tab schaltet nichts um - kein Knopf, sonst ein Zeigefinger-Cursor ohne Wirkung. ?>
+            <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?>
+          <?php endif; ?>
         </li>
       <?php endforeach; ?>
     </ol>
@@ -488,6 +513,70 @@ $progOffen = min(7, $progLetzteVoll + 1);
       </button>
     </div>
   </form>
+
+  <?php /*
+     Die Tabs bedienen die Zurueck/Weiter-Knoepfe, statt selbst einen zweiten
+     Zustand fuer den aktuellen Schritt zu fuehren. invite-v2.js haelt "at"
+     in seiner eigenen Closure - griffen wir hier direkt auf [hidden] zu,
+     widerspraechen sich zwei Wahrheiten (unsere und seine), und die
+     Zurueck/Weiter-Knoepfe zeigten irgendwann den falschen Schritt an. Ein
+     Klick auf einen Tab klickt darum den passenden echten Knopf, so oft wie
+     noetig (bei zwei Schritten immer genau einmal) - dieselbe Pflichtfeld-
+     Pruefung, derselbe Scroll, dieselbe Beschriftung wie bei einem Klick von
+     Hand.
+
+     invite-v2.js haengt Zurueck/Weiter nur an, wenn es mindestens zwei
+     Schritte gibt (dieselbe Abfrage: steps.length < 2, siehe dort) - bei nur
+     einem Tab (editLocked) gibt es gar keine <button>-Tabs (siehe Aufruf
+     oben) und dieses Skript kehrt sofort zurueck. Ohne Skript ueberhaupt
+     laeuft auch dieses hier nie - beide Schritte stehen dann wie immer
+     untereinander.
+
+     nonce Pflicht, nicht Kosmetik: Http::harden() setzt script-src nur auf
+     'self' und den Nonce dieser Antwort (Http::nonce(), siehe Http.php und
+     dasselbe Muster im Layout fuer das ld+json-Skript) - ein <script> ohne
+     diesen Nonce fuehrt der Browser gar nicht erst aus. Kein Fehler in der
+     Konsole, es passiert einfach nichts.
+  */ ?>
+  <script nonce="<?= e(Http::nonce()) ?>">
+  (function () {
+    'use strict';
+    var form = document.querySelector('[data-wizard]');
+    if (!form) return;
+
+    var tabButtons = Array.prototype.slice.call(form.querySelectorAll('[data-step-label] > button'));
+    var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
+    if (tabButtons.length < 2 || steps.length < 2) return;
+
+    function current() {
+      for (var n = 0; n < steps.length; n++) {
+        if (!steps[n].hidden) return n;
+      }
+      return 0;
+    }
+
+    // Die von invite-v2.js angehaengten Knoepfe: type=button, aber ausserhalb
+    // jedes [data-step-label] - so lassen sie sich von den Tab-Knoepfen
+    // selbst unterscheiden, ohne eine eigene Kennung zu brauchen.
+    function navButtons() {
+      return Array.prototype.slice.call(form.querySelectorAll('button[type=button]'))
+        .filter(function (b) { return !b.closest('[data-step-label]'); });
+    }
+
+    tabButtons.forEach(function (btn, i) {
+      btn.addEventListener('click', function () {
+        var nav = navButtons();
+        if (nav.length < 2) return; // invite-v2.js hat sie (noch) nicht angehaengt
+        var back = nav[0];
+        var next = nav[1];
+        var guard = steps.length + 2;
+        while (current() !== i && guard-- > 0) {
+          (i > current() ? next : back).click();
+        }
+      });
+    });
+  })();
+  </script>
 
   <aside class="wz-side">
     <p class="mb-4 text-[0.62rem] uppercase tracking-[0.18em] text-muted">
