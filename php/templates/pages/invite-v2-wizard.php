@@ -124,7 +124,16 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
    * schrumpfte ihr Inhalt auf nichts. Die Vorschau zeigte deshalb bisher
    * praktisch gar nichts.
    */
-  .wz-card { aspect-ratio: 2 / 3; }
+  .wz-card {
+    aspect-ratio: 2 / 3;
+    /*
+     * Der Grund der Karte, wie im Schaufenster (designs-v2.php). Ohne ihn
+     * stand die Karte auf dem cremefarbenen Seitengrund - und weil ihre
+     * Schrift ebenfalls hell ist, war sie da, aber unsichtbar. Die Marke
+     * kommt aus dem Design; der Ersatzwert nur, falls eines keine hat.
+     */
+    background: var(--d-bg, #EFE7DC);
+  }
 
   /* fieldset bringt von Haus aus Rahmen und Innenabstand mit; border-0 gibt es
      in der gebauten Datei nicht. */
