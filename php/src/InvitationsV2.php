@@ -163,4 +163,138 @@ final class InvitationsV2
 
         return Db::jsonList('SELECT data FROM rsvps WHERE slug = ? ORDER BY at DESC', [$slug]);
     }
+
+    /* -------------------------------- Entwuerfe ------------------------------- */
+
+    /**
+     * Obergrenze je Feld im Entwurf.
+     *
+     * Grosszuegig und absichtlich nur eine Zahl: ein Entwurf ist ein
+     * Zwischenstand, kein Archiv. Die richtigen Feldgrenzen setzt publish()
+     * noch einmal, wenn aus dem Entwurf eine Einladung wird. Hier geht es
+     * allein darum, dass eine einzelne Anfrage die Tabelle nicht sprengt.
+     */
+    public const DRAFT_LEN = 600;
+
+    /**
+     * Was aus dem Formular in den Entwurf darf.
+     *
+     * Drei Namen fallen weg: csrf gehoert der Sitzung und haette in einer
+     * Tabelle nichts zu suchen; was ist der gedrueckte Knopf und token die
+     * Kennung des Entwurfs selbst - beide beschreiben die Anfrage, nicht die
+     * Einladung.
+     *
+     * Alles andere wird gereinigt uebernommen, ohne Weissliste: welche Felder
+     * es gibt, entscheidet das Design (DesignWizard::choices), und eine zweite
+     * Liste hier liefe der ersten irgendwann hinterher.
+     *
+     * @param array<string,mixed> $post
+     * @return array<string,string>
+     */
+    public static function draftValues(array $post): array
+    {
+        $out = [];
+
+        foreach ($post as $name => $wert) {
+            if (in_array((string) $name, ['csrf', 'was', 'token'], true)) {
+                continue;
+            }
+            // Ein Feld statt eines Wertes (name[]=x) kommt aus keinem Formular,
+            // wohl aber aus einer von Hand gestellten Anfrage.
+            if (!is_string($wert)) {
+                continue;
+            }
+            $out[(string) $name] = Security::clean($wert, self::DRAFT_LEN);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Den Zwischenstand festhalten.
+     *
+     * Geteilt wird die Tabelle invite_drafts, nicht der Code: Invitations
+     * steht auf der Liste der Unberuehrbaren - dieselbe Entscheidung wie bei
+     * den Antworten (siehe saveRsvp).
+     *
+     * Das Dokument traegt dieselbe Form wie das der ersten Fassung (token,
+     * label, data, updatedAt), weil der Adminbereich beide Tabellenzeilen in
+     * einer Liste zeigt. fassung sagt ihm, welcher Assistent den Entwurf
+     * wieder oeffnen kann - ohne das schickte der Link einen v2-Entwurf in den
+     * alten Assistenten.
+     *
+     * @param array<string,string> $values
+     */
+    public static function saveDraft(string $token, array $values): void
+    {
+        if ($token === '') {
+            return;
+        }
+
+        // Der Name des Paares als Aufschrift: im Adminbereich steht sonst eine
+        // Reihe gleich aussehender Zeilen.
+        $label = trim(($values['bride'] ?? '') . ' & ' . ($values['groom'] ?? ''), ' &');
+
+        $doc = [
+            'token'     => $token,
+            'label'     => $label !== '' ? $label : 'Entwurf',
+            'fassung'   => 2,
+            'data'      => $values,
+            'updatedAt' => date('c'),
+        ];
+
+        Db::run(
+            'INSERT INTO invite_drafts (token, data) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = CURRENT_TIMESTAMP',
+            [$token, Db::encode($doc)]
+        );
+
+        // Liegengelassene Entwuerfe raeumen, sonst waechst die Tabelle endlos.
+        // Dieselbe Frist wie in der ersten Fassung; sie steht auch hier, damit
+        // das Aufraeumen nicht daran haengt, dass jemand den alten Assistenten
+        // benutzt.
+        Db::run('DELETE FROM invite_drafts WHERE updated_at < (NOW() - INTERVAL 120 DAY)');
+    }
+
+    /**
+     * Der gespeicherte Zwischenstand, oder null.
+     *
+     * null und ein leeres Feld sind verschiedene Antworten: der Assistent muss
+     * "diesen Entwurf gibt es nicht" von "ein Entwurf ohne Eingaben"
+     * unterscheiden koennen, sonst zeigt ein falscher Link ein leeres Formular
+     * statt einer ehrlichen Meldung.
+     *
+     * @return array<string,string>|null
+     */
+    public static function draft(string $token): ?array
+    {
+        if ($token === '') {
+            return null;
+        }
+
+        $doc = Db::json('SELECT data FROM invite_drafts WHERE token = ?', [$token]);
+        if ($doc === null) {
+            return null;
+        }
+
+        $werte = $doc['data'] ?? null;
+
+        return is_array($werte) ? $werte : [];
+    }
+
+    /**
+     * Nach dem Veroeffentlichen ist der Entwurf Ballast.
+     *
+     * Er zeigt einen Stand, den die fertige Einladung laengst ueberholt hat -
+     * und sein Link fuehrte den Kunden zurueck in ein Formular, das er schon
+     * abgeschickt hat.
+     */
+    public static function deleteDraft(string $token): void
+    {
+        if ($token === '') {
+            return;
+        }
+
+        Db::run('DELETE FROM invite_drafts WHERE token = ?', [$token]);
+    }
 }
