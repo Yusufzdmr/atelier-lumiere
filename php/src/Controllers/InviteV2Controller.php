@@ -310,16 +310,20 @@ final class InviteV2Controller
             return;
         }
 
+        // Vor der Antwort vollstaendig, nicht danach: saveReply() muss wissen,
+        // ob die Einladung ueberhaupt einen sichtbaren rsvp-Abschnitt zeigt -
+        // dafuer braucht sie das fertige Dokument, nicht den rohen Schnappschuss.
+        $doc = Design::complete($einladung['design_snapshot']);
+
         // Erst antworten, dann zeichnen: die Seite, die nach dem Absenden
         // erscheint, soll den Dank zeigen und nicht noch einmal das leere
         // Formular. Waere die Reihenfolge umgekehrt, saehe der Gast seine
         // eigene Antwort nicht und schickte sie ein zweites Mal.
         $gesendet = false;
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-            $gesendet = $this->saveReply((string) $einladung['slug'], $einladung['data']);
+            $gesendet = $this->saveReply((string) $einladung['slug'], $einladung['data'], $doc);
         }
 
-        $doc = Design::complete($einladung['design_snapshot']);
         $values = Design::bindValues($einladung['data'], $locale);
         $scope = '.d-' . $doc['id'];
 
@@ -400,11 +404,16 @@ final class InviteV2Controller
      * Fehlermeldung ueber CSRF zu zeigen.
      *
      * @param array<string,mixed> $data die Daten der Einladung, nicht des Gastes
+     * @param array<string,mixed> $doc  das fertige Dokument - fuer die Frage, ob rsvp ueberhaupt sichtbar ist
      */
-    private function saveReply(string $slug, array $data): bool
+    private function saveReply(string $slug, array $data, array $doc): bool
     {
-        // Erste Kontrolle, vor allem anderen.
-        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+        // Erste Kontrolle, vor allem anderen. is_string() faengt csrf[]=x ab:
+        // ohne die Pruefung reicht ein Array, um Security::checkCsrf() unter
+        // strict_types einen TypeError werfen zu lassen, und die Seite
+        // stuerbe fuer jeden, der das Formular von Hand veraendert.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
             return false;
         }
 
@@ -413,6 +422,24 @@ final class InviteV2Controller
         // Mass ist das des alten Motors - 20 in zehn Minuten je Einladung
         // reicht einer grossen Hochzeit und stoppt ein Skript.
         if (Security::throttle('rsvp-v2-' . $slug, 20, 600)) {
+            return false;
+        }
+
+        // Dieselbe Regel wie beim Datum weiter unten, und aus demselben
+        // Grund ein zweites Mal: DesignSections::visible() entscheidet, ob
+        // ein rsvp-Abschnitt gedruckt wird - ausgeschaltet vom Paar oder gar
+        // nicht im Design vorhanden. Ohne diese Kontrolle sammelte die
+        // Tabelle Antworten auf eine Frage, die niemand mehr stellt. Nach
+        // CSRF und Flut, damit sie nicht zum Werkzeug wird, mit dem sich von
+        // aussen erraten liesse, welche Einladung rsvp eingeschaltet hat.
+        $hatRsvp = false;
+        foreach (DesignSections::visible($doc, $data) as $abschnitt) {
+            if ((string) ($abschnitt['type'] ?? '') === 'rsvp') {
+                $hatRsvp = true;
+                break;
+            }
+        }
+        if (!$hatRsvp) {
             return false;
         }
 
@@ -435,15 +462,21 @@ final class InviteV2Controller
             return false;
         }
 
+        $kommtEingabe = $_POST['coming'] ?? '0';
+        $anzahlEingabe = $_POST['count'] ?? 1;
+
         InvitationsV2::saveRsvp($slug, [
             'slug'   => $slug,
             'name'   => $name,
-            // Alles ausser "1" heisst nein - so ist ein fehlendes Feld eine
-            // Absage und keine stille Zusage.
-            'coming' => (string) ($_POST['coming'] ?? '1') === '1',
+            // Alles ausser "1" heisst nein - so ist ein fehlendes oder
+            // verformtes Feld eine Absage und keine stille Zusage. is_string()
+            // faengt coming[]=1 ab, bevor der Vergleich ein Array in einen
+            // String zwaenge.
+            'coming' => (is_string($kommtEingabe) ? $kommtEingabe : '0') === '1',
             // Beschnitten, nicht abgelehnt: wer sich vertippt und 50 schreibt,
-            // soll eine Einladung sehen und keine Fehlerseite.
-            'count'  => max(1, min(20, (int) ($_POST['count'] ?? 1))),
+            // soll eine Einladung sehen und keine Fehlerseite. is_scalar()
+            // haelt count[]=1 fern von einem (int)-Cast auf ein Array.
+            'count'  => max(1, min(20, is_scalar($anzahlEingabe) ? (int) $anzahlEingabe : 1)),
             'note'   => Security::clean($_POST['note'] ?? '', 300),
             // Im Dokument, nicht nur in der Spalte: rsvps() liest ueber
             // Db::jsonList() und bekommt die Spalte at gar nicht zu sehen.
