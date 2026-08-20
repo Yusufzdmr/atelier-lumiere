@@ -287,66 +287,91 @@ final class InviteV2Controller
     }
 
     /**
-     * Die Einladung anlegen.
+     * Was der Kunde eingetippt hat, in den Namen, die data traegt.
      *
-     * Was der Kunde gewaehlt hat, wird nicht als Liste gespeichert, sondern auf
-     * das Design gelegt: das Ergebnis ist der Schnappschuss. Damit ist das
-     * Anzeigen spaeter genau Phase 1 - css() und html(), sonst nichts.
+     * Herausgeloest aus publish(), weil der Bearbeiten-Bildschirm dieselben
+     * Felder mit denselben Grenzen und denselben Schluesseln lesen muss (Spec
+     * §6). Zwei Kopien liefen auseinander, und die zweite waere die falsche.
      *
-     * @param array<string,mixed> $design
+     * Ein leeres Feld setzt seinen Schluessel NICHT - families, program und
+     * sections stehen nur da, wenn etwas drinsteht. Beim Bearbeiten heisst das
+     * zugleich: ein geleertes Feld loescht seinen Eintrag, weil saveEdit() die
+     * Inhaltsschluessel vorher wegnimmt und dieses Ergebnis darueberlegt.
+     *
+     * @param array{fields:list<string>,sections:array<string,array<string,mixed>>} $darf
      * @return array<string,mixed>
      */
-    private function publish(array $design): array
+    private function sammleAngaben(array $darf): array
     {
-        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Array,
-        // um Security::checkCsrf() unter strict_types einen TypeError werfen
-        // zu lassen - derselbe Fehler wie schon in saveReply() auf dem
-        // Antwortweg.
-        $csrfEingabe = $_POST['csrf'] ?? null;
-        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
-            return ['error' => 'csrf'];
-        }
-        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
-        // aussperren und umgekehrt.
-        if (Security::throttle('invite-v2-create', 8, 900)) {
-            return ['error' => 'throttle'];
-        }
-
-        $darf = DesignWizard::choices($design);
-
         $data = [];
+
         foreach ($darf['fields'] as $feld) {
             $data[$feld] = Security::clean($_POST[$feld] ?? '', $feld === 'message' ? 600 : 160);
         }
 
-        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
-        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das ist.
-        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
-        if ($brauchtNamen && ($data['bride'] ?? '') === '' && ($data['groom'] ?? '') === '') {
-            return ['error' => 'names'];
+        foreach ($darf['sections'] as $sid => $abschnitt) {
+            if (in_array('families', $abschnitt['fields'], true)) {
+                $braut = Security::clean($_POST['family_bride'] ?? '', 120);
+                $mann  = Security::clean($_POST['family_groom'] ?? '', 120);
+                if ($braut !== '' || $mann !== '') {
+                    $data['families'] = ['bride' => $braut, 'groom' => $mann];
+                }
+            }
+
+            if (in_array('program', $abschnitt['fields'], true)) {
+                $zeilen = [];
+                for ($z = 0; $z < 8; $z++) {
+                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
+                    if ($titel === '') {
+                        continue;
+                    }
+                    $zeilen[] = [
+                        'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
+                        'title' => $titel,
+                    ];
+                }
+                if ($zeilen !== []) {
+                    $data['program'] = $zeilen;
+                }
+            }
+
+            if (in_array('text', $abschnitt['fields'], true)) {
+                // Unter der Kennung, nicht unter einem festen Namen: zwei
+                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
+                // teilen und der zweite den ersten ueberschreiben.
+                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
+                if ($text !== '') {
+                    $data['sections'][$sid]['text'] = $text;
+                }
+            }
         }
 
-        $slug = InvitationsV2::slug(Security::clean($_POST['slug'] ?? '', 96));
-        if ($slug === '') {
-            $slug = InvitationsV2::slug(($data['bride'] ?? '') . '-' . ($data['groom'] ?? ''));
-        }
-        if ($slug === '') {
-            $slug = 'einladung-' . bin2hex(random_bytes(3));
-        }
-        // Die Spalte ist VARCHAR(96). Der Umweg ueber die Namen kann laenger
-        // werden als das - ae, oe und ue machen aus einem Zeichen zwei -, und
-        // ohne Ausnahmebehandlung im Router bekaeme ein Paar mit langen Namen
-        // eine Fehlerseite statt einer Einladung. 90 laesst Platz fuer das
-        // Suffix, das eine Kollision anhaengt.
-        $slug = mb_substr($slug, 0, 90);
-        if (!InvitationsV2::slugAvailable($slug)) {
-            $slug .= '-' . bin2hex(random_bytes(2));
-        }
+        return $data;
+    }
 
-        // Die Wahl einsammeln. Was hier hineingeht, wird in personalize()
-        // noch einmal gegen die Rechte geprueft - diese Schleife ist Bequem-
-        // lichkeit, nicht Sicherheit.
-        $wahl = ['palette' => [], 'fonts' => [], 'layers' => []];
+    /**
+     * Was der Kunde am Aussehen gewaehlt hat.
+     *
+     * Weissliste zuerst: gefragt wird immer $darf, und was dort nicht steht,
+     * faellt still. Diese Schleife ist trotzdem Bequemlichkeit und nicht
+     * Sicherheit - personalize() prueft am Ende noch einmal gegen dieselben
+     * Rechte.
+     *
+     * $alt ist die vorhandene Wahl beim Bearbeiten und leer beim
+     * Veroeffentlichen. Sie wird fuer genau eine Sache gebraucht: ein Foto,
+     * das diesmal nicht neu hochgeladen wurde, behaelt seinen Pfad. Alles
+     * andere kommt vollstaendig aus dem Formular - ein nicht gesetzter Haken
+     * ist eine Entscheidung und kein fehlender Wert.
+     *
+     * @param array{palette:array<string,mixed>,fonts:array<string,mixed>,layers:array<string,array<string,bool>>,sections:array<string,array<string,mixed>>} $darf
+     * @param array<string,mixed> $alt
+     * @return array{palette:array<string,string>,fonts:array<string,string>,layers:array<string,mixed>,sections:array<string,mixed>}
+     */
+    private function sammleWahl(array $darf, string $slug, array $alt): array
+    {
+        $altLayers = is_array($alt['layers'] ?? null) ? $alt['layers'] : [];
+
+        $wahl = ['palette' => [], 'fonts' => [], 'layers' => [], 'sections' => []];
 
         foreach (array_keys($darf['palette']) as $marke) {
             $wert = Security::clean($_POST['palette_' . $marke] ?? '', 32);
@@ -391,6 +416,17 @@ final class InviteV2Controller
                 $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
                 if ($pfad !== null) {
                     $eintrag['src'] = $pfad;
+                } else {
+                    // Kein neuer Upload heisst nicht "kein Bild". Beim
+                    // Bearbeiten steht der Pfad des vorhandenen Bildes in der
+                    // alten Wahl und muss stehen bleiben - sonst loeschte
+                    // jedes Speichern, bei dem niemand eine Datei auswaehlt,
+                    // das Foto. Beim Veroeffentlichen ist $alt leer, dort
+                    // aendert dieser Zweig nichts.
+                    $vorher = $altLayers[$id]['src'] ?? null;
+                    if (is_string($vorher) && $vorher !== '') {
+                        $eintrag['src'] = $vorher;
+                    }
                 }
             }
 
@@ -400,48 +436,74 @@ final class InviteV2Controller
         }
 
         // Abschnitte: das Zu- und Abschalten geht ins Dokument, der Inhalt in
-        // die Daten. Dieselbe Trennung wie bei den Ebenen.
-        $wahl['sections'] = [];
+        // die Daten (siehe sammleAngaben). Dieselbe Trennung wie bei den Ebenen.
         foreach ($darf['sections'] as $sid => $abschnitt) {
             if ($abschnitt['hide'] && isset($_POST['sec_hidden_' . $sid])) {
                 $wahl['sections'][$sid] = ['hidden' => true];
             }
-
-            if (in_array('families', $abschnitt['fields'], true)) {
-                $braut = Security::clean($_POST['family_bride'] ?? '', 120);
-                $mann  = Security::clean($_POST['family_groom'] ?? '', 120);
-                if ($braut !== '' || $mann !== '') {
-                    $data['families'] = ['bride' => $braut, 'groom' => $mann];
-                }
-            }
-
-            if (in_array('program', $abschnitt['fields'], true)) {
-                $zeilen = [];
-                for ($z = 0; $z < 8; $z++) {
-                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
-                    if ($titel === '') {
-                        continue;
-                    }
-                    $zeilen[] = [
-                        'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
-                        'title' => $titel,
-                    ];
-                }
-                if ($zeilen !== []) {
-                    $data['program'] = $zeilen;
-                }
-            }
-
-            if (in_array('text', $abschnitt['fields'], true)) {
-                // Unter der Kennung, nicht unter einem festen Namen: zwei
-                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
-                // teilen und der zweite den ersten ueberschreiben.
-                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
-                if ($text !== '') {
-                    $data['sections'][$sid]['text'] = $text;
-                }
-            }
         }
+
+        return $wahl;
+    }
+
+    /**
+     * Die Einladung anlegen.
+     *
+     * Was der Kunde gewaehlt hat, wird nicht als Liste gespeichert, sondern auf
+     * das Design gelegt: das Ergebnis ist der Schnappschuss. Damit ist das
+     * Anzeigen spaeter genau Phase 1 - css() und html(), sonst nichts.
+     *
+     * @param array<string,mixed> $design
+     * @return array<string,mixed>
+     */
+    private function publish(array $design): array
+    {
+        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Array,
+        // um Security::checkCsrf() unter strict_types einen TypeError werfen
+        // zu lassen - derselbe Fehler wie schon in saveReply() auf dem
+        // Antwortweg.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
+            return ['error' => 'csrf'];
+        }
+        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
+        // aussperren und umgekehrt.
+        if (Security::throttle('invite-v2-create', 8, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        $darf = DesignWizard::choices($design);
+
+        $data = $this->sammleAngaben($darf);
+
+        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
+        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das ist.
+        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
+        if ($brauchtNamen && ($data['bride'] ?? '') === '' && ($data['groom'] ?? '') === '') {
+            return ['error' => 'names'];
+        }
+
+        $slug = InvitationsV2::slug(Security::clean($_POST['slug'] ?? '', 96));
+        if ($slug === '') {
+            $slug = InvitationsV2::slug(($data['bride'] ?? '') . '-' . ($data['groom'] ?? ''));
+        }
+        if ($slug === '') {
+            $slug = 'einladung-' . bin2hex(random_bytes(3));
+        }
+        // Die Spalte ist VARCHAR(96). Der Umweg ueber die Namen kann laenger
+        // werden als das - ae, oe und ue machen aus einem Zeichen zwei -, und
+        // ohne Ausnahmebehandlung im Router bekaeme ein Paar mit langen Namen
+        // eine Fehlerseite statt einer Einladung. 90 laesst Platz fuer das
+        // Suffix, das eine Kollision anhaengt.
+        $slug = mb_substr($slug, 0, 90);
+        if (!InvitationsV2::slugAvailable($slug)) {
+            $slug .= '-' . bin2hex(random_bytes(2));
+        }
+
+        // Die Wahl einsammeln, mit dem Slug fuer den Bilderordner. Leeres
+        // drittes Argument: beim Veroeffentlichen gibt es keine alte Wahl,
+        // aus der ein Foto uebernommen werden koennte.
+        $wahl = $this->sammleWahl($darf, $slug, []);
 
         /*
          * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
