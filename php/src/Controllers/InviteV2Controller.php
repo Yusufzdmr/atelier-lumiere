@@ -133,7 +133,12 @@ final class InviteV2Controller
      */
     private function publish(array $design): array
     {
-        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Array,
+        // um Security::checkCsrf() unter strict_types einen TypeError werfen
+        // zu lassen - derselbe Fehler wie schon in saveReply() auf dem
+        // Antwortweg.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
             return ['error' => 'csrf'];
         }
         // Eigener Schluessel: der alte Assistent soll diesen hier nicht
