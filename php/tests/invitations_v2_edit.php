@@ -107,6 +107,34 @@ $versteckt = DesignWizard::personalize($sockel, ['layers' => ['zier' => ['hidden
 assert_true(!isset(DesignWizard::choices($versteckt)['layers']['zier']), 'choices: eine ausgeblendete Ebene wird auf dem personalisierten Sockel nicht mehr angeboten');
 assert_true(isset(DesignWizard::choices($sockel)['layers']['zier']), 'choices: auf dem eingefrorenen Sockel steht sie weiter zur Wahl');
 
+/*
+ * Und der Fall, der wirklich zaehlt: ein Sockel, in dem eine Wahl schon
+ * eingebrannt ist.
+ *
+ * Genau so sieht der design_snapshot einer Einladung aus, die VOR dieser
+ * Phase veroeffentlicht wurde: die Farbe ueberschrieben, eine Ebene
+ * entfernt, eine kunde-Marke gepraegt - und kein wahl daneben. show()
+ * legt darauf ab jetzt personalize($sockel, []). Waere das nicht die
+ * Identitaet, saehe jede heute ausgelieferte Einladung ab morgen anders
+ * aus. Die Behauptung steht in Spec §3 und wird hier gemessen, nicht
+ * geglaubt - der Test darueber misst nur ein Dokument, auf dem nie jemand
+ * etwas gewaehlt hat, und das ist der leichtere Fall.
+ */
+$vorher = DesignWizard::personalize($sockel, [
+    'palette' => ['accent' => '#AA0000'],
+    'layers'  => ['zier' => ['hidden' => true]],
+]);
+
+assert_same($vorher, DesignWizard::personalize($vorher, []), 'personalize: auf einem BEREITS personalisierten Sockel ist die leere Wahl die Identitaet');
+assert_same(Design::complete($vorher), DesignWizard::personalize($vorher, []), 'personalize: und zwar genau der Tausch, den show() bei einer alten Einladung macht');
+
+// Eine gepraegte kunde-Marke ist der Fall, in dem personalize dem Dokument
+// eine NEUE Marke hinzufuegt. Auch sie muss eine leere Wahl unveraendert
+// ueberstehen, sonst verloere eine alte Einladung ihre eigene Farbe.
+$gepraegt = DesignWizard::personalize($sockel, ['layers' => ['zier' => ['color' => '#123456']]]);
+assert_true(isset($gepraegt['palette']['kunde-zier']), 'personalize: die eigene Farbe wird eine eigene Marke');
+assert_same($gepraegt, DesignWizard::personalize($gepraegt, []), 'personalize: auch eine gepraegte kunde-Marke ueberlebt die leere Wahl unveraendert');
+
 /* --- Der Schluessel --- */
 
 $echt = str_repeat('a', 32);
