@@ -15,6 +15,8 @@
  * @var string $scope
  * @var string $styles
  * @var string $karte
+ * @var string $abschnitte  was unter der Karte steht, serverseitig gezeichnet
+ * @var string $sectionCss
  * @var string $csrf
  * @var string $token      Kennung des Entwurfs, leer solange keiner gespeichert ist
  * @var string $draftLink  gesetzt, wenn gerade eben gespeichert wurde
@@ -93,7 +95,14 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     </p>
   <?php endif; ?>
 
-  <form method="post" enctype="multipart/form-data" class="mx-auto max-w-3xl" data-wizard>
+<?php /*
+   Zwei Spalten: links gearbeitet, rechts gesehen. Die Vorschau stand bis
+   hierher im letzten Schritt - der Kunde tippte also vier Schritte lang ins
+   Blaue und sah erst am Ende, was daraus wird. Auf schmalen Schirmen fallen
+   die Spalten untereinander, die Vorschau dann unter das Formular.
+*/ ?>
+<div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,1fr)_20rem]">
+  <form method="post" enctype="multipart/form-data" data-wizard>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
     <?php /*
        Die Kennung reist im Formular mit: ohne sie legte jedes Speichern einen
@@ -250,10 +259,6 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
         <?php endif; ?>
 
         <?php if ($key === 'veroeffentlichen') : ?>
-          <style><?= $styles ?></style>
-          <div class="<?= e($scope) ?> mx-auto aspect-[2/3] w-full max-w-sm" data-preview
-               style="position:relative;container-type:inline-size;"><?= $karte ?></div>
-
           <div>
             <label class="<?= $label ?>" for="f-slug"><?= e($t('fieldSlug')) ?></label>
             <input id="f-slug" name="slug" class="<?= $field ?>" value="<?= e($old('slug')) ?>">
@@ -294,6 +299,30 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
       <?php endif; ?>
     </div>
   </form>
+
+  <aside class="lg:sticky lg:top-28 lg:self-start">
+    <style><?= $styles ?><?= $sectionCss ?></style>
+    <div class="<?= e($scope) ?> mx-auto aspect-[2/3] w-full max-w-xs" data-preview
+         style="position:relative;container-type:inline-size;"><?= $karte ?></div>
+
+    <?php /*
+       Die Abschnitte kommen vom Server, auch beim Nachladen: html() kennt die
+       Datumsregel, den Kartenlink und die Frage, welcher Abschnitt ueberhaupt
+       gedruckt wird. Dasselbe im Browser nachzubauen waere eine zweite
+       Wahrheit - siehe previewFragment().
+    */ ?>
+    <?php /*
+       disabled fieldset, kein blosses CSS: der rsvp-Abschnitt druckt ein
+       echtes Formular mit Absenden-Knopf. In der Vorschau darf es nicht
+       abschicken - es steht ausserhalb des Assistenten-Formulars, wuerde also
+       eine eigene Anfrage an dieselbe Adresse stellen. Ein deaktiviertes
+       fieldset schaltet jedes Bedienelement darin ab, in jedem Browser.
+    */ ?>
+    <fieldset disabled class="m-0 border-0 p-0">
+      <div class="<?= e($scope) ?> mx-auto mt-6 w-full max-w-xs text-[0.8rem]" data-sections><?= $abschnitte ?></div>
+    </fieldset>
+  </aside>
+</div>
 
 <?php endif; ?>
 

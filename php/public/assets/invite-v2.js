@@ -48,6 +48,7 @@
     // Auf dem letzten Schritt steht der Absenden-Knopf im Formular selbst.
     next.hidden = at === steps.length - 1;
     window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+    ladeAbschnitte();
   }
 
   back.addEventListener('click', function () { show(at - 1); });
@@ -67,7 +68,46 @@
    * Formular. Diese Zuordnung ist die einzige Stelle, an der der Browser
    * etwas ueber bind-Namen wissen muss.
    */
-  var preview = form.querySelector('[data-preview]');
+  /*
+   * Die Abschnitte holt der Server.
+   *
+   * Sie kennen die Datumsregel, den Kartenlink und die Frage, welcher
+   * Abschnitt ueberhaupt gedruckt wird - all das noch einmal hier zu bauen
+   * hiesse, DesignSections::html() ein zweites Mal zu schreiben, in einer
+   * anderen Sprache. Zwei Quellen fuer dieselbe Antwort laufen auseinander.
+   *
+   * Nicht bei jedem Tastendruck: Abschnitte aendern sich nicht Buchstabe fuer
+   * Buchstabe, und jede Anfrage waere Laerm. Beim Schrittwechsel und wenn ein
+   * Feld verlassen wird, reicht.
+   */
+  var sections = document.querySelector('[data-sections]');
+  var holt = false;
+
+  function ladeAbschnitte() {
+    if (!sections || holt) return;
+    holt = true;
+
+    var daten = new FormData(form);
+    daten.set('was', 'preview');
+    // Dateien gehoeren nicht in eine Vorschau - sie machen die Anfrage gross
+    // und die Abschnitte zeigen ohnehin keine Bilder.
+    form.querySelectorAll('input[type=file]').forEach(function (el) { daten.delete(el.name); });
+
+    fetch(window.location.pathname, { method: 'POST', body: daten, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (html) { if (html !== null) sections.innerHTML = html; })
+      .catch(function () { /* Vorschau ist eine Zugabe; ihr Ausfall darf den Assistenten nicht stoeren. */ })
+      .finally(function () { holt = false; });
+  }
+
+  // Nur change, nicht zusaetzlich focusout: bei einem geaenderten Feld feuern
+  // beide, die zweite Anfrage faellt an der holt-Sperre aus, und dann fehlte
+  // womoeglich gerade die letzte Aenderung. change kommt bei Textfeldern beim
+  // Verlassen mit Aenderung, bei Haken und Listen sofort - genau die Momente,
+  // in denen sich an den Abschnitten etwas aendern kann.
+  form.addEventListener('change', ladeAbschnitte);
+
+  var preview = form.querySelector('[data-preview]') || document.querySelector('[data-preview]');
   if (!preview) return;
 
   function paint() {

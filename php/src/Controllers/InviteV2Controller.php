@@ -92,6 +92,14 @@ final class InviteV2Controller
         $draftLink = '';
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            // Die Vorschau antwortet mit einem Bruchstueck und endet hier: sie
+            // ist eine Ansicht des Formulars, keine Seite. Vor allem anderen,
+            // damit sie nicht versehentlich in den Veroeffentlichungszweig
+            // faellt - sie schreibt nichts.
+            if ((string) ($_POST['was'] ?? '') === 'preview') {
+                $this->previewFragment($design);
+                return;
+            }
             if ((string) ($_POST['was'] ?? '') === 'draft') {
                 $ergebnis = $this->saveDraft($token);
                 if (isset($ergebnis['error'])) {
@@ -147,10 +155,94 @@ final class InviteV2Controller
             // im DOM, und die Vorschau in Aufgabe 9 fuellte etwas, das es nicht
             // gibt. Das Skript leert sie beim ersten Lauf wieder.
             'karte'   => Design::html($design, Design::bindValues(self::BEISPIEL, $locale), $locale, 'card'),
+            // Was unter der Karte steht, beim ersten Zeichnen. Danach holt das
+            // Skript es bei jedem Schrittwechsel neu - gerendert wird immer
+            // hier, nie im Browser (siehe previewFragment).
+            'abschnitte' => $this->abschnittsVorschau($design, $values, $locale),
+            'sectionCss' => DesignSections::css($design, '.' . ltrim($scope, '.')),
             'csrf'    => Security::csrf(),
             'error'   => $error,
             'done'    => $done,
         ]);
+    }
+
+    /**
+     * Die Abschnitte, wie sie unter der Karte stuenden.
+     *
+     * Gezeichnet wird mit den Werten, die gerade im Formular stehen - nicht
+     * mit den Beispieldaten der Karte. Wer eine Adresse eingetippt hat, soll
+     * seine Adresse sehen und nicht Schloss Hohenstein.
+     *
+     * Das CSRF-Zeichen ist absichtlich leer: das hier ist eine Vorschau, aus
+     * ihr wird nichts abgeschickt. Ein gueltiges Zeichen in einem Formular,
+     * das nie sendet, waere ein Geheimnis ohne Zweck.
+     *
+     * @param array<string,mixed> $design
+     * @param array<string,string> $values
+     */
+    private function abschnittsVorschau(array $design, array $values, string $locale): string
+    {
+        $daten = $values;
+
+        // Die Abschnitte lesen ihre Inhalte aus anderen Namen, als das
+        // Formular sie traegt (families/program statt family_bride,
+        // prog_title_0 ...). Dieselbe Uebersetzung wie in publish() - sie
+        // steht hier ein zweites Mal, weil publish() sie mitten im Speichern
+        // macht und sich nicht herausloesen laesst, ohne den Schreibweg
+        // umzubauen.
+        $braut = (string) ($values['family_bride'] ?? '');
+        $mann  = (string) ($values['family_groom'] ?? '');
+        if ($braut !== '' || $mann !== '') {
+            $daten['families'] = ['bride' => $braut, 'groom' => $mann];
+        }
+
+        $zeilen = [];
+        for ($z = 0; $z < 8; $z++) {
+            $titel = (string) ($values['prog_title_' . $z] ?? '');
+            if (trim($titel) === '') {
+                continue;
+            }
+            $zeilen[] = ['time' => (string) ($values['prog_time_' . $z] ?? ''), 'title' => $titel];
+        }
+        if ($zeilen !== []) {
+            $daten['program'] = $zeilen;
+        }
+
+        // Abgeschaltete Abschnitte verschwinden auch in der Vorschau, sonst
+        // zeigte sie etwas, das die Einladung nicht drucken wird.
+        $doc = $design;
+        foreach ($doc['sections'] as $i => $abschnitt) {
+            if (isset($values['sec_hidden_' . $abschnitt['id']])) {
+                $doc['sections'][$i]['enabled'] = false;
+            }
+        }
+
+        return DesignSections::html($doc, $daten, $locale, '', ['csrf' => '', 'sent' => false]);
+    }
+
+    /**
+     * Die Vorschau als Bruchstueck, ohne Rahmen.
+     *
+     * Gerendert wird auf dem Server und nicht im Browser, weil sonst
+     * DesignSections::html() ein zweites Mal in JavaScript stuende - mit dem
+     * Kartenlink, der Datumsregel und der Frage, welcher Abschnitt ueberhaupt
+     * gedruckt wird. Zwei Quellen fuer dieselbe Antwort laufen auseinander;
+     * dieselbe Ueberlegung wie beim Wort "Tage" im Countdown.
+     *
+     * @param array<string,mixed> $design
+     */
+    private function previewFragment(array $design): void
+    {
+        if (!Security::checkCsrf(is_string($_POST['csrf'] ?? null) ? $_POST['csrf'] : null)) {
+            http_response_code(400);
+            return;
+        }
+
+        header('Content-Type: text/html; charset=utf-8');
+        // Eine Ansicht des gerade Getippten gehoert in keinen Zwischenspeicher.
+        header('Cache-Control: private, no-store');
+
+        echo $this->abschnittsVorschau($design, InvitationsV2::draftValues($_POST), I18n::locale());
     }
 
     /**
