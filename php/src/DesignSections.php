@@ -21,13 +21,19 @@ namespace Atelier;
  * Kartenlink eine Adresse kodieren. Abschnitte aufstellen, faerben, an- und
  * abschalten ist Daten; eine neue Art Abschnitt ist Code.
  *
+ * Vier Arten zeigen etwas an, die fuenfte fragt: rsvp ist der einzige
+ * Abschnitt, der ein Formular druckt. Er sitzt trotzdem hier und nicht
+ * daneben - dieselbe Form, dieselben Rechte, dieselbe Reihenfolge. Was ihn
+ * unterscheidet, ist nicht seine Gestalt, sondern was auf der anderen Seite
+ * des Absendens passiert, und das steht im Controller.
+ *
  * Alles hier ist rein - keine Datenbank, keine Sitzung, kein $_POST, und kein
  * Blick auf die Uhr: das Bezugsdatum kommt als Parameter herein.
  */
 final class DesignSections
 {
     /** Welche Arten es gibt. Alles andere faellt beim Einlesen weg. */
-    public const TYPES = ['location', 'countdown', 'family', 'program'];
+    public const TYPES = ['location', 'countdown', 'family', 'program', 'rsvp'];
 
     /** Wie viele Programmzeilen, und wie lang eine sein darf. */
     public const PROGRAM_MAX = 20;
@@ -179,6 +185,12 @@ final class DesignSections
             'family'    => trim((string) ($familien['bride'] ?? '')) !== ''
                         || trim((string) ($familien['groom'] ?? '')) !== '',
             'program'   => self::programRows($data) !== [],
+            // Dieselbe Regel wie beim Countdown, und ausdruecklich dieselbe:
+            // eine gefeierte Hochzeit sammelt keine Antworten mehr. Ohne
+            // Datum wird trotzdem gedruckt - dort ist der Countdown stumm,
+            // weil er nichts zu zaehlen haette, aber die Frage "kommt ihr?"
+            // steht auch ohne Termin.
+            'rsvp'      => $datum === '' || $datum >= $heute,
             default     => false,
         };
     }

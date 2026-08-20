@@ -267,3 +267,36 @@ $dreibytig = DesignSections::programRows(['program' => [
 ]]);
 assert_same(DesignSections::PROGRAM_LEN, mb_strlen($dreibytig[0]['title']), 'programRows: dreibytiger Titel wird auf PROGRAM_LEN gekuerzt');
 assert_same(true, mb_check_encoding($dreibytig[0]['title'], 'UTF-8'), 'programRows: dreibytiger Schnitt bleibt gueltiges UTF-8');
+
+/*
+ * Der fuenfte Typ: rsvp.
+ *
+ * Vier Abschnitte zeigen, dieser eine fragt. Fuer visible() ist er trotzdem
+ * ein Abschnitt wie jeder andere - die Regel steht an derselben Stelle wie
+ * die des Countdowns, damit sie nicht ein zweites Mal erfunden wird.
+ */
+
+assert_same(5, count(DesignSections::TYPES), 'TYPES: fuenf Arten, die fuenfte ist rsvp');
+assert_true(in_array('rsvp', DesignSections::TYPES, true), 'TYPES: rsvp steht im Katalog');
+
+$fragt = sec_doc([['id' => 'rsvp-1', 'type' => 'rsvp']]);
+
+// Ohne Datum wird gefragt: auch eine Einladung ohne festen Termin darf
+// wissen wollen, wer kommt. Das ist der Unterschied zum Countdown, der ohne
+// Datum gar nichts anzeigen koennte.
+assert_same(['rsvp-1'], array_column(DesignSections::visible($fragt, [], '2027-01-01'), 'id'), 'visible: ohne Datum wird das Formular gedruckt');
+
+// Ein kuenftiger Termin sammelt Antworten.
+assert_same(['rsvp-1'], array_column(DesignSections::visible($fragt, ['date' => '2027-06-12'], '2027-01-01'), 'id'), 'visible: kuenftiger Termin sammelt Antworten');
+
+// Ein vergangener nicht - Antworten auf eine gefeierte Hochzeit sind Laerm.
+assert_same([], DesignSections::visible($fragt, ['date' => '2026-06-12'], '2027-01-01'), 'visible: vergangene Hochzeit sammelt keine Antworten mehr');
+
+// Der Tag selbst zaehlt noch, wie beim Countdown: es wird ja bis zum Morgen
+// gefeiert, und wer mittags noch zusagt, sagt zu.
+assert_same(['rsvp-1'], array_column(DesignSections::visible($fragt, ['date' => '2027-01-01'], '2027-01-01'), 'id'), 'visible: der Tag selbst zaehlt noch');
+
+// Was der Grafiker abgeschaltet hat, bleibt abgeschaltet - auch das Formular.
+assert_same([], DesignSections::visible(sec_doc([
+    ['id' => 'rsvp-1', 'type' => 'rsvp', 'enabled' => false],
+]), [], '2027-01-01'), 'visible: abgeschaltetes Formular bleibt weg');
