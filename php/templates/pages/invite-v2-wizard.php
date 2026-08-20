@@ -25,6 +25,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Http;
 use Atelier\I18n;
 use Atelier\Ui;
 
@@ -188,10 +189,77 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
         <?php if ($key === 'bilder') : ?>
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
             <?php if (!$rechte['photo']) { continue; } ?>
+            <?php
+              /*
+               * Der Name der Ebene, wie der Grafiker ihn vergeben hat - und
+               * erst als letzter Ausweg die Kennung. Hier stand vorher die
+               * Kennung selbst, also las das Paar "foto" oder "szenetl":
+               * einen Datenbankschluessel. Dieselbe Regel gilt schon im Panel
+               * (admin/design-edit-sections.php) und bei den Abschnitten
+               * gleich darunter; nur dieses eine Feld hielt sie nicht.
+               *
+               * Und das Bild, das die Vorlage heute an dieser Stelle zeigt:
+               * ohne es waere "Neues Bild" eine Frage nach dem Ersatz fuer
+               * etwas, das man nie gesehen hat. Es kommt aus dem Dokument,
+               * nicht aus einer Eingabe - safeSrc() hat es beim Speichern der
+               * Vorlage geprueft.
+               */
+              $ebeneName = $id;
+              $ebeneBild = '';
+              foreach ($design['layers'] as $el) {
+                  if ((string) $el['id'] === (string) $id) {
+                      $ebeneName = ((string) ($el['label'] ?? '')) !== '' ? (string) $el['label'] : $id;
+                      $ebeneBild = (string) ($el['src'] ?? '');
+                      break;
+                  }
+              }
+            ?>
             <div>
-              <label class="<?= $label ?>" for="b-<?= e($id) ?>"><?= e($id) ?></label>
-              <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
-                     accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
+              <label class="<?= $label ?>" for="b-<?= e($id) ?>"><?= e($ebeneName) ?></label>
+
+              <div class="mt-3 flex items-start gap-5">
+                <?php /*
+                   Der Rahmen steht IMMER, auch wenn die Vorlage an dieser
+                   Stelle noch kein Bild hat. Sonst waehlt das Paar eine Datei
+                   und sieht nichts - und ein Bildfeld, das nicht zeigt, was
+                   man gewaehlt hat, ist die haelfte eines Feldes.
+
+                   aspect-[4/5] statt einer festen Hoehe: h-24 steht gar nicht
+                   in der gebauten style.css (w-24 schon) - eine Hoehenklasse
+                   zu raten hiesse, sie taete still nichts. Das Verhaeltnis
+                   passt ohnehin besser zur Karte als eine Zahl.
+                */ ?>
+                <div class="shrink-0">
+                  <div class="aspect-[4/5] w-24 overflow-hidden border border-sand-deep bg-sand">
+                    <?php /* Leer heisst leer: ein <img> ohne src zeigt in
+                             manchen Browsern ein kaputtes Symbol, deshalb
+                             bleibt es bis zur Wahl ausgeblendet. */ ?>
+                    <img<?= $ebeneBild !== '' ? ' src="' . e($ebeneBild) . '"' : '' ?> alt=""
+                         class="h-full w-full object-cover<?= $ebeneBild === '' ? ' hidden' : '' ?>"
+                         data-photo-preview="<?= e($id) ?>">
+                  </div>
+                  <?php /* Unter dem Rahmen, nicht darueber: oben steht schon
+                           der Name der Ebene, und zwei gleich gesetzte
+                           Kleinschriften untereinander lesen sich wie zwei
+                           Feldnamen statt wie Name und Bildunterschrift. */ ?>
+                  <p class="<?= $label ?> mt-2"
+                     data-photo-caption="<?= e($id) ?>"
+                     data-photo-chosen="<?= e($t('photoChosen')) ?>"><?= e($t('photoCurrent')) ?></p>
+                </div>
+
+                <div class="w-full">
+                  <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
+                         accept="image/jpeg,image/png,image/webp" class="<?= $field ?>"
+                         data-photo-input="<?= e($id) ?>">
+                  <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('photoHint')) ?></p>
+                  <?php /* Nur wenn es ueberhaupt ein vorhandenes Bild gibt -
+                           sonst verspricht der Satz die Rueckkehr zu etwas,
+                           das es nicht gibt. */ ?>
+                  <?php if ($ebeneBild !== '') : ?>
+                    <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('editPhotoNote')) ?></p>
+                  <?php endif; ?>
+                </div>
+              </div>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -385,5 +453,66 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 </div>
 
 <?php endif; ?>
+
+<?php /*
+   Die Vorschau des gewaehlten Bildes. Sie steht hier und nicht in
+   invite-v2.js, weil sie zu diesem einen Schritt gehoert - und invite-v2.js
+   teilt sich der Assistent mit dem Bearbeiten-Bildschirm.
+
+   Kein Hochladen, kein Netz: gezeigt wird die Datei, die schon auf dem
+   Rechner des Paares liegt. Das ist der Punkt - wer ein Bild waehlt, will
+   sehen, DASS er das richtige gewaehlt hat, bevor er einen Schritt weiter
+   geht.
+
+   FileReader und nicht createObjectURL, und das ist gemessen, nicht
+   Geschmack: unsere Richtlinie erlaubt Bilder aus 'self', data: und https:
+   (Http::policy(), img-src) - blob: steht nicht darin. Mit einer blob-URL
+   blieb der Rahmen leer, das Bild meldete complete=true bei naturalWidth 0.
+   Im direkten Vergleich auf derselben Seite lud dasselbe Bild als data-URL
+   (40 px) und scheiterte als blob-URL. Die Richtlinie dafuer zu erweitern
+   waere der falsche Tausch: sie ist der Grund, warum diese Seite so wenig
+   Angriffsflaeche hat, und ein Vorschaubild ist ihn nicht wert.
+
+   Ohne Skript bleibt das Bild der Vorlage stehen und das Feld tut trotzdem
+   seine Arbeit: gewaehlt wird beim Absenden, nicht hier.
+
+   nonce Pflicht: siehe Http::nonce() - ein <script> ohne diese Kennung
+   fuehrt der Browser gar nicht erst aus.
+*/ ?>
+<script nonce="<?= e(Http::nonce()) ?>">
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var felder = document.querySelectorAll('[data-photo-input]');
+  if (!felder.length) return;
+
+  Array.prototype.forEach.call(felder, function (feld) {
+    var kennung = feld.getAttribute('data-photo-input');
+    var bild = document.querySelector('[data-photo-preview="' + kennung + '"]');
+    if (!bild) return;
+    var titel = document.querySelector('[data-photo-caption="' + kennung + '"]');
+
+    feld.addEventListener('change', function () {
+      var datei = feld.files && feld.files[0];
+      if (!datei) return;
+
+      var leser = new FileReader();
+      leser.onload = function () {
+        bild.src = leser.result;
+        // Hatte die Vorlage hier kein Bild, war der Rahmen bis eben leer.
+        bild.classList.remove('hidden');
+        // "Zurzeit" stimmt jetzt nicht mehr - im Rahmen steht die eigene
+        // Wahl. Das Wort kommt vom Server, damit hier keine zweite
+        // Uebersetzung entsteht, die eines Tages von der in dict.php
+        // abweicht.
+        if (titel) titel.textContent = titel.getAttribute('data-photo-chosen');
+      };
+      // Schlaegt das Lesen fehl, bleibt schlicht stehen, was vorher da war -
+      // die Datei ist trotzdem gewaehlt und wird beim Absenden hochgeladen.
+      leser.readAsDataURL(datei);
+    });
+  });
+});
+</script>
 
 <?= Ui::sectionClose() ?>
