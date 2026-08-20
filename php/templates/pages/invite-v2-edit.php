@@ -131,14 +131,15 @@ $progOffen = min(7, $progLetzteVoll + 1);
    * Klassen, nicht an einer eigenen: sie greifen so unveraendert, ob das
    * Skript laeuft oder nicht.
    *
-   * Bei zwei oder mehr Tabs steckt in jedem <li> ein echtes <button> (siehe
-   * Aufruf weiter unten) - das macht den Tab selbst fokussierbar und
-   * klickbar, bedient von einem eigenen kleinen Skript, das die von
-   * invite-v2.js angehaengten Zurueck/Weiter-Knoepfe anklickt (siehe dort).
-   * Bei nur einem Tab (editLocked) steht dort blosser Text: ohne ein Ziel zum
-   * Umschalten waere ein Knopf mit Zeigefinger-Cursor eine Behauptung ohne
-   * Wirkung. Farbe und Groesse haengen am <li>, nicht am <button>, und werden
-   * von diesem per color:inherit uebernommen.
+   * Im <li> steht vom Server nur Text. Laeuft ein Skript UND gibt es etwas zu
+   * schalten, ruestet das Skript am Ende dieser Datei den Text zu einem
+   * echten <button> auf - erst das macht den Tab fokussierbar und klickbar.
+   * Die folgende Knopf-Regel greift also nur im aufgeruesteten Zustand; ohne
+   * Skript trifft sie nichts, und das ist der Zweck.
+   *
+   * Farbe und Groesse haengen am <li>, nicht am <button>: der Knopf holt sich
+   * die Farbe per color:inherit und die Schrift per font:inherit. Beide
+   * Deklarationen sind noetig, ein Knopf bringt sonst seine eigene mit.
    */
   .wz-tabs [data-step-label] {
     position: relative;
@@ -148,8 +149,26 @@ $progOffen = min(7, $progLetzteVoll + 1);
     letter-spacing: .01em;
   }
   .wz-tabs [data-step-label] > button {
-    border: 0; margin: 0; padding: 0; background: none;
+    display: block;
+    /* Der Knopf deckt auch den Abstand bis zum Goldstrich ab. Vorher sass das
+       padding allein am <li> und der Knopf endete am Text: die Schaltflaeche
+       war kleiner als der Reiter, den sie zeichnet, und der Streifen direkt
+       ueber dem Strich klickte nicht. Das negative margin nimmt genau zurueck,
+       was das padding an Hoehe zufuegt - die Zeile steht also millimetergleich
+       wie ohne Skript. */
+    margin: 0 0 -.85rem;
+    padding: 0 0 .85rem;
+    border: 0; background: none;
     font: inherit; color: inherit; cursor: pointer;
+    text-align: left;
+  }
+  /* Der Sichtbarkeitsring steht hier ausdruecklich, statt sich auf den Ring
+     des Browsers zu verlassen: die Regel darueber setzt border und background
+     zurueck, und wer das liest, entfernt beim naechsten Mal auch das outline,
+     ohne zu merken, dass der Tab damit nur noch fuer die Maus existiert. */
+  .wz-tabs [data-step-label] > button:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
   }
   .wz-tabs [data-step-label].text-ink { color: var(--color-ink); }
   .wz-tabs [data-step-label].text-ink::after {
@@ -245,18 +264,20 @@ $progOffen = min(7, $progLetzteVoll + 1);
            show() ohnehin nie. So stimmt der erste Tab in allen drei Faellen.
         */ ?>
         <li data-step-label="<?= $i ?>" class="<?= $i === 0 ? 'text-ink' : 'text-muted' ?>">
-          <?php if (count($tabs) > 1) : ?>
-            <?php /*
-               Ein echtes <button>, kein blosses <li>: nur so ist der Tab per
-               Tastatur erreichbar. type="button" - er darf das Formular nicht
-               absenden. Was ein Klick darauf bewirkt, steht im Skript am Ende
-               dieser Datei, nicht hier.
-            */ ?>
-            <button type="button"><span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?></button>
-          <?php else : ?>
-            <?php // Ein einzelner Tab schaltet nichts um - kein Knopf, sonst ein Zeigefinger-Cursor ohne Wirkung. ?>
-            <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?>
-          <?php endif; ?>
+          <?php /*
+             Blosser Text, nie ein <button> vom Server. Der Server weiss nicht,
+             ob im Browser ein Skript laeuft - und ein Knopf, den niemand
+             bedient, ist genau die Behauptung ohne Wirkung, gegen die dieser
+             Bildschirm sonst argumentiert (dasselbe Argument, das hier vorher
+             nur fuer den Fall eines einzelnen Tabs gezogen wurde).
+
+             Das Skript am Ende dieser Datei RUESTET diesen Text zum Knopf auf,
+             und erst dann, wenn es die Zurueck/Weiter-Knoepfe wirklich
+             vorfindet - es also auch etwas zu schalten gibt. Faellt das Skript
+             aus, faellt invite-v2.js aus oder ist es ein einzelner Tab, bleibt
+             hier Text: nichts sieht klickbar aus, was nicht klickt.
+          */ ?>
+          <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?>
         </li>
       <?php endforeach; ?>
     </ol>
@@ -514,70 +535,6 @@ $progOffen = min(7, $progLetzteVoll + 1);
     </div>
   </form>
 
-  <?php /*
-     Die Tabs bedienen die Zurueck/Weiter-Knoepfe, statt selbst einen zweiten
-     Zustand fuer den aktuellen Schritt zu fuehren. invite-v2.js haelt "at"
-     in seiner eigenen Closure - griffen wir hier direkt auf [hidden] zu,
-     widerspraechen sich zwei Wahrheiten (unsere und seine), und die
-     Zurueck/Weiter-Knoepfe zeigten irgendwann den falschen Schritt an. Ein
-     Klick auf einen Tab klickt darum den passenden echten Knopf, so oft wie
-     noetig (bei zwei Schritten immer genau einmal) - dieselbe Pflichtfeld-
-     Pruefung, derselbe Scroll, dieselbe Beschriftung wie bei einem Klick von
-     Hand.
-
-     invite-v2.js haengt Zurueck/Weiter nur an, wenn es mindestens zwei
-     Schritte gibt (dieselbe Abfrage: steps.length < 2, siehe dort) - bei nur
-     einem Tab (editLocked) gibt es gar keine <button>-Tabs (siehe Aufruf
-     oben) und dieses Skript kehrt sofort zurueck. Ohne Skript ueberhaupt
-     laeuft auch dieses hier nie - beide Schritte stehen dann wie immer
-     untereinander.
-
-     nonce Pflicht, nicht Kosmetik: Http::harden() setzt script-src nur auf
-     'self' und den Nonce dieser Antwort (Http::nonce(), siehe Http.php und
-     dasselbe Muster im Layout fuer das ld+json-Skript) - ein <script> ohne
-     diesen Nonce fuehrt der Browser gar nicht erst aus. Kein Fehler in der
-     Konsole, es passiert einfach nichts.
-  */ ?>
-  <script nonce="<?= e(Http::nonce()) ?>">
-  (function () {
-    'use strict';
-    var form = document.querySelector('[data-wizard]');
-    if (!form) return;
-
-    var tabButtons = Array.prototype.slice.call(form.querySelectorAll('[data-step-label] > button'));
-    var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
-    if (tabButtons.length < 2 || steps.length < 2) return;
-
-    function current() {
-      for (var n = 0; n < steps.length; n++) {
-        if (!steps[n].hidden) return n;
-      }
-      return 0;
-    }
-
-    // Die von invite-v2.js angehaengten Knoepfe: type=button, aber ausserhalb
-    // jedes [data-step-label] - so lassen sie sich von den Tab-Knoepfen
-    // selbst unterscheiden, ohne eine eigene Kennung zu brauchen.
-    function navButtons() {
-      return Array.prototype.slice.call(form.querySelectorAll('button[type=button]'))
-        .filter(function (b) { return !b.closest('[data-step-label]'); });
-    }
-
-    tabButtons.forEach(function (btn, i) {
-      btn.addEventListener('click', function () {
-        var nav = navButtons();
-        if (nav.length < 2) return; // invite-v2.js hat sie (noch) nicht angehaengt
-        var back = nav[0];
-        var next = nav[1];
-        var guard = steps.length + 2;
-        while (current() !== i && guard-- > 0) {
-          (i > current() ? next : back).click();
-        }
-      });
-    });
-  })();
-  </script>
-
   <aside class="wz-side">
     <p class="mb-4 text-[0.62rem] uppercase tracking-[0.18em] text-muted">
       <?= e($locale === 'de' ? 'So sehen es eure Gäste' : 'What your guests see') ?>
@@ -627,5 +584,87 @@ $progOffen = min(7, $progLetzteVoll + 1);
     </style>
   </aside>
 </div>
+
+<?php /*
+   Dieses Skript steht ausserhalb von .wz-grid, nicht mehr zwischen Formular
+   und Vorschau. Dort war es zwar unschaedlich - die Browser-Grundregel
+   script{display:none} macht daraus kein Grid-Element -, aber die
+   Zweispaltigkeit haette dann an einer Regel gehangen, die niemand hier
+   liest.
+
+   Was es tut: es ruestet die Reiter zu Schaltflaechen auf und laesst sie die
+   Zurueck/Weiter-Knoepfe bedienen, statt selbst einen zweiten Zustand fuer
+   den aktuellen Schritt zu fuehren. invite-v2.js haelt "at" in seiner eigenen
+   Closure - griffen wir hier direkt auf [hidden] zu, widerspraechen sich zwei
+   Wahrheiten (unsere und seine), und die Zurueck/Weiter-Knoepfe zeigten
+   irgendwann den falschen Schritt an. Ein Klick auf einen Reiter klickt darum
+   den passenden echten Knopf: dieselbe Pflichtfeld-Pruefung, derselbe Scroll,
+   dieselbe Beschriftung wie bei einem Klick von Hand.
+
+   Aufgeruestet wird ERST, wenn feststeht, dass es etwas zu schalten gibt -
+   sonst bleibt der Reiter Text. Deshalb DOMContentLoaded und nicht sofort:
+   invite-v2.js kommt mit defer (layout.php), laeuft also nach dem Parsen und
+   VOR diesem Ereignis. Zum Zeitpunkt des Aufrufs stehen seine Knoepfe also
+   schon da. Sofort ausgefuehrt fanden wir nichts vor und muessten raten.
+
+   nonce Pflicht, nicht Kosmetik: Http::harden() nimmt in script-src 'self'
+   und den Nonce dieser Antwort auf (Http::nonce(), siehe Http.php - dort
+   stehen beide Traeger namentlich; bei hinterlegter Messkennung kommen noch
+   die Messdienste hinzu). Ein <script> ohne diesen Nonce fuehrt der Browser
+   gar nicht erst aus: kein Fehler in der Konsole, es passiert einfach nichts.
+*/ ?>
+<script nonce="<?= e(Http::nonce()) ?>">
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var form = document.querySelector('[data-wizard]');
+  if (!form) return;
+
+  var labels = Array.prototype.slice.call(form.querySelectorAll('[data-step-label]'));
+  var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
+  if (labels.length < 2 || steps.length < 2) return;
+
+  /* Die von invite-v2.js angehaengten Knoepfe. Es haengt sie zuletzt an das
+     Formular (form.appendChild(nav), siehe dort), Zurueck vor Weiter - also
+     sind es die LETZTEN beiden, nicht die ersten. Das ist der Unterschied,
+     der zaehlt: der Kommentar bei den Programmzeilen erwaegt einen
+     Hinzufuegen-Knopf, und der stuende als type=button weiter oben im
+     Dokument. Von vorne gezaehlt waere er dann "Zurueck". */
+  var nav = Array.prototype.slice.call(form.querySelectorAll('button[type=button]')).slice(-2);
+  if (nav.length < 2) return;
+  var back = nav[0];
+  var next = nav[1];
+
+  function current() {
+    for (var n = 0; n < steps.length; n++) {
+      if (!steps[n].hidden) return n;
+    }
+    return 0;
+  }
+
+  labels.forEach(function (li, i) {
+    /* Erst hier wird aus Text ein Knopf. Die Kinder wandern hinein, statt
+       neu geschrieben zu werden: die Nummer (.wz-tab-num) und der Titel
+       bleiben so genau die vom Server gesetzten und escapten Knoten. */
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    while (li.firstChild) btn.appendChild(li.firstChild);
+    li.appendChild(btn);
+
+    btn.addEventListener('click', function () {
+      var guard = steps.length + 2;
+      while (current() !== i && guard-- > 0) {
+        var vor = current();
+        (i > vor ? next : back).click();
+        /* Bewegt sich nichts, hat Weiter abgelehnt - invite-v2.js prueft die
+           Pflichtfelder des Schritts und kehrt ohne show() zurueck. Dann
+           steht die Meldung des Browsers am Feld, und weiterzuklopfen
+           brachte nur dieselbe Blase noch dreimal. */
+        if (current() === vor) break;
+      }
+    });
+  });
+});
+</script>
 
 <?= Ui::sectionClose() ?>
