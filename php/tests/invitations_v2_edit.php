@@ -12,6 +12,101 @@ use Atelier\InvitationsV2;
  * wird nicht geprueft.
  */
 
+use Atelier\Design;
+use Atelier\DesignSections;
+use Atelier\DesignWizard;
+
+/*
+ * Der eingefrorene Sockel.
+ *
+ * Ab dieser Phase haelt design_snapshot die UNpersonalisierte Vorlage, und
+ * die Wahl des Kunden liegt daneben in data['wahl']. Gedruckt wird
+ * personalize(snapshot, wahl) - bei jedem Aufruf neu.
+ *
+ * Der Rueckwaertsvertrag dieser Aenderung ist eine Behauptung ueber
+ * personalize(), und sie wird hier gemessen und nicht geglaubt: eine alte
+ * Einladung traegt einen bereits personalisierten Sockel und KEIN wahl, also
+ * laeuft auf ihr personalize(sockel, []) - und das muss die Identitaet sein,
+ * sonst aendert sich das Aussehen jeder heute veroeffentlichten Einladung.
+ */
+
+/** Eine Vorlage mit genau den Rechten, die diese Tests brauchen. */
+function edit_doc(): array
+{
+    return [
+        'id' => 'test', 'slug' => 'test',
+        'palette' => [
+            'accent' => ['value' => '#B08D57', 'customer' => true],
+            'bg'     => ['value' => '#EFE7DC', 'customer' => false],
+        ],
+        'fonts'  => [],
+        'layers' => [
+            ['id' => 'namen', 'type' => 'text', 'bind' => 'couple_names'],
+            ['id' => 'zier', 'type' => 'shape',
+             'permissions' => ['edit' => true, 'color' => true, 'hide' => true]],
+        ],
+    ];
+}
+
+$vorlage = edit_doc();
+
+// So sieht der Sockel aus, den publish() ab jetzt einfriert.
+$sockel = DesignSections::complete(Design::complete($vorlage));
+
+// GENAU der Tausch, den show() macht: vorher Design::complete($snapshot),
+// nachher DesignWizard::personalize($snapshot, wahl). Fuer eine alte
+// Einladung ist wahl leer, und dann muessen beide dasselbe Dokument ergeben.
+assert_same(
+    Design::complete($sockel),
+    DesignWizard::personalize($sockel, []),
+    'personalize: mit leerer Wahl ist es genau das, was show() bisher tat'
+);
+
+// Zweimal angewendet aendert nichts mehr: ein zweites Speichern darf die
+// Einladung nicht verformen.
+$einmal = DesignWizard::personalize($sockel, []);
+assert_same($einmal, DesignWizard::personalize($einmal, []), 'personalize: leere Wahl ist idempotent');
+
+$wahl = ['palette' => ['accent' => '#123456'], 'fonts' => [], 'layers' => [], 'sections' => []];
+assert_same(
+    DesignWizard::personalize($sockel, $wahl),
+    DesignWizard::personalize(DesignWizard::personalize($sockel, $wahl), $wahl),
+    'personalize: dieselbe Wahl zweimal ist idempotent'
+);
+
+/* --- Der Sockel bleibt der Sockel: nur die Wahl aendert sich --- */
+
+$rot  = DesignWizard::personalize($sockel, ['palette' => ['accent' => '#AA0000']]);
+$blau = DesignWizard::personalize($sockel, ['palette' => ['accent' => '#0000AA']]);
+
+assert_same($rot['layers'], $blau['layers'], 'personalize: eine andere Farbe laesst die Ebenen unberuehrt');
+assert_same('#AA0000', $rot['palette']['accent']['value'], 'personalize: die gewaehlte Farbe steht in der Marke');
+assert_same('#0000AA', $blau['palette']['accent']['value'], 'personalize: und die andere Wahl in der anderen');
+assert_same($sockel['palette']['bg']['value'], $rot['palette']['bg']['value'], 'personalize: eine Marke ohne Haken bleibt, wie der Grafiker sie setzte');
+
+/*
+ * Und der eigentliche Punkt der Phase: aendert der Grafiker die Vorlage,
+ * aendert sich die veroeffentlichte Einladung NICHT. Der Sockel liegt in der
+ * Zeile, nicht im Katalog - das wird hier so nachgestellt, wie es passiert:
+ * die Vorlage bekommt eine Ebene dazu, der eingefrorene Sockel nicht.
+ */
+$spaeter = edit_doc();
+$spaeter['layers'][] = ['id' => 'neu', 'type' => 'text', 'bind' => 'hashtag'];
+
+$gedruckt = DesignWizard::personalize($sockel, $wahl);
+$ids = array_map(static fn (array $el): string => (string) $el['id'], $gedruckt['layers']);
+assert_true(!in_array('neu', $ids, true), 'personalize: was nach dem Einfrieren in die Vorlage kam, steht nicht auf der Karte');
+
+/*
+ * Die Kehrseite von §4, gemessen: auf einem BEREITS personalisierten Sockel
+ * ist das Ausblenden nicht rueckgaengig zu machen - die Ebene ist weg, und
+ * choices() bietet sie nicht mehr an. Genau deshalb bleibt der Design-Tab bei
+ * einer Einladung ohne wahl geschlossen.
+ */
+$versteckt = DesignWizard::personalize($sockel, ['layers' => ['zier' => ['hidden' => true]]]);
+assert_true(!isset(DesignWizard::choices($versteckt)['layers']['zier']), 'choices: eine ausgeblendete Ebene wird auf dem personalisierten Sockel nicht mehr angeboten');
+assert_true(isset(DesignWizard::choices($sockel)['layers']['zier']), 'choices: auf dem eingefrorenen Sockel steht sie weiter zur Wahl');
+
 /* --- Der Schluessel --- */
 
 $echt = str_repeat('a', 32);

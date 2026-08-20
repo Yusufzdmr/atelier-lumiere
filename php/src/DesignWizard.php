@@ -194,11 +194,20 @@ final class DesignWizard
     /**
      * Die Wahl des Kunden auf das Design legen.
      *
-     * Das Ergebnis ist der design_snapshot: ein vollstaendiges Dokument, das
-     * der Renderer aus Phase 1 ohne eine einzige neue Zeile druckt. Es wird
-     * bewusst keine Liste "was der Kunde geaendert hat" gefuehrt - die muesste
-     * der Renderer, die Vorschau, das Panel und der spaetere Bearbeiten-
-     * Bildschirm jeweils einzeln verstehen.
+     * Das Ergebnis ist ein vollstaendiges Dokument, das der Renderer aus
+     * Phase 1 ohne eine einzige neue Zeile druckt.
+     *
+     * Es ist NICHT der design_snapshot. Bis zur Phase "Bearbeiten nach dem
+     * Veroeffentlichen" war es das: publish() fror das Ergebnis ein und warf
+     * die Eingabe weg. Damit war jede spaetere Aenderung verlustbehaftet.
+     * Seitdem haelt die Spalte die unpersonalisierte Vorlage, die Wahl steht
+     * in data['wahl'], und diese Funktion laeuft bei jedem Druck neu.
+     *
+     * Zwei Eigenschaften traegt der Bearbeiten-Bildschirm auf dem Ruecken, und
+     * beide sind in tests/invitations_v2_edit.php gemessen: mit leerer Wahl ist
+     * sie die Identitaet (deshalb funktionieren alte Einladungen unveraendert
+     * weiter), und mit derselben Wahl zweimal angewendet aendert sie nichts
+     * (deshalb darf zweimal gespeichert werden).
      *
      * Weissliste: gefragt wird immer zuerst choices(). Was dort nicht steht,
      * faellt still - siehe Kommentar im Test.

@@ -443,7 +443,25 @@ final class InviteV2Controller
             }
         }
 
-        $snapshot = DesignWizard::personalize($design, $wahl);
+        /*
+         * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
+         *
+         * Bis zu dieser Phase stand hier personalize($design, $wahl): das
+         * Ergebnis fror ein, die Eingabe wurde weggeworfen. Damit war
+         * nachtraegliches Bearbeiten unmoeglich - eine zweite Wahl haette auf
+         * einem Sockel gelegen, in dem die erste schon eingebrannt war.
+         *
+         * Jetzt friert die Vorlage ein und die Wahl liegt daneben in
+         * data['wahl']. Gedruckt wird personalize(snapshot, wahl), bei jedem
+         * Aufruf neu (siehe show()). Das Versprechen aus Phase 3B haelt
+         * trotzdem: der Sockel ist eine Kopie in der Zeile, und wer die Vorlage
+         * im Panel spaeter aendert, aendert diese Karte nicht.
+         *
+         * Durch beide Normalisierer, damit in der Spalte genau die Form steht,
+         * die css(), html() und die Abschnittsvorlage erwarten - dieselbe Form,
+         * mit der personalize() ohnehin endet.
+         */
+        $snapshot = DesignSections::complete(Design::complete($design));
 
         $data['slug']      = $slug;
         $data['locale']    = I18n::locale();
@@ -453,6 +471,16 @@ final class InviteV2Controller
         // bis dahin veroeffentlichte Einladung aus.
         $data['manageKey'] = bin2hex(random_bytes(16));
         $data['createdAt'] = date('c');
+        // Was der Kunde gewaehlt hat, bleibt erhalten - sonst waere der Sockel
+        // eine Vorlage, die niemand mehr auf die Karte des Paares abbilden
+        // kann. Ihre Anwesenheit ist zugleich das Zeichen, dass der
+        // Design-Tab beim Bearbeiten offen steht (Spec §4).
+        $data['wahl']      = $wahl;
+        // Der Stand fuer die Zwei-Tabs-Kontrolle. Er steht ab der ersten
+        // Sekunde da, weil er sonst bei der ersten Bearbeitung fehlte und die
+        // Kontrolle genau dann nicht griffe, wenn sie zum ersten Mal gebraucht
+        // wird.
+        $data['updatedAt'] = $data['createdAt'];
 
         InvitationsV2::create($slug, (string) $design['id'], $snapshot, $data);
 
@@ -505,7 +533,25 @@ final class InviteV2Controller
         // Vor der Antwort vollstaendig, nicht danach: saveReply() muss wissen,
         // ob die Einladung ueberhaupt einen sichtbaren rsvp-Abschnitt zeigt -
         // dafuer braucht sie das fertige Dokument, nicht den rohen Schnappschuss.
-        $doc = Design::complete($einladung['design_snapshot']);
+        /*
+         * Die Wahl des Kunden auf den eingefrorenen Sockel legen - bei jedem
+         * Aufruf neu.
+         *
+         * Bis zu dieser Phase stand hier Design::complete($snapshot), weil der
+         * Schnappschuss das fertige Dokument war. Jetzt haelt er die Vorlage,
+         * und die Wahl liegt in data['wahl'].
+         *
+         * Eine Einladung von VOR dieser Phase traegt kein wahl. Dann laeuft
+         * personalize($sockel, []) - und das ist die Identitaet, gemessen und
+         * nicht geglaubt (tests/invitations_v2_edit.php). Ihre Ausgabe bleibt
+         * Byte fuer Byte dieselbe; deshalb gibt es zu dieser Aenderung keine
+         * Wanderung und kein Datenumschreiben.
+         *
+         * is_array(): wahl aus einem von Hand veraenderten Dokument koennte
+         * eine Zeichenkette sein, und personalize() erwartet ein Feld.
+         */
+        $wahl = is_array($einladung['data']['wahl'] ?? null) ? $einladung['data']['wahl'] : [];
+        $doc  = DesignWizard::personalize($einladung['design_snapshot'], $wahl);
 
         // Erst antworten, dann zeichnen: die Seite, die nach dem Absenden
         // erscheint, soll den Dank zeigen und nicht noch einmal das leere
