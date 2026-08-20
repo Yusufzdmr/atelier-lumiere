@@ -354,6 +354,13 @@ final class InviteV2Controller
                 // Eine Einladung gehoert nicht in den Index. Der Link ist
                 // fuer die Gaeste, nicht fuer die Suche.
                 'noindex' => true,
+                // Vollbild, wie in der ersten Fassung (InviteController::show):
+                // ein Gast oeffnet das hier in WhatsApp. Menue und Fusszeile
+                // des Fotografen gehoeren nicht darueber - sie machen aus der
+                // Einladung eine Unterseite seiner Website. Der
+                // Einwilligungsbanner bleibt, den druckt layout.php auch im
+                // Vollbild.
+                'bare'    => true,
                 // Dieselbe Choreografie wie in der Design-Vorschau: Kuvert
                 // oeffnen, Karte aufsteigen lassen. Ohne dieses Skript bleibt
                 // das Kuvert zu.
