@@ -101,7 +101,23 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
    Blaue und sah erst am Ende, was daraus wird. Auf schmalen Schirmen fallen
    die Spalten untereinander, die Vorschau dann unter das Formular.
 */ ?>
-<div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,1fr)_20rem]">
+<?php /*
+   Eigene Regeln statt Tailwind-Klassen: die PHP-Fassung laedt ein FERTIG
+   gebautes style.css, kein JIT. Eine Klasse, die dort nicht drinsteht, tut
+   schlicht nichts - lg:grid-cols-[...], lg:sticky und lg:top-28 gibt es in
+   der gebauten Datei nicht, und die Vorschau fiel deshalb stumm unter das
+   Formular. Diese paar Zeilen haengen von keinem Build ab.
+*/ ?>
+<style>
+  .wz-grid { margin-inline: auto; max-width: 72rem; }
+  @media (min-width: 1024px) {
+    .wz-grid { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 3rem; align-items: start; }
+    .wz-side { position: sticky; top: 7rem; }
+  }
+  /* Unter 1024 px steht die Vorschau unter dem Formular, mit Abstand davor. */
+  @media (max-width: 1023px) { .wz-side { margin-top: 3rem; } }
+</style>
+<div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
     <?php /*
@@ -300,7 +316,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     </div>
   </form>
 
-  <aside class="lg:sticky lg:top-28 lg:self-start">
+  <aside class="wz-side">
     <style><?= $styles ?><?= $sectionCss ?></style>
     <div class="<?= e($scope) ?> mx-auto aspect-[2/3] w-full max-w-xs" data-preview
          style="position:relative;container-type:inline-size;"><?= $karte ?></div>
