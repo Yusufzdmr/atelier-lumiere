@@ -325,7 +325,22 @@ if ($darfDesign) {
 
   <aside class="wz-side">
     <style><?= $styles ?><?= $sectionCss ?></style>
-    <div class="<?= e($scope) ?> wz-card mx-auto w-full max-w-xs" data-preview
+    <?php /*
+       Absichtlich OHNE data-preview: invite-v2.js' paint() wuerde beim Laden
+       sofort darueberschreiben, mit den rohen Formularwerten statt dem, was
+       der Server gerade gezeichnet hat - wedding_date kaeme als "2027-06-19"
+       statt "19. Juni 2027" heraus, wedding_weekday bliebe leer, weil
+       JavaScript den Wochentag nicht herleiten kann. Im Assistenten ist das
+       richtig: dort ist die Karte eine grobe, lebendige Skizze von etwas, das
+       noch entsteht. Hier ist sie das nicht - diese Einladung ist bereits
+       veroeffentlicht, und dieser Bildschirm existiert genau dafuer, dass ein
+       Paar sieht, was seine Gaeste sehen. Der Tausch: die Karte folgt der
+       Tastatur nicht mehr live, dafuer zeigt sie immer die Wahrheit, die der
+       Server auch drucken wuerde. Die Tabs bleiben unberuehrt - preview()
+       endet nach der Schritt-Umschaltung mit return, wenn es keinen
+       [data-preview]-Knoten findet.
+    */ ?>
+    <div class="<?= e($scope) ?> wz-card mx-auto w-full max-w-xs"
          style="position:relative;container-type:inline-size;"><?= $karte ?></div>
 
     <?php /*

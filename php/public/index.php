@@ -124,7 +124,6 @@ $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new Invit
 //
 // any und nicht get: dieser Bildschirm nimmt seine eigene Aenderung entgegen.
 $router->any('/{locale}/v2/einladung/{slug}/{key}/bearbeiten', $page_(static fn (array $p) => (new InviteV2Controller())->edit($p)));
-//
 // get und nicht any: die Leseansicht schreibt nichts.
 $router->get('/{locale}/v2/einladung/{slug}/{key}', $page_(static fn (array $p) => (new InviteV2Controller())->replies($p)));
 // any und nicht get: die Einladung nimmt ihre eigene Antwort entgegen

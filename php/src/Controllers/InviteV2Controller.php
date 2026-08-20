@@ -891,7 +891,6 @@ final class InviteV2Controller
             return;
         }
 
-        $key  = (string) ($params['key'] ?? '');
         $slug = (string) $einladung['slug'];
         $data = $einladung['data'];
 
