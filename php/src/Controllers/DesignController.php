@@ -8,7 +8,6 @@ use Atelier\Config;
 use Atelier\Design;
 use Atelier\I18n;
 use Atelier\Seo;
-use Atelier\Themes;
 use Atelier\Security;
 use Atelier\View;
 
@@ -57,11 +56,6 @@ final class DesignController
             ));
         }
 
-        $themenIds = array_map(
-            static fn (array $t): string => (string) ($t['id'] ?? ''),
-            Themes::all()
-        );
-
         $styles = '';
         foreach ($designs as $design) {
             $styles .= Design::css($design, '.d-' . $design['id']);
@@ -80,7 +74,6 @@ final class DesignController
             'values'  => Design::bindValues(self::BEISPIEL, $locale),
             'kategorien' => $kategorien,
             'filter'     => $filter,
-            'machbar'    => Design::creatable($designs, $themenIds),
         ]);
     }
 
@@ -141,10 +134,6 @@ final class DesignController
             // Bewegungsachsen. Wer angemeldet ist, arbeitet an der Vorlage; wer
             // nicht, will sie ansehen und braucht zwei Links statt sieben Zahlen.
             'intern'   => $intern,
-            'machbar'  => Design::creatable([$design], array_map(
-                static fn (array $t): string => (string) ($t['id'] ?? ''),
-                Themes::all()
-            ))[$design['slug']] ?? false,
         ]);
     }
 }

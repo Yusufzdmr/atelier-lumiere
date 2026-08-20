@@ -13,7 +13,6 @@
  * @var array<string,string> $values
  * @var list<string> $kategorien
  * @var string $filter
- * @var array<string,bool> $machbar
  * @var string $locale
  */
 
@@ -67,16 +66,25 @@ $de = $locale === 'de';
           <p class="text-xs uppercase tracking-[0.16em] text-muted"><?= e((string) $design['category']) ?></p>
         </a>
 
-        <?php if ($machbar[$slug] ?? false) : ?>
-          <a href="<?= e($p('/einladung') . '?design=' . rawurlencode($slug)) ?>"
-             class="mt-3 inline-block border border-ink px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
-            <?= $de ? 'Mit diesem Design erstellen' : 'Create with this design' ?>
-          </a>
-        <?php else : ?>
-          <p class="mt-3 text-[0.64rem] uppercase tracking-[0.16em] text-muted">
-            <?= $de ? 'Bald im Assistenten' : 'Coming to the wizard' ?>
-          </p>
-        <?php endif; ?>
+        <?php /*
+           Der Knopf zeigt auf den Assistenten der ZWEITEN Fassung. Bis hierher
+           zeigte er auf den alten, damit aus dem Schaufenster keine unbezahlte
+           Einladung entsteht - die zweite Fassung kennt weder Zahlung noch
+           Gutschein. Auf der Vorschau-Maschine ist genau das erwuenscht: der
+           Kunde soll den ganzen Weg gehen koennen. Bevor die zweite Fassung
+           regulaer verkauft wird, muss die Zahlung davor (Phase D).
+
+           Ohne Weiche: die zweite Fassung baut aus dem Design-Dokument, nicht
+           aus einem Thema. Die Themen-Pruefung (Design::creatable) gehoerte
+           zum alten Assistenten, der ohne passendes Thema nicht zeichnen
+           konnte. Hier ist jedes aktive Design verwendbar - eine Kopie ohne
+           eigenes Thema haette sonst weiter "Bald im Assistenten" gesagt,
+           obwohl der Assistent sie laengst bauen kann.
+        */ ?>
+        <a href="<?= e($p('/v2/einladung') . '?design=' . rawurlencode($slug)) ?>"
+           class="mt-3 inline-block border border-ink px-4 py-2.5 text-[0.64rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
+          <?= $de ? 'Mit diesem Design erstellen' : 'Create with this design' ?>
+        </a>
       </div>
     <?php endforeach; ?>
   </div>

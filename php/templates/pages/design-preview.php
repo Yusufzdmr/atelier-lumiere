@@ -76,11 +76,14 @@ $idle = (string) $design['animation']['idle'];
       <a href="<?= e(I18n::path('/v2/designs', $locale)) ?>" class="transition-colors hover:text-gold">
         <?= $locale === 'de' ? 'Alle Designs' : 'All designs' ?>
       </a>
-      <?php if ($machbar) : ?>
-        <a href="<?= e(I18n::path('/einladung', $locale) . '?design=' . rawurlencode((string) $design['slug'])) ?>"
-           class="border border-cream px-5 py-2.5 transition-colors hover:bg-cream hover:text-ink">
-          <?= $locale === 'de' ? 'Mit diesem Design erstellen' : 'Create with this design' ?>
-        </a>
-      <?php endif; ?>
+      <?php /*
+         Zweite Fassung, ohne Themen-Weiche - dieselbe Entscheidung wie im
+         Schaufenster (designs-v2.php): der Assistent baut aus dem
+         Design-Dokument, ein Thema braucht er nicht mehr.
+      */ ?>
+      <a href="<?= e(I18n::path('/v2/einladung', $locale) . '?design=' . rawurlencode((string) $design['slug'])) ?>"
+         class="border border-cream px-5 py-2.5 transition-colors hover:bg-cream hover:text-ink">
+        <?= $locale === 'de' ? 'Mit diesem Design erstellen' : 'Create with this design' ?>
+      </a>
     </div>
   <?php endif; ?>
