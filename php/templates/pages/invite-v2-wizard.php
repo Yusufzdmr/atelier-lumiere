@@ -73,6 +73,14 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     <p class="mt-6 break-all text-sm text-ink">
       <a class="underline" href="<?= e($done['path']) ?>"><?= e($done['url']) ?></a>
     </p>
+
+    <div class="mt-10 border-t border-sand-deep pt-6">
+      <p class="text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= e($t('doneRepliesLabel')) ?></p>
+      <p class="mt-3 break-all text-sm text-ink">
+        <a class="underline" href="<?= e($done['managePath']) ?>"><?= e($done['manageUrl']) ?></a>
+      </p>
+      <p class="mt-3 text-[0.8rem] text-muted"><?= e($t('doneRepliesWarning')) ?></p>
+    </div>
   </div>
 
 <?php else : ?>
