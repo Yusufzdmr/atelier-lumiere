@@ -16,6 +16,8 @@
  * @var string $styles
  * @var string $karte
  * @var string $csrf
+ * @var string $token      Kennung des Entwurfs, leer solange keiner gespeichert ist
+ * @var string $draftLink  gesetzt, wenn gerade eben gespeichert wurde
  * @var string $error
  * @var array<string,mixed>|null $done
  */
@@ -93,6 +95,12 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
   <form method="post" enctype="multipart/form-data" class="mx-auto max-w-3xl" data-wizard>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+    <?php /*
+       Die Kennung reist im Formular mit: ohne sie legte jedes Speichern einen
+       neuen Entwurf an und der Kunde saemmelte Links, von denen nur der
+       letzte stimmt.
+    */ ?>
+    <input type="hidden" name="token" value="<?= e($token) ?>">
     <input type="hidden" name="design" value="<?= e((string) $design['slug']) ?>">
 
     <ol class="mb-10 flex flex-wrap gap-x-6 gap-y-2 border-b border-sand-deep pb-4 text-[0.62rem] uppercase tracking-[0.16em]" data-steps>
@@ -255,10 +263,36 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
           <button type="submit" class="border border-ink px-8 py-4 text-[0.66rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
             <?= e($t('publish')) ?>
           </button>
+
         <?php endif; ?>
 
       </fieldset>
     <?php endforeach; ?>
+
+    <?php /*
+       Ausserhalb der Schritte, nicht im letzten: gespeichert wird mitten in
+       der Arbeit, und wer bis zum letzten Schritt kommt, veroeffentlicht
+       ohnehin. Eigener Name (was=draft) trennt das Speichern vom
+       Veroeffentlichen; formnovalidate, weil ein halb ausgefuellter Entwurf
+       genau der Fall ist, fuer den es diesen Knopf gibt - die Pflichtfelder
+       gelten fuers Veroeffentlichen.
+    */ ?>
+    <div class="mt-8 border-t border-sand-deep pt-6">
+      <button type="submit" name="was" value="draft" formnovalidate
+              class="border border-sand-deep px-6 py-3 text-[0.64rem] uppercase tracking-[0.16em] text-muted transition-colors hover:border-ink hover:text-ink">
+        <?= e($t('draftSave')) ?>
+      </button>
+
+      <?php if ($draftLink !== '') : ?>
+        <div class="mt-5 border border-sand-deep bg-cream/60 p-5">
+          <p class="text-[0.7rem] uppercase tracking-[0.16em] text-muted"><?= e($t('draftSaved')) ?></p>
+          <p class="mt-2 break-all text-sm">
+            <a class="text-gold underline" href="<?= e($draftLink) ?>"><?= e($draftLink) ?></a>
+          </p>
+          <p class="mt-3 text-[0.78rem] leading-relaxed text-muted"><?= e($t('draftWarn')) ?></p>
+        </div>
+      <?php endif; ?>
+    </div>
   </form>
 
 <?php endif; ?>

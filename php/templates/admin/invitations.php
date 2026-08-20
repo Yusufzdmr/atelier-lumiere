@@ -228,7 +228,8 @@ $eventNames = [
               <div class="text-[0.88rem] text-ink"><?= e((string) ($draft['label'] ?? '—')) ?></div>
               <div class="mt-1 break-all text-[0.72rem] text-muted">
                 <?= e(Dates::short((string) ($draft['updatedAt'] ?? ''))) ?> ·
-                <a href="<?= e(I18n::sitePath('/einladung', $locale)) ?>?taslak=<?= e((string) ($draft['token'] ?? '')) ?>"
+                <?php /* fassung=2 sind Entwuerfe des neuen Assistenten; der alte koennte sie nicht oeffnen. */ ?>
+              <a href="<?= e(I18n::sitePath(((int) ($draft['fassung'] ?? 1)) === 2 ? '/v2/einladung' : '/einladung', $locale)) ?>?taslak=<?= e((string) ($draft['token'] ?? '')) ?>"
                    class="text-gold underline-offset-4 hover:underline">
                   <?= $de ? 'Entwurf öffnen' : 'Taslağı aç' ?>
                 </a>

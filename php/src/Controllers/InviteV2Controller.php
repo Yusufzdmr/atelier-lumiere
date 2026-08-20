@@ -79,12 +79,42 @@ final class InviteV2Controller
         $error = '';
         $done  = null;
 
+        /*
+         * Der Entwurf.
+         *
+         * Die Kennung kommt aus der Adresse (?taslak=), nach dem Speichern aus
+         * dem Formular - sonst legte jedes Speichern einen neuen Entwurf an und
+         * der Kunde saemmelte Links, von denen nur der letzte stimmt.
+         */
+        $token  = Security::clean($_POST['token'] ?? $_GET['taslak'] ?? '', 40);
+        $werte  = $token !== '' ? InvitationsV2::draft($token) : null;
+        $values = is_array($werte) ? $werte : [];
+        $draftLink = '';
+
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-            $ergebnis = $this->publish($design);
-            if (isset($ergebnis['error'])) {
-                $error = (string) $ergebnis['error'];
+            if ((string) ($_POST['was'] ?? '') === 'draft') {
+                $ergebnis = $this->saveDraft($token);
+                if (isset($ergebnis['error'])) {
+                    $error = (string) $ergebnis['error'];
+                } else {
+                    $token     = (string) $ergebnis['token'];
+                    $draftLink = (string) $ergebnis['url'];
+                    // Was gerade eingetippt wurde, steht jetzt im Entwurf - und
+                    // von dort kommt es zurueck ins Formular. Ohne das saehe der
+                    // Kunde nach dem Speichern wieder leere Felder.
+                    $values    = InvitationsV2::draft($token) ?? [];
+                }
             } else {
-                $done = $ergebnis;
+                $ergebnis = $this->publish($design);
+                if (isset($ergebnis['error'])) {
+                    $error = (string) $ergebnis['error'];
+                    // Bei einem Fehler bleibt stehen, was der Kunde getippt hat.
+                    $values = InvitationsV2::draftValues($_POST);
+                } else {
+                    $done = $ergebnis;
+                    // Veroeffentlicht: der Entwurf zeigt einen ueberholten Stand.
+                    InvitationsV2::deleteDraft($token);
+                }
             }
         }
 
@@ -102,7 +132,9 @@ final class InviteV2Controller
             'design'  => $design,
             'steps'   => DesignWizard::steps($design),
             'choices' => DesignWizard::choices($design),
-            'values'  => [],
+            'values'    => $values,
+            'token'     => $token,
+            'draftLink' => $draftLink,
             // css() braucht den gepunkteten CSS-Selektor (".d-elysee"), aber die
             // Klasse im Markup darf den Punkt nicht tragen - class=".d-elysee"
             // waere ein ungueltiger Klassenname und die Regeln griffen nie.
@@ -119,6 +151,41 @@ final class InviteV2Controller
             'error'   => $error,
             'done'    => $done,
         ]);
+    }
+
+    /**
+     * Den Zwischenstand festhalten und den Link dazu zurueckgeben.
+     *
+     * Ein eigener Knopf, kein Hintergrundschreiben: so ist das Speichern eine
+     * Handlung des Kunden und nicht ein Schreibzugriff, den jede Tastatur-
+     * eingabe ausloest. Das ist auch die Entscheidung der ersten Fassung
+     * (InviteController::saveDraft).
+     *
+     * @return array<string,string>
+     */
+    private function saveDraft(string $token): array
+    {
+        if (!Security::checkCsrf(is_string($_POST['csrf'] ?? null) ? $_POST['csrf'] : null)) {
+            return ['error' => 'csrf'];
+        }
+        // Eigener Schluessel: der alte Assistent soll diesen hier nicht
+        // aussperren und umgekehrt.
+        if (Security::throttle('invite-v2-draft', 40, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        // Eine neue Kennung nur beim ersten Mal. 20 Hexzeichen wie in der
+        // ersten Fassung; der Link ist ein Zugang, kein Geheimnis von Rang -
+        // wer ihn hat, sieht eine halb ausgefuellte Einladung.
+        if ($token === '') {
+            $token = bin2hex(random_bytes(10));
+        }
+
+        InvitationsV2::saveDraft($token, InvitationsV2::draftValues($_POST));
+
+        $path = I18n::path('/v2/einladung') . '?taslak=' . $token;
+
+        return ['token' => $token, 'path' => $path, 'url' => Config::url() . $path];
     }
 
     /**
