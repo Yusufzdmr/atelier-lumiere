@@ -250,6 +250,37 @@ $_POST = [
 
 $ersteRunde = $editSammleAngaben->invoke($editController, $editDarf);
 
+/*
+ * Die Regel selbst, nicht nur ihre Wiederholbarkeit.
+ *
+ * Der Hin- und Rueckweg weiter unten beweist die Regel nicht: waere die
+ * Bedingung in sammleAngaben() vertauscht - faellt die Zeile ohne UHRZEIT
+ * statt der ohne TITEL -, dann spiegelte formularWerte() dieses falsche
+ * Ergebnis brav zurueck, der zweite Durchlauf riefe dieselbe (falsche) Regel
+ * noch einmal auf und reproduzierte es identisch, und der Vergleich zwischen
+ * den Runden ginge trotzdem glatt durch. Eine Behauptung, die nicht
+ * scheitern kann, behauptet nichts - darum hier die Regel direkt am ersten
+ * sammleAngaben()-Ergebnis, vor jeder Rundreise.
+ *
+ * Eine einzige Gleichheit auf der vollstaendigen Liste erzwingt alle drei
+ * Eigenschaften auf einmal: dass von den drei eingereichten Zeilen genau
+ * zwei uebrig bleiben (die Laenge der Liste), dass die Zeile OHNE Uhrzeit
+ * dabei ist und ihre leere Uhrzeit leer bleibt (erstes Element, per Titel
+ * erkannt und nicht nur per Index), und dass die Zeile MIT Uhrzeit, aber
+ * OHNE Titel (Zeile 1) verschwunden ist - bliebe sie faelschlich stehen,
+ * haette die Liste drei Elemente statt zwei, oder ein falsches an dieser
+ * Stelle statt 'Abendessen'. Eine eigene dritte Zusicherung dafuer waere
+ * redundant.
+ */
+assert_same(
+    [
+        ['time' => '', 'title' => 'Nikah Toereni'],
+        ['time' => '19:30', 'title' => 'Abendessen'],
+    ],
+    $ersteRunde['program'],
+    'sammleAngaben: die Zeile ohne Uhrzeit bleibt (mit leerer Uhrzeit), die Zeile ohne Titel faellt heraus - direkt am ersten Ergebnis geprueft, nicht erst ueber die Rundreise'
+);
+
 // formularWerte() traegt die Namen des Formulars - genau die, die
 // sammleAngaben() gleich wieder liest. Damit steht das Formular so da, wie es
 // ein zweites Absenden ohne jede Aenderung abschicken wuerde.
