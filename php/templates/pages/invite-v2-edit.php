@@ -83,6 +83,18 @@ $tabs = [$t('editTabTexts')];
 if ($darfDesign) {
     $tabs[] = $t('editTabDesign');
 }
+
+// Wie viele Ablauf-Zeilen stehen offen? Sichtbar sind die ausgefuellten und
+// eine leere zum Weiterschreiben, der Rest wandert hinter <details> (siehe
+// unten). Acht Zeilen bleiben acht Zeilen - das Speichern liest alle acht,
+// <details> aendert nur den Anblick, nicht welche Felder es gibt.
+$progLetzteVoll = -1;
+for ($z = 0; $z < 8; $z++) {
+    if ($old('prog_time_' . $z) !== '' || $old('prog_title_' . $z) !== '') {
+        $progLetzteVoll = $z;
+    }
+}
+$progOffen = min(7, $progLetzteVoll + 1);
 ?>
 <?= Ui::pageHero('invite2-edit-hero', $t('editTitle'), I18n::t('nav.invitation2'), $t('editLead')) ?>
 
@@ -91,8 +103,9 @@ if ($darfDesign) {
 <?php /*
    Eigene Regeln statt Tailwind-Klassen: die PHP-Fassung laedt ein FERTIG
    gebautes style.css, kein JIT. Eine Klasse, die dort nicht drinsteht, tut
-   schlicht nichts. Dieselben drei Regeln wie im Assistenten
-   (invite-v2-wizard.php) - dort steht der ausfuehrliche Grund.
+   schlicht nichts. Dieselben drei Grund-Regeln wie im Assistenten
+   (invite-v2-wizard.php) - dort steht der ausfuehrliche Grund - plus ein paar
+   eigene fuer diesen Bildschirm.
 */ ?>
 <style>
   .wz-grid { margin-inline: auto; max-width: 72rem; }
@@ -103,6 +116,72 @@ if ($darfDesign) {
   @media (max-width: 1023px) { .wz-side { margin-top: 3rem; } }
   .wz-card { aspect-ratio: 2 / 3; background: var(--d-bg, #EFE7DC); }
   .wz-quiet { margin: 0; border: 0; padding: 0; min-inline-size: 0; }
+
+  /* Nur der Rahmen fuer die Adresse, die sich nicht aendert - kein Grid. */
+  .wz-linkband { margin-inline: auto; max-width: 72rem; }
+
+  /*
+   * Die Tabs: bisher genauso klein und grau wie ein Feldlabel, deshalb keine
+   * Navigation im Blick. font-display statt der winzigen Grossschrift, dazu
+   * ein Strich unter dem aktiven Tab. invite-v2.js tauscht bei jedem
+   * Schrittwechsel die ganze class des <li> gegen entweder "text-ink" oder
+   * "text-muted" aus (show() in invite-v2.js) - keine dritte Klasse bleibt
+   * erhalten. Diese Regeln haengen deshalb bewusst nur an genau diesen beiden
+   * Klassen, nicht an einer eigenen: sie greifen so unveraendert, ob das
+   * Skript laeuft oder nicht.
+   */
+  .wz-tabs li[data-step-label] {
+    position: relative;
+    padding-bottom: .85rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: .01em;
+  }
+  .wz-tabs li[data-step-label].text-ink { color: var(--color-ink); }
+  .wz-tabs li[data-step-label].text-ink::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--color-gold);
+  }
+  .wz-tabs li[data-step-label].text-muted { color: var(--color-muted); }
+  .wz-tab-num { margin-right: .4em; font-size: .8em; color: var(--color-gold); }
+
+  /* Ueberschrift einer Gruppe von Feldern (FAMILIEN, ABLAUF, EBENEN, ...):
+     eine zweite, groessere Type-Ebene, damit sie nicht wie ein Feldlabel wie
+     BRAUT oder DATUM aussieht, nur zufaellig groesser gesetzt. */
+  .wz-heading {
+    margin-bottom: .6rem;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.15rem;
+    letter-spacing: .01em;
+    color: var(--color-ink);
+  }
+
+  /* Eine Ebenen-Karte im Design-Tab: ein Rahmen statt eines Trennstrichs ueber
+     die volle Breite - so passen mehrere nebeneinander, siehe sm:grid-cols-2
+     am Aufruf. */
+  .wz-layer { border: 1px solid var(--color-sand-deep); padding: 1rem; }
+
+  /*
+   * Die uebrigen, meist leeren Ablauf-Zeilen: reines <details>, kein Skript.
+   * list-style entfernt die Standard-Markierung (Chrome/Safari zusaetzlich
+   * ueber ::-webkit-details-marker), das + / - davor kommt aus content.
+   */
+  .wz-more { margin-top: .75rem; border: 1px solid var(--color-sand-deep); }
+  .wz-more > summary {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .75rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .16em;
+    color: var(--color-muted);
+  }
+  .wz-more > summary::-webkit-details-marker { display: none; }
+  .wz-more > summary::before { content: '+'; color: var(--color-gold); font-size: 1rem; line-height: 1; }
+  .wz-more[open] > summary::before { content: '\2013'; }
+  .wz-more[open] > summary { border-bottom: 1px solid var(--color-sand-deep); }
+  .wz-more-body { padding: .25rem 1rem 1rem; }
 </style>
 
 <?php if ($ok) : ?>
@@ -115,6 +194,24 @@ if ($darfDesign) {
   </p>
 <?php endif; ?>
 
+<?php /*
+   Der Link eurer Gaeste stand bisher ganz unten, unter dem Speichern-Knopf -
+   auf einem Bildschirm, dessen Versprechen genau das ist: er bleibt gleich.
+   Deshalb hier, direkt unter der Hero-Zeile, die dasselbe schon sagt (siehe
+   editLead) - die Zusage steht, bevor irgendein Feld beruehrt wird.
+*/ ?>
+<div class="wz-linkband mb-10 flex flex-wrap items-center justify-between gap-4 border border-sand-deep bg-sand/30 px-6 py-5">
+  <div>
+    <p class="text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= e($t('editGuestLink')) ?></p>
+    <p class="mt-1 break-all text-base text-ink">
+      <a class="text-gold link-underline" href="<?= e($gastPfad) ?>"><?= e($gastPfad) ?></a>
+    </p>
+  </div>
+  <span class="shrink-0 text-[0.62rem] uppercase tracking-[0.18em] text-gold">
+    <?= e($locale === 'de' ? 'bleibt gleich' : 'stays the same') ?>
+  </span>
+</div>
+
 <div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
@@ -125,9 +222,17 @@ if ($darfDesign) {
     */ ?>
     <input type="hidden" name="stand" value="<?= e($stand) ?>">
 
-    <ol class="mb-10 flex flex-wrap gap-x-6 gap-y-2 border-b border-sand-deep pb-4 text-[0.62rem] uppercase tracking-[0.16em]" data-steps>
+    <ol class="wz-tabs mb-10 flex flex-wrap gap-x-8 gap-y-2 border-b border-sand-deep pb-4" data-steps>
       <?php foreach ($tabs as $i => $titel) : ?>
-        <li data-step-label="<?= $i ?>" class="text-muted"><?= $i + 1 ?>. <?= e($titel) ?></li>
+        <?php /*
+           Der erste Tab startet aktiv (text-ink), nicht erst durch invite-v2.js'
+           show(0) - bei nur einem Tab (Spec §4, editLocked) kehrt das Skript
+           vor show(0) zurueck (steps.length < 2), und ohne Skript laeuft
+           show() ohnehin nie. So stimmt der erste Tab in allen drei Faellen.
+        */ ?>
+        <li data-step-label="<?= $i ?>" class="<?= $i === 0 ? 'text-ink' : 'text-muted' ?>">
+          <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($titel) ?>
+        </li>
       <?php endforeach; ?>
     </ol>
 
@@ -163,7 +268,7 @@ if ($darfDesign) {
         ?>
         <?php if (!$hatFeld) { continue; } ?>
         <div class="border-t border-sand-deep pt-6">
-          <div class="<?= $label ?>"><?= e($secTitel) ?></div>
+          <h3 class="wz-heading"><?= e($secTitel) ?></h3>
 
           <?php if (in_array('families', $abschnitt['fields'], true)) : ?>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -189,11 +294,24 @@ if ($darfDesign) {
 
           <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
             <?php /*
-               Feste Zeilenzahl statt Hinzufuegen-Knopf: ohne Skript
-               funktioniert das Formular sonst nicht - dieselbe Entscheidung
-               wie im Assistenten.
+               Acht Zeilen, immer - der Schreibpfad liest alle acht Namen, ein
+               Hinzufuegen-Knopf funktioniert ohne Skript ohnehin nicht (wie im
+               Assistenten). Repariert wird aber selten mit acht leeren
+               Feldern vor Augen: sichtbar sind die ausgefuellten Zeilen und
+               eine leere zum Weiterschreiben ($progOffen, oben berechnet),
+               der Rest steckt in einem <details> - reines HTML, offen oder
+               zu, ohne Skript. Ein geschlossenes <details> versteckt nur den
+               Anblick; die Werte darin reisen beim Absenden trotzdem mit,
+               genau wie jedes andere unsichtbare Feld.
             */ ?>
             <?php for ($z = 0; $z < 8; $z++) : ?>
+              <?php if ($z === $progOffen + 1) : ?>
+                <details class="wz-more">
+                  <summary>
+                    <?= (int) (8 - $z) ?> <?= e($locale === 'de' ? 'weitere Zeilen' : 'more rows') ?>
+                  </summary>
+                  <div class="wz-more-body">
+              <?php endif; ?>
               <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
                 <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
                        placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
@@ -201,129 +319,181 @@ if ($darfDesign) {
                        placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
               </div>
             <?php endfor; ?>
+            <?php if ($progOffen < 7) : ?>
+                  </div>
+                </details>
+            <?php endif; ?>
           <?php endif; ?>
         </div>
       <?php endforeach; ?>
     </fieldset>
 
     <?php if ($darfDesign) : ?>
-      <fieldset data-step="1" class="space-y-8">
-        <?php foreach ($choices['palette'] as $marke => $eintrag) : ?>
-          <?php
-            $vorher = $wahl['palette'][$marke] ?? null;
-            $wert = is_string($vorher) && $vorher !== '' ? $vorher : (string) $eintrag['value'];
-          ?>
-          <div>
-            <label class="<?= $label ?>" for="p-<?= e((string) $marke) ?>">
-              <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
-            </label>
-            <input id="p-<?= e((string) $marke) ?>" type="color" name="palette_<?= e((string) $marke) ?>"
-                   value="<?= e($wert) ?>" class="<?= $field ?> h-12">
-          </div>
-        <?php endforeach; ?>
+      <fieldset data-step="1" class="space-y-10">
+        <div>
+          <h3 class="wz-heading"><?= e($locale === 'de' ? 'Farben & Schrift' : 'Colors & type') ?></h3>
 
-        <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
-          <?php
-            $vorher = $wahl['fonts'][$marke] ?? null;
-            $wert = is_string($vorher) && $vorher !== '' ? $vorher : (string) $eintrag['family'];
-          ?>
-          <div>
-            <label class="<?= $label ?>" for="s-<?= e((string) $marke) ?>"><?= e((string) $marke) ?></label>
-            <select id="s-<?= e((string) $marke) ?>" name="fonts_<?= e((string) $marke) ?>" class="<?= $field ?>">
-              <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                <option value="<?= e($familie) ?>" <?= $wert === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-        <?php endforeach; ?>
-
-        <?php foreach ($choices['layers'] as $id => $rechte) : ?>
-          <?php $eigen = $gewaehlt((string) $id); ?>
-          <div class="border-t border-sand-deep pt-6">
-            <div class="<?= $label ?>"><?= e((string) $id) ?></div>
-
-            <?php if ($rechte['color']) : ?>
-              <input type="color" name="layer_color_<?= e((string) $id) ?>" value="<?= e($farbeVon((string) $id)) ?>" class="<?= $field ?> h-12">
-            <?php endif; ?>
-
-            <?php if ($rechte['font']) : ?>
-              <?php $fontVorher = is_string($eigen['font'] ?? null) ? $eigen['font'] : ''; ?>
-              <select name="layer_font_<?= e((string) $id) ?>" class="<?= $field ?>">
-                <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
-                <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                  <option value="<?= e($familie) ?>" <?= $fontVorher === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
-                <?php endforeach; ?>
-              </select>
-            <?php endif; ?>
-
-            <?php if ($rechte['text']) : ?>
+          <div class="grid gap-6 sm:grid-cols-2">
+            <?php foreach ($choices['palette'] as $marke => $eintrag) : ?>
               <?php
-                $textVorher = is_array($eigen['text'] ?? null) ? $eigen['text'] : [];
-                $textWert = is_string($textVorher['de'] ?? null) ? $textVorher['de'] : '';
+                $vorher = $wahl['palette'][$marke] ?? null;
+                $wert = is_string($vorher) && $vorher !== '' ? $vorher : (string) $eintrag['value'];
               ?>
-              <input type="text" name="layer_text_<?= e((string) $id) ?>" class="<?= $field ?>" maxlength="600" value="<?= e($textWert) ?>">
-            <?php endif; ?>
-
-            <?php if ($rechte['photo']) : ?>
-              <div class="mt-3">
-                <label class="<?= $label ?>" for="b-<?= e((string) $id) ?>"><?= e($t('editPhoto')) ?></label>
-                <input id="b-<?= e((string) $id) ?>" type="file" name="layer_src_<?= e((string) $id) ?>"
-                       accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
-                <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('editPhotoNote')) ?></p>
+              <div>
+                <label class="<?= $label ?>" for="p-<?= e((string) $marke) ?>">
+                  <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
+                </label>
+                <input id="p-<?= e((string) $marke) ?>" type="color" name="palette_<?= e((string) $marke) ?>"
+                       value="<?= e($wert) ?>" class="<?= $field ?> h-12">
               </div>
-            <?php endif; ?>
-
-            <?php if ($rechte['hide']) : ?>
-              <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                <input type="checkbox" name="layer_hidden_<?= e((string) $id) ?>" <?= !empty($eigen['hidden']) ? 'checked' : '' ?>>
-                <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
-              </label>
-            <?php endif; ?>
+            <?php endforeach; ?>
           </div>
-        <?php endforeach; ?>
 
-        <?php foreach ($choices['sections'] as $sid => $abschnitt) : ?>
-          <?php if (!$abschnitt['hide']) { continue; } ?>
-          <?php
-            $sekWahl = is_array($wahl['sections'] ?? null) ? $wahl['sections'] : [];
-            $aus = !empty($sekWahl[$sid]['hidden']);
-            $secTitel = (string) ($abschnitt['title'][$locale] ?? '');
-            if ($secTitel === '') { $secTitel = (string) ($abschnitt['title']['de'] ?? ''); }
-            if ($secTitel === '') { $secTitel = (string) $sid; }
-          ?>
-          <div class="border-t border-sand-deep pt-6">
-            <div class="<?= $label ?>"><?= e($secTitel) ?></div>
-            <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-              <input type="checkbox" name="sec_hidden_<?= e((string) $sid) ?>" <?= $aus ? 'checked' : '' ?>>
-              <?= e($t('sectionHide')) ?>
-            </label>
+          <div class="mt-6 grid gap-6 sm:grid-cols-2">
+            <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
+              <?php
+                $vorher = $wahl['fonts'][$marke] ?? null;
+                $wert = is_string($vorher) && $vorher !== '' ? $vorher : (string) $eintrag['family'];
+              ?>
+              <div>
+                <label class="<?= $label ?>" for="s-<?= e((string) $marke) ?>"><?= e((string) $marke) ?></label>
+                <select id="s-<?= e((string) $marke) ?>" name="fonts_<?= e((string) $marke) ?>" class="<?= $field ?>">
+                  <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                    <option value="<?= e($familie) ?>" <?= $wert === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            <?php endforeach; ?>
           </div>
-        <?php endforeach; ?>
+        </div>
+
+        <?php
+          // Nur Ebenen mit mindestens einem bedienbaren Recht - eine Karte
+          // ohne jedes Feld waere ein leerer Rahmen mit nichts als ihrer
+          // Kennung darin (dieselbe Regel wie im Assistenten).
+          $wzLayers = [];
+          foreach ($choices['layers'] as $id => $rechte) {
+              if ($rechte['color'] || $rechte['font'] || $rechte['text'] || $rechte['hide'] || $rechte['photo']) {
+                  $wzLayers[$id] = $rechte;
+              }
+          }
+        ?>
+        <?php if ($wzLayers !== []) : ?>
+          <div class="border-t border-sand-deep pt-8">
+            <h3 class="wz-heading"><?= e($locale === 'de' ? 'Ebenen' : 'Layers') ?></h3>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <?php foreach ($wzLayers as $id => $rechte) : ?>
+                <?php $eigen = $gewaehlt((string) $id); ?>
+                <div class="wz-layer">
+                  <div class="<?= $label ?>"><?= e((string) $id) ?></div>
+
+                  <?php if ($rechte['color']) : ?>
+                    <input type="color" name="layer_color_<?= e((string) $id) ?>" value="<?= e($farbeVon((string) $id)) ?>" class="mt-3 h-10 w-full border border-sand-deep bg-cream">
+                  <?php endif; ?>
+
+                  <?php if ($rechte['font']) : ?>
+                    <?php $fontVorher = is_string($eigen['font'] ?? null) ? $eigen['font'] : ''; ?>
+                    <select name="layer_font_<?= e((string) $id) ?>" class="<?= $field ?>">
+                      <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
+                      <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                        <option value="<?= e($familie) ?>" <?= $fontVorher === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  <?php endif; ?>
+
+                  <?php if ($rechte['text']) : ?>
+                    <?php
+                      $textVorher = is_array($eigen['text'] ?? null) ? $eigen['text'] : [];
+                      $textWert = is_string($textVorher['de'] ?? null) ? $textVorher['de'] : '';
+                    ?>
+                    <input type="text" name="layer_text_<?= e((string) $id) ?>" class="<?= $field ?>" maxlength="600" value="<?= e($textWert) ?>">
+                  <?php endif; ?>
+
+                  <?php if ($rechte['photo']) : ?>
+                    <div class="mt-3">
+                      <label class="<?= $label ?>" for="b-<?= e((string) $id) ?>"><?= e($t('editPhoto')) ?></label>
+                      <input id="b-<?= e((string) $id) ?>" type="file" name="layer_src_<?= e((string) $id) ?>"
+                             accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
+                      <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('editPhotoNote')) ?></p>
+                    </div>
+                  <?php endif; ?>
+
+                  <?php if ($rechte['hide']) : ?>
+                    <label class="mt-3 flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.18em] text-muted">
+                      <input type="checkbox" name="layer_hidden_<?= e((string) $id) ?>" <?= !empty($eigen['hidden']) ? 'checked' : '' ?>>
+                      <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
+                    </label>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <?php
+          // Nur die Abschnitte, die sich ueberhaupt ausblenden lassen -
+          // dieselbe Bedingung wie zuvor, nur einmal vorab statt in jeder
+          // Runde neu geprueft.
+          $wzHideSections = [];
+          foreach ($choices['sections'] as $sid => $abschnitt) {
+              if ($abschnitt['hide']) {
+                  $wzHideSections[$sid] = $abschnitt;
+              }
+          }
+        ?>
+        <?php if ($wzHideSections !== []) : ?>
+          <div class="border-t border-sand-deep pt-8">
+            <h3 class="wz-heading"><?= e($locale === 'de' ? 'Abschnitte' : 'Sections') ?></h3>
+            <div class="divide-y divide-sand-deep border border-sand-deep">
+              <?php foreach ($wzHideSections as $sid => $abschnitt) : ?>
+                <?php
+                  $sekWahl = is_array($wahl['sections'] ?? null) ? $wahl['sections'] : [];
+                  $aus = !empty($sekWahl[$sid]['hidden']);
+                  $secTitel = (string) ($abschnitt['title'][$locale] ?? '');
+                  if ($secTitel === '') { $secTitel = (string) ($abschnitt['title']['de'] ?? ''); }
+                  if ($secTitel === '') { $secTitel = (string) $sid; }
+                ?>
+                <label class="flex items-center justify-between gap-4 px-4 py-3 text-sm text-ink">
+                  <span><?= e($secTitel) ?></span>
+                  <span class="flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.16em] text-muted">
+                    <input type="checkbox" name="sec_hidden_<?= e((string) $sid) ?>" <?= $aus ? 'checked' : '' ?>>
+                    <?= e($t('sectionHide')) ?>
+                  </span>
+                </label>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
       </fieldset>
     <?php else : ?>
       <?php /*
          Kein stiller Verzicht, sondern ein Satz auf dem Bildschirm (Spec §4):
          diese Einladung hat keine gespeicherte Wahl, ihr Sockel ist bereits
          personalisiert, und eine neue Auswahl darauf waere verlustbehaftet.
+         Der linke Goldstrich ist derselbe wie bei der Erfolgsmeldung oben -
+         eine Auskunft, keine Fehlermeldung (die traegt einen vollen Rahmen,
+         siehe $error oben).
       */ ?>
-      <p class="mt-10 border-t border-sand-deep pt-6 text-[0.85rem] leading-relaxed text-muted">
-        <?= e($t('editLocked')) ?>
-      </p>
+      <div class="mt-10 border-t border-sand-deep pt-6">
+        <div class="border-l-2 border-gold bg-sand/20 px-6 py-5">
+          <p class="text-[0.62rem] uppercase tracking-[0.18em] text-gold"><?= e($t('editTabDesign')) ?></p>
+          <p class="mt-3 text-[0.9rem] leading-relaxed text-ink-soft"><?= e($t('editLocked')) ?></p>
+        </div>
+      </div>
     <?php endif; ?>
 
     <div class="mt-10 border-t border-sand-deep pt-6">
       <button type="submit" class="border border-ink px-8 py-4 text-[0.66rem] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-cream">
         <?= e($t('editSave')) ?>
       </button>
-
-      <p class="mt-6 text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= e($t('editGuestLink')) ?></p>
-      <p class="mt-2 break-all text-sm">
-        <a class="text-gold link-underline" href="<?= e($gastPfad) ?>"><?= e($gastPfad) ?></a>
-      </p>
     </div>
   </form>
 
   <aside class="wz-side">
+    <p class="mb-4 text-[0.62rem] uppercase tracking-[0.18em] text-muted">
+      <?= e($locale === 'de' ? 'So sehen es eure Gäste' : 'What your guests see') ?>
+    </p>
+
     <style><?= $styles ?><?= $sectionCss ?></style>
     <?php /*
        Absichtlich OHNE data-preview: invite-v2.js' paint() wuerde beim Laden
@@ -348,13 +518,24 @@ if ($darfDesign) {
        echtes Formular mit Absenden-Knopf. In der Vorschau darf es nicht
        abschicken - es steht ausserhalb dieses Formulars und wuerde eine
        eigene Anfrage an dieselbe Adresse stellen. Ein deaktiviertes fieldset
-       schaltet jedes Bedienelement darin ab, in jedem Browser.
+       schaltet jedes Bedienelement darin ab, in jedem Browser. Die Bildunterschrift
+       oben ordnet den ganzen Block (Karte und Abschnitte, RSVP eingeschlossen)
+       als Ansicht ein, nicht als etwas zum Ausfuellen; .wz-sections daempft
+       das RSVP-Formular zusaetzlich mit Deckkraft und setzt die Ueberschriften
+       der Abschnitte (.d-sec-title, aus DesignSections::css()) auf die
+       Auszeichnungsschrift der Karte statt auf die fette serifenlose
+       Standardschrift - dieser Style-Block steht bewusst NACH dem obigen mit
+       $sectionCss, bei gleicher Spezifitaet gewinnt die spaetere Regel.
 
        Ohne data-sections: siehe der Kommentar am Kopf dieser Datei.
     */ ?>
     <fieldset disabled class="wz-quiet">
-      <div class="<?= e($scope) ?> mx-auto mt-6 w-full max-w-xs text-[0.8rem]"><?= $abschnitte ?></div>
+      <div class="<?= e($scope) ?> wz-sections mx-auto mt-6 w-full max-w-xs text-[0.8rem]"><?= $abschnitte ?></div>
     </fieldset>
+    <style>
+      .wz-sections .d-sec-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; letter-spacing: .01em; }
+      .wz-sections .d-sec-form { opacity: .55; }
+    </style>
   </aside>
 </div>
 
