@@ -208,6 +208,12 @@ final class InviteV2Controller
             $daten['program'] = $zeilen;
         }
 
+        foreach ($values as $name => $wert) {
+            if (str_starts_with((string) $name, 'sec_text_') && trim((string) $wert) !== '') {
+                $daten['sections'][substr((string) $name, 9)]['text'] = (string) $wert;
+            }
+        }
+
         // Abgeschaltete Abschnitte verschwinden auch in der Vorschau, sonst
         // zeigte sie etwas, das die Einladung nicht drucken wird.
         $doc = $design;
@@ -423,6 +429,16 @@ final class InviteV2Controller
                 }
                 if ($zeilen !== []) {
                     $data['program'] = $zeilen;
+                }
+            }
+
+            if (in_array('text', $abschnitt['fields'], true)) {
+                // Unter der Kennung, nicht unter einem festen Namen: zwei
+                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
+                // teilen und der zweite den ersten ueberschreiben.
+                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
+                if ($text !== '') {
+                    $data['sections'][$sid]['text'] = $text;
                 }
             }
         }

@@ -224,6 +224,20 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 </div>
               <?php endif; ?>
 
+              <?php if (in_array('text', $abschnitt['fields'], true)) : ?>
+                <?php /*
+                   Der Feldname traegt die Kennung: ein Dokument kann mehrere
+                   Textbloecke haben ("Dress Code", "Anfahrt"), und ein fester
+                   Name waere fuer beide derselbe.
+                */ ?>
+                <div class="mt-3">
+                  <label class="<?= $label ?>" for="st-<?= e($sid) ?>"><?= e($t('sectionText')) ?></label>
+                  <textarea id="st-<?= e($sid) ?>" name="sec_text_<?= e($sid) ?>" rows="4" maxlength="1200"
+                            class="<?= $field ?>"><?= e($old('sec_text_' . $sid)) ?></textarea>
+                  <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('sectionTextNote')) ?></p>
+                </div>
+              <?php endif; ?>
+
               <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
                 <?php /*
                    Feste Zeilenzahl statt Hinzufuegen-Knopf: ohne Skript

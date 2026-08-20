@@ -276,7 +276,7 @@ assert_same(true, mb_check_encoding($dreibytig[0]['title'], 'UTF-8'), 'programRo
  * die des Countdowns, damit sie nicht ein zweites Mal erfunden wird.
  */
 
-assert_same(5, count(DesignSections::TYPES), 'TYPES: fuenf Arten, die fuenfte ist rsvp');
+assert_same('rsvp', DesignSections::TYPES[4], 'TYPES: rsvp ist die fuenfte Art');
 assert_true(in_array('rsvp', DesignSections::TYPES, true), 'TYPES: rsvp steht im Katalog');
 
 $fragt = sec_doc([['id' => 'rsvp-1', 'type' => 'rsvp']]);
@@ -389,3 +389,77 @@ $ohneForm = DesignSections::html(sec_doc([
     ['id' => 'fam-1', 'type' => 'family'],
 ]), ['families' => ['bride' => 'Familie Weber']], 'de', '2027-01-01');
 assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte brauchen den fuenften Parameter nicht');
+
+/*
+ * Der sechste Typ: text.
+ *
+ * Dress Code, Anfahrt, Kinder, ein Dank - das sind nicht sechs Arten von
+ * Abschnitt, das ist sechsmal derselbe: eine Ueberschrift und ein Absatz.
+ * Eine flexible Art statt sechs starrer, weil der Unterschied zwischen ihnen
+ * im Text steht und nicht im Code.
+ *
+ * Anders als Familien und Programm kann ein Dokument MEHRERE davon tragen.
+ * Der Inhalt haengt deshalb an der Kennung des Abschnitts und nicht an einem
+ * festen Namen in data - zwei Bloecke wuerden sich sonst gegenseitig
+ * ueberschreiben.
+ */
+
+assert_same(6, count(DesignSections::TYPES), 'TYPES: sechs Arten, die sechste ist text');
+assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
+
+// Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer
+// und nicht ein Fehler.
+assert_same('Dunkler Anzug', DesignSections::sectionText(['sections' => ['dc' => ['text' => 'Dunkler Anzug']]], 'dc'), 'sectionText: der Text kommt unter der Kennung heraus');
+assert_same('', DesignSections::sectionText([], 'dc'), 'sectionText: ohne Daten leer');
+assert_same('', DesignSections::sectionText(['sections' => []], 'dc'), 'sectionText: ohne Eintrag leer');
+assert_same('', DesignSections::sectionText(['sections' => 'unsinn'], 'dc'), 'sectionText: Unsinn statt Feld ist leer');
+
+$textDoc = sec_doc([
+    ['id' => 'dc',   'type' => 'text', 'title' => ['de' => 'Dress Code', 'en' => 'Dress code']],
+    ['id' => 'weg',  'type' => 'text', 'title' => ['de' => 'Anfahrt', 'en' => 'Getting there']],
+]);
+
+// Ohne Text kein Abschnitt - wie ueberall sonst faellt er weg, statt eine
+// leere Ueberschrift zu hinterlassen.
+assert_same([], DesignSections::visible($textDoc, [], '2027-01-01'), 'visible: ohne Text kein Abschnitt');
+
+// Jeder Block traegt seinen eigenen Inhalt. Faellt der Zugriff auf einen
+// festen Namen zurueck, zeigen hier beide dasselbe - und dieser Test faellt.
+$zwei = DesignSections::visible($textDoc, ['sections' => [
+    'dc'  => ['text' => 'Dunkler Anzug, langes Kleid'],
+    'weg' => ['text' => 'Parkplaetze hinter der Kirche'],
+]], '2027-01-01');
+assert_same(['dc', 'weg'], array_column($zwei, 'id'), 'visible: zwei Textbloecke, beide sichtbar');
+
+// Nur einer gefuellt: der andere faellt weg, nicht beide.
+$einer = DesignSections::visible($textDoc, ['sections' => [
+    'weg' => ['text' => 'Parkplaetze hinter der Kirche'],
+]], '2027-01-01');
+assert_same(['weg'], array_column($einer, 'id'), 'visible: nur der gefuellte Block steht da');
+
+$textHtml = DesignSections::html($textDoc, ['sections' => [
+    'dc'  => ['text' => "Dunkler Anzug\n\nKeine Turnschuhe"],
+    'weg' => ['text' => 'Parkplaetze hinter der Kirche'],
+]], 'de', '2027-01-01');
+
+assert_contains($textHtml, '<h2 class="d-sec-title">Dress Code</h2>', 'html: der Titel des Grafikers steht darueber');
+assert_contains($textHtml, 'Dunkler Anzug', 'html: der Text des Kunden steht da');
+assert_contains($textHtml, 'Parkplaetze hinter der Kirche', 'html: und der des zweiten Blocks auch');
+
+// Zwei Absaetze, zwei <p> - ein Zeilenumbruch, den der Kunde gesetzt hat,
+// soll nicht zu einer Textwand zusammenfallen. paragraphs() ist derselbe
+// Helfer, den die uebrigen Vorlagen benutzen.
+$einBlock = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), ['sections' => [
+    'dc' => ['text' => "Dunkler Anzug
+
+Keine Turnschuhe"],
+]], 'de', '2027-01-01');
+assert_same(2, substr_count($einBlock, '<p class="d-sec-text">'), 'html: zwei Absaetze werden zwei Absaetze');
+assert_same(1, substr_count($textHtml, 'Parkplaetze hinter der Kirche'), 'html: der zweite Block steht genau einmal da');
+
+// Was der Kunde tippt, wird maskiert - auch hier.
+$boeserText = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), ['sections' => [
+    'dc' => ['text' => '<script>alert(1)</script>'],
+]], 'de', '2027-01-01');
+assert_not_contains($boeserText, '<script>', 'html: kein rohes Markup aus dem Text');
+assert_contains($boeserText, '&lt;script&gt;', 'html: und zwar sichtbar maskiert');

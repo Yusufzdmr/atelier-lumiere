@@ -126,6 +126,10 @@ final class DesignWizard
                 'fields' => match ((string) $abschnitt['type']) {
                     'family'  => ['families'],
                     'program' => ['program'],
+                    // Der erste Typ, von dem ein Dokument mehrere tragen kann.
+                    // Der Assistent fragt deshalb je Abschnitt, nicht je Art -
+                    // die Kennung steht im Feldnamen (sec_text_<id>).
+                    'text'    => ['text'],
                     default   => [],
                 },
             ];

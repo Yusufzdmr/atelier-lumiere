@@ -33,7 +33,7 @@ namespace Atelier;
 final class DesignSections
 {
     /** Welche Arten es gibt. Alles andere faellt beim Einlesen weg. */
-    public const TYPES = ['location', 'countdown', 'family', 'program', 'rsvp'];
+    public const TYPES = ['location', 'countdown', 'family', 'program', 'rsvp', 'text'];
 
     /** Wie viele Programmzeilen, und wie lang eine sein darf. */
     public const PROGRAM_MAX = 20;
@@ -191,6 +191,10 @@ final class DesignSections
             // weil er nichts zu zaehlen haette, aber die Frage "kommt ihr?"
             // steht auch ohne Termin.
             'rsvp'      => $datum === '' || $datum >= $heute,
+            // Ohne Text keine Ueberschrift. Der Inhalt haengt an der Kennung,
+            // nicht an einem festen Namen: ein Dokument kann mehrere
+            // Textbloecke tragen, und zwei feste Namen waeren einer.
+            'text'      => trim(self::sectionText($data, (string) $abschnitt['id'])) !== '',
             default     => false,
         };
     }
@@ -316,6 +320,7 @@ final class DesignSections
                 'family'    => self::familien($data),
                 'program'   => self::programm($data),
                 'rsvp'      => self::formular($form, $locale),
+                'text'      => self::freitext($data, $id),
                 default     => '',
             };
 
@@ -398,6 +403,58 @@ final class DesignSections
         }
 
         return $out . '</dl>';
+    }
+
+    /**
+     * Der Text eines einzelnen Blocks.
+     *
+     * Er liegt unter der Kennung des Abschnitts, nicht unter einem festen
+     * Namen wie families oder program. Grund: von denen gibt es je einen, von
+     * Textbloecken beliebig viele - "Dress Code" und "Anfahrt" sind derselbe
+     * Typ und muessten sich sonst einen Platz teilen.
+     *
+     * Jeder Schritt einzeln geprueft: fehlt einer, ist der Text leer und kein
+     * Fehler. Ein Dokument aus dem Panel soll sich nicht wegen eines fehlenden
+     * Schluessels nicht mehr oeffnen lassen.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function sectionText(array $data, string $id): string
+    {
+        $alle = $data['sections'] ?? null;
+        if (!is_array($alle)) {
+            return '';
+        }
+        $eintrag = $alle[$id] ?? null;
+        if (!is_array($eintrag)) {
+            return '';
+        }
+
+        return (string) ($eintrag['text'] ?? '');
+    }
+
+    /**
+     * Ein Textblock: Ueberschrift vom Grafiker, Inhalt vom Kunden.
+     *
+     * Eine bewegliche Art statt sechs starrer. Dress Code, Anfahrt, Kinder,
+     * ein Dank - der Unterschied zwischen ihnen steht im Text und nicht im
+     * Code; sechs Typen waeren sechsmal dieselbe Methode.
+     *
+     * paragraphs() ist derselbe Helfer, den die uebrigen Vorlagen benutzen:
+     * eine Leerzeile des Kunden wird ein Absatz. Ohne ihn faellt alles zu
+     * einer Wand zusammen, und der Kunde sieht seine Gliederung nicht wieder.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function freitext(array $data, string $id): string
+    {
+        $out = '';
+
+        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+            $out .= '<p class="d-sec-text">' . e($absatz) . '</p>';
+        }
+
+        return $out;
     }
 
     /**
