@@ -116,6 +116,19 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
   }
   /* Unter 1024 px steht die Vorschau unter dem Formular, mit Abstand davor. */
   @media (max-width: 1023px) { .wz-side { margin-top: 3rem; } }
+
+  /*
+   * Das Seitenverhaeltnis der Karte, ebenfalls von Hand: aspect-[2/3] steht
+   * nicht in der gebauten style.css. Die Klasse stand hier schon vorher - der
+   * Kasten war also immer null Pixel hoch, und weil die Karte in cqw rechnet,
+   * schrumpfte ihr Inhalt auf nichts. Die Vorschau zeigte deshalb bisher
+   * praktisch gar nichts.
+   */
+  .wz-card { aspect-ratio: 2 / 3; }
+
+  /* fieldset bringt von Haus aus Rahmen und Innenabstand mit; border-0 gibt es
+     in der gebauten Datei nicht. */
+  .wz-quiet { margin: 0; border: 0; padding: 0; min-inline-size: 0; }
 </style>
 <div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
@@ -318,7 +331,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
   <aside class="wz-side">
     <style><?= $styles ?><?= $sectionCss ?></style>
-    <div class="<?= e($scope) ?> mx-auto aspect-[2/3] w-full max-w-xs" data-preview
+    <div class="<?= e($scope) ?> wz-card mx-auto w-full max-w-xs" data-preview
          style="position:relative;container-type:inline-size;"><?= $karte ?></div>
 
     <?php /*
@@ -334,7 +347,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
        eine eigene Anfrage an dieselbe Adresse stellen. Ein deaktiviertes
        fieldset schaltet jedes Bedienelement darin ab, in jedem Browser.
     */ ?>
-    <fieldset disabled class="m-0 border-0 p-0">
+    <fieldset disabled class="wz-quiet">
       <div class="<?= e($scope) ?> mx-auto mt-6 w-full max-w-xs text-[0.8rem]" data-sections><?= $abschnitte ?></div>
     </fieldset>
   </aside>
