@@ -277,6 +277,52 @@ final class InviteV2Controller
     }
 
     /**
+     * Aus den gespeicherten Daten die Namen machen, die das Formular traegt.
+     *
+     * Die Gegenrichtung von sammleAngaben(): dort werden family_bride und
+     * prog_title_0 zu families und program, hier wieder zurueck. Ohne diesen
+     * Weg stuende der Bearbeiten-Bildschirm mit leeren Feldern da, und ein
+     * Speichern loeschte alles, was der Kunde beim Veroeffentlichen eingegeben
+     * hatte - der schlimmstmoegliche Ausgang fuer einen Bildschirm, der
+     * Tippfehler reparieren soll.
+     *
+     * Ueberall is_string()/is_array(): das Dokument kommt aus JSON und muss
+     * nicht die Form haben, die es haben sollte.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,string>
+     */
+    private function formularWerte(array $data): array
+    {
+        $werte = [];
+
+        foreach (DesignWizard::FIELD_ORDER as $feld) {
+            $werte[$feld] = is_string($data[$feld] ?? null) ? $data[$feld] : '';
+        }
+
+        $familie = is_array($data['families'] ?? null) ? $data['families'] : [];
+        $werte['family_bride'] = is_string($familie['bride'] ?? null) ? $familie['bride'] : '';
+        $werte['family_groom'] = is_string($familie['groom'] ?? null) ? $familie['groom'] : '';
+
+        // array_values, weil das Formular acht feste Zeilen hat und die
+        // gespeicherte Liste loechrige Schluessel tragen koennte.
+        $programm = is_array($data['program'] ?? null) ? array_values($data['program']) : [];
+        for ($z = 0; $z < 8; $z++) {
+            $zeile = is_array($programm[$z] ?? null) ? $programm[$z] : [];
+            $werte['prog_time_' . $z]  = is_string($zeile['time'] ?? null) ? $zeile['time'] : '';
+            $werte['prog_title_' . $z] = is_string($zeile['title'] ?? null) ? $zeile['title'] : '';
+        }
+
+        foreach ((array) ($data['sections'] ?? []) as $sid => $eintrag) {
+            if (is_array($eintrag) && is_string($eintrag['text'] ?? null)) {
+                $werte['sec_text_' . (string) $sid] = $eintrag['text'];
+            }
+        }
+
+        return $werte;
+    }
+
+    /**
      * Was der Kunde eingetippt hat, in den Namen, die data traegt.
      *
      * Herausgeloest aus publish(), weil der Bearbeiten-Bildschirm dieselben
@@ -822,6 +868,124 @@ final class InviteV2Controller
             'antworten' => $antworten,
             'kommen'    => $kommen,
         ]);
+    }
+
+    /**
+     * Eine veroeffentlichte Einladung nachtraeglich aendern.
+     *
+     * Der Bildschirm, den Spec §1 verlangt: heute muss ein Paar wegen eines
+     * Buchstabens eine neue Einladung bauen und den Link erneut verschicken.
+     *
+     * Zwei Tabs, dieselben Felder wie im Assistenten - und ein Sockel, der
+     * sich nicht bewegt. slug, manageKey, die Vorlage, createdAt, paid und die
+     * Antworten der Gaeste stehen nicht auf diesem Formular (Spec §6).
+     *
+     * @param array<string,string> $params
+     */
+    public function edit(array $params): void
+    {
+        $locale = I18n::locale();
+
+        $einladung = $this->manageZugang($params);
+        if ($einladung === null) {
+            return;
+        }
+
+        $key  = (string) ($params['key'] ?? '');
+        $slug = (string) $einladung['slug'];
+        $data = $einladung['data'];
+
+        /*
+         * Das Formular wird auf dem EINGEFRORENEN Sockel gebaut, nicht auf dem
+         * personalisierten Dokument.
+         *
+         * personalize() LOESCHT eine ausgeblendete Ebene (DesignWizard.php:298)
+         * und schaltet einen ausgeblendeten Abschnitt auf enabled=false; und
+         * choices() bietet weder eine geloeschte Ebene noch einen
+         * abgeschalteten Abschnitt an (DesignWizard.php:117). Baute man das
+         * Formular auf dem Ergebnis, waere jedes Ausblenden endgueltig - das
+         * Haekchen zum Wiedereinblenden stuende gar nicht erst auf der Seite.
+         */
+        $sockel = $einladung['design_snapshot'];
+        $darf   = DesignWizard::choices($sockel);
+
+        $wahl = InvitationsV2::canEditDesign($data) ? (array) $data['wahl'] : [];
+
+        // Nur zum Zeichnen der Vorschau - nie als Grundlage des Formulars.
+        $doc = DesignWizard::personalize($sockel, $wahl);
+
+        $error = '';
+        $ok    = false;
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $ergebnis = $this->saveEdit($einladung, $darf);
+            if (isset($ergebnis['error'])) {
+                $error = (string) $ergebnis['error'];
+            } else {
+                $ok = true;
+                // Neu lesen: das Formular soll zeigen, was jetzt in der Zeile
+                // steht, und nicht, was vor dem Speichern darin stand - sonst
+                // traegt das versteckte updatedAt einen ueberholten Stand und
+                // das naechste Speichern faellt gegen sich selbst durch.
+                $frisch = InvitationsV2::find($slug);
+                if ($frisch !== null) {
+                    $einladung = $frisch;
+                    $data      = $frisch['data'];
+                    $wahl      = InvitationsV2::canEditDesign($data) ? (array) $data['wahl'] : [];
+                    $doc       = DesignWizard::personalize($sockel, $wahl);
+                }
+            }
+        }
+
+        $scope  = '.d-' . $doc['id'];
+        $values = Design::bindValues($data, $locale);
+        $namen  = trim(((string) ($data['bride'] ?? '')) . ' & ' . ((string) ($data['groom'] ?? '')), ' &');
+
+        View::page('pages/invite-v2-edit', [
+            'locale' => $locale,
+            // Ohne $path meldet layout.php eine undefinierte Variable im
+            // Sprachumschalter. Der Schluessel gehoert NICHT hinein: der
+            // Umschalter schriebe ihn sonst in eine sichtbare Adresse.
+            'path'   => I18n::path('/v2/einladung'),
+            'meta'   => Seo::forPage('einladung2', [
+                'title'       => $namen !== '' ? $namen : I18n::t('invitation2.editTitle'),
+                // Diese Seite IST der Schluessel. Sie gehoert unter keinen
+                // Umstaenden in einen Index.
+                'noindex'     => true,
+                // Dasselbe Skript wie der Assistent, unveraendert: es blendet
+                // [data-step] ein und aus und spiegelt [data-live] in die
+                // Karte. Es entscheidet nichts.
+                'scripts'     => ['/assets/invite-v2.js'],
+            ]),
+            // Der eingefrorene Sockel, vollstaendig: die Vorlage liest daraus
+            // die Ausgangsfarbe einer Ebene.
+            'design'     => Design::complete($sockel),
+            'choices'    => $darf,
+            'values'     => $this->formularWerte($data),
+            'wahl'       => $wahl,
+            'darfDesign' => InvitationsV2::canEditDesign($data),
+            'gastPfad'   => I18n::path('/v2/einladung/' . $slug),
+            'stand'      => is_string($data['updatedAt'] ?? null) ? $data['updatedAt'] : '',
+            'scope'      => ltrim($scope, '.'),
+            'styles'     => Design::css($doc, $scope),
+            'sectionCss' => DesignSections::css($doc, $scope),
+            'karte'      => Design::html($doc, $values, $locale, 'card'),
+            'abschnitte' => DesignSections::html($doc, $data, $locale, '', ['csrf' => '', 'sent' => false]),
+            'csrf'       => Security::csrf(),
+            'error'      => $error,
+            'ok'         => $ok,
+        ]);
+    }
+
+    /**
+     * @param array<string,mixed> $einladung
+     * @param array<string,mixed> $darf
+     * @return array<string,string>
+     */
+    private function saveEdit(array $einladung, array $darf): array
+    {
+        // Aufgabe 6 fuellt diesen Weg. Bis dahin schreibt der Bildschirm nichts.
+        return ['error' => 'csrf'];
     }
 
     /**

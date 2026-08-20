@@ -117,6 +117,14 @@ $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new Invit
 // koennen sie einander nicht fangen - die Reihenfolge steht hier fuer den
 // Leser, nicht fuer den Router.
 //
+// Der Bearbeiten-Bildschirm, unter demselben Schluessel wie die Antworten.
+// Vor dem kuerzeren Muster, weil sie zusammengehoeren - noetig waere die
+// Reihenfolge nicht: beide Muster sind verankert und {key} matcht keinen
+// Schraegstrich, also koennen sie einander nicht fangen.
+//
+// any und nicht get: dieser Bildschirm nimmt seine eigene Aenderung entgegen.
+$router->any('/{locale}/v2/einladung/{slug}/{key}/bearbeiten', $page_(static fn (array $p) => (new InviteV2Controller())->edit($p)));
+//
 // get und nicht any: die Leseansicht schreibt nichts.
 $router->get('/{locale}/v2/einladung/{slug}/{key}', $page_(static fn (array $p) => (new InviteV2Controller())->replies($p)));
 // any und nicht get: die Einladung nimmt ihre eigene Antwort entgegen
