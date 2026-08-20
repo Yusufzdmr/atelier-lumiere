@@ -33,6 +33,13 @@ use Atelier\Ui;
 $t = static fn (string $key): string => I18n::t('invitation2.' . $key);
 $p = static fn (string $path): string => I18n::path($path, $locale);
 $old = static fn (string $feld): string => (string) ($values[$feld] ?? '');
+/*
+ * Ein Haken schickt nichts, wenn er aus ist - im Entwurf steht dann gar kein
+ * Schluessel. Also fragt diese Funktion nach dem Schluessel, nicht nach dem
+ * Wert: `$old(...) === 'on'` waere richtig fuer den Browser und falsch fuer
+ * jeden anderen Absender.
+ */
+$anHaken = static fn (string $feld): bool => array_key_exists($feld, $values);
 // Ein Farbfeld sendet immer einen Wert mit, auch wenn niemand es beruehrt
 // hat - ohne value faellt der Browser auf #000000 zurueck. publish() saehe
 // dann fuer jede erlaubte Ebene Schwarz, egal was das Design wirklich
@@ -275,6 +282,15 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     */ ?>
     <input type="hidden" name="token" value="<?= e($token) ?>">
     <input type="hidden" name="design" value="<?= e((string) $design['slug']) ?>">
+    <?php /*
+       Bei welchem Schritt das Paar stand. Ohne das warf ein "Entwurf
+       speichern" es zurueck auf Schritt eins und es klickte sich jedes Mal
+       von vorn durch - gemessen: vor dem Speichern Schritt 4, danach 1.
+       Der Wert reist im Entwurf mit wie jedes andere Feld; gesetzt wird er
+       erst im Moment des Absendens (siehe Skript am Fuss der Datei), damit
+       er nicht bei jedem Klick mitgefuehrt werden muss.
+    */ ?>
+    <input type="hidden" name="schritt" value="<?= e($old('schritt')) ?>" data-schritt>
 
     <ol class="mb-10 flex flex-wrap gap-x-6 gap-y-2 border-b border-sand-deep pb-4 text-[0.62rem] uppercase tracking-[0.16em]" data-steps>
       <?php foreach ($steps as $i => $key) : ?>
@@ -389,7 +405,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
               <?php if ($abschnitt['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>"> <?= e($t('sectionHide')) ?>
+                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>" <?= $anHaken('sec_hidden_' . $sid) ? 'checked' : '' ?>> <?= e($t('sectionHide')) ?>
                 </label>
               <?php endif; ?>
 
@@ -446,7 +462,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
               </label>
               <input id="p-<?= e($marke) ?>" type="color" name="palette_<?= e($marke) ?>"
-                     value="<?= e((string) $eintrag['value']) ?>" class="<?= $field ?> h-12"
+                     value="<?= e($old('palette_' . $marke) !== '' ? $old('palette_' . $marke) : (string) $eintrag['value']) ?>" class="<?= $field ?> h-12"
                      data-live-var="--d-<?= e(Design::key($marke)) ?>">
             </div>
           <?php endforeach; ?>
@@ -457,7 +473,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>"
                       data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
                 <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                  <option value="<?= e($familie) ?>" <?= (string) $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                  <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
+                  <option value="<?= e($familie) ?>" <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -469,7 +486,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <div class="<?= $label ?>"><?= e($ebeneName((string) $id)) ?></div>
 
               <?php if ($rechte['color']) : ?>
-                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($farbeVon($id)) ?>" class="<?= $field ?> h-12"
+                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($old('layer_color_' . $id) !== '' ? $old('layer_color_' . $id) : $farbeVon($id)) ?>" class="<?= $field ?> h-12"
                        data-live-el="<?= e((string) $id) ?>"
                        data-live-kind="<?= ((string) ($ebene((string) $id)['type'] ?? '')) === 'shape' ? 'background' : 'color' ?>">
               <?php endif; ?>
@@ -479,19 +496,19 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                         data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
                   <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                    <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+                    <option value="<?= e($familie) ?>" <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                   <?php endforeach; ?>
                 </select>
               <?php endif; ?>
 
               <?php if ($rechte['text']) : ?>
-                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600"
+                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600" value="<?= e($old('layer_text_' . $id)) ?>"
                        data-live-el="<?= e((string) $id) ?>" data-live-kind="text">
               <?php endif; ?>
 
               <?php if ($rechte['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>"
+                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>" <?= $anHaken('layer_hidden_' . $id) ? 'checked' : '' ?>
                          data-live-el="<?= e((string) $id) ?>" data-live-kind="hide"> <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
                 </label>
               <?php endif; ?>
@@ -600,6 +617,54 @@ document.addEventListener('DOMContentLoaded', function () {
   var karte = document.querySelector('[data-preview]');
 
   /*
+   * Zurueck zu dem Schritt, bei dem gespeichert wurde.
+   *
+   * "Entwurf speichern" schickt das Formular ab, die Seite kommt neu, und
+   * invite-v2.js beginnt wie immer bei show(0). Wer bei den Ebenen stand,
+   * fand sich also wieder bei den Namen und klickte sich erneut durch.
+   *
+   * Der Schritt wird ERST beim Absenden geschrieben, nicht bei jedem Klick:
+   * so gibt es keinen zweiten Zustand, der neben dem von invite-v2.js
+   * herlaufen und irgendwann von ihm abweichen koennte. Und
+   * zurueckgefahren wird ueber dieselben Weiter-Knoepfe wie von Hand -
+   * inklusive der Pflichtfeldpruefung, die dabei nun einmal gilt.
+   */
+  if (formular) {
+    var merker = formular.querySelector('[data-schritt]');
+    var schritte = Array.prototype.slice.call(formular.querySelectorAll('[data-step]'));
+    var jetzt = function () {
+      for (var n = 0; n < schritte.length; n++) {
+        if (!schritte[n].hidden) return n;
+      }
+      return 0;
+    };
+
+    if (merker) {
+      // Vor dem Absenden festhalten, wo wir stehen - submit deckt den Klick
+      // auf "Entwurf speichern" und die Eingabetaste gleichermassen ab.
+      formular.addEventListener('submit', function () {
+        merker.value = String(jetzt());
+      });
+
+      var ziel = parseInt(merker.value, 10);
+      if (ziel > 0 && schritte.length > 1) {
+        var knoepfe = Array.prototype.slice.call(formular.querySelectorAll('button[type=button]')).slice(-2);
+        if (knoepfe.length === 2) {
+          var wache = schritte.length + 2;
+          while (jetzt() < ziel && wache-- > 0) {
+            var vor = jetzt();
+            knoepfe[1].click();
+            // Bewegt sich nichts, fehlt ein Pflichtfeld - dann bleibt das
+            // Paar hier stehen, wo der Browser die Meldung anzeigt, statt
+            // gegen eine Wand zu klopfen.
+            if (jetzt() === vor) break;
+          }
+        }
+      }
+    }
+  }
+
+  /*
    * Die Karte folgt auch dem Design-Schritt.
    *
    * invite-v2.js spiegelt nur die Textfelder des ersten Schrittes - Farbe,
@@ -625,6 +690,11 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       feld.addEventListener('input', setz);
       feld.addEventListener('change', setz);
+      // Einmal sofort: nach einem "Entwurf speichern" kommt die Seite neu, das
+      // Feld traegt die gespeicherte Wahl - die Karte aber zeichnet der Server
+      // aus der Vorlage. Ohne diesen Aufruf sagte das Formular #7B2D26 und die
+      // Karte zeigte das Gold der Vorlage.
+      setz();
     });
 
     formular.querySelectorAll('[data-live-el]').forEach(function (feld) {
@@ -644,6 +714,7 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       feld.addEventListener('input', setz);
       feld.addEventListener('change', setz);
+      setz();   // wie oben: die gespeicherte Wahl gilt auch beim Laden.
     });
   }
 
