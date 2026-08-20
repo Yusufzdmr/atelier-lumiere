@@ -25,6 +25,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Design;
 use Atelier\Http;
 use Atelier\I18n;
 use Atelier\Ui;
@@ -45,6 +46,27 @@ $farbeVon = static function (string $id) use ($design): string {
         }
     }
     return '#000000';
+};
+
+/*
+ * Eine Ebene des Dokuments zu ihrer Kennung. $choices traegt nur die Rechte,
+ * nicht den Namen - und der Name ist das, was das Paar lesen soll. Ohne diese
+ * Suche stand auf dem Bildschirm die Kennung selbst, also "foto" oder
+ * "zier2": ein Datenbankschluessel. Dieselbe Regel wie im Panel und bei den
+ * Abschnitten, die Kennung nur als letzter Ausweg.
+ */
+$ebene = static function (string $id) use ($design): array {
+    foreach ($design['layers'] as $el) {
+        if ((string) $el['id'] === $id) {
+            return $el;
+        }
+    }
+    return [];
+};
+$ebeneName = static function (string $id) use ($ebene): string {
+    $el = $ebene($id);
+    $name = trim((string) ($el['label'] ?? ''));
+    return $name !== '' ? $name : $id;
 };
 
 $label = 'text-[0.62rem] uppercase tracking-[0.18em] text-muted';
@@ -147,6 +169,101 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
    * Marke wie .border-ink, nur eben beim Hover.
    */
   .wz-draft-btn:hover { border-color: var(--color-ink); }
+
+  /*
+   * Das Bildfeld. Eigene Regeln, weil hier fast nichts aus der gebauten
+   * style.css kommen kann: die Platte braucht ein Seitenverhaeltnis, der
+   * leere Zustand eine gestrichelte Innenlinie, und das Dateifeld des
+   * Browsers laesst sich ueberhaupt nicht mit Klassen anfassen.
+   *
+   * Die Platte ist bewusst gross. Auf diesem Bildschirm ist alles Schrift -
+   * sie ist die einzige Stelle, an der das Gesicht des Paares hereinkommt,
+   * und ein Vorschaubildchen von 96 Pixeln behandelt sie wie eine Fussnote.
+   */
+  .wz-photo { display: flex; align-items: flex-start; gap: 1.75rem; }
+  @media (max-width: 640px) { .wz-photo { flex-direction: column; gap: 1.25rem; } }
+
+  .wz-photo-platte {
+    position: relative;
+    width: 11rem;
+    flex: none;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border: 1px solid var(--color-sand-deep);
+    background: var(--color-sand);
+  }
+  .wz-photo-platte img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /*
+   * Diese zwei Zeilen sind Pflicht, nicht Sorgfalt: das hidden-Attribut wirkt
+   * ueber die Grundregel [hidden]{display:none} des Browsers, und die verliert
+   * gegen jede eigene display-Angabe. Ohne sie zeigte die leere Platte das
+   * <img hidden> trotzdem an - also ein kaputtes Bildsymbol - und das Wort
+   * "Noch kein Bild" bliebe nach der Wahl darueber stehen. Der Attribut-
+   * Selektor gewinnt gegen die Regeln darueber, weil er spezifischer ist.
+   */
+  .wz-photo-platte img[hidden] { display: none; }
+  .wz-photo-leer[hidden] { display: none; }
+
+  /* Leer ist ein Zustand, kein Fehler: die gestrichelte Linie liegt INNEN,
+     damit der Rahmen der Platte durchgehend bleibt und die Flaeche trotzdem
+     als "hier kommt noch etwas hin" liest. */
+  .wz-photo-leer {
+    position: absolute; inset: .55rem;
+    display: flex; align-items: center; justify-content: center;
+    padding: .5rem;
+    border: 1px dashed var(--color-sand-deep);
+    font-family: var(--font-display);
+    font-size: .95rem;
+    line-height: 1.3;
+    text-align: center;
+    color: var(--color-muted);
+  }
+
+  /* min-height, damit die Zeile beim ersten Waehlen nicht die Platte
+     verschiebt - vorher steht hier nichts, danach "Gewaehlt". */
+  .wz-photo-bu { margin-top: .6rem; min-height: 1.2em; }
+
+  .wz-photo-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: .01em;
+    color: var(--color-ink);
+  }
+
+  /*
+   * Der Knopf ist ein <label> mit dem Dateifeld darin: ein Klick darauf
+   * oeffnet den Dateidialog ohne eine Zeile JavaScript. Das Feld bleibt
+   * bedienbar und tastaturerreichbar, es ist nur nicht zu sehen - deshalb
+   * opacity und ein Pixel Groesse statt display:none, das den Fokus
+   * mitnaehme. Den Ring traegt darum das label, ueber :focus-within.
+   */
+  .wz-photo-knopf {
+    position: relative;
+    display: inline-block;
+    margin-top: .9rem;
+    border: 1px solid var(--color-ink);
+    padding: .75rem 1.5rem;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    color: var(--color-ink);
+    cursor: pointer;
+    transition: background-color .2s, color .2s;
+  }
+  .wz-photo-knopf:hover { background: var(--color-ink); color: var(--color-cream); }
+  .wz-photo-knopf:focus-within { outline: 2px solid var(--color-gold); outline-offset: 3px; }
+  .wz-photo-knopf input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+  .wz-photo-datei {
+    margin-top: .75rem;
+    font-size: .9rem;
+    color: var(--color-ink);
+    overflow-wrap: anywhere;
+  }
+  .wz-photo-datei::before { content: '\2014\00a0'; color: var(--color-gold); }
+
+  .wz-photo-hint { margin-top: .6rem; font-size: .8rem; line-height: 1.5; color: var(--color-muted); }
 </style>
 <div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
@@ -191,74 +308,63 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
             <?php if (!$rechte['photo']) { continue; } ?>
             <?php
               /*
-               * Der Name der Ebene, wie der Grafiker ihn vergeben hat - und
-               * erst als letzter Ausweg die Kennung. Hier stand vorher die
-               * Kennung selbst, also las das Paar "foto" oder "szenetl":
-               * einen Datenbankschluessel. Dieselbe Regel gilt schon im Panel
-               * (admin/design-edit-sections.php) und bei den Abschnitten
-               * gleich darunter; nur dieses eine Feld hielt sie nicht.
-               *
-               * Und das Bild, das die Vorlage heute an dieser Stelle zeigt:
-               * ohne es waere "Neues Bild" eine Frage nach dem Ersatz fuer
-               * etwas, das man nie gesehen hat. Es kommt aus dem Dokument,
-               * nicht aus einer Eingabe - safeSrc() hat es beim Speichern der
-               * Vorlage geprueft.
+               * Das Bild, das die Vorlage heute an dieser Stelle zeigt: ohne
+               * es waere die Frage nach einem neuen Bild die Frage nach dem
+               * Ersatz fuer etwas, das man nie gesehen hat. Es kommt aus dem
+               * Dokument, nicht aus einer Eingabe - safeSrc() hat es beim
+               * Speichern der Vorlage geprueft.
                */
-              $ebeneName = $id;
-              $ebeneBild = '';
-              foreach ($design['layers'] as $el) {
-                  if ((string) $el['id'] === (string) $id) {
-                      $ebeneName = ((string) ($el['label'] ?? '')) !== '' ? (string) $el['label'] : $id;
-                      $ebeneBild = (string) ($el['src'] ?? '');
-                      break;
-                  }
-              }
+              $ebeneBild = (string) ($ebene((string) $id)['src'] ?? '');
             ?>
-            <div>
-              <label class="<?= $label ?>" for="b-<?= e($id) ?>"><?= e($ebeneName) ?></label>
-
-              <div class="mt-3 flex items-start gap-5">
-                <?php /*
-                   Der Rahmen steht IMMER, auch wenn die Vorlage an dieser
-                   Stelle noch kein Bild hat. Sonst waehlt das Paar eine Datei
-                   und sieht nichts - und ein Bildfeld, das nicht zeigt, was
-                   man gewaehlt hat, ist die haelfte eines Feldes.
-
-                   aspect-[4/5] statt einer festen Hoehe: h-24 steht gar nicht
-                   in der gebauten style.css (w-24 schon) - eine Hoehenklasse
-                   zu raten hiesse, sie taete still nichts. Das Verhaeltnis
-                   passt ohnehin besser zur Karte als eine Zahl.
-                */ ?>
-                <div class="shrink-0">
-                  <div class="aspect-[4/5] w-24 overflow-hidden border border-sand-deep bg-sand">
-                    <?php /* Leer heisst leer: ein <img> ohne src zeigt in
-                             manchen Browsern ein kaputtes Symbol, deshalb
-                             bleibt es bis zur Wahl ausgeblendet. */ ?>
-                    <img<?= $ebeneBild !== '' ? ' src="' . e($ebeneBild) . '"' : '' ?> alt=""
-                         class="h-full w-full object-cover<?= $ebeneBild === '' ? ' hidden' : '' ?>"
-                         data-photo-preview="<?= e($id) ?>">
-                  </div>
-                  <?php /* Unter dem Rahmen, nicht darueber: oben steht schon
-                           der Name der Ebene, und zwei gleich gesetzte
-                           Kleinschriften untereinander lesen sich wie zwei
-                           Feldnamen statt wie Name und Bildunterschrift. */ ?>
-                  <p class="<?= $label ?> mt-2"
-                     data-photo-caption="<?= e($id) ?>"
-                     data-photo-chosen="<?= e($t('photoChosen')) ?>"><?= e($t('photoCurrent')) ?></p>
+            <div class="wz-photo">
+              <?php /*
+                 Die Platte steht IMMER, auch wenn die Vorlage an dieser Stelle
+                 noch kein Bild hat. Sonst waehlt das Paar eine Datei und sieht
+                 nichts - ein Bildfeld, das nicht zeigt, was gewaehlt wurde,
+                 ist die Haelfte eines Feldes.
+              */ ?>
+              <div>
+                <div class="wz-photo-platte">
+                  <?php /* Ein <img> ohne src zeigt in manchen Browsern ein
+                           kaputtes Symbol, deshalb steht es erst da, wenn es
+                           etwas zu zeigen gibt. */ ?>
+                  <?php if ($ebeneBild !== '') : ?>
+                    <img src="<?= e($ebeneBild) ?>" alt="" data-photo-preview="<?= e($id) ?>">
+                  <?php else : ?>
+                    <img alt="" hidden data-photo-preview="<?= e($id) ?>">
+                    <span class="wz-photo-leer" data-photo-empty="<?= e($id) ?>"><?= e($t('photoEmpty')) ?></span>
+                  <?php endif; ?>
                 </div>
+                <p class="<?= $label ?> wz-photo-bu"
+                   data-photo-caption="<?= e($id) ?>"
+                   data-photo-chosen="<?= e($t('photoChosen')) ?>"><?= $ebeneBild !== '' ? e($t('photoCurrent')) : '' ?></p>
+              </div>
 
-                <div class="w-full">
+              <div class="w-full">
+                <p class="wz-photo-name"><?= e($ebeneName((string) $id)) ?></p>
+
+                <?php /*
+                   Vom Server das nackte Dateifeld - ohne Skript ist es das
+                   einzige, was funktioniert, und es funktioniert vollstaendig.
+                   Das Skript am Fuss dieser Datei legt es in ein <label> und
+                   macht daraus den Knopf im Haus-Schnitt. Dieselbe Reihenfolge
+                   wie bei den Reitern des Bearbeiten-Bildschirms: erst was
+                   ohne Skript traegt, dann die Verbesserung.
+                */ ?>
+                <div data-photo-slot="<?= e($id) ?>"
+                     data-photo-label="<?= e($t('photoChoose')) ?>">
                   <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
                          accept="image/jpeg,image/png,image/webp" class="<?= $field ?>"
                          data-photo-input="<?= e($id) ?>">
-                  <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('photoHint')) ?></p>
-                  <?php /* Nur wenn es ueberhaupt ein vorhandenes Bild gibt -
-                           sonst verspricht der Satz die Rueckkehr zu etwas,
-                           das es nicht gibt. */ ?>
-                  <?php if ($ebeneBild !== '') : ?>
-                    <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('editPhotoNote')) ?></p>
-                  <?php endif; ?>
                 </div>
+
+                <p class="wz-photo-hint"><?= e($t('photoHint')) ?></p>
+                <?php /* Nur wenn es ueberhaupt ein vorhandenes Bild gibt -
+                         sonst verspricht der Satz die Rueckkehr zu etwas, das
+                         es nicht gibt. */ ?>
+                <?php if ($ebeneBild !== '') : ?>
+                  <p class="wz-photo-hint"><?= e($t('editPhotoNote')) ?></p>
+                <?php endif; ?>
               </div>
             </div>
           <?php endforeach; ?>
@@ -340,14 +446,16 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
               </label>
               <input id="p-<?= e($marke) ?>" type="color" name="palette_<?= e($marke) ?>"
-                     value="<?= e((string) $eintrag['value']) ?>" class="<?= $field ?> h-12">
+                     value="<?= e((string) $eintrag['value']) ?>" class="<?= $field ?> h-12"
+                     data-live-var="--d-<?= e(Design::key($marke)) ?>">
             </div>
           <?php endforeach; ?>
 
           <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
             <div>
               <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
-              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>">
+              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>"
+                      data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
                 <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
                   <option value="<?= e($familie) ?>" <?= (string) $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                 <?php endforeach; ?>
@@ -358,14 +466,17 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
             <?php if (!$rechte['color'] && !$rechte['font'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
             <div class="border-t border-sand-deep pt-6">
-              <div class="<?= $label ?>"><?= e($id) ?></div>
+              <div class="<?= $label ?>"><?= e($ebeneName((string) $id)) ?></div>
 
               <?php if ($rechte['color']) : ?>
-                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($farbeVon($id)) ?>" class="<?= $field ?> h-12">
+                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($farbeVon($id)) ?>" class="<?= $field ?> h-12"
+                       data-live-el="<?= e((string) $id) ?>"
+                       data-live-kind="<?= ((string) ($ebene((string) $id)['type'] ?? '')) === 'shape' ? 'background' : 'color' ?>">
               <?php endif; ?>
 
               <?php if ($rechte['font']) : ?>
-                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>">
+                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>"
+                        data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
                   <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
                     <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
@@ -374,12 +485,14 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <?php endif; ?>
 
               <?php if ($rechte['text']) : ?>
-                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600">
+                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600"
+                       data-live-el="<?= e((string) $id) ?>" data-live-kind="text">
               <?php endif; ?>
 
               <?php if ($rechte['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>"> <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
+                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>"
+                         data-live-el="<?= e((string) $id) ?>" data-live-kind="hide"> <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
                 </label>
               <?php endif; ?>
             </div>
@@ -483,6 +596,57 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
+  var formular = document.querySelector('[data-wizard]');
+  var karte = document.querySelector('[data-preview]');
+
+  /*
+   * Die Karte folgt auch dem Design-Schritt.
+   *
+   * invite-v2.js spiegelt nur die Textfelder des ersten Schrittes - Farbe,
+   * Schrift, freier Text und Ausblenden aenderten bis hierher gar nichts,
+   * und das Paar sah seine Designwahl zum ersten Mal NACH dem
+   * Veroeffentlichen. Gerechnet wird auch hier nichts nach: gesetzt werden
+   * dieselben CSS-Variablen und Textknoten, die Design::css() erzeugt -
+   * genau das Verfahren, das der Design-Editor des Panels seit jeher
+   * benutzt (assets/design-editor.js).
+   *
+   * Welches Feld welchen Knoten bedient, entscheidet der Server: er kennt
+   * den Typ der Ebene und schreibt ihn als data-live-kind an das Feld. Ein
+   * Formular, das raet, ob eine Ebene Text oder Flaeche ist, raet
+   * irgendwann falsch.
+   */
+  if (formular && karte) {
+    formular.querySelectorAll('[data-live-var]').forEach(function (feld) {
+      var marke = feld.getAttribute('data-live-var');
+      // Schriftnamen brauchen Anfuehrungszeichen, Farben nicht.
+      var zitat = feld.hasAttribute('data-live-quote');
+      var setz = function () {
+        karte.style.setProperty(marke, zitat ? '"' + feld.value + '"' : feld.value);
+      };
+      feld.addEventListener('input', setz);
+      feld.addEventListener('change', setz);
+    });
+
+    formular.querySelectorAll('[data-live-el]').forEach(function (feld) {
+      var ziel = karte.querySelector('.d-el-' + feld.getAttribute('data-live-el'));
+      if (!ziel) return;
+      var art = feld.getAttribute('data-live-kind');
+      // Was die Vorlage vorgibt, bevor jemand etwas eintippt: ein geleertes
+      // Feld heisst "wie im Design", nicht "leer" - der Server macht es
+      // genauso (er schreibt nur, was nicht leer ist).
+      var vorgabe = ziel.textContent;
+      var setz = function () {
+        if (art === 'color') { ziel.style.color = feld.value; return; }
+        if (art === 'background') { ziel.style.background = feld.value; return; }
+        if (art === 'font') { ziel.style.fontFamily = feld.value ? '"' + feld.value + '"' : ''; return; }
+        if (art === 'text') { ziel.textContent = feld.value !== '' ? feld.value : vorgabe; return; }
+        if (art === 'hide') { ziel.style.display = feld.checked ? 'none' : ''; }
+      };
+      feld.addEventListener('input', setz);
+      feld.addEventListener('change', setz);
+    });
+  }
+
   var felder = document.querySelectorAll('[data-photo-input]');
   if (!felder.length) return;
 
@@ -491,18 +655,58 @@ document.addEventListener('DOMContentLoaded', function () {
     var bild = document.querySelector('[data-photo-preview="' + kennung + '"]');
     if (!bild) return;
     var titel = document.querySelector('[data-photo-caption="' + kennung + '"]');
+    var leer  = document.querySelector('[data-photo-empty="' + kennung + '"]');
+
+    /* Das Dateifeld in einen Knopf im Haus-Schnitt legen. Es wird nicht
+       ersetzt, sondern verschoben: id, name, accept und die Datenmarken
+       reisen mit dem Knoten mit, und was der Browser bereits gewaehlt hat
+       (ein Zurueck aus dem naechsten Schritt) bleibt gewaehlt. Sichtbar ist
+       das Feld nicht mehr, bedienbar sehr wohl - siehe die Regel im
+       Stilblock. */
+    var fach = document.querySelector('[data-photo-slot="' + kennung + '"]');
+    var name = null;
+    if (fach) {
+      var knopf = document.createElement('label');
+      knopf.className = 'wz-photo-knopf';
+      knopf.setAttribute('for', feld.id);
+      knopf.appendChild(document.createTextNode(fach.getAttribute('data-photo-label')));
+      feld.className = '';
+      knopf.appendChild(feld);
+
+      name = document.createElement('p');
+      name.className = 'wz-photo-datei';
+      name.hidden = true;
+
+      fach.appendChild(knopf);
+      fach.appendChild(name);
+    }
 
     feld.addEventListener('change', function () {
       var datei = feld.files && feld.files[0];
       if (!datei) return;
 
+      // Der Name sofort, das Bild sobald es gelesen ist: das Lesen einer
+      // grossen Datei dauert, und in dieser Zeit soll die Wahl schon
+      // bestaetigt sein.
+      if (name) {
+        name.textContent = datei.name;
+        name.hidden = false;
+      }
+
+      // Auch auf der Karte, nicht nur auf der Platte: die Platte beweist,
+      // dass die richtige Datei gewaehlt ist - die Karte zeigt, wie sie im
+      // Ausschnitt der Vorlage wirkt, und das ist die eigentliche Frage.
+      var aufDerKarte = karte ? karte.querySelector('img.d-el-' + kennung) : null;
+
       var leser = new FileReader();
       leser.onload = function () {
         bild.src = leser.result;
-        // Hatte die Vorlage hier kein Bild, war der Rahmen bis eben leer.
-        bild.classList.remove('hidden');
-        // "Zurzeit" stimmt jetzt nicht mehr - im Rahmen steht die eigene
-        // Wahl. Das Wort kommt vom Server, damit hier keine zweite
+        if (aufDerKarte) aufDerKarte.src = leser.result;
+        // Hatte die Vorlage hier kein Bild, war die Platte bis eben leer.
+        bild.hidden = false;
+        if (leer) leer.hidden = true;
+        // "Zurzeit" stimmt jetzt nicht mehr - auf der Platte liegt die
+        // eigene Wahl. Das Wort kommt vom Server, damit hier keine zweite
         // Uebersetzung entsteht, die eines Tages von der in dict.php
         // abweicht.
         if (titel) titel.textContent = titel.getAttribute('data-photo-chosen');
