@@ -485,4 +485,89 @@ final class InviteV2Controller
 
         return true;
     }
+
+    /**
+     * Was die Gaeste geantwortet haben.
+     *
+     * Der Schluessel steht seit Phase 3B in den Daten jeder Einladung, und
+     * bis heute hat ihn niemand gebraucht. Er wurde damals mit genau diesem
+     * Argument geschrieben: nachtraeglich eingefuehrt haette er jede bis
+     * dahin veroeffentlichte Einladung ausgesperrt. Dies ist die Phase, fuer
+     * die das Argument gemacht war.
+     *
+     * Nur lesen: Loeschen, Aendern und Ausleiten sind Phase D.
+     *
+     * @param array<string,string> $params
+     */
+    public function replies(array $params): void
+    {
+        $locale = I18n::locale();
+        $einladung = InvitationsV2::find($params['slug'] ?? '');
+
+        $erwartet = $einladung !== null ? (string) ($einladung['data']['manageKey'] ?? '') : '';
+        $gegeben  = (string) ($params['key'] ?? '');
+
+        /*
+         * 404 und nicht 403.
+         *
+         * Ein 403 bestaetigt, dass es diese Einladung gibt - wer den
+         * Schluessel nicht hat, soll auch das nicht erfahren. "Diese Seite
+         * gibt es nicht" ist die richtige Antwort an jemanden, der nicht
+         * gemeint ist.
+         *
+         * hash_equals statt ===: der Schluessel ist 32 Hexadezimalzeichen und
+         * die einzige Sicherung dieser Seite. Ein Vergleich, der beim ersten
+         * ungleichen Zeichen abbricht, verraet ueber die Laufzeit, wie weit
+         * ein Rateversuch gekommen ist.
+         *
+         * Der leere Schluessel wird ausdruecklich vorher abgefangen:
+         * hash_equals('', '') ist WAHR. Eine Einladung ohne manageKey stuende
+         * sonst jedem offen. Heute schreibt publish() ihn immer - aber "heute
+         * kann das nicht passieren" ist der Satz, nach dem in Phase C drei
+         * Fehler gefunden wurden.
+         */
+        if ($einladung === null || $erwartet === '' || !hash_equals($erwartet, $gegeben)) {
+            // pages/not-found liest $locale unbedingt (not-found.php:10) und
+            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
+            // Variablen und die Seite kommt auf Englisch heraus, egal in
+            // welcher Sprache sie aufgerufen wurde.
+            http_response_code(404);
+            View::page('pages/not-found', [
+                'locale' => $locale,
+                'path'   => I18n::path('/v2/einladung'),
+                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+            ]);
+            return;
+        }
+
+        $antworten = InvitationsV2::rsvps((string) $einladung['slug']);
+
+        // Zwei Zahlen, weil es zwei Fragen sind: eine Absage ist eine
+        // Antwort und kein Gast, und eine Zusage bringt mehrere Personen mit.
+        $kommen = 0;
+        foreach ($antworten as $antwort) {
+            if (!empty($antwort['coming'])) {
+                $kommen += max(1, (int) ($antwort['count'] ?? 1));
+            }
+        }
+
+        $namen = trim(((string) ($einladung['data']['bride'] ?? '')) . ' & ' . ((string) ($einladung['data']['groom'] ?? '')), ' &');
+
+        View::page('pages/invite-v2-replies', [
+            'locale' => $locale,
+            // Ohne $path meldet layout.php eine undefinierte Variable im
+            // Sprachumschalter. Der Schluessel gehoert NICHT hinein: der
+            // Umschalter schriebe ihn sonst in eine sichtbare Adresse.
+            'path'   => I18n::path('/v2/einladung'),
+            'meta'   => Seo::forPage('einladung2', [
+                'title'   => I18n::t('invitation2.repliesTitle'),
+                // Diese Seite IST der Schluessel. Sie gehoert unter keinen
+                // Umstaenden in einen Index.
+                'noindex' => true,
+            ]),
+            'namen'     => $namen,
+            'antworten' => $antworten,
+            'kommen'    => $kommen,
+        ]);
+    }
 }

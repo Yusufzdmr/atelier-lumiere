@@ -112,6 +112,13 @@ $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new 
 // Der Assistent der zweiten Fassung. Die feste Adresse steht vor dem Muster
 // {slug} - sonst liest der Router "einladung" als Namen einer Einladung.
 $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new InviteV2Controller())->wizard()));
+// Vor der Einladung selbst, wie /einladung/{slug}/verwalten im alten Motor.
+// Beide Muster sind verankert und {slug} matcht keinen Schraegstrich, also
+// koennen sie einander nicht fangen - die Reihenfolge steht hier fuer den
+// Leser, nicht fuer den Router.
+//
+// get und nicht any: die Leseansicht schreibt nichts.
+$router->get('/{locale}/v2/einladung/{slug}/{key}', $page_(static fn (array $p) => (new InviteV2Controller())->replies($p)));
 // any und nicht get: die Einladung nimmt ihre eigene Antwort entgegen
 // (DesignSections druckt ein Formular ohne action). Ein eigener Endpunkt
 // muesste erst wieder herausfinden, zu welcher Einladung er gehoert.
