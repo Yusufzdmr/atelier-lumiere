@@ -51,17 +51,7 @@ final class InviteV2Controller
 
         $designs = Design::all('active');
         if ($designs === []) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in welcher
-            // Sprache sie aufgerufen wurde. DesignController::preview() gibt sie
-            // aus genau diesem Grund mit.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+            $this->nichtGefunden();
             return;
         }
 
@@ -578,17 +568,7 @@ final class InviteV2Controller
         $einladung = InvitationsV2::find($params['slug'] ?? '');
 
         if ($einladung === null) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in
-            // welcher Sprache sie aufgerufen wurde. DesignController::preview()
-            // gibt sie aus genau diesem Grund mit.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+            $this->nichtGefunden();
             return;
         }
 
@@ -801,50 +781,15 @@ final class InviteV2Controller
     public function replies(array $params): void
     {
         $locale = I18n::locale();
-        $einladung = InvitationsV2::find($params['slug'] ?? '');
 
-        $erwartet = $einladung !== null ? (string) ($einladung['data']['manageKey'] ?? '') : '';
-        $gegeben  = (string) ($params['key'] ?? '');
-
-        /*
-         * 404 und nicht 403.
-         *
-         * Ein 403 bestaetigt, dass es diese Einladung gibt - wer den
-         * Schluessel nicht hat, soll auch das nicht erfahren. "Diese Seite
-         * gibt es nicht" ist die richtige Antwort an jemanden, der nicht
-         * gemeint ist.
-         *
-         * hash_equals statt ===: der Schluessel ist 32 Hexadezimalzeichen und
-         * die einzige Sicherung dieser Seite. Ein Vergleich, der beim ersten
-         * ungleichen Zeichen abbricht, verraet ueber die Laufzeit, wie weit
-         * ein Rateversuch gekommen ist.
-         *
-         * Der leere Schluessel wird ausdruecklich vorher abgefangen:
-         * hash_equals('', '') ist WAHR. Eine Einladung ohne manageKey stuende
-         * sonst jedem offen. Heute schreibt publish() ihn immer - aber "heute
-         * kann das nicht passieren" ist der Satz, nach dem in Phase C drei
-         * Fehler gefunden wurden.
-         */
-        if ($einladung === null || $erwartet === '' || !hash_equals($erwartet, $gegeben)) {
-            // pages/not-found liest $locale unbedingt (not-found.php:10) und
-            // layout.php braucht $path. Fehlen sie, meldet PHP undefinierte
-            // Variablen und die Seite kommt auf Englisch heraus, egal in
-            // welcher Sprache sie aufgerufen wurde.
-            http_response_code(404);
-            View::page('pages/not-found', [
-                'locale' => $locale,
-                'path'   => I18n::path('/v2/einladung'),
-                'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
-            ]);
+        // Der Schluessel steht seit Phase 3B in den Daten jeder Einladung. Die
+        // Pruefung - 404 statt 403, hash_equals, der leere Schluessel zuerst,
+        // die Bremse - steht in manageZugang(), weil sie der Bearbeiten-
+        // Bildschirm Wort fuer Wort auch braucht.
+        $einladung = $this->manageZugang($params);
+        if ($einladung === null) {
             return;
         }
-
-        // Diese Seite ist eine geheime Adresse mit einer Gaesteliste
-        // namentlich darauf - sie darf in keinem geteilten Cache landen.
-        // show() bekommt no-store geschenkt, weil Security::csrf() dort eine
-        // Sitzung startet; hier startet keine, also muss der Hinweis von Hand
-        // hinaus.
-        header('Cache-Control: private, no-store');
 
         $antworten = InvitationsV2::rsvps((string) $einladung['slug']);
 
@@ -877,5 +822,78 @@ final class InviteV2Controller
             'antworten' => $antworten,
             'kommen'    => $kommen,
         ]);
+    }
+
+    /**
+     * Die 404-Seite dieses Controllers.
+     *
+     * Sie stand bis hierher viermal wortgleich in dieser Datei. Der Grund fuer
+     * jede der drei Zeilen ist derselbe geblieben: pages/not-found liest
+     * $locale unbedingt (not-found.php:10) und layout.php braucht $path -
+     * fehlen sie, meldet PHP undefinierte Variablen und die Seite kommt auf
+     * Englisch heraus, egal in welcher Sprache sie aufgerufen wurde.
+     */
+    private function nichtGefunden(): void
+    {
+        http_response_code(404);
+        View::page('pages/not-found', [
+            'locale' => I18n::locale(),
+            'path'   => I18n::path('/v2/einladung'),
+            'meta'   => Seo::forPage('einladung2', ['noindex' => true]),
+        ]);
+    }
+
+    /**
+     * Die Tuer, die manageKey oeffnet.
+     *
+     * Seit dieser Phase oeffnet derselbe Schluessel mehr als eine Seite: die
+     * Antworten lesen UND die Einladung bearbeiten. Deshalb steht die Pruefung
+     * einmal hier statt in jedem Bildschirm noch einmal - zwei Kopien
+     * derselben Sicherung altern verschieden schnell.
+     *
+     * 404 und nicht 403: ein 403 bestaetigt, dass es diese Einladung gibt, und
+     * wer den Schluessel nicht hat, soll auch das nicht erfahren.
+     *
+     * Die Bremse ist neu und sie ist der Preis dafuer, dass der Schluessel
+     * jetzt Schreibrechte vergibt. Auf dem reinen Leseschirm war "128 Bit sind
+     * nicht zu erraten" ein vertretbares Argument; sobald damit ein fremdes
+     * Dokument geaendert werden kann, ist es keines mehr (Spec §5). Sie steht
+     * VOR dem Vergleich, sonst braemste sie nur die Berechtigten - ein
+     * falscher Schluessel faellt danach ohnehin ins 404.
+     *
+     * Eine ausgeloeste Bremse antwortet ebenfalls mit 404 und nicht mit einer
+     * eigenen Meldung: jede unterscheidbare Antwort waere ein Orakel, an dem
+     * sich ablesen liesse, dass es diese Einladung gibt. Der Preis ist, dass
+     * ein Paar, das sechzigmal in zehn Minuten neu laedt, eine Fehlseite
+     * sieht - bei diesem Mass ein unwahrscheinlicher Fall.
+     *
+     * @param array<string,string> $params
+     * @return array{slug:string,design_id:string,design_snapshot:array<string,mixed>,data:array<string,mixed>,created_at:string}|null
+     */
+    private function manageZugang(array $params): ?array
+    {
+        // Normalisiert, damit "Foo" und "foo" denselben Eimer benutzen - sonst
+        // waere die Bremse mit einer anderen Schreibweise zu umgehen.
+        $slug = InvitationsV2::slug((string) ($params['slug'] ?? ''));
+
+        if ($slug === '' || Security::throttle('v2-manage-' . $slug, 60, 600)) {
+            $this->nichtGefunden();
+            return null;
+        }
+
+        $einladung = InvitationsV2::find($slug);
+
+        if ($einladung === null || !InvitationsV2::keyOk($einladung['data'], (string) ($params['key'] ?? ''))) {
+            $this->nichtGefunden();
+            return null;
+        }
+
+        // Diese Seiten sind eine geheime Adresse mit den Daten eines Paares
+        // darauf - sie duerfen in keinem geteilten Cache landen. show()
+        // bekommt no-store geschenkt, weil Security::csrf() dort eine Sitzung
+        // startet; hier muss der Hinweis von Hand hinaus.
+        header('Cache-Control: private, no-store');
+
+        return $einladung;
     }
 }
