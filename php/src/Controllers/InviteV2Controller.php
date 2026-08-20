@@ -827,7 +827,7 @@ final class InviteV2Controller
     /**
      * Die 404-Seite dieses Controllers.
      *
-     * Sie stand bis hierher viermal wortgleich in dieser Datei. Der Grund fuer
+     * Sie stand bis hierher dreimal wortgleich in dieser Datei. Der Grund fuer
      * jede der drei Zeilen ist derselbe geblieben: pages/not-found liest
      * $locale unbedingt (not-found.php:10) und layout.php braucht $path -
      * fehlen sie, meldet PHP undefinierte Variablen und die Seite kommt auf
