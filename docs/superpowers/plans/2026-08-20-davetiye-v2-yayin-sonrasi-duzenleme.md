@@ -98,7 +98,7 @@ Bu yüzden Görev 4 Adım 6 ve Görev 6 Adım 7 **atlanabilir elle kontroller de
 
 ---
 
-### Görev 1: Kuralları modele koy
+### Task 1 (Görev 1): Kuralları modele koy
 
 Kapının, eşzamanlılığın ve §4'ün kısıtının kuralları saf statik metotlar olur. Sebep: bunlar HTTP olmadan test edilebilir, ve `replies()` ile `edit()` aynı kaynaktan okur — iki kopya zamanla ayrışır.
 
@@ -354,7 +354,7 @@ git commit -m "Drei Regeln fuer den Bearbeiten-Bildschirm, als reine Funktionen"
 
 ---
 
-### Görev 2: Snapshot artık şablonu tutar
+### Task 2 (Görev 2): Snapshot artık şablonu tutar
 
 Bu, spec'in kalbi. `publish()` kişiselleştirilmemiş şablonu dondurur ve seçimleri `data['wahl']`'a yazar; `show()` her basımda seçimleri şablonun üstüne uygular. Eski davetiyelerde `wahl` yok, `personalize(snapshot, [])` kimlik, çıktı bayt bayt aynı kalır.
 
@@ -624,7 +624,7 @@ git commit -m "Der Schnappschuss haelt die Vorlage, die Wahl liegt daneben"
 
 ---
 
-### Görev 3: Formu okuyan iki toplayıcıyı ayır
+### Task 3 (Görev 3): Formu okuyan iki toplayıcıyı ayır
 
 Düzenleme ekranı sihirbazla **birebir aynı** alanları, aynı sınırları, aynı `data` anahtarlarını kullanmalı (spec §6). İkinci bir kopya zamanla birincinin peşinden sürüklenir. `publish()`'in içindeki toplama iki özel metoda çıkar; davranış değişmez.
 
@@ -878,7 +878,7 @@ git commit -m "Das Formular wird an einer Stelle gelesen, nicht an zweien"
 
 ---
 
-### Görev 4: Anahtarın kapısı — tek yer, sel kontrolüyle
+### Task 4 (Görev 4): Anahtarın kapısı — tek yer, sel kontrolüyle
 
 `manageKey` artık üç kapı açıyor (spec §5). 404 kuralı, `hash_equals`, boş anahtar reddi ve **yeni gelen sel kontrolü** tek bir özel metotta toplanır; `replies()` oraya taşınır. `edit()` bir sonraki görevde aynı kapıdan girer.
 
@@ -1028,7 +1028,7 @@ git commit -m "Der Schluessel oeffnet mehr als eine Tuer, also steht die Pruefun
 
 ---
 
-### Görev 5: Düzenleme ekranı — okuma yolu
+### Task 5 (Görev 5): Düzenleme ekranı — okuma yolu
 
 Ekran, yol kaydı, şablon ve sözlük anahtarları. Bu görev **yazmaz**: form basılır, dolu gelir, önizleme sağda durur, ama gönderme bir sonraki görevde bağlanır.
 
@@ -1683,7 +1683,7 @@ git commit -m "Der Bearbeiten-Bildschirm: zwei Tabs, dieselben Felder, ein Socke
 
 ---
 
-### Görev 6: Yazma yolu
+### Task 6 (Görev 6): Yazma yolu
 
 `saveEdit()`. CSRF önce, sonra sel, sonra eşzamanlılık, sonra §4 kapısı, sonra yazma. `rsvps`'e tek bir sorgu bile gitmez.
 
@@ -1908,7 +1908,7 @@ git commit -m "Die Aenderung wird geschrieben, der Sockel und die Antworten blei
 
 ---
 
-### Görev 7: Spec §11'in ölçütlerini tek tek geç
+### Task 7 (Görev 7): Spec §11'in ölçütlerini tek tek geç
 
 Bu görev kod yazmaz; spec'in "bitti sayılma" listesini kanıtlar ve eksik çıkanı düzeltir.
 
