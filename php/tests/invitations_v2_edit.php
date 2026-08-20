@@ -219,4 +219,35 @@ assert_same($vorher['created_at'], $nachher['created_at'], 'saveData: der Zeitpu
 InvitationsV2::saveData('', ['bride' => 'Niemand']);
 assert_same('Maria', (InvitationsV2::find($slug)['data']['bride'] ?? ''), 'saveData: ohne Slug wird nichts geschrieben');
 
+/* --- Bearbeiten ruehrt die Antworten der Gaeste nicht an --- */
+
+/*
+ * Spec §8: "Antworten sind unberuehrbar." Die Regel ist einfach genug, um sie
+ * zu glauben, und genau deshalb wird sie gemessen: der Bearbeiten-Weg schreibt
+ * mit InvitationsV2::saveData(), und wenn dort je ein zweiter Schreibzugriff
+ * dazukaeme, faellt dieser Test.
+ */
+Atelier\Db::run('DELETE FROM rsvps WHERE slug = ?', [$slug]);
+InvitationsV2::saveRsvp($slug, [
+    'slug' => $slug, 'name' => 'Mehmet', 'coming' => true,
+    'count' => 2, 'note' => 'Wir kommen', 'at' => '2027-01-01T10:00:00+01:00',
+]);
+
+$vorAntworten = InvitationsV2::rsvps($slug);
+
+InvitationsV2::saveData($slug, [
+    'slug' => $slug, 'bride' => 'Marije', 'manageKey' => $echt, 'updatedAt' => '2026-08-20T14:00:00+03:00',
+]);
+
+assert_same($vorAntworten, InvitationsV2::rsvps($slug), 'saveData: die Antworten der Gaeste bleiben, wie sie waren');
+assert_same('Marije', (InvitationsV2::find($slug)['data']['bride'] ?? ''), 'saveData: und die Daten sind trotzdem geschrieben');
+
+/* --- Der Stand wandert mit und sperrt den zweiten Tab --- */
+
+$jetzt = InvitationsV2::find($slug)['data'];
+assert_true(!InvitationsV2::stale($jetzt, '2026-08-20T14:00:00+03:00'), 'stale: der gerade geschriebene Stand passt');
+assert_true(InvitationsV2::stale($jetzt, '2026-08-20T13:00:00+03:00'), 'stale: ein Formular von vorher wird abgelehnt');
+
+Atelier\Db::run('DELETE FROM rsvps WHERE slug = ?', [$slug]);
+
 Atelier\Db::run('DELETE FROM invitations_v2 WHERE slug = ?', [$slug]);

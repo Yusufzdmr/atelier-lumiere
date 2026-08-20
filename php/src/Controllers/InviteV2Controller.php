@@ -977,14 +977,118 @@ final class InviteV2Controller
     }
 
     /**
-     * @param array<string,mixed> $einladung
-     * @param array<string,mixed> $darf
-     * @return array<string,string>
+     * Die Aenderung schreiben.
+     *
+     * Die Reihenfolge ist die Sicherung, nicht eine Geschmacksfrage:
+     *
+     *   1. CSRF - vor allem anderen, wie auf jedem Schreibweg dieser Datei.
+     *   2. Bremse - ein eigener Eimer fuers Schreiben, damit ein Skript nicht
+     *      ueber diesen Weg das Kontingent des Leseschirms aufbraucht.
+     *   3. Stand - hat jemand in einem anderen Tab gespeichert (Spec §7)?
+     *   4. Namen - dieselbe Mindestbedingung wie beim Veroeffentlichen: eine
+     *      Karte ohne jeden Namen gehoert niemandem.
+     *   5. Schreiben.
+     *
+     * Was NICHT geschrieben wird: design_snapshot (die Vorlage friert ein,
+     * Phase 3B), slug (die Adresse ist verschickt), manageKey (die eigene Tuer
+     * des Paares), createdAt und paid (Buchhaltung, nicht Kundenfeld) - und
+     * die Antworten der Gaeste. In dieser Methode steht kein einziger Zugriff
+     * auf rsvps, und das ist Absicht (Spec §8).
+     *
+     * @param array{slug:string,design_id:string,design_snapshot:array<string,mixed>,data:array<string,mixed>,created_at:string} $einladung
+     * @param array<string,mixed> $darf choices() auf dem EINGEFRORENEN Sockel
+     * @return array<string,string> leer, wenn geschrieben wurde
      */
     private function saveEdit(array $einladung, array $darf): array
     {
-        // Aufgabe 6 fuellt diesen Weg. Bis dahin schreibt der Bildschirm nichts.
-        return ['error' => 'csrf'];
+        // is_string() faengt csrf[]=x ab: ohne die Pruefung reicht ein Feld, um
+        // Security::checkCsrf() unter strict_types einen TypeError werfen zu
+        // lassen - derselbe Fehler wie schon auf dem Antwortweg.
+        $csrfEingabe = $_POST['csrf'] ?? null;
+        if (!Security::checkCsrf(is_string($csrfEingabe) ? $csrfEingabe : null)) {
+            return ['error' => 'csrf'];
+        }
+
+        $slug = (string) $einladung['slug'];
+        $alt  = $einladung['data'];
+
+        // Eigener Eimer neben v2-manage-{slug}: das Lesen der Antworten und das
+        // Schreiben an der Einladung sollen einander nicht aussperren.
+        if (Security::throttle('v2-edit-' . $slug, 20, 900)) {
+            return ['error' => 'throttle'];
+        }
+
+        // Zwei Tabs. Der zweite Speichervorgang ueberschriebe sonst den ersten,
+        // ohne dass jemand es merkt (Spec §7).
+        $gesehen = Security::clean($_POST['stand'] ?? '', 40);
+        if (InvitationsV2::stale($alt, $gesehen)) {
+            return ['error' => 'veraltet'];
+        }
+
+        $neueAngaben = $this->sammleAngaben($darf);
+
+        // Gefragt und leer gelassen ist erlaubt - html() laesst die Zeile dann
+        // einfach weg. Nur ohne jeden Namen weiss niemand, wessen Karte das
+        // ist. Dieselbe Regel wie in publish().
+        $brauchtNamen = in_array('bride', $darf['fields'], true) || in_array('groom', $darf['fields'], true);
+        if ($brauchtNamen && ($neueAngaben['bride'] ?? '') === '' && ($neueAngaben['groom'] ?? '') === '') {
+            return ['error' => 'names'];
+        }
+
+        /*
+         * Die Inhaltsschluessel werden ZUERST weggenommen und dann neu gelegt.
+         *
+         * Ohne das Wegnehmen waere ein geleertes Feld kein Loeschbefehl:
+         * sammleAngaben() setzt families, program und sections nur, wenn etwas
+         * drinsteht, und ein blosses Ueberlegen liesse den alten Wert stehen.
+         * Wer eine Programmzeile loescht, will sie geloescht haben.
+         *
+         * Alles, was NICHT in dieser Liste steht, bleibt unangetastet - slug,
+         * locale, paid, manageKey und createdAt reisen so durch, ohne dass
+         * dieser Weg sie kennen muss.
+         */
+        $neu = $alt;
+        unset($neu['families'], $neu['program'], $neu['sections']);
+        foreach ($darf['fields'] as $feld) {
+            unset($neu[$feld]);
+        }
+
+        $neu = array_merge($neu, $neueAngaben);
+
+        /*
+         * Das Design nur, wenn es ueberhaupt offen steht.
+         *
+         * Serverseitig und nicht nur im Markup: der Design-Tab fehlt bei einer
+         * alten Einladung auf dem Bildschirm, aber eine von Hand gestellte
+         * Anfrage traegt palette_* trotzdem. Wuerde sie hier angenommen, legte
+         * sie eine Wahl auf einen Sockel, in dem eine erste Wahl schon
+         * eingebrannt ist - genau der verlustbehaftete Fall aus Spec §4.
+         *
+         * $alt['wahl'] als drittes Argument: ein Foto, das diesmal nicht neu
+         * hochgeladen wurde, behaelt seinen Pfad (sammleWahl).
+         */
+        if (InvitationsV2::canEditDesign($alt)) {
+            $neu['wahl'] = $this->sammleWahl($darf, $slug, (array) $alt['wahl']);
+        }
+
+        // Der neue Stand fuer die naechste Zwei-Tabs-Kontrolle. Zuletzt, damit
+        // er den Zustand nach dieser Aenderung beschreibt und nicht den davor.
+        $neu['updatedAt'] = date('c');
+
+        // Ausdruecklich noch einmal: was in dieser Zeile unberuehrbar ist (Spec
+        // §6). Heute kann keiner der Namen aus sammleAngaben() mit ihnen
+        // kollidieren - FIELD_ORDER enthaelt keinen davon. "Heute kann das
+        // nicht passieren" ist aber der Satz, nach dem in Phase 3C drei Fehler
+        // gefunden wurden, und diese fuenf Zeilen kosten nichts.
+        $neu['slug']      = $alt['slug']      ?? $slug;
+        $neu['manageKey'] = $alt['manageKey'] ?? '';
+        $neu['createdAt'] = $alt['createdAt'] ?? $neu['updatedAt'];
+        $neu['paid']      = $alt['paid']      ?? false;
+        $neu['locale']    = $alt['locale']    ?? I18n::locale();
+
+        InvitationsV2::saveData($slug, $neu);
+
+        return [];
     }
 
     /**
