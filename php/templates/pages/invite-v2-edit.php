@@ -194,7 +194,7 @@ if ($darfDesign) {
                wie im Assistenten.
             */ ?>
             <?php for ($z = 0; $z < 8; $z++) : ?>
-              <div class="mt-3 grid gap-3 sm:grid-cols-[8rem_1fr]">
+              <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
                 <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
                        placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
                 <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"

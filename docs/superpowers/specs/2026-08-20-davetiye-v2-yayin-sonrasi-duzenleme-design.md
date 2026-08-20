@@ -240,3 +240,19 @@ Sonraki dilime devreden, §9'da yazılıydı ve bu faz onu **büyüttü**:
   değiştirtiyor. Yenileme kendi kararı, ama artık ertelenebilir değil.
 - **Davetiyeyi silme.** Düzenleme ekranı varken "sil" düğmesinin yokluğu
   görünür bir eksik hâline geldi.
+
+### Kartın her istekte yeniden hesaplanması, üç doğrulayıcıyı sessizce canlıya taşıdı
+
+Son incelemenin ortaya çıkardığı ve bu tasarım belgesinin hiç yazmadığı bir
+sonuç: eski dondurma modelinde `Design::safeSrc()`, `safeColor()` ve
+`safeFont()` yalnızca **bir kez**, yayınlama anında çalışırdı. Şimdi her
+`show()` çağrısında — yani **her misafirin her sayfa görüntülemesinde** —
+yeniden çalışıyorlar, çünkü kart artık `personalize(snapshot, wahl)` olarak
+istek başına üretiliyor.
+
+Bugün bunun bir zararı yok. Ama `safeSrc()`'nin izin listesi ileride
+daraltılırsa, `personalize()` sessizce şablonun kendi `src`'sine döner — ve bu,
+**zaten gönderilmiş davetiyelerdeki** çiftin fotoğrafını, tasarımcının
+yer tutucusuyla sessizce değiştirir. Eski anlamda bu tür bir değişiklik
+yayınlanmış bir karta asla ulaşamazdı; artık ulaşabiliyor. Bu üç
+doğrulayıcıyı düzenleyecek herkesin önce bunu bilmesi gerekiyor.

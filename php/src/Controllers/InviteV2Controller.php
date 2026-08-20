@@ -176,10 +176,11 @@ final class InviteV2Controller
 
         // Die Abschnitte lesen ihre Inhalte aus anderen Namen, als das
         // Formular sie traegt (families/program statt family_bride,
-        // prog_title_0 ...). Dieselbe Uebersetzung wie in publish() - sie
-        // steht hier ein zweites Mal, weil publish() sie mitten im Speichern
-        // macht und sich nicht herausloesen laesst, ohne den Schreibweg
-        // umzubauen.
+        // prog_title_0 ...). Dieselbe Uebersetzung wie in sammleAngaben() -
+        // sie steht hier ein zweites Mal, weil die Vorschau die Uebersetzung
+        // braucht, bevor ueberhaupt etwas gespeichert ist: sammleAngaben()
+        // liest $_POST fuer den Schreibweg, diese Vorschau arbeitet mit
+        // Werten, die schon vorliegen.
         $braut = (string) ($values['family_bride'] ?? '');
         $mann  = (string) ($values['family_groom'] ?? '');
         if ($braut !== '' || $mann !== '') {
@@ -915,11 +916,28 @@ final class InviteV2Controller
 
         $error = '';
         $ok    = false;
+        $werte = $this->formularWerte($data);
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $ergebnis = $this->saveEdit($einladung, $darf);
             if (isset($ergebnis['error'])) {
                 $error = (string) $ergebnis['error'];
+
+                /*
+                 * Bei einem Fehler bleibt stehen, was der Kunde getippt hat.
+                 *
+                 * Ohne das zeigte das Formular nach einem abgelaufenen Zeichen wieder den
+                 * Stand aus der Datenbank - und die Meldung "bitte noch einmal absenden"
+                 * waere eine Luege: das zweite Absenden speicherte die ALTEN Werte. Der
+                 * Assistent macht es auf seinem Veroeffentlichungsweg genauso.
+                 *
+                 * veraltet steht bewusst nicht in dieser Liste: dort hat jemand anders
+                 * gespeichert, und dann ist der frische Stand aus der Zeile genau das,
+                 * was das Paar sehen muss, bevor es entscheidet.
+                 */
+                if (in_array($error, ['csrf', 'throttle', 'names'], true)) {
+                    $werte = array_merge($werte, InvitationsV2::draftValues($_POST));
+                }
             } else {
                 $ok = true;
                 // Neu lesen: das Formular soll zeigen, was jetzt in der Zeile
@@ -932,6 +950,7 @@ final class InviteV2Controller
                     $data      = $frisch['data'];
                     $wahl      = InvitationsV2::canEditDesign($data) ? (array) $data['wahl'] : [];
                     $doc       = DesignWizard::personalize($sockel, $wahl);
+                    $werte     = $this->formularWerte($data);
                 }
             }
         }
@@ -960,7 +979,7 @@ final class InviteV2Controller
             // die Ausgangsfarbe einer Ebene.
             'design'     => Design::complete($sockel),
             'choices'    => $darf,
-            'values'     => $this->formularWerte($data),
+            'values'     => $werte,
             'wahl'       => $wahl,
             'darfDesign' => InvitationsV2::canEditDesign($data),
             'gastPfad'   => I18n::path('/v2/einladung/' . $slug),
@@ -994,6 +1013,16 @@ final class InviteV2Controller
      * des Paares), createdAt und paid (Buchhaltung, nicht Kundenfeld) - und
      * die Antworten der Gaeste. In dieser Methode steht kein einziger Zugriff
      * auf rsvps, und das ist Absicht (Spec §8).
+     *
+     * Ein hingenommener Verlust bei einer Einladung von VOR dieser Phase: dort
+     * ist der eingefrorene Sockel schon personalisiert, ein beim
+     * Veroeffentlichen ausgeblendeter Abschnitt traegt also enabled=false.
+     * DesignWizard::choices() bietet einen abgeschalteten Abschnitt gar nicht
+     * erst an, sammleAngaben() liest also nie wieder dessen Text, und das
+     * unset() oben loescht ihn beim ersten Speichern endgueltig. Kein Gast
+     * sieht dadurch etwas anderes - der Abschnitt war schon verborgen -, und
+     * diese Zeilen haben ohnehin keinen Design-Tab, in dem sich das
+     * rueckgaengig machen liesse. Aber der Text ist danach weg.
      *
      * @param array{slug:string,design_id:string,design_snapshot:array<string,mixed>,data:array<string,mixed>,created_at:string} $einladung
      * @param array<string,mixed> $darf choices() auf dem EINGEFRORENEN Sockel
