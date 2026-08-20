@@ -17,7 +17,9 @@
 
   function paintHeader() {
     if (!header) return;
-    var solid = window.scrollY > 24 || open;
+    // Seiten ohne Titelbild bleiben immer hell - sonst nimmt das Scrollen
+    // nach oben den Kopf wieder in den Schleier, der dort nie hingehoerte.
+    var solid = header.dataset.fest === "1" || window.scrollY > 24 || open;
     header.classList.toggle("bg-cream/95", solid);
     header.classList.toggle("backdrop-blur-md", solid);
     header.classList.toggle("border-b", solid);

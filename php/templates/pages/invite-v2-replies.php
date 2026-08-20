@@ -20,7 +20,11 @@ use function Atelier\e;
 use Atelier\Dates;
 use Atelier\I18n;
 ?>
-<section class="mx-auto max-w-3xl px-6 py-20">
+<?php /*
+   pt-32 wie im Schaufenster: der Kopf ist fixiert und rund 94 px hoch, diese
+   Seite hat keinen Hero. Mit py-20 (80 px) lag die Ueberschrift unter dem Kopf.
+*/ ?>
+<section class="mx-auto max-w-3xl px-6 pb-24 pt-32">
   <h1 class="font-display text-3xl text-ink"><?= e(I18n::t('invitation2.repliesTitle')) ?></h1>
   <?php if ($namen !== '') : ?>
     <p class="mt-2 text-[0.95rem] text-muted"><?= e($namen) ?></p>

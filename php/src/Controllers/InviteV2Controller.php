@@ -577,6 +577,8 @@ final class InviteV2Controller
             'path'   => I18n::path('/v2/einladung'),
             'meta'   => Seo::forPage('einladung2', [
                 'title'   => I18n::t('invitation2.repliesTitle'),
+                // Kein Titelbild - wie im Schaufenster der zweiten Fassung.
+                'solidHeader' => true,
                 // Diese Seite IST der Schluessel. Sie gehoert unter keinen
                 // Umstaenden in einen Index.
                 'noindex' => true,

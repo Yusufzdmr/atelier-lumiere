@@ -67,6 +67,9 @@ final class DesignController
             'meta'    => Seo::forPage('designs-v2', [
                 'title'     => $locale === 'de' ? 'Designs (zweite Fassung)' : 'Designs (second version)',
                 'noindex'   => true,
+                // Kein Titelbild: der Kopf startet hell, sonst steht seine
+                // helle Schrift auf cremefarbenem Grund (siehe layout.php).
+                'solidHeader' => true,
                 'canonical' => Config::url() . I18n::path('/v2/designs', $locale),
             ]),
             'designs' => $designs,

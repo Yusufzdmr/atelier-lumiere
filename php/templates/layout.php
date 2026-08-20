@@ -83,7 +83,18 @@ $bare = preg_replace('#^/(de|en)#', '', $path) ?? '';
   ?>
 
   <?php if (!$bare) : ?>
-    <?= \Atelier\View::partial('partials/header', ['locale' => $locale, 'path' => $path]) ?>
+    <?php /*
+       Seiten ohne Titelbild sagen es hier. Der Kopf liegt ueber dem Inhalt und
+       traegt einen dunklen Schleier mit heller Schrift - richtig ueber einem
+       Hochzeitsfoto, unlesbar ueber einer cremefarbenen Seite. Frueher hing
+       das allein am Scrollen (app.js), also war der Kopf bei jedem Seitenaufruf
+       einer Seite ohne Titelbild fuer die ersten 24 Pixel unleserlich.
+    */ ?>
+    <?= \Atelier\View::partial('partials/header', [
+      'locale' => $locale,
+      'path'   => $path,
+      'fest'   => !empty($meta['solidHeader']),
+    ]) ?>
   <?php endif; ?>
 
   <main id="main"><?= $content ?></main>

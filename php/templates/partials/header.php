@@ -66,7 +66,19 @@ $otherPath = static function (string $to) use ($path): string {
     return '/' . implode('/', $parts) . ($query !== '' ? '?' . $query : '');
 };
 ?>
-<header id="site-header" class="fixed inset-x-0 top-0 z-50 transition-all duration-500 bg-transparent py-6">
+<?php
+/*
+ * $fest: diese Seite hat kein Titelbild, der Kopf startet hell. Er wird schon
+ * hier so gedruckt und nicht erst vom Skript gesetzt - sonst blitzt bei jedem
+ * Aufruf der dunkle Schleier auf, bis app.js laeuft. data-fest sagt dem Skript,
+ * dass es beim Scrollen nicht zurueckschalten darf.
+ */
+$fest = !empty($fest);
+?>
+<header id="site-header" data-fest="<?= $fest ? '1' : '0' ?>"
+        class="fixed inset-x-0 top-0 z-50 transition-all duration-500 <?= $fest
+          ? 'is-solid bg-cream/95 backdrop-blur-md border-b border-sand-deep/40 py-3'
+          : 'bg-transparent py-6' ?>">
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
     <a href="<?= e($p('')) ?>" class="group flex flex-col leading-none" aria-label="Atelier Lumière">
       <span class="hdr-name font-display whitespace-nowrap text-xl font-light tracking-[0.14em] text-ink transition-colors sm:text-2xl">ATELIER LUMIÈRE</span>
