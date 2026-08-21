@@ -177,6 +177,9 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
    */
   .wz-draft-btn:hover { border-color: var(--color-ink); }
 
+<?= \Atelier\View::partial('partials/schritt-tabs-css') ?>
+<?= \Atelier\View::partial('partials/ablauf-css') ?>
+
 <?= \Atelier\View::partial('partials/bildfeld-css') ?>
 </style>
 <div class="wz-grid">
@@ -199,9 +202,22 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     */ ?>
     <input type="hidden" name="schritt" value="<?= e($old('schritt')) ?>" data-schritt>
 
-    <ol class="mb-10 flex flex-wrap gap-x-6 gap-y-2 border-b border-sand-deep pb-4 text-[0.62rem] uppercase tracking-[0.16em]" data-steps>
+    <ol class="wz-tabs mb-10 flex flex-wrap gap-x-8 gap-y-2 border-b border-sand-deep pb-4" data-steps>
       <?php foreach ($steps as $i => $key) : ?>
-        <li data-step-label="<?= $i ?>" class="text-muted"><?= $i + 1 ?>. <?= e($stepTitles[$key]) ?></li>
+        <?php /*
+           Der erste Schritt startet aktiv (text-ink), nicht erst durch
+           invite-v2.js' show(0): ohne Skript laeuft show() nie, und dann
+           stuenden alle Schritte gleich grau da, keiner unterstrichen.
+           Dieselbe Regel wie im Bearbeiten-Bildschirm.
+
+           Blosser Text, kein <button> vom Server - der Baustein am Fuss der
+           Datei ruestet ihn auf, und erst dann, wenn es etwas zu schalten
+           gibt. Ein Knopf, den niemand bedient, ist eine Behauptung ohne
+           Wirkung.
+        */ ?>
+        <li data-step-label="<?= $i ?>" class="<?= $i === 0 ? 'text-ink' : 'text-muted' ?>">
+          <span class="wz-tab-num"><?= $i + 1 ?></span><?= e($stepTitles[$key]) ?>
+        </li>
       <?php endforeach; ?>
     </ol>
 
@@ -344,19 +360,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <?php endif; ?>
 
               <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
-                <?php /*
-                   Feste Zeilenzahl statt Hinzufuegen-Knopf: ohne Skript
-                   funktioniert das Formular sonst nicht, und der alte
-                   Assistent macht es genauso.
-                */ ?>
-                <?php for ($z = 0; $z < 8; $z++) : ?>
-                  <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
-                    <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
-                           placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
-                    <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
-                           placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
-                  </div>
-                <?php endfor; ?>
+                <?= \Atelier\View::partial('partials/ablauf-zeilen', compact('old','t','field','locale')) ?>
               <?php endif; ?>
             </div>
           <?php endforeach; ?>
@@ -455,7 +459,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
       <?php if ($draftLink !== '') : ?>
         <div class="mt-5 border border-sand-deep bg-cream/40 p-5">
-          <p class="text-[0.7rem] uppercase tracking-[0.16em] text-muted"><?= e($t('draftSaved')) ?></p>
+          <p class="text-[0.8rem] leading-relaxed text-ink"><?= e($t('draftSaved')) ?></p>
+          <p class="mt-4 text-[0.7rem] uppercase tracking-[0.16em] text-muted"><?= e($t('draftOther')) ?></p>
           <p class="mt-2 break-all text-sm">
             <a class="text-gold link-underline" href="<?= e($draftLink) ?>"><?= e($draftLink) ?></a>
           </p>
@@ -519,6 +524,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 <script nonce="<?= e(Http::nonce()) ?>">
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
+
+<?= \Atelier\View::partial('partials/schritt-tabs-js') ?>
 
   var formular = document.querySelector('[data-wizard]');
   var karte = document.querySelector('[data-preview]');

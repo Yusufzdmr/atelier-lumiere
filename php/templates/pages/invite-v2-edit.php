@@ -106,17 +106,6 @@ if ($darfDesign) {
     $tabs[] = $t('editTabDesign');
 }
 
-// Wie viele Ablauf-Zeilen stehen offen? Sichtbar sind die ausgefuellten und
-// eine leere zum Weiterschreiben, der Rest wandert hinter <details> (siehe
-// unten). Acht Zeilen bleiben acht Zeilen - das Speichern liest alle acht,
-// <details> aendert nur den Anblick, nicht welche Felder es gibt.
-$progLetzteVoll = -1;
-for ($z = 0; $z < 8; $z++) {
-    if ($old('prog_time_' . $z) !== '' || $old('prog_title_' . $z) !== '') {
-        $progLetzteVoll = $z;
-    }
-}
-$progOffen = min(7, $progLetzteVoll + 1);
 ?>
 <?= Ui::pageHero('invite2-edit-hero', $t('editTitle'), I18n::t('nav.invitation2'), $t('editLead')) ?>
 
@@ -142,63 +131,7 @@ $progOffen = min(7, $progLetzteVoll + 1);
   /* Nur der Rahmen fuer die Adresse, die sich nicht aendert - kein Grid. */
   .wz-linkband { margin-inline: auto; max-width: 72rem; }
 
-  /*
-   * Die Tabs: bisher genauso klein und grau wie ein Feldlabel, deshalb keine
-   * Navigation im Blick. font-display statt der winzigen Grossschrift, dazu
-   * ein Strich unter dem aktiven Tab. invite-v2.js tauscht bei jedem
-   * Schrittwechsel die ganze class des <li> gegen entweder "text-ink" oder
-   * "text-muted" aus (show() in invite-v2.js) - keine dritte Klasse bleibt
-   * erhalten. Diese Regeln haengen deshalb bewusst nur an genau diesen beiden
-   * Klassen, nicht an einer eigenen: sie greifen so unveraendert, ob das
-   * Skript laeuft oder nicht.
-   *
-   * Im <li> steht vom Server nur Text. Laeuft ein Skript UND gibt es etwas zu
-   * schalten, ruestet das Skript am Ende dieser Datei den Text zu einem
-   * echten <button> auf - erst das macht den Tab fokussierbar und klickbar.
-   * Die folgende Knopf-Regel greift also nur im aufgeruesteten Zustand; ohne
-   * Skript trifft sie nichts, und das ist der Zweck.
-   *
-   * Farbe und Groesse haengen am <li>, nicht am <button>: der Knopf holt sich
-   * die Farbe per color:inherit und die Schrift per font:inherit. Beide
-   * Deklarationen sind noetig, ein Knopf bringt sonst seine eigene mit.
-   */
-  .wz-tabs [data-step-label] {
-    position: relative;
-    padding-bottom: .85rem;
-    font-family: var(--font-display);
-    font-size: 1.05rem;
-    letter-spacing: .01em;
-  }
-  .wz-tabs [data-step-label] > button {
-    display: block;
-    /* Der Knopf deckt auch den Abstand bis zum Goldstrich ab. Vorher sass das
-       padding allein am <li> und der Knopf endete am Text: die Schaltflaeche
-       war kleiner als der Reiter, den sie zeichnet, und der Streifen direkt
-       ueber dem Strich klickte nicht. Das negative margin nimmt genau zurueck,
-       was das padding an Hoehe zufuegt - die Zeile steht also millimetergleich
-       wie ohne Skript. */
-    margin: 0 0 -.85rem;
-    padding: 0 0 .85rem;
-    border: 0; background: none;
-    font: inherit; color: inherit; cursor: pointer;
-    text-align: left;
-  }
-  /* Der Sichtbarkeitsring steht hier ausdruecklich, statt sich auf den Ring
-     des Browsers zu verlassen: die Regel darueber setzt border und background
-     zurueck, und wer das liest, entfernt beim naechsten Mal auch das outline,
-     ohne zu merken, dass der Tab damit nur noch fuer die Maus existiert. */
-  .wz-tabs [data-step-label] > button:focus-visible {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 3px;
-  }
-  .wz-tabs [data-step-label].text-ink { color: var(--color-ink); }
-  .wz-tabs [data-step-label].text-ink::after {
-    content: '';
-    position: absolute; left: 0; right: 0; bottom: -1px;
-    height: 2px; background: var(--color-gold);
-  }
-  .wz-tabs [data-step-label].text-muted { color: var(--color-muted); }
-  .wz-tab-num { margin-right: .4em; font-size: .8em; color: var(--color-gold); }
+<?= \Atelier\View::partial('partials/schritt-tabs-css') ?>
 
   /* Ueberschrift einer Gruppe von Feldern (FAMILIEN, ABLAUF, EBENEN, ...):
      eine zweite, groessere Type-Ebene, damit sie nicht wie ein Feldlabel wie
@@ -219,25 +152,7 @@ $progOffen = min(7, $progLetzteVoll + 1);
 
 <?= \Atelier\View::partial('partials/bildfeld-css') ?>
 
-  /*
-   * Die uebrigen, meist leeren Ablauf-Zeilen: reines <details>, kein Skript.
-   * list-style entfernt die Standard-Markierung (Chrome/Safari zusaetzlich
-   * ueber ::-webkit-details-marker), das + / - davor kommt aus content.
-   */
-  .wz-more { margin-top: .75rem; border: 1px solid var(--color-sand-deep); }
-  .wz-more > summary {
-    display: flex; align-items: center; gap: .5rem;
-    padding: .75rem 1rem;
-    cursor: pointer;
-    list-style: none;
-    font-size: .72rem; text-transform: uppercase; letter-spacing: .16em;
-    color: var(--color-muted);
-  }
-  .wz-more > summary::-webkit-details-marker { display: none; }
-  .wz-more > summary::before { content: '+'; color: var(--color-gold); font-size: 1rem; line-height: 1; }
-  .wz-more[open] > summary::before { content: '\2013'; }
-  .wz-more[open] > summary { border-bottom: 1px solid var(--color-sand-deep); }
-  .wz-more-body { padding: .25rem 1rem 1rem; }
+<?= \Atelier\View::partial('partials/ablauf-css') ?>
 </style>
 
 <?php if ($ok) : ?>
@@ -362,36 +277,7 @@ $progOffen = min(7, $progLetzteVoll + 1);
           <?php endif; ?>
 
           <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
-            <?php /*
-               Acht Zeilen, immer - der Schreibpfad liest alle acht Namen, ein
-               Hinzufuegen-Knopf funktioniert ohne Skript ohnehin nicht (wie im
-               Assistenten). Repariert wird aber selten mit acht leeren
-               Feldern vor Augen: sichtbar sind die ausgefuellten Zeilen und
-               eine leere zum Weiterschreiben ($progOffen, oben berechnet),
-               der Rest steckt in einem <details> - reines HTML, offen oder
-               zu, ohne Skript. Ein geschlossenes <details> versteckt nur den
-               Anblick; die Werte darin reisen beim Absenden trotzdem mit,
-               genau wie jedes andere unsichtbare Feld.
-            */ ?>
-            <?php for ($z = 0; $z < 8; $z++) : ?>
-              <?php if ($z === $progOffen + 1) : ?>
-                <details class="wz-more">
-                  <summary>
-                    <?= (int) (8 - $z) ?> <?= e($locale === 'de' ? 'weitere Zeilen' : 'more rows') ?>
-                  </summary>
-                  <div class="wz-more-body">
-              <?php endif; ?>
-              <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
-                <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
-                       placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
-                <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
-                       placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
-              </div>
-            <?php endfor; ?>
-            <?php if ($progOffen < 7) : ?>
-                  </div>
-                </details>
-            <?php endif; ?>
+            <?= \Atelier\View::partial('partials/ablauf-zeilen', compact('old','t','field','locale')) ?>
           <?php endif; ?>
         </div>
       <?php endforeach; ?>
@@ -748,50 +634,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 
-  var labels = Array.prototype.slice.call(form.querySelectorAll('[data-step-label]'));
-  var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
-  if (labels.length < 2 || steps.length < 2) return;
-
-  /* Die von invite-v2.js angehaengten Knoepfe. Es haengt sie zuletzt an das
-     Formular (form.appendChild(nav), siehe dort), Zurueck vor Weiter - also
-     sind es die LETZTEN beiden, nicht die ersten. Das ist der Unterschied,
-     der zaehlt: der Kommentar bei den Programmzeilen erwaegt einen
-     Hinzufuegen-Knopf, und der stuende als type=button weiter oben im
-     Dokument. Von vorne gezaehlt waere er dann "Zurueck". */
-  var nav = Array.prototype.slice.call(form.querySelectorAll('button[type=button]')).slice(-2);
-  if (nav.length < 2) return;
-  var back = nav[0];
-  var next = nav[1];
-
-  function current() {
-    for (var n = 0; n < steps.length; n++) {
-      if (!steps[n].hidden) return n;
-    }
-    return 0;
-  }
-
-  labels.forEach(function (li, i) {
-    /* Erst hier wird aus Text ein Knopf. Die Kinder wandern hinein, statt
-       neu geschrieben zu werden: die Nummer (.wz-tab-num) und der Titel
-       bleiben so genau die vom Server gesetzten und escapten Knoten. */
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    while (li.firstChild) btn.appendChild(li.firstChild);
-    li.appendChild(btn);
-
-    btn.addEventListener('click', function () {
-      var guard = steps.length + 2;
-      while (current() !== i && guard-- > 0) {
-        var vor = current();
-        (i > vor ? next : back).click();
-        /* Bewegt sich nichts, hat Weiter abgelehnt - invite-v2.js prueft die
-           Pflichtfelder des Schritts und kehrt ohne show() zurueck. Dann
-           steht die Meldung des Browsers am Feld, und weiterzuklopfen
-           brachte nur dieselbe Blase noch dreimal. */
-        if (current() === vor) break;
-      }
-    });
-  });
+<?= \Atelier\View::partial('partials/schritt-tabs-js') ?>
 });
 </script>
 
