@@ -38,6 +38,68 @@ use function Atelier\e;
 <style><?= $styles ?></style>
 
 <?php /*
+   Die Hoehe der Buehne.
+
+   Bis hierher stand hier min-h-screen, also glatte 100vh - und ALLES darin
+   ist absolute inset-0. Die Karte konnte ihre Hoehe also gar nicht an die
+   Buehne weitergeben, und die blieb blind einen ganzen Bildschirm hoch.
+   Am Telefon faellt das auseinander: die Karte haengt an der Fensterbreite
+   (w-full, max-w-2xl, festes Seitenverhaeltnis), die Buehne nicht. Gemessen
+   an einer echten Einladung:
+
+       1920 px breit : Karte 521 von 911 px  ->  43 % leer
+        414 px breit : Karte 284 von 844 px  ->  66 % leer
+        390 px breit : Karte 265 von 844 px  ->  69 % leer
+        360 px breit : Karte 242 von 844 px  ->  71 % leer
+
+   Je schmaler das Geraet, desto schlimmer - der Fehler waechst genau dorthin,
+   wo die meisten Gaeste die Einladung oeffnen. Und das Argument, das die
+   volle Hoehe rechtfertigt, traegt am Telefon nicht: das geschlossene Kuvert
+   ist max-w-sm bei 8/5 und will dort dieselben ~265 px wie die Karte, nicht
+   844. Auf dem Schreibtisch liest die Weite als Luft, am Telefon als Fehler.
+
+   Deshalb: die Karte laeuft im Fluss und gibt der Buehne ihre Hoehe. Alles
+   andere bleibt absolute inset-0 und legt sich darueber - Zeichnung, Kuvert,
+   Ebenen, unveraendert. Ab 768 px kommt die volle Hoehe zurueck, weil sie
+   dort tut, was sie soll.
+
+   100dvh mit 100vh davor: am Telefon zaehlt vh den Streifen hinter der
+   Adressleiste mit, die Seite ist also hoeher als das Sichtbare - dieselbe
+   Beschwerde, zweite Ursache. Die erste Zeile ist der Ersatz fuer Browser,
+   die dvh nicht kennen.
+
+   Von Hand geschrieben und nicht als Klasse: style.css ist FERTIG gebaut,
+   min-h-[100dvh] steht dort nicht und taete still gar nichts.
+*/ ?>
+<style>
+  .d-stage { display: flex; align-items: center; }
+
+  /* Der einzige Knoten im Fluss. z-10 haelt ihn ueber der Zeichnung
+     (auto) und unter dem Kuvert (z-30) - dieselbe Ordnung wie vorher,
+     nur ohne absolute. */
+  .d-stage-mitte {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    /* Der Abstand ist tragend, nicht Zierde: er ist die Luft, die dem
+       GESCHLOSSENEN Kuvert bleibt. Es liegt absolute inset-0 und ist damit
+       genau so hoch wie die Buehne - ohne diesen Abstand waere die Buehne
+       exakt so hoch wie die Karte, und das Kuvert (max-w-sm bei 8/5 plus
+       Beschriftung) stiesse bei 390 px auf die Kante und wuerde von
+       overflow:hidden abgeschnitten.
+
+       Als eigene Regel und nicht als py-12: die Klasse steht NICHT in der
+       gebauten style.css (py-10 und py-16 schon) - sie taete still gar
+       nichts, und genau das ist hier passiert, bevor nachgemessen wurde. */
+    padding-block: 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .d-stage--fluss { min-height: 100vh; min-height: 100dvh; }
+  }
+</style>
+
+<?php /*
   Vollflaechig, nicht als Kaestchen mit Ueberschrift. Die erste Fassung zeigt
   unter /designs/{thema} die echte Einladungsseite ueber den ganzen Bildschirm
   (InviteController::designPreview rendert pages/invitation). Ein Vorschau-
@@ -68,7 +130,7 @@ use function Atelier\e;
   der Buehne aufgehaengt und nicht am Fenster: beide Rollen funktionieren
   ohne weitere Aenderung.
 */ ?>
-  <div class="<?= e($scope) ?> d-stage <?= $fest ? 'fixed inset-0 z-50' : 'relative min-h-screen' ?> overflow-hidden"
+  <div class="<?= e($scope) ?> d-stage <?= $fest ? 'fixed inset-0 z-50' : 'relative d-stage--fluss' ?> overflow-hidden"
        style="background: var(--d-bg, #EFE7DC);">
 
       <!-- Die Seite: Hintergrund und Zeichnung, immer sichtbar. -->
@@ -85,7 +147,7 @@ use function Atelier\e;
         Die Schriftgroessen sind an der Karte gemessen, also muss die Karte
         der Bezug sein.
       */ ?>
-      <div class="absolute inset-0 flex items-center justify-center px-6">
+      <div class="d-stage-mitte flex items-center justify-center px-6">
         <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
              data-speed="<?= $tempo ?>"
              style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
