@@ -679,7 +679,12 @@ document.addEventListener('DOMContentLoaded', function () {
       var leser = new FileReader();
       leser.onload = function () {
         bild.src = leser.result;
-        if (aufDerKarte) aufDerKarte.src = leser.result;
+        if (aufDerKarte) {
+          aufDerKarte.src = leser.result;
+          // Eine photo-Ebene ohne Startbild kommt versteckt aus dem Server
+          // (Design::html) - jetzt gibt es etwas zu zeigen.
+          aufDerKarte.hidden = false;
+        }
         // Hatte die Vorlage hier kein Bild, war die Platte bis eben leer.
         bild.hidden = false;
         if (leer) leer.hidden = true;

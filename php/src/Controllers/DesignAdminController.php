@@ -265,6 +265,79 @@ final class DesignAdminController
 
     /** @param array<string,mixed> $design */
     /**
+     * Eine neue Bildebene anlegen, wenn das Formular einen Namen mitbringt.
+     *
+     * NACH fromPost und nicht davor: fromPost setzt die Rechte jeder Ebene aus
+     * den Haken des Formulars, und fuer eine Ebene, die es beim Absenden noch
+     * gar nicht gab, steht dort kein einziger Haken - sie kaeme also mit lauter
+     * false auf die Welt und waere fuer das Paar unsichtbar. Hier gebaut, traegt
+     * sie genau die Rechte, um die es geht.
+     *
+     * Sie wird VORNE eingefuegt, nicht angehaengt: die Stapelreihenfolge ist die
+     * Reihenfolge der Liste (Design::css schreibt z-index als index+1), und ein
+     * Hintergrund gehoert unter alles andere. Die relative Ordnung der uebrigen
+     * Ebenen bleibt dabei unveraendert, ihre Nummern ruecken nur gemeinsam um
+     * eins.
+     *
+     * Ohne Koordinaten, mit drei Zuschnitten ueber die volle Breite: der Editor
+     * hat fuer keine Ebene Felder fuer Position und Groesse. Eine Ebene irgendwo
+     * hinzusetzen, wo man sie danach nicht mehr bewegen kann, waere eine Falle.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,mixed> $post
+     * @return array<string,mixed>
+     */
+    private function mitNeuerBildebene(array $doc, array $post): array
+    {
+        $name = Security::clean($post['neue_ebene_label'] ?? '', 60);
+        if ($name === '') {
+            return $doc;
+        }
+
+        // Die Kennung kommt aus dem Namen, wie ueberall sonst. Ist sie belegt
+        // oder ergibt der Name keine (etwa bei reinen Sonderzeichen), haengt
+        // eine Zahl an - zwei Ebenen mit derselben Kennung waeren im CSS
+        // dieselbe Regel.
+        $basis = Design::key($name) ?: 'bild';
+        $belegt = array_map(static fn (array $el): string => (string) $el['id'], $doc['layers']);
+        $id = $basis;
+        for ($n = 2; in_array($id, $belegt, true); $n++) {
+            $id = $basis . '-' . $n;
+        }
+
+        $schnitt = (string) ($post['neue_ebene_schnitt'] ?? 'voll');
+        $box = match ($schnitt) {
+            'oben'  => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 50],
+            'unten' => ['x' => 0, 'y' => 50, 'w' => 100, 'h' => 50],
+            default => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 100],
+        };
+
+        $ebene = Design::completeElement([
+            'id'    => $id,
+            'label' => $name,
+            'type'  => 'photo',
+            'spot'  => (string) ($post['neue_ebene_spot'] ?? 'card'),
+            'box'   => $box + ['anchor' => 'topleft'],
+            // Genau die drei, um die es geht: bearbeitbar ist der Hauptschalter,
+            // photo gibt das Feld zum Hochladen, hide laesst das Paar die Ebene
+            // wieder loswerden, wenn es doch kein Bild will.
+            'permissions' => ['edit' => true, 'photo' => true, 'hide' => true],
+        ]);
+
+        $bild = $_FILES['neue_ebene_bild'] ?? null;
+        if (is_array($bild) && ((int) ($bild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::storeGraphic($bild, 'designs');
+            if ($pfad !== null) {
+                $ebene['src'] = $pfad;
+            }
+        }
+
+        array_unshift($doc['layers'], $ebene);
+
+        return $doc;
+    }
+
+    /**
      * Hochgeladene Bilder in die Eingaben einsetzen, bevor fromPost sie liest.
      *
      * Der Weg ueber $_POST ist Absicht: Design::fromPost() schreibt das Feld
@@ -333,7 +406,9 @@ final class DesignAdminController
             exit;
         }
 
-        Design::save(Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST)));
+        $doc = Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST));
+        $doc = $this->mitNeuerBildebene($doc, $_POST);
+        Design::save($doc);
 
         header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
         exit;

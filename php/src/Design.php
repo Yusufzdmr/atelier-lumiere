@@ -354,6 +354,15 @@ final class Design
                 // Die Stapelreihenfolge ist die Reihenfolge der Liste. Ein
                 // eigenes Feld dafuer waere eine zweite Wahrheit.
                 . 'z-index:' . ($index + 1) . ';'
+                // Nur wirksam, wenn eine Hoehe gesetzt ist: bei height:auto
+                // bestimmt das Bild seine Proportion selbst und object-fit
+                // hat nichts zu tun. Mit einer Hoehe dagegen wuerde das Bild
+                // ohne diese Zeile GEZERRT - und genau das braucht eine
+                // fuellende Ebene, etwa ein Hintergrundfoto ueber die ganze
+                // Karte. Gemessen vor der Einfuehrung: von 11 Bildebenen
+                // lokal und 16 in der Produktion hatte KEINE eine Hoehe, die
+                // Zeile aendert also an keiner bestehenden Vorlage etwas.
+                . ($el['type'] === 'image' || $el['type'] === 'photo' ? 'object-fit:cover;' : '')
                 . '}';
 
             if ($el['type'] === 'text') {
@@ -505,6 +514,25 @@ final class Design
             if ($el['type'] === 'image' || $el['type'] === 'photo') {
                 $src = self::safeSrc($el['src']);
                 if ($src === '') {
+                    /*
+                     * Ohne Quelle faellt eine image-Ebene weg: sie ist der
+                     * Schmuck des Grafikers, und was er nicht hinterlegt hat,
+                     * gibt es schlicht nicht.
+                     *
+                     * Eine photo-Ebene ist etwas anderes - sie ist der PLATZ
+                     * des Paares und darf leer beginnen. Ihr Knoten bleibt
+                     * deshalb stehen, nur versteckt: sonst haette die Vorschau
+                     * im Assistenten nichts, wohin sie das gerade gewaehlte
+                     * Bild legen koennte, und das Paar waehlte einen
+                     * Hintergrund, ohne ihn je zu sehen. Ein <img> ohne src
+                     * wuerde in manchen Browsern ein kaputtes Symbol zeigen,
+                     * darum hidden - die Grundregel [hidden]{display:none}
+                     * greift hier, weil css() fuer Ebenen kein display setzt.
+                     */
+                    if ($el['type'] !== 'photo') {
+                        continue;
+                    }
+                    $out .= '<img class="' . e($class) . '" alt="" aria-hidden="true" hidden>';
                     continue;
                 }
                 // Schmuck ist Schmuck: fuer die Vorlesesoftware nicht vorhanden.

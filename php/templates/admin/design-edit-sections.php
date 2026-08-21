@@ -148,6 +148,54 @@ use function Atelier\e;
       ? 'Yükleme uploads/designs/ altına gider ve yol alanını kendisi doldurur; SVG temizlenip geçirilir, diğerleri saydamlığı koruyarak küçültülür. assets/designs/ altındakiler ise dışa aktarma betiğinin ürünü — elle değiştirme, sonraki export ezer.'
       : 'Ein Upload landet unter uploads/designs/ und schreibt das Pfadfeld selbst; SVG wird geputzt durchgereicht, alles andere mit Transparenz verkleinert. Was unter assets/designs/ liegt, erzeugt dagegen das Exportskript; von Hand geändert, überschreibt es der nächste Export.' ?>
   </p>
+
+  <?php /*
+     Eine neue Bildebene anlegen.
+
+     Bis hierher konnte der Editor Ebenen nur AENDERN - fromPost laeuft ueber
+     die vorhandenen und legt keine an. Eine Vorlage ohne Fotoebene bot dem
+     Paar deshalb nirgends ein Feld fuer sein eigenes Bild, und daran war im
+     Panel nichts zu machen.
+
+     Bewusst ohne Koordinaten: der Editor hat fuer KEINE Ebene Felder fuer
+     Position und Groesse, und eine neue Ebene irgendwo hinzusetzen, wo man
+     sie danach nicht mehr bewegen kann, waere eine Falle. Die drei Zuschnitte
+     sind deshalb alle volle Breite - dafuer braucht es keine Koordinaten.
+  */ ?>
+  <div class="mt-6 border-t border-sand-deep pt-5">
+    <div class="<?= $label ?>"><?= $tr ? 'Yeni görsel katmanı' : 'Neue Bildebene' ?></div>
+    <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
+      <?= $tr
+        ? 'Adı yazıp kaydedersen katman eklenir ve müşterinin sihirbazında kendi görselini yükleyebileceği bir alan olarak çıkar. En alta, her şeyin arkasına konur. Boş bırakırsan hiçbir şey olmaz.'
+        : 'Trägst du einen Namen ein und speicherst, entsteht die Ebene - und im Assistenten des Paares ein Feld, in das es sein eigenes Bild lädt. Sie kommt nach ganz hinten, unter alles andere. Leer gelassen passiert nichts.' ?>
+    </p>
+
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <label class="<?= $label ?>"><?= $tr ? 'Adı (müşteri bunu görür)' : 'Name (das Paar liest ihn)' ?>
+        <input name="neue_ebene_label" value="" maxlength="60" class="<?= $feld ?>"
+               placeholder="<?= $tr ? 'ör. Fotoğrafınız' : 'z. B. Euer Foto' ?>"></label>
+
+      <label class="<?= $label ?>"><?= $tr ? 'Nerede' : 'Wo' ?>
+        <select name="neue_ebene_spot" class="<?= $feld ?>">
+          <?php foreach (Themes::SPOTS as $wert => $namen) : ?>
+            <option value="<?= e($wert) ?>" <?= $wert === 'card' ? 'selected' : '' ?>>
+              <?= e($namen[$tr ? 'tr' : 'de']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select></label>
+
+      <label class="<?= $label ?>"><?= $tr ? 'Kaplama' : 'Zuschnitt' ?>
+        <select name="neue_ebene_schnitt" class="<?= $feld ?>">
+          <option value="voll"><?= $tr ? 'Tamamını kaplar' : 'Ganze Fläche' ?></option>
+          <option value="oben"><?= $tr ? 'Üst yarı' : 'Obere Hälfte' ?></option>
+          <option value="unten"><?= $tr ? 'Alt yarı' : 'Untere Hälfte' ?></option>
+        </select></label>
+
+      <label class="<?= $label ?>"><?= $tr ? 'Başlangıç görseli (isteğe bağlı)' : 'Startbild (optional)' ?>
+        <input type="file" name="neue_ebene_bild"
+               accept="image/png,image/jpeg,image/webp,image/svg+xml" class="<?= $feld ?>"></label>
+    </div>
+  </div>
 <?= $zu ?>
 
 <?= $auf($tr ? '6 · Animasyon' : '6 · Bewegung') ?>
