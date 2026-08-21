@@ -35,6 +35,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Design;
 use Atelier\Http;
 use Atelier\I18n;
 use Atelier\Ui;
@@ -65,6 +66,26 @@ $farbeVon = static function (string $id) use ($design, $gewaehlt): string {
         }
     }
     return '#000000';
+};
+
+/*
+ * Eine Ebene des eingefrorenen Sockels zu ihrer Kennung. $choices traegt nur
+ * die Rechte, nicht den Namen - und der Name ist das, was das Paar lesen
+ * soll. Ohne ihn stand hier die Kennung selbst, also "foto" oder "zier2":
+ * ein Datenbankschluessel. Dieselbe Regel wie im Panel, im Assistenten und
+ * bei den Abschnitten, die Kennung nur als letzter Ausweg.
+ */
+$ebene = static function (string $id) use ($design): array {
+    foreach ($design['layers'] as $el) {
+        if ((string) $el['id'] === $id) {
+            return $el;
+        }
+    }
+    return [];
+};
+$ebeneName = static function (string $id) use ($ebene): string {
+    $name = trim((string) ($ebene($id)['label'] ?? ''));
+    return $name !== '' ? $name : $id;
 };
 
 $label = 'text-[0.62rem] uppercase tracking-[0.18em] text-muted';
@@ -195,6 +216,8 @@ $progOffen = min(7, $progLetzteVoll + 1);
      die volle Breite - so passen mehrere nebeneinander, siehe sm:grid-cols-2
      am Aufruf. */
   .wz-layer { border: 1px solid var(--color-sand-deep); padding: 1rem; }
+
+<?= \Atelier\View::partial('partials/bildfeld-css') ?>
 
   /*
    * Die uebrigen, meist leeren Ablauf-Zeilen: reines <details>, kein Skript.
@@ -431,7 +454,7 @@ $progOffen = min(7, $progLetzteVoll + 1);
               <?php foreach ($wzLayers as $id => $rechte) : ?>
                 <?php $eigen = $gewaehlt((string) $id); ?>
                 <div class="wz-layer">
-                  <div class="<?= $label ?>"><?= e((string) $id) ?></div>
+                  <div class="<?= $label ?>"><?= e($ebeneName((string) $id)) ?></div>
 
                   <?php if ($rechte['color']) : ?>
                     <input type="color" name="layer_color_<?= e((string) $id) ?>" value="<?= e($farbeVon((string) $id)) ?>" class="mt-3 h-10 w-full border border-sand-deep bg-cream">
@@ -456,11 +479,55 @@ $progOffen = min(7, $progLetzteVoll + 1);
                   <?php endif; ?>
 
                   <?php if ($rechte['photo']) : ?>
-                    <div class="mt-3">
-                      <label class="<?= $label ?>" for="b-<?= e((string) $id) ?>"><?= e($t('editPhoto')) ?></label>
-                      <input id="b-<?= e((string) $id) ?>" type="file" name="layer_src_<?= e((string) $id) ?>"
-                             accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
-                      <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('editPhotoNote')) ?></p>
+                    <?php
+                      /*
+                       * Was heute auf der Einladung steht - und das ist hier
+                       * NICHT das Bild der Vorlage: hat das Paar beim
+                       * Veroeffentlichen ein eigenes hochgeladen, liegt dessen
+                       * Pfad in seiner Wahl. Erst wenn dort keiner steht, gilt
+                       * der des eingefrorenen Sockels. Genau diese Reihenfolge
+                       * benutzt auch das Speichern (sammleWahl), sonst zeigte
+                       * die Platte etwas anderes als die Karte.
+                       *
+                       * safeSrc(), weil der Wert aus dem Dokument in ein
+                       * src-Attribut geht - dieselbe Pruefung wie auf der
+                       * Karte selbst.
+                       */
+                      $fotoEigen = is_string($eigen['src'] ?? null) ? $eigen['src'] : '';
+                      $fotoJetzt = Design::safeSrc($fotoEigen !== ''
+                          ? $fotoEigen
+                          : (string) ($ebene((string) $id)['src'] ?? ''));
+                    ?>
+                    <div class="wz-photo wz-photo--schmal mt-4">
+                      <div>
+                        <div class="wz-photo-platte">
+                          <?php if ($fotoJetzt !== '') : ?>
+                            <img src="<?= e($fotoJetzt) ?>" alt="" data-photo-preview="<?= e((string) $id) ?>">
+                          <?php else : ?>
+                            <img alt="" hidden data-photo-preview="<?= e((string) $id) ?>">
+                            <span class="wz-photo-leer" data-photo-empty="<?= e((string) $id) ?>"><?= e($t('photoEmpty')) ?></span>
+                          <?php endif; ?>
+                        </div>
+                        <p class="<?= $label ?> wz-photo-bu"
+                           data-photo-caption="<?= e((string) $id) ?>"
+                           data-photo-chosen="<?= e($t('photoChosen')) ?>"><?= $fotoJetzt !== '' ? e($t('photoCurrent')) : '' ?></p>
+                      </div>
+
+                      <div>
+                        <?php /* Wie im Assistenten: der Server druckt das nackte
+                                 Feld, das Skript am Fuss dieser Datei macht
+                                 daraus den Knopf im Haus-Schnitt. Ohne Skript
+                                 bleibt es stehen und tut vollstaendig seine
+                                 Arbeit. */ ?>
+                        <div data-photo-slot="<?= e((string) $id) ?>"
+                             data-photo-label="<?= e($t('photoChoose')) ?>">
+                          <input id="b-<?= e((string) $id) ?>" type="file" name="layer_src_<?= e((string) $id) ?>"
+                                 accept="image/jpeg,image/png,image/webp" class="<?= $field ?>"
+                                 data-photo-input="<?= e((string) $id) ?>">
+                        </div>
+                        <p class="wz-photo-hint"><?= e($t('photoHint')) ?></p>
+                        <p class="wz-photo-hint"><?= e($t('editPhotoNote')) ?></p>
+                      </div>
                     </div>
                   <?php endif; ?>
 
@@ -619,6 +686,67 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var form = document.querySelector('[data-wizard]');
   if (!form) return;
+
+  /*
+   * Das Bildfeld: Platte, Knopf, Dateiname - dasselbe wie im Assistenten,
+   * mit EINEM Unterschied, und der ist der Kern dieses Bildschirms: die
+   * Karte bleibt unberuehrt.
+   *
+   * Im Assistenten wandert das gewaehlte Bild auch auf die Karte, weil dort
+   * etwas entsteht. Hier ist die Einladung veroeffentlicht, die Karte zeigt
+   * absichtlich, was der SERVER zeichnen wuerde (siehe der Kommentar zu
+   * data-preview weiter oben), und ein Bild, das nur im Browser darauf
+   * liegt, waere genau die Vermischung, die dieser Bildschirm vermeidet.
+   * Die Platte beweist die Wahl; die Karte sagt die Wahrheit.
+   *
+   * FileReader und nicht createObjectURL: img-src erlaubt data:, aber nicht
+   * blob: - mit einer blob-URL bliebe die Platte leer.
+   */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-photo-input]'), function (feld) {
+    var kennung = feld.getAttribute('data-photo-input');
+    var bild  = document.querySelector('[data-photo-preview="' + kennung + '"]');
+    if (!bild) return;
+    var titel = document.querySelector('[data-photo-caption="' + kennung + '"]');
+    var leer  = document.querySelector('[data-photo-empty="' + kennung + '"]');
+    var fach  = document.querySelector('[data-photo-slot="' + kennung + '"]');
+    var name  = null;
+
+    if (fach) {
+      var knopf = document.createElement('label');
+      knopf.className = 'wz-photo-knopf';
+      knopf.setAttribute('for', feld.id);
+      knopf.appendChild(document.createTextNode(fach.getAttribute('data-photo-label')));
+      feld.className = '';
+      knopf.appendChild(feld);
+
+      name = document.createElement('p');
+      name.className = 'wz-photo-datei';
+      name.hidden = true;
+
+      fach.appendChild(knopf);
+      fach.appendChild(name);
+    }
+
+    feld.addEventListener('change', function () {
+      var datei = feld.files && feld.files[0];
+      if (!datei) return;
+
+      if (name) {
+        name.textContent = datei.name;
+        name.hidden = false;
+      }
+
+      var leser = new FileReader();
+      leser.onload = function () {
+        bild.src = leser.result;
+        bild.hidden = false;
+        if (leer) leer.hidden = true;
+        if (titel) titel.textContent = titel.getAttribute('data-photo-chosen');
+      };
+      leser.readAsDataURL(datei);
+    });
+  });
+
 
   var labels = Array.prototype.slice.call(form.querySelectorAll('[data-step-label]'));
   var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
