@@ -25,12 +25,21 @@
  */
 
 use function Atelier\e;
+use Atelier\Design;
+use Atelier\Http;
 use Atelier\I18n;
 use Atelier\Ui;
 
 $t = static fn (string $key): string => I18n::t('invitation2.' . $key);
 $p = static fn (string $path): string => I18n::path($path, $locale);
 $old = static fn (string $feld): string => (string) ($values[$feld] ?? '');
+/*
+ * Ein Haken schickt nichts, wenn er aus ist - im Entwurf steht dann gar kein
+ * Schluessel. Also fragt diese Funktion nach dem Schluessel, nicht nach dem
+ * Wert: `$old(...) === 'on'` waere richtig fuer den Browser und falsch fuer
+ * jeden anderen Absender.
+ */
+$anHaken = static fn (string $feld): bool => array_key_exists($feld, $values);
 // Ein Farbfeld sendet immer einen Wert mit, auch wenn niemand es beruehrt
 // hat - ohne value faellt der Browser auf #000000 zurueck. publish() saehe
 // dann fuer jede erlaubte Ebene Schwarz, egal was das Design wirklich
@@ -44,6 +53,27 @@ $farbeVon = static function (string $id) use ($design): string {
         }
     }
     return '#000000';
+};
+
+/*
+ * Eine Ebene des Dokuments zu ihrer Kennung. $choices traegt nur die Rechte,
+ * nicht den Namen - und der Name ist das, was das Paar lesen soll. Ohne diese
+ * Suche stand auf dem Bildschirm die Kennung selbst, also "foto" oder
+ * "zier2": ein Datenbankschluessel. Dieselbe Regel wie im Panel und bei den
+ * Abschnitten, die Kennung nur als letzter Ausweg.
+ */
+$ebene = static function (string $id) use ($design): array {
+    foreach ($design['layers'] as $el) {
+        if ((string) $el['id'] === $id) {
+            return $el;
+        }
+    }
+    return [];
+};
+$ebeneName = static function (string $id) use ($ebene): string {
+    $el = $ebene($id);
+    $name = trim((string) ($el['label'] ?? ''));
+    return $name !== '' ? $name : $id;
 };
 
 $label = 'text-[0.62rem] uppercase tracking-[0.18em] text-muted';
@@ -146,6 +176,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
    * Marke wie .border-ink, nur eben beim Hover.
    */
   .wz-draft-btn:hover { border-color: var(--color-ink); }
+
+<?= \Atelier\View::partial('partials/bildfeld-css') ?>
 </style>
 <div class="wz-grid">
   <form method="post" enctype="multipart/form-data" data-wizard>
@@ -157,6 +189,15 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
     */ ?>
     <input type="hidden" name="token" value="<?= e($token) ?>">
     <input type="hidden" name="design" value="<?= e((string) $design['slug']) ?>">
+    <?php /*
+       Bei welchem Schritt das Paar stand. Ohne das warf ein "Entwurf
+       speichern" es zurueck auf Schritt eins und es klickte sich jedes Mal
+       von vorn durch - gemessen: vor dem Speichern Schritt 4, danach 1.
+       Der Wert reist im Entwurf mit wie jedes andere Feld; gesetzt wird er
+       erst im Moment des Absendens (siehe Skript am Fuss der Datei), damit
+       er nicht bei jedem Klick mitgefuehrt werden muss.
+    */ ?>
+    <input type="hidden" name="schritt" value="<?= e($old('schritt')) ?>" data-schritt>
 
     <ol class="mb-10 flex flex-wrap gap-x-6 gap-y-2 border-b border-sand-deep pb-4 text-[0.62rem] uppercase tracking-[0.16em]" data-steps>
       <?php foreach ($steps as $i => $key) : ?>
@@ -188,10 +229,66 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
         <?php if ($key === 'bilder') : ?>
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
             <?php if (!$rechte['photo']) { continue; } ?>
-            <div>
-              <label class="<?= $label ?>" for="b-<?= e($id) ?>"><?= e($id) ?></label>
-              <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
-                     accept="image/jpeg,image/png,image/webp" class="<?= $field ?>">
+            <?php
+              /*
+               * Das Bild, das die Vorlage heute an dieser Stelle zeigt: ohne
+               * es waere die Frage nach einem neuen Bild die Frage nach dem
+               * Ersatz fuer etwas, das man nie gesehen hat. Es kommt aus dem
+               * Dokument, nicht aus einer Eingabe - safeSrc() hat es beim
+               * Speichern der Vorlage geprueft.
+               */
+              $ebeneBild = (string) ($ebene((string) $id)['src'] ?? '');
+            ?>
+            <div class="wz-photo">
+              <?php /*
+                 Die Platte steht IMMER, auch wenn die Vorlage an dieser Stelle
+                 noch kein Bild hat. Sonst waehlt das Paar eine Datei und sieht
+                 nichts - ein Bildfeld, das nicht zeigt, was gewaehlt wurde,
+                 ist die Haelfte eines Feldes.
+              */ ?>
+              <div>
+                <div class="wz-photo-platte">
+                  <?php /* Ein <img> ohne src zeigt in manchen Browsern ein
+                           kaputtes Symbol, deshalb steht es erst da, wenn es
+                           etwas zu zeigen gibt. */ ?>
+                  <?php if ($ebeneBild !== '') : ?>
+                    <img src="<?= e($ebeneBild) ?>" alt="" data-photo-preview="<?= e($id) ?>">
+                  <?php else : ?>
+                    <img alt="" hidden data-photo-preview="<?= e($id) ?>">
+                    <span class="wz-photo-leer" data-photo-empty="<?= e($id) ?>"><?= e($t('photoEmpty')) ?></span>
+                  <?php endif; ?>
+                </div>
+                <p class="<?= $label ?> wz-photo-bu"
+                   data-photo-caption="<?= e($id) ?>"
+                   data-photo-chosen="<?= e($t('photoChosen')) ?>"><?= $ebeneBild !== '' ? e($t('photoCurrent')) : '' ?></p>
+              </div>
+
+              <div class="w-full">
+                <p class="wz-photo-name"><?= e($ebeneName((string) $id)) ?></p>
+
+                <?php /*
+                   Vom Server das nackte Dateifeld - ohne Skript ist es das
+                   einzige, was funktioniert, und es funktioniert vollstaendig.
+                   Das Skript am Fuss dieser Datei legt es in ein <label> und
+                   macht daraus den Knopf im Haus-Schnitt. Dieselbe Reihenfolge
+                   wie bei den Reitern des Bearbeiten-Bildschirms: erst was
+                   ohne Skript traegt, dann die Verbesserung.
+                */ ?>
+                <div data-photo-slot="<?= e($id) ?>"
+                     data-photo-label="<?= e($t('photoChoose')) ?>">
+                  <input id="b-<?= e($id) ?>" type="file" name="layer_src_<?= e($id) ?>"
+                         accept="image/jpeg,image/png,image/webp" class="<?= $field ?>"
+                         data-photo-input="<?= e($id) ?>">
+                </div>
+
+                <p class="wz-photo-hint"><?= e($t('photoHint')) ?></p>
+                <?php /* Nur wenn es ueberhaupt ein vorhandenes Bild gibt -
+                         sonst verspricht der Satz die Rueckkehr zu etwas, das
+                         es nicht gibt. */ ?>
+                <?php if ($ebeneBild !== '') : ?>
+                  <p class="wz-photo-hint"><?= e($t('editPhotoNote')) ?></p>
+                <?php endif; ?>
+              </div>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -215,7 +312,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
               <?php if ($abschnitt['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>"> <?= e($t('sectionHide')) ?>
+                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>" <?= $anHaken('sec_hidden_' . $sid) ? 'checked' : '' ?>> <?= e($t('sectionHide')) ?>
                 </label>
               <?php endif; ?>
 
@@ -272,16 +369,19 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
               </label>
               <input id="p-<?= e($marke) ?>" type="color" name="palette_<?= e($marke) ?>"
-                     value="<?= e((string) $eintrag['value']) ?>" class="<?= $field ?> h-12">
+                     value="<?= e($old('palette_' . $marke) !== '' ? $old('palette_' . $marke) : (string) $eintrag['value']) ?>" class="<?= $field ?> h-12"
+                     data-live-var="--d-<?= e(Design::key($marke)) ?>">
             </div>
           <?php endforeach; ?>
 
           <?php foreach ($choices['fonts'] as $marke => $eintrag) : ?>
             <div>
               <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
-              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>">
+              <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>"
+                      data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
                 <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                  <option value="<?= e($familie) ?>" <?= (string) $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                  <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
+                  <option value="<?= e($familie) ?>" <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -290,28 +390,33 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
             <?php if (!$rechte['color'] && !$rechte['font'] && !$rechte['text'] && !$rechte['hide']) { continue; } ?>
             <div class="border-t border-sand-deep pt-6">
-              <div class="<?= $label ?>"><?= e($id) ?></div>
+              <div class="<?= $label ?>"><?= e($ebeneName((string) $id)) ?></div>
 
               <?php if ($rechte['color']) : ?>
-                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($farbeVon($id)) ?>" class="<?= $field ?> h-12">
+                <input type="color" name="layer_color_<?= e($id) ?>" value="<?= e($old('layer_color_' . $id) !== '' ? $old('layer_color_' . $id) : $farbeVon($id)) ?>" class="<?= $field ?> h-12"
+                       data-live-el="<?= e((string) $id) ?>"
+                       data-live-kind="<?= ((string) ($ebene((string) $id)['type'] ?? '')) === 'shape' ? 'background' : 'color' ?>">
               <?php endif; ?>
 
               <?php if ($rechte['font']) : ?>
-                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>">
+                <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>"
+                        data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
                   <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
-                    <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+                    <option value="<?= e($familie) ?>" <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                   <?php endforeach; ?>
                 </select>
               <?php endif; ?>
 
               <?php if ($rechte['text']) : ?>
-                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600">
+                <input type="text" name="layer_text_<?= e($id) ?>" class="<?= $field ?>" maxlength="600" value="<?= e($old('layer_text_' . $id)) ?>"
+                       data-live-el="<?= e((string) $id) ?>" data-live-kind="text">
               <?php endif; ?>
 
               <?php if ($rechte['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>"> <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
+                  <input type="checkbox" name="layer_hidden_<?= e($id) ?>" <?= $anHaken('layer_hidden_' . $id) ? 'checked' : '' ?>
+                         data-live-el="<?= e((string) $id) ?>" data-live-kind="hide"> <?= e($locale === 'de' ? 'ausblenden' : 'hide') ?>
                 </label>
               <?php endif; ?>
             </div>
@@ -385,5 +490,211 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 </div>
 
 <?php endif; ?>
+
+<?php /*
+   Die Vorschau des gewaehlten Bildes. Sie steht hier und nicht in
+   invite-v2.js, weil sie zu diesem einen Schritt gehoert - und invite-v2.js
+   teilt sich der Assistent mit dem Bearbeiten-Bildschirm.
+
+   Kein Hochladen, kein Netz: gezeigt wird die Datei, die schon auf dem
+   Rechner des Paares liegt. Das ist der Punkt - wer ein Bild waehlt, will
+   sehen, DASS er das richtige gewaehlt hat, bevor er einen Schritt weiter
+   geht.
+
+   FileReader und nicht createObjectURL, und das ist gemessen, nicht
+   Geschmack: unsere Richtlinie erlaubt Bilder aus 'self', data: und https:
+   (Http::policy(), img-src) - blob: steht nicht darin. Mit einer blob-URL
+   blieb der Rahmen leer, das Bild meldete complete=true bei naturalWidth 0.
+   Im direkten Vergleich auf derselben Seite lud dasselbe Bild als data-URL
+   (40 px) und scheiterte als blob-URL. Die Richtlinie dafuer zu erweitern
+   waere der falsche Tausch: sie ist der Grund, warum diese Seite so wenig
+   Angriffsflaeche hat, und ein Vorschaubild ist ihn nicht wert.
+
+   Ohne Skript bleibt das Bild der Vorlage stehen und das Feld tut trotzdem
+   seine Arbeit: gewaehlt wird beim Absenden, nicht hier.
+
+   nonce Pflicht: siehe Http::nonce() - ein <script> ohne diese Kennung
+   fuehrt der Browser gar nicht erst aus.
+*/ ?>
+<script nonce="<?= e(Http::nonce()) ?>">
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var formular = document.querySelector('[data-wizard]');
+  var karte = document.querySelector('[data-preview]');
+
+  /*
+   * Zurueck zu dem Schritt, bei dem gespeichert wurde.
+   *
+   * "Entwurf speichern" schickt das Formular ab, die Seite kommt neu, und
+   * invite-v2.js beginnt wie immer bei show(0). Wer bei den Ebenen stand,
+   * fand sich also wieder bei den Namen und klickte sich erneut durch.
+   *
+   * Der Schritt wird ERST beim Absenden geschrieben, nicht bei jedem Klick:
+   * so gibt es keinen zweiten Zustand, der neben dem von invite-v2.js
+   * herlaufen und irgendwann von ihm abweichen koennte. Und
+   * zurueckgefahren wird ueber dieselben Weiter-Knoepfe wie von Hand -
+   * inklusive der Pflichtfeldpruefung, die dabei nun einmal gilt.
+   */
+  if (formular) {
+    var merker = formular.querySelector('[data-schritt]');
+    var schritte = Array.prototype.slice.call(formular.querySelectorAll('[data-step]'));
+    var jetzt = function () {
+      for (var n = 0; n < schritte.length; n++) {
+        if (!schritte[n].hidden) return n;
+      }
+      return 0;
+    };
+
+    if (merker) {
+      // Vor dem Absenden festhalten, wo wir stehen - submit deckt den Klick
+      // auf "Entwurf speichern" und die Eingabetaste gleichermassen ab.
+      formular.addEventListener('submit', function () {
+        merker.value = String(jetzt());
+      });
+
+      var ziel = parseInt(merker.value, 10);
+      if (ziel > 0 && schritte.length > 1) {
+        var knoepfe = Array.prototype.slice.call(formular.querySelectorAll('button[type=button]')).slice(-2);
+        if (knoepfe.length === 2) {
+          var wache = schritte.length + 2;
+          while (jetzt() < ziel && wache-- > 0) {
+            var vor = jetzt();
+            knoepfe[1].click();
+            // Bewegt sich nichts, fehlt ein Pflichtfeld - dann bleibt das
+            // Paar hier stehen, wo der Browser die Meldung anzeigt, statt
+            // gegen eine Wand zu klopfen.
+            if (jetzt() === vor) break;
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Die Karte folgt auch dem Design-Schritt.
+   *
+   * invite-v2.js spiegelt nur die Textfelder des ersten Schrittes - Farbe,
+   * Schrift, freier Text und Ausblenden aenderten bis hierher gar nichts,
+   * und das Paar sah seine Designwahl zum ersten Mal NACH dem
+   * Veroeffentlichen. Gerechnet wird auch hier nichts nach: gesetzt werden
+   * dieselben CSS-Variablen und Textknoten, die Design::css() erzeugt -
+   * genau das Verfahren, das der Design-Editor des Panels seit jeher
+   * benutzt (assets/design-editor.js).
+   *
+   * Welches Feld welchen Knoten bedient, entscheidet der Server: er kennt
+   * den Typ der Ebene und schreibt ihn als data-live-kind an das Feld. Ein
+   * Formular, das raet, ob eine Ebene Text oder Flaeche ist, raet
+   * irgendwann falsch.
+   */
+  if (formular && karte) {
+    formular.querySelectorAll('[data-live-var]').forEach(function (feld) {
+      var marke = feld.getAttribute('data-live-var');
+      // Schriftnamen brauchen Anfuehrungszeichen, Farben nicht.
+      var zitat = feld.hasAttribute('data-live-quote');
+      var setz = function () {
+        karte.style.setProperty(marke, zitat ? '"' + feld.value + '"' : feld.value);
+      };
+      feld.addEventListener('input', setz);
+      feld.addEventListener('change', setz);
+      // Einmal sofort: nach einem "Entwurf speichern" kommt die Seite neu, das
+      // Feld traegt die gespeicherte Wahl - die Karte aber zeichnet der Server
+      // aus der Vorlage. Ohne diesen Aufruf sagte das Formular #7B2D26 und die
+      // Karte zeigte das Gold der Vorlage.
+      setz();
+    });
+
+    formular.querySelectorAll('[data-live-el]').forEach(function (feld) {
+      var ziel = karte.querySelector('.d-el-' + feld.getAttribute('data-live-el'));
+      if (!ziel) return;
+      var art = feld.getAttribute('data-live-kind');
+      // Was die Vorlage vorgibt, bevor jemand etwas eintippt: ein geleertes
+      // Feld heisst "wie im Design", nicht "leer" - der Server macht es
+      // genauso (er schreibt nur, was nicht leer ist).
+      var vorgabe = ziel.textContent;
+      var setz = function () {
+        if (art === 'color') { ziel.style.color = feld.value; return; }
+        if (art === 'background') { ziel.style.background = feld.value; return; }
+        if (art === 'font') { ziel.style.fontFamily = feld.value ? '"' + feld.value + '"' : ''; return; }
+        if (art === 'text') { ziel.textContent = feld.value !== '' ? feld.value : vorgabe; return; }
+        if (art === 'hide') { ziel.style.display = feld.checked ? 'none' : ''; }
+      };
+      feld.addEventListener('input', setz);
+      feld.addEventListener('change', setz);
+      setz();   // wie oben: die gespeicherte Wahl gilt auch beim Laden.
+    });
+  }
+
+  var felder = document.querySelectorAll('[data-photo-input]');
+  if (!felder.length) return;
+
+  Array.prototype.forEach.call(felder, function (feld) {
+    var kennung = feld.getAttribute('data-photo-input');
+    var bild = document.querySelector('[data-photo-preview="' + kennung + '"]');
+    if (!bild) return;
+    var titel = document.querySelector('[data-photo-caption="' + kennung + '"]');
+    var leer  = document.querySelector('[data-photo-empty="' + kennung + '"]');
+
+    /* Das Dateifeld in einen Knopf im Haus-Schnitt legen. Es wird nicht
+       ersetzt, sondern verschoben: id, name, accept und die Datenmarken
+       reisen mit dem Knoten mit, und was der Browser bereits gewaehlt hat
+       (ein Zurueck aus dem naechsten Schritt) bleibt gewaehlt. Sichtbar ist
+       das Feld nicht mehr, bedienbar sehr wohl - siehe die Regel im
+       Stilblock. */
+    var fach = document.querySelector('[data-photo-slot="' + kennung + '"]');
+    var name = null;
+    if (fach) {
+      var knopf = document.createElement('label');
+      knopf.className = 'wz-photo-knopf';
+      knopf.setAttribute('for', feld.id);
+      knopf.appendChild(document.createTextNode(fach.getAttribute('data-photo-label')));
+      feld.className = '';
+      knopf.appendChild(feld);
+
+      name = document.createElement('p');
+      name.className = 'wz-photo-datei';
+      name.hidden = true;
+
+      fach.appendChild(knopf);
+      fach.appendChild(name);
+    }
+
+    feld.addEventListener('change', function () {
+      var datei = feld.files && feld.files[0];
+      if (!datei) return;
+
+      // Der Name sofort, das Bild sobald es gelesen ist: das Lesen einer
+      // grossen Datei dauert, und in dieser Zeit soll die Wahl schon
+      // bestaetigt sein.
+      if (name) {
+        name.textContent = datei.name;
+        name.hidden = false;
+      }
+
+      // Auch auf der Karte, nicht nur auf der Platte: die Platte beweist,
+      // dass die richtige Datei gewaehlt ist - die Karte zeigt, wie sie im
+      // Ausschnitt der Vorlage wirkt, und das ist die eigentliche Frage.
+      var aufDerKarte = karte ? karte.querySelector('img.d-el-' + kennung) : null;
+
+      var leser = new FileReader();
+      leser.onload = function () {
+        bild.src = leser.result;
+        if (aufDerKarte) aufDerKarte.src = leser.result;
+        // Hatte die Vorlage hier kein Bild, war die Platte bis eben leer.
+        bild.hidden = false;
+        if (leer) leer.hidden = true;
+        // "Zurzeit" stimmt jetzt nicht mehr - auf der Platte liegt die
+        // eigene Wahl. Das Wort kommt vom Server, damit hier keine zweite
+        // Uebersetzung entsteht, die eines Tages von der in dict.php
+        // abweicht.
+        if (titel) titel.textContent = titel.getAttribute('data-photo-chosen');
+      };
+      // Schlaegt das Lesen fehl, bleibt schlicht stehen, was vorher da war -
+      // die Datei ist trotzdem gewaehlt und wird beim Absenden hochgeladen.
+      leser.readAsDataURL(datei);
+    });
+  });
+});
+</script>
 
 <?= Ui::sectionClose() ?>

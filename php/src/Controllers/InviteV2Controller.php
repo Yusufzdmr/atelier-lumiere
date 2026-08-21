@@ -55,9 +55,44 @@ final class InviteV2Controller
             return;
         }
 
+        /*
+         * Der Entwurf steht VOR der Wahl des Designs, denn er weiss selbst,
+         * zu welchem Design er gehoert.
+         *
+         * Die Kennung kommt aus der Adresse (?taslak=), nach dem Speichern aus
+         * dem Formular - sonst legte jedes Speichern einen neuen Entwurf an und
+         * der Kunde saemmelte Links, von denen nur der letzte stimmt.
+         */
+        $token = Security::clean($_POST['token'] ?? $_GET['taslak'] ?? '', 40);
+
+        /*
+         * Steht nirgends eine Kennung, fragen wir den Browser. Bisher fuehrte
+         * der Weg zurueck in einen Entwurf ausschliesslich ueber den Link -
+         * wer ihn verlor, verlor die Arbeit, obwohl sie noch in der Datenbank
+         * lag. Nur bei einem GET: ein POST bringt seine Kennung selbst mit,
+         * und ein alter Keks duerfte sie nicht ueberstimmen.
+         *
+         * Der Keks merkt sich die eigene, unfertige Arbeit - er zaehlt oder
+         * verfolgt nichts und braucht darum keine Einwilligung.
+         */
+        if ($token === '' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+            $token = Security::clean($_COOKIE[self::ENTWURF_KEKS] ?? '', 40);
+        }
+
+        $werte  = $token !== '' ? InvitationsV2::draft($token) : null;
+        $values = is_array($werte) ? $werte : [];
+        if (!is_array($werte)) {
+            // Abgelaufen oder veroeffentlicht: die Kennung nicht weiterschleppen,
+            // sonst traegt das Formular eine Kennung, hinter der nichts steht.
+            $token = '';
+        }
+        $draftLink = '';
+
         // Nach dem Absenden steht die Wahl im Formular, nicht mehr in der
-        // Adresse - sonst waehlte ein Neuladen ein anderes Design.
-        $wunsch = Security::clean($_POST['design'] ?? $_GET['design'] ?? '', 96);
+        // Adresse - sonst waehlte ein Neuladen ein anderes Design. Zuletzt
+        // fragt der Entwurf: aus ihm kommt sie beim Weitermachen ueber den
+        // Keks, wo die Adresse nichts sagt.
+        $wunsch = Security::clean($_POST['design'] ?? $_GET['design'] ?? (string) ($values['design'] ?? ''), 96);
         $design = $wunsch !== '' ? Design::find($wunsch) : null;
         if ($design === null || (string) $design['status'] !== 'active') {
             $design = $designs[0];
@@ -68,18 +103,6 @@ final class InviteV2Controller
 
         $error = '';
         $done  = null;
-
-        /*
-         * Der Entwurf.
-         *
-         * Die Kennung kommt aus der Adresse (?taslak=), nach dem Speichern aus
-         * dem Formular - sonst legte jedes Speichern einen neuen Entwurf an und
-         * der Kunde saemmelte Links, von denen nur der letzte stimmt.
-         */
-        $token  = Security::clean($_POST['token'] ?? $_GET['taslak'] ?? '', 40);
-        $werte  = $token !== '' ? InvitationsV2::draft($token) : null;
-        $values = is_array($werte) ? $werte : [];
-        $draftLink = '';
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             // Die Vorschau antwortet mit einem Bruchstueck und endet hier: sie
@@ -97,6 +120,7 @@ final class InviteV2Controller
                 } else {
                     $token     = (string) $ergebnis['token'];
                     $draftLink = (string) $ergebnis['url'];
+                    $this->merkeEntwurf($token);
                     // Was gerade eingetippt wurde, steht jetzt im Entwurf - und
                     // von dort kommt es zurueck ins Formular. Ohne das saehe der
                     // Kunde nach dem Speichern wieder leere Felder.
@@ -112,6 +136,7 @@ final class InviteV2Controller
                     $done = $ergebnis;
                     // Veroeffentlicht: der Entwurf zeigt einen ueberholten Stand.
                     InvitationsV2::deleteDraft($token);
+                    $this->vergissEntwurf();
                 }
             }
         }
@@ -252,6 +277,54 @@ final class InviteV2Controller
      *
      * @return array<string,string>
      */
+    /**
+     * Der Name des Kekses, der sich den eigenen Entwurf merkt.
+     *
+     * Kein Messkeks: er traegt nur die Kennung des unfertigen Entwurfs dieses
+     * Browsers, damit "weitermachen" nicht ausschliesslich am Link haengt.
+     */
+    private const ENTWURF_KEKS = 'atelier_v2_entwurf';
+
+    /** Wie lange der Browser sich den Entwurf merkt - so lange wie der Entwurf lebt. */
+    private const ENTWURF_TAGE = 60;
+
+    private function merkeEntwurf(string $token): void
+    {
+        if ($token === '' || headers_sent()) {
+            return;
+        }
+        setcookie(self::ENTWURF_KEKS, $token, $this->keksRahmen(time() + self::ENTWURF_TAGE * 86400));
+    }
+
+    private function vergissEntwurf(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+        setcookie(self::ENTWURF_KEKS, '', $this->keksRahmen(time() - 86400));
+    }
+
+    /**
+     * httponly, weil kein Skript die Kennung braucht - sie ist der Schluessel
+     * zu einem fremden Entwurf, wenn sie in falsche Haende geraet. Lax, damit
+     * ein Link von aussen den Entwurf trotzdem oeffnet. secure nur ueber
+     * HTTPS, sonst sperrte man sich in der Entwicklung selbst aus - dieselbe
+     * Pruefung wie in Http::isHttps() und Config::url().
+     *
+     * @return array<string,mixed>
+     */
+    private function keksRahmen(int $bis): array
+    {
+        return [
+            'expires'  => $bis,
+            'path'     => '/',
+            'secure'   => ($_SERVER['HTTPS'] ?? '') === 'on'
+                || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+    }
+
     private function saveDraft(string $token): array
     {
         if (!Security::checkCsrf(is_string($_POST['csrf'] ?? null) ? $_POST['csrf'] : null)) {
