@@ -604,7 +604,7 @@ use function Atelier\e;
       ?>
 
       <?php if (count($varianten) > 1) : ?>
-        <label class="<?= $label ?>"><?= $tr ? 'gÃ¶rÃ¼nÃ¼m' : 'Gestalt' ?>
+        <label class="<?= $label ?>"><?= $tr ? 'görünüm' : 'Gestalt' ?>
           <select class="<?= $feld ?>" name="sec_variant_<?= $i ?>">
             <?php foreach ($varianten as $kennung => $etikett) : ?>
               <option value="<?= e((string) $kennung) ?>"

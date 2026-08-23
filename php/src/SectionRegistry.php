@@ -74,6 +74,11 @@ final class SectionRegistry
         'location' => [
             'variants' => [
                 'default' => ['de' => 'Schlicht', 'tr' => 'Sade'],
+                // Der Saal traegt den Namen, die Strasse steht klein
+                // darunter, und der Weg dorthin ist ein Knopf statt einer
+                // unterstrichenen Zeile: auf einer Einladung liest sich ein
+                // Link wie ein Fremdkoerper.
+                'gross'   => ['de' => 'Grosser Name', 'tr' => 'Büyük ad'],
             ],
             'settings' => [
                 // Der Kartenlink ist nicht immer erwuenscht: bei einer
@@ -88,12 +93,20 @@ final class SectionRegistry
         'countdown' => [
             'variants' => [
                 'default' => ['de' => 'Zahl über dem Datum', 'tr' => 'Tarihin üstünde sayı'],
+                // Dieselbe Zahl, nur laut. Sie aendert die Groesse und nicht
+                // den Bau: ohne Skript bleibt der Span leer, und dann traegt
+                // das gedruckte Datum den Abschnitt allein - das muss auch in
+                // dieser Gestalt gelten.
+                'gross'   => ['de' => 'Grosse Zahl', 'tr' => 'Büyük sayı'],
             ],
             'settings' => [],
         ],
         'family' => [
             'variants' => [
                 'default' => ['de' => 'Untereinander', 'tr' => 'Alt alta'],
+                // Zwei Familien nebeneinander, ein Strich dazwischen - die
+                // aeltere Form auf gedruckten Einladungen.
+                'paar'    => ['de' => 'Nebeneinander', 'tr' => 'Yan yana'],
             ],
             'settings' => [],
         ],
@@ -111,12 +124,19 @@ final class SectionRegistry
         'rsvp' => [
             'variants' => [
                 'default' => ['de' => 'Formular', 'tr' => 'Form'],
+                // Das Formular in einem Rahmen: auf einem gemusterten Blatt
+                // verliert es sonst seine Kante und wirkt wie hingefallen.
+                'rahmen'  => ['de' => 'Im Rahmen', 'tr' => 'Çerçeveli'],
             ],
             'settings' => [],
         ],
         'text' => [
             'variants' => [
-                'default' => ['de' => 'Fliesstext', 'tr' => 'Akan metin'],
+                'default'   => ['de' => 'Fliesstext', 'tr' => 'Akan metin'],
+                // Linksbuendig, schmale Spalte, Initial - fuer die laengeren
+                // Bloecke: eine Geschichte in zentrierten Zeilen liest sich
+                // wie ein Gedicht, und das war selten die Absicht.
+                'editorial' => ['de' => 'Editorial', 'tr' => 'Editoryal'],
             ],
             'settings' => [],
         ],

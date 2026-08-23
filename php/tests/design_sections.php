@@ -526,7 +526,7 @@ assert_contains($css, 'text-align:left', 'css: die Ausrichtung wird geschrieben'
  * steht inline in jeder Seite, nicht in einer Datei, die der Browser einmal
  * holt und behaelt.
  */
-assert_contains($css, '.d-x .d-sec-v-zeitstrahl', 'css: der Variantenblock steht da, weil er gebraucht wird');
+assert_contains($css, '.d-x .d-sec-program.d-sec-v-zeitstrahl', 'css: der Variantenblock steht da, weil er gebraucht wird');
 
 $ohneVariante = DesignSections::complete(sec_doc([['id' => 'wann', 'type' => 'countdown']]));
 $cssOhne = DesignSections::css($ohneVariante, '.d-x');
@@ -573,4 +573,54 @@ assert_true(
 assert_true(
     !str_contains($planCss, ' .d-sec-program{'),
     'css: keine Regel traegt den Namen, den auch die Section traegt'
+);
+
+/*
+ * --- Jede Gestalt im Katalog haelt ihr Versprechen ---
+ *
+ * Eine Gestalt, die aussieht wie die Voreinstellung, ist schlimmer als keine:
+ * der Grafiker waehlt sie einmal, sieht keinen Unterschied und traut dem
+ * Katalog danach nicht mehr. Deshalb steht hier eine Schleife und keine
+ * Aufzaehlung - sie prueft auch jede Gestalt, die es morgen gibt.
+ */
+
+foreach (Atelier\SectionRegistry::all() as $art => $eintrag) {
+    foreach (array_keys($eintrag['variants']) as $gestalt) {
+        if ($gestalt === Atelier\SectionRegistry::DEFAULT_VARIANT) {
+            continue;
+        }
+
+        $einer = DesignSections::complete(sec_doc([
+            ['id' => 'probe', 'type' => $art, 'variant' => $gestalt],
+        ]));
+
+        assert_contains(
+            DesignSections::css($einer, '.d-x'),
+            '.d-x .d-sec-' . $art . '.d-sec-v-' . $gestalt,
+            'Gestalt: ' . $art . '/' . $gestalt . ' bringt einen eigenen Stilblock mit'
+        );
+    }
+}
+
+/*
+ * --- Derselbe Name, zwei Arten, kein Uebergriff ---
+ *
+ * "gross" heisst beim Ort etwas anderes als beim Countdown. Stuende im
+ * Selektor nur die Gestalt, faerbte der eine Block den anderen um, sobald
+ * beide auf derselben Seite stehen - und das faellt erst am fertigen
+ * Dokument auf, nie im Panel.
+ */
+
+$beide = DesignSections::complete(sec_doc([
+    ['id' => 'wo',   'type' => 'location',  'variant' => 'gross'],
+    ['id' => 'wann', 'type' => 'countdown', 'variant' => 'gross'],
+]));
+
+$cssBeide = DesignSections::css($beide, '.d-x');
+
+assert_contains($cssBeide, '.d-x .d-sec-location.d-sec-v-gross .d-sec-venue{', 'Gestalt: der Ort bekommt seinen Block');
+assert_contains($cssBeide, '.d-x .d-sec-countdown.d-sec-v-gross .d-sec-days{', 'Gestalt: der Countdown seinen eigenen');
+assert_true(
+    !str_contains($cssBeide, '.d-x .d-sec-v-gross '),
+    'Gestalt: kein Selektor ohne Art davor'
 );

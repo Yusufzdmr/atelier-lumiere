@@ -287,10 +287,14 @@ final class DesignSections
          */
         $varianten = [];
         foreach ($doc['sections'] as $abschnitt) {
-            $varianten[(string) $abschnitt['variant']] = true;
+            // Art UND Gestalt als Schluessel: "gross" heisst beim Ort etwas
+            // anderes als beim Countdown, und ohne die Art im Schluessel
+            // faerbte der eine Block den anderen um.
+            $varianten[$abschnitt['type'] . '/' . $abschnitt['variant']] = true;
         }
-        foreach (array_keys($varianten) as $variante) {
-            $css .= self::variantCss($variante, $scope);
+        foreach (array_keys($varianten) as $paar) {
+            [$art, $variante] = explode('/', $paar, 2);
+            $css .= self::variantCss($art, $variante, $scope);
         }
 
         return $css;
@@ -423,38 +427,101 @@ final class DesignSections
     }
 
     /**
-     * Der Stilblock einer Variante.
+     * Der Stilblock einer Gestalt.
      *
      * Getrennt von baseline(), weil er nur dann geschrieben wird, wenn ihn
-     * ein Abschnitt auch traegt. Und getrennt vom Markup, weil eine Variante
-     * genau das sein soll: ein anderes AUSSEHEN derselben Sache. Sobald eine
-     * Variante eigenes Markup braucht, ist sie in Wahrheit eine eigene Art -
-     * dann gehoert sie in TYPES und nicht hierher.
+     * ein Abschnitt auch traegt. Und getrennt vom Markup, weil eine Gestalt
+     * genau das sein soll: ein anderes AUSSEHEN derselben Sache. Keiner der
+     * Bloecke hier aendert eine einzige Zeile HTML - sobald eine Gestalt
+     * eigenes Markup braucht, ist sie in Wahrheit eine eigene Art und
+     * gehoert in TYPES.
      *
-     * Der Zeitstrahl ist die erste. Ein Ablauf mit acht Zeilen liest sich als
-     * Strahl besser denn als Tabelle: die Uhrzeit fuehrt, der Punkt sitzt auf
-     * der Linie, und die Zeile darunter gehoert sichtbar dazu.
+     * Der Selektor nennt Art UND Gestalt: "gross" heisst beim Ort etwas
+     * anderes als beim Countdown. Ohne die Art davor faerbte der eine Block
+     * den anderen um, sobald beide auf derselben Seite stehen.
      *
-     * currentColor und keine Marke - so nimmt der Strahl die Farbe an, die
-     * der Grafiker dem Abschnitt gegeben hat, statt eine zweite Quelle
-     * dafuer aufzumachen. Dieselbe Entscheidung wie beim Formular.
+     * currentColor statt einer Marke, wo immer es geht - so nimmt die
+     * Gestalt die Farbe an, die der Grafiker dem Abschnitt gegeben hat,
+     * statt eine zweite Quelle dafuer aufzumachen.
      */
-    private static function variantCss(string $variante, string $scope): string
+    private static function variantCss(string $art, string $variante, string $scope): string
     {
-        return match ($variante) {
-            'zeitstrahl' => $scope . ' .d-sec-v-zeitstrahl .d-sec-plan{display:block;'
+        $sel = $scope . ' .d-sec-' . $art . '.d-sec-v-' . $variante;
+
+        return match ($art . '/' . $variante) {
+            /*
+             * Der Ablauf als Strahl. Ein Programm mit acht Zeilen liest sich
+             * so besser denn als Tabelle: die Uhrzeit fuehrt, der Punkt sitzt
+             * auf der Linie, und was darunter steht, gehoert sichtbar dazu.
+             */
+            'program/zeitstrahl' => $sel . ' .d-sec-plan{display:block;'
                 . 'grid-template-columns:none;text-align:left;max-width:22rem;'
                 . 'margin-inline:auto;padding-left:1.25rem;border-left:1px solid currentColor;}'
-                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt{position:relative;'
-                . 'margin-top:1.1rem;font-weight:600;}'
-                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt:first-child{margin-top:0;}'
+                . $sel . ' .d-sec-plan dt{position:relative;margin-top:1.1rem;font-weight:600;}'
+                . $sel . ' .d-sec-plan dt:first-child{margin-top:0;}'
                 // Der Punkt sitzt auf der Linie, nicht daneben: das Blatt ist
                 // 1.25rem breit gepolstert, der Punkt 0.36rem - halb davon
                 // zurueck ergibt 1.43rem.
-                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt::before{content:"";'
-                . 'position:absolute;left:-1.43rem;top:0.5em;width:0.36rem;height:0.36rem;'
+                . $sel . ' .d-sec-plan dt::before{content:"";position:absolute;'
+                . 'left:-1.43rem;top:0.5em;width:0.36rem;height:0.36rem;'
                 . 'border-radius:50%;background:currentColor;}'
-                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dd{margin:0;opacity:0.8;}',
+                . $sel . ' .d-sec-plan dd{margin:0;opacity:0.8;}',
+
+            /*
+             * Zwei Familien nebeneinander. Ohne eigenes Markup: die beiden
+             * Absaetze stehen als inline-block auf einer Zeile, der Strich
+             * dazwischen ist die linke Kante des zweiten. Auf einem schmalen
+             * Telefon brechen sie von selbst untereinander, und dann faellt
+             * auch der Strich weg - er haengt an derselben Regel.
+             */
+            'family/paar' => $sel . ' .d-sec-family{display:inline-block;'
+                . 'padding:0 1.4rem;vertical-align:middle;}'
+                . $sel . ' .d-sec-family + .d-sec-family{border-left:1px solid currentColor;}',
+
+            /*
+             * Der Saal traegt den Namen. Die Strasse steht klein darunter,
+             * und der Weg dorthin ist ein Knopf: eine unterstrichene Zeile
+             * liest sich auf einer Einladung wie ein Fremdkoerper.
+             */
+            'location/gross' => $sel . ' .d-sec-venue{font-family:var(--df-display,inherit);'
+                . 'font-size:1.7rem;line-height:1.2;margin-bottom:0.4rem;}'
+                . $sel . ' .d-sec-address{font-size:0.86rem;opacity:0.75;}'
+                . $sel . ' .d-sec-map{display:inline-block;margin-top:1.2rem;'
+                . 'border:1px solid currentColor;padding:0.5rem 1.5rem;'
+                . 'font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;'
+                . 'text-decoration:none;}',
+
+            /*
+             * Dieselbe Zahl, nur laut. Nur Groesse, kein Bau: ohne Skript
+             * bleibt der Span leer, und dann traegt das gedruckte Datum den
+             * Abschnitt allein - das muss auch in dieser Gestalt gelten.
+             */
+            'countdown/gross' => $sel . ' .d-sec-days{font-family:var(--df-display,inherit);'
+                . 'font-size:3.4rem;line-height:1;margin-bottom:0.6rem;}'
+                . $sel . ' .d-sec-countdown{font-size:0.86rem;letter-spacing:0.1em;}',
+
+            /*
+             * Das Formular bekommt eine Kante. Auf einem gemusterten Blatt
+             * verliert es sie sonst und wirkt wie hingefallen.
+             */
+            'rsvp/rahmen' => $sel . ' .d-sec-form{border:1px solid currentColor;'
+                . 'padding:1.6rem 1.4rem;max-width:26rem;}',
+
+            /*
+             * Fuer die laengeren Bloecke: schmale Spalte, linksbuendig, ein
+             * Initial. Eine Geschichte in zentrierten Zeilen liest sich wie
+             * ein Gedicht, und das war selten die Absicht.
+             *
+             * Das Initial haengt am ERSTEN Absatz, nicht an jedem: sonst
+             * faengt jeder Absatz gross an und der Block sieht aus wie eine
+             * Fibel.
+             */
+            'text/editorial' => $sel . ' .d-sec-absatz{text-align:left;max-width:26rem;'
+                . 'margin-inline:auto;line-height:1.9;}'
+                . $sel . ' .d-sec-absatz:first-of-type::first-letter{float:left;'
+                . 'font-family:var(--df-display,inherit);font-size:3.1em;line-height:0.82;'
+                . 'padding-right:0.09em;color:var(--d-accent,inherit);}',
+
             default => '',
         };
     }
