@@ -220,6 +220,7 @@ final class AdminController
                 'envelope-delete' => $this->deleteThemeImage('envelopeImage'),
                 'backdrop-delete' => $this->deleteThemeImage('backdropVideo'),
                 'backdrop-poster-delete' => $this->deleteThemeImage('backdropPoster'),
+                'intro-delete'    => $this->deleteThemeImage('introVideo'),
                 default           => null,
             };
 
@@ -326,6 +327,28 @@ final class AdminController
                         Media::delete((string) $theme['backdropVideo']);
                     }
                     $next['backdropVideo'] = $vidUrl;
+                }
+            }
+
+            // Der Vorspann. Dieselbe Pruefung wie beim Hintergrundvideo -
+            // storeVideo liest die Art aus dem Dateiinhalt, nicht aus dem
+            // Namen, und laesst nur mp4/webm/mov durch.
+            $introFile = $_FILES['introVideo'] ?? null;
+            if (is_array($introFile) && ((int) ($introFile['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+                $introUrl = Media::storeVideo($introFile, 'themen/' . $id);
+                if ($introUrl !== null) {
+                    if ((string) ($theme['introVideo'] ?? '') !== '') {
+                        Media::delete((string) $theme['introVideo']);
+                    }
+                    $next['introVideo'] = $introUrl;
+                }
+            }
+
+            $introBild = $_FILES['introPoster'] ?? null;
+            if (is_array($introBild) && ((int) ($introBild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+                $introBildUrl = Media::store($introBild, 'themen/' . $id);
+                if ($introBildUrl !== null) {
+                    $next['introPoster'] = $introBildUrl;
                 }
             }
 

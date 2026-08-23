@@ -31,9 +31,12 @@
  * @var string $initialen
  * @var list<array{kind:string,element:string,detail:string}> $warnings
  * @var bool $fest
+ * @var string $introVideo   Oeffnungsfilm des Themas, leer = die gezeichnete Klappe
+ * @var string $introPoster
  */
 
 use function Atelier\e;
+use Atelier\Design;
 ?>
 <style><?= $styles ?></style>
 
@@ -184,6 +187,25 @@ use function Atelier\e;
         ausserhalb von ihr steht. Stuende die Karte darueber, waere das Kuvert
         nicht anklickbar und nichts wuerde sich je oeffnen.
       -->
+      <?php
+        $introFilm = Design::safeSrc((string) ($introVideo ?? ''));
+        $introBild = Design::safeSrc((string) ($introPoster ?? ''));
+      ?>
+      <?php if ($introFilm !== '') : ?>
+        <?php /*
+           Der Vorspann liegt UEBER dem Kuvert (z-40 gegen z-30) und
+           verschwindet, wenn er durch ist. Kein autoplay, wie bei den Ebenen:
+           invitation.js startet ihn beim Klick auf das Kuvert und blendet ihn
+           danach aus. Ohne Skript sieht der Gast ihn nie und bekommt sofort
+           die Karte - das ist die richtige Reihenfolge, nicht ein Fehler.
+        */ ?>
+        <div class="absolute inset-0 z-40" data-intro-video hidden>
+          <video class="h-full w-full object-cover" data-intro-film
+                 src="<?= e($introFilm) ?>"
+                 <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
+                 muted playsinline preload="auto"></video>
+        </div>
+      <?php endif; ?>
       <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 z-30 flex flex-col items-center justify-center gap-9 px-6"
            data-envelope
            data-animation="<?= e($karteAn) ?>"

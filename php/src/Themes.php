@@ -420,6 +420,11 @@ final class Themes
             // Papierflaeche wird transparent und der Text hell.
             'backdropVideo'   => '',
             'backdropPoster'  => '',
+            // Der Vorspann: ein Film vom echten Kuvert, statt der gezeichneten
+            // Klappe. Leer = das bisherige CSS-Kuvert. Getrennt von backdrop*,
+            // weil das eine VOR der Karte laeuft und das andere DAHINTER.
+            'introVideo'      => '',
+            'introPoster'     => '',
             'animation'      => '',
             'intro'          => '',
             'idle'           => '',

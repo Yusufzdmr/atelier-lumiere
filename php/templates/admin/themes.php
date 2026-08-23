@@ -265,6 +265,37 @@ $hint = 'mt-2 text-[0.72rem] leading-relaxed text-muted';
                 </div>
                 <input type="file" name="backdropPoster" accept="image/*" class="mt-3 w-full text-[0.8rem] text-muted">
               </div>
+
+              <div class="md:col-span-2 border-t border-sand-deep pt-6">
+                <label class="<?= $label ?>"><?= $de ? 'Öffnungsfilm (Kuvert)' : 'Açılış videosu (zarf)' ?></label>
+                <p class="<?= $hint ?>">
+                  <?= $de
+                      ? 'Ein Film vom echten Kuvert, der laeuft, bevor die Karte kommt. Ohne Film bleibt die bisherige gezeichnete Klappe - nichts geht kaputt.'
+                      : 'Kart gelmeden önce oynayan gerçek zarf videosu. Video yoksa bugünkü çizilmiş zarf çalışır — hiçbir şey bozulmaz.' ?>
+                </p>
+                <ul class="mt-2 space-y-1 text-[0.72rem] leading-relaxed text-muted">
+                  <li><span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Format' : 'Oran' ?>:</span>
+                    <?= $de ? 'hochkant 9:16, 1080 × 1920.' : 'dikey 9:16, 1080 × 1920.' ?></li>
+                  <li><span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Länge' : 'Süre' ?>:</span>
+                    <?= $de ? '2–5 s. Laenger wartet der Gast vor einer geschlossenen Karte.'
+                            : '2–5 s. Daha uzunu misafiri kapalı kartın önünde bekletir.' ?></li>
+                  <li><span class="uppercase tracking-[0.14em] text-gold"><?= $de ? 'Ende' : 'Bitiş' ?>:</span>
+                    <?= $de ? 'auf dem geoeffneten Kuvert stehen bleiben - der Schnitt zur Karte kommt danach.'
+                            : 'açılmış zarfın üzerinde bitmeli — karta geçiş ondan sonra olur.' ?></li>
+                </ul>
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                  <?php if ((string) ($theme['introVideo'] ?? '') !== '') : ?>
+                    <video src="<?= e((string) $theme['introVideo']) ?>" muted preload="metadata"
+                           class="h-16 w-24 bg-ink object-cover"></video>
+                    <button name="was" value="intro-delete" class="text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
+                            data-confirm="<?= $de ? 'Öffnungsfilm entfernen?' : 'Açılış videosu kaldırılsın mı?' ?>">
+                      <?= $de ? 'Film entfernen' : 'Videoyu kaldır' ?>
+                    </button>
+                  <?php endif; ?>
+                </div>
+                <input type="file" name="introVideo" accept="video/mp4,video/webm,video/quicktime" class="mt-3 w-full text-[0.8rem] text-muted">
+                <input type="file" name="introPoster" accept="image/png,image/jpeg,image/webp" class="mt-3 w-full text-[0.8rem] text-muted">
+              </div>
             </div>
           </div>
 
