@@ -29,6 +29,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use Atelier\Design;
+use Atelier\DesignVideos;
 use Atelier\Themes;
 
 if (PHP_SAPI !== 'cli') {
@@ -170,21 +171,25 @@ if ($id === 'referenz') {
      * Kommt spaeter ein freigestelltes Motiv als PNG (so macht es die
      * Toskana-Referenz), bekommt es eine eigene Ebene.
      */
-    $grundEbenen = static function (): array {
-        return array_merge([[
-            /*
-             * Das Blatt selbst - in beiden Vorlagen dasselbe. Es ist eine
-             * photo-Ebene und keine image-Ebene, damit das Paar sein eigenes
-             * Bild dahinter legen darf, wenn der Grafiker das Recht laesst.
-             */
-            'id'    => 'hintergrund',
-            'label' => 'Hintergrundbild',
-            'type'  => 'photo',
-            'spot'  => 'card',
-            'src'   => '/assets/vorlagen/bild.jpg',
-            'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
-            'permissions' => ['edit' => true, 'photo' => true],
-        ]], [
+    /*
+     * Das Blatt. In "film" und "bild" ist es der ganze Grund; in "video"
+     * liegt an seiner Stelle der Film. Es ist eine photo-Ebene und keine
+     * image-Ebene, damit das Paar sein eigenes Bild dahinter legen darf,
+     * wenn der Grafiker das Recht laesst.
+     */
+    $blatt = [
+        'id'    => 'hintergrund',
+        'label' => 'Hintergrundbild',
+        'type'  => 'photo',
+        'spot'  => 'card',
+        'src'   => '/assets/vorlagen/bild.jpg',
+        'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+        'permissions' => ['edit' => true, 'photo' => true],
+    ];
+
+    /** @param list<array<string,mixed>> $unten Was unter der Schrift liegt. */
+    $grundEbenen = static function (array $unten): array {
+        return array_merge($unten, [
             /*
              * Die Verzoegerungen sind eine Reihenfolge, keine Dekoration:
              * 300 - 900 - 1500. Erst sagt die kleine Zeile, worum es geht,
@@ -266,7 +271,7 @@ if ($id === 'referenz') {
              * Feld daneben.
              */
             'intro'    => ['video' => '/assets/vorlagen/film.mp4', 'poster' => ''],
-            'layers'   => $grundEbenen(),
+            'layers'   => $grundEbenen([$blatt]),
         ],
         [
             'id'   => 'bild',
@@ -277,8 +282,63 @@ if ($id === 'referenz') {
             'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
-            'layers'   => $grundEbenen(),
+            'layers'   => $grundEbenen([$blatt]),
         ],
+    ];
+
+    /*
+     * Die dritte Vorlage: die einzige, die die VIDEOEBENE vorfuehrt.
+     *
+     * Die beiden anderen zeigen ein Blatt; hier laeuft ein Film IM Kartenfeld,
+     * in der Schleife, und das Paar darf ihn aus der Bibliothek tauschen
+     * (Recht photo auf einer Videoebene - dieselbe Frage wie bei einem Bild:
+     * darf der Inhalt dieser Flaeche gewechselt werden).
+     *
+     * Der Schleier darueber ist kein Schmuck, sondern die Bedingung dafuer,
+     * dass diese Vorlage mit JEDEM Film funktioniert. Ohne ihn haengt die
+     * Lesbarkeit der Schrift daran, wie hell das Paar seinen Film waehlt -
+     * und genau daran ist der erste Versuch gescheitert, als der cremeweisse
+     * Kuvertfilm noch im Kartengrund lag: die Namen verschwanden.
+     *
+     * Der Film darin ist ein PLATZHALTER und inhaltlich falsch: es ist der
+     * Kuvertfilm, also ein Aufgehen und keine ruhige Schleife. Er steht da,
+     * damit die Vorlage sich ansehen laesst; kommt ein echter Hintergrundfilm
+     * (langsam, ohne Text, hochkant), wird im Editor der Pfad getauscht.
+     */
+    $vorlagen[] = [
+        'id'   => 'video',
+        'slug' => 'video',
+        'name' => ['de' => 'Video', 'en' => 'Video'],
+        'category' => 'luxury',
+        'status'   => 'draft',
+        'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
+        'palette'  => $referenzPalette,
+        'fonts'    => $referenzSchriften,
+        'layers'   => $grundEbenen([
+            [
+                'id'     => 'hintergrund',
+                'label'  => 'Hintergrundfilm',
+                'type'   => 'video',
+                'spot'   => 'card',
+                'src'    => '/assets/vorlagen/film.mp4',
+                'poster' => '',
+                'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+                'permissions' => ['edit' => true, 'photo' => true],
+            ],
+            [
+                'id'    => 'schleier',
+                'label' => 'Schleier',
+                'type'  => 'shape',
+                'spot'  => 'card',
+                'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 58],
+                // paper ist das schwarze Papier der Palette - derselbe Ton,
+                // auf dem die Schrift der beiden anderen Vorlagen steht.
+                'style' => ['color' => 'paper'],
+                // Kein hide-Recht: wer den Schleier wegnimmt, nimmt die
+                // Lesbarkeit mit.
+                'permissions' => [],
+            ],
+        ]),
     ];
 
     foreach ($vorlagen as $roh) {
@@ -295,6 +355,27 @@ if ($id === 'referenz') {
         }
         Design::save(Design::complete($roh));
         echo "  {$roh['id']}: geschrieben\n";
+    }
+
+    /*
+     * Ein Eintrag in der Filmbibliothek - sonst zeigt der Assistent dem Paar
+     * eine Auswahl mit einem einzigen Punkt ("Wie in der Vorlage"), und die
+     * Vorlage "video" fuehrt genau die Haelfte dessen vor, wofuer sie da ist.
+     * Auch dieser Film ist der Platzhalter, mit demselben Vorbehalt.
+     *
+     * Nur wenn die Bibliothek leer ist: was der Betrieb im Panel angelegt hat,
+     * geht diesen Weg nichts an.
+     */
+    if (!$dry && DesignVideos::all() === []) {
+        DesignVideos::save([[
+            'id'       => 'kuvert',
+            'label'    => 'Kuvert (Platzhalter)',
+            'mp4'      => '/assets/vorlagen/film.mp4',
+            'webm'     => '',
+            'poster'   => '',
+            'category' => 'luxury',
+        ]]);
+        echo "  Bibliothek: ein Platzhalter angelegt\n";
     }
 
     exit(0);
