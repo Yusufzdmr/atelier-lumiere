@@ -92,6 +92,15 @@ $sprache  = $tr ? 'tr' : 'de';
         </button>
         <button type="button" class="b-knopf" data-sec-hoch title="<?= $tr ? 'yukarı' : 'nach oben' ?>">↑</button>
         <button type="button" class="b-knopf" data-sec-runter title="<?= $tr ? 'aşağı' : 'nach unten' ?>">↓</button>
+        <?php /*
+           Zwei Textbloecke, zwei Ablaeufe fuer zwei Tage, derselbe Abschnitt
+           in einer anderen Gestalt zum Vergleichen: alles Faelle, in denen
+           man nicht neu anfangen, sondern von etwas Bestehendem ausgehen
+           will. Ohne diesen Knopf hiess das: neu anlegen und sieben Felder
+           abtippen.
+        */ ?>
+        <button type="button" class="b-knopf" data-sec-kopie
+                title="<?= $tr ? 'çoğalt' : 'verdoppeln' ?>">⧉</button>
         <button type="button" class="b-knopf" data-sec-weg
                 data-wort-weg="<?= $tr ? 'sil' : 'weg' ?>"
                 data-wort-zurueck="<?= $tr ? 'geri' : 'zurück' ?>"><?= $tr ? 'sil' : 'weg' ?></button>

@@ -218,10 +218,16 @@
   var secListe = form.querySelector("[data-sec-liste]");
   var secReihe = form.querySelector("[data-sec-reihe]");
 
-  var tafeln = form.querySelectorAll("[data-panel]");
-
+  /*
+   * Jedes Mal frisch fragen, nicht einmal einsammeln.
+   *
+   * Eine Liste, die beim Laden entsteht, kennt die Tafel nicht, die beim
+   * Verdoppeln dazukommt - und dann versteckt "zeige sec-6" alle anderen,
+   * waehrend sec-6 selbst versteckt bleibt. Nichts ist zu sehen, und das
+   * sieht aus wie ein leerer Editor.
+   */
   var zeigeTafel = function (name) {
-    tafeln.forEach(function (tafel) {
+    form.querySelectorAll("[data-panel]").forEach(function (tafel) {
       tafel.hidden = tafel.getAttribute("data-panel") !== name;
     });
   };
@@ -517,4 +523,112 @@
       passeAn(parseInt(aktiv.getAttribute("data-ansicht"), 10));
     });
   }
+
+  /*
+   * Verdoppeln.
+   *
+   * Zwei Textbloecke, zwei Ablaeufe fuer zwei Tage, derselbe Abschnitt in
+   * einer anderen Gestalt zum Vergleichen - lauter Faelle, in denen man von
+   * etwas Bestehendem ausgehen will statt neu anzufangen. Vorher hiess das:
+   * anlegen und sieben Felder abtippen.
+   *
+   * Die Kopie bekommt eine NEUE Nummer, und zwar eine hoehere als jede
+   * vorhandene. Die Nummer ist die Kennung einer Zeile im Formular
+   * (sec_title_de_3); zwei Zeilen mit derselben Nummer waeren beim Absenden
+   * eine einzige, und die zweite ueberschriebe die erste still.
+   *
+   * cloneNode kopiert Attribute, nicht Zustaende: was jemand seit dem Laden
+   * getippt oder angehakt hat, steht in der Eigenschaft und nicht im
+   * Attribut. Deshalb werden Werte und Haken danach von Hand nachgezogen -
+   * sonst kopiert man den Stand von vor zehn Minuten.
+   */
+  var naechsteNummer = function () {
+    var groesste = -1;
+
+    form.querySelectorAll("[data-sec-zeile]").forEach(function (zeile) {
+      var nummer = parseInt(zeile.getAttribute("data-sec-zeile"), 10);
+      if (!isNaN(nummer) && nummer > groesste) groesste = nummer;
+    });
+
+    return groesste + 1;
+  };
+
+  var umnummerieren = function (wurzel, alt, neu) {
+    var alle = wurzel.querySelectorAll("*");
+    var enden = new RegExp("_" + alt + "$");
+
+    Array.prototype.forEach.call(alle, function (knoten) {
+      var name = knoten.getAttribute("name");
+      if (name && enden.test(name)) {
+        knoten.setAttribute("name", name.replace(enden, "_" + neu));
+      }
+
+      ["data-sec-titel", "data-sec-gestalt", "data-sec-art-feld", "data-sec-kennung", "data-fuer"]
+        .forEach(function (merkmal) {
+          if (knoten.getAttribute(merkmal) === String(alt)) {
+            knoten.setAttribute(merkmal, String(neu));
+          }
+        });
+    });
+  };
+
+  // cloneNode nimmt Attribute mit, nicht Zustaende. Was seit dem Laden
+  // getippt wurde, steht nur in der Eigenschaft.
+  var zustaendeUebernehmen = function (quelle, ziel) {
+    var vonAllen = quelle.querySelectorAll("input, select, textarea");
+    var nachAllen = ziel.querySelectorAll("input, select, textarea");
+
+    Array.prototype.forEach.call(vonAllen, function (von, i) {
+      var nach = nachAllen[i];
+      if (!nach) return;
+      if (von.type === "checkbox" || von.type === "radio") {
+        nach.checked = von.checked;
+      } else {
+        nach.value = von.value;
+      }
+    });
+  };
+
+  secListe.addEventListener("click", function (ereignis) {
+    var knopf = ereignis.target.closest("[data-sec-kopie]");
+    if (!knopf) return;
+
+    var zeile = knopf.closest("[data-sec-zeile]");
+    var alt = zeile.getAttribute("data-sec-zeile");
+    var tafel = form.querySelector('[data-panel="sec-' + alt + '"]');
+    if (!tafel) return;
+
+    var neu = naechsteNummer();
+
+    var tafelKopie = tafel.cloneNode(true);
+    zustaendeUebernehmen(tafel, tafelKopie);
+    tafelKopie.setAttribute("data-panel", "sec-" + neu);
+    umnummerieren(tafelKopie, alt, neu);
+
+    // Die Kennung muss eine eigene sein: zwei Abschnitte mit derselben waeren
+    // im Stilblock ein und derselbe.
+    var kennung = tafelKopie.querySelector("[data-sec-kennung]");
+    if (kennung) kennung.value = (kennung.value || "abschnitt") + "-" + neu;
+
+    tafel.parentNode.appendChild(tafelKopie);
+
+    var zeileKopie = zeile.cloneNode(true);
+    zustaendeUebernehmen(zeile, zeileKopie);
+    zeileKopie.setAttribute("data-sec-zeile", neu);
+    zeileKopie.removeAttribute("data-aktiv");
+    zeileKopie.removeAttribute("data-weg");
+    umnummerieren(zeileKopie, alt, neu);
+
+    var auge = zeileKopie.querySelector('input[type="checkbox"]');
+    if (auge) auge.setAttribute("name", "sec_on_" + neu);
+
+    zeile.parentNode.insertBefore(zeileKopie, zeile.nextSibling);
+
+    reiheNeu();
+
+    // Und gleich hinsehen: eine Kopie, die man erst suchen muss, ist eine
+    // halbe Kopie.
+    markiere(zeileKopie);
+    zeigeTafel("sec-" + neu);
+  });
 })();

@@ -202,5 +202,22 @@ $overviewTab = static function () use ($locale, $current, $link): string {
 
   <script src="/assets/admin.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/admin.js')) ?>" defer></script>
   <script src="/assets/upload.js?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/upload.js')) ?>" defer></script>
+
+  <?php /*
+     Seiten mit eigenem Verhalten laden ihr Skript zusaetzlich - dieselbe
+     Zeile wie in der oeffentlichen Vorlage.
+
+     Sie fehlte hier. Der Design-Editor gibt seit jeher
+     'scripts' => ['/assets/design-editor.js'] mit (DesignAdminController),
+     und diese Vorlage hat es nie gelesen: das Skript wurde NIE geladen. Die
+     Vorschau reagierte also auf keine Eingabe, und niemand konnte sagen,
+     warum - im Markup stand alles richtig, im Netzwerk kam die Datei nie an.
+
+     Gefunden am 24.08.2026, als ein Test die Seite nach ihren <script>-Tags
+     absuchte und design-editor.js nicht darunter war.
+  */ ?>
+  <?php foreach ((array) ($meta['scripts'] ?? []) as $script) : ?>
+    <script src="<?= e($script) ?>?v=<?= e((string) @filemtime(__DIR__ . '/../../public' . $script)) ?>" defer></script>
+  <?php endforeach; ?>
 </body>
 </html>
