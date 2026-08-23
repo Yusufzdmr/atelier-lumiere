@@ -98,9 +98,16 @@ foreach (array_slice($argv, 1) as $arg) {
  * Eintrag in $tasarimlar: dort steht neben jeder Kennung ein Thema, das es
  * fuer "film" und "bild" nicht gibt.
  *
- * Sie unterscheiden sich in genau einer Ebene - der hintersten. Alles andere
- * ist gleich, mit Absicht: was der Kunde vergleichen will, ist der Film gegen
- * das Foto, nicht zwei Entwuerfe gegeneinander.
+ * Sie unterscheiden sich in genau einer Sache: wie sie AUFGEHEN. Bei "film"
+ * laeuft der Film des echten Kuverts, bei "bild" die gezeichnete Klappe.
+ * Danach kommt beide Male dasselbe Blatt.
+ *
+ * Warum nicht der Film als Kartengrund, wie zuerst gebaut: angesehen, und
+ * zweimal daneben. Der Film ZEIGT ein Kuvert, das aufgeht - in einer Schleife
+ * bricht dasselbe Siegel alle fuenf Sekunden neu. Und er ist cremeweiss; die
+ * Schrift dieses Blattes ist fuer schwarzes Papier gemacht und verschwand
+ * darauf. Ein Film vom Aufgehen gehoert an den Anfang, nicht in den Grund -
+ * genau so machen es auch beide Referenzen des Kunden.
  *
  * Die Mitte bleibt frei. "Ortasi bos dusun, sadece cicekler var."
  */
@@ -163,8 +170,21 @@ if ($id === 'referenz') {
      * Kommt spaeter ein freigestelltes Motiv als PNG (so macht es die
      * Toskana-Referenz), bekommt es eine eigene Ebene.
      */
-    $grundEbenen = static function (array $hinten): array {
-        return array_merge([$hinten], [
+    $grundEbenen = static function (): array {
+        return array_merge([[
+            /*
+             * Das Blatt selbst - in beiden Vorlagen dasselbe. Es ist eine
+             * photo-Ebene und keine image-Ebene, damit das Paar sein eigenes
+             * Bild dahinter legen darf, wenn der Grafiker das Recht laesst.
+             */
+            'id'    => 'hintergrund',
+            'label' => 'Hintergrundbild',
+            'type'  => 'photo',
+            'spot'  => 'card',
+            'src'   => '/assets/vorlagen/bild.jpg',
+            'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+            'permissions' => ['edit' => true, 'photo' => true],
+        ]], [
             /*
              * Die Verzoegerungen sind eine Reihenfolge, keine Dekoration:
              * 300 - 900 - 1500. Erst sagt die kleine Zeile, worum es geht,
@@ -235,22 +255,18 @@ if ($id === 'referenz') {
             'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
-            'layers'   => $grundEbenen([
-                'id'     => 'hintergrund',
-                'label'  => 'Hintergrundfilm',
-                'type'   => 'video',
-                'spot'   => 'card',
-                'src'    => '/assets/vorlagen/film.mp4',
-                // Kein Standbild: der Server kann keins aus dem Film
-                // schneiden (kein ffmpeg), und preload="metadata" zeigt
-                // ohnehin das erste Bild. Legt der Grafiker eins an, kommt es
-                // ins Feld daneben.
-                'poster' => '',
-                'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
-                // Das Recht, aus der Bibliothek zu waehlen: edit ist der
-                // Hauptschalter, photo die Erlaubnis fuer den Inhalt.
-                'permissions' => ['edit' => true, 'photo' => true],
-            ]),
+            /*
+             * Der Oeffnungsfilm. Er steht im Dokument und nicht im Thema -
+             * ein v2-Dokument hat keine lebende Verbindung dorthin, und was
+             * hier steht, friert mit dem Sockel ein.
+             *
+             * Kein Standbild: der Server kann keins aus dem Film schneiden
+             * (kein ffmpeg), und preload="auto" hat den ersten Frame ohnehin
+             * da, bevor jemand tippt. Legt der Grafiker eins an, kommt es ins
+             * Feld daneben.
+             */
+            'intro'    => ['video' => '/assets/vorlagen/film.mp4', 'poster' => ''],
+            'layers'   => $grundEbenen(),
         ],
         [
             'id'   => 'bild',
@@ -261,15 +277,7 @@ if ($id === 'referenz') {
             'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
-            'layers'   => $grundEbenen([
-                'id'    => 'hintergrund',
-                'label' => 'Hintergrundbild',
-                'type'  => 'photo',
-                'spot'  => 'card',
-                'src'   => '/assets/vorlagen/bild.jpg',
-                'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
-                'permissions' => ['edit' => true, 'photo' => true],
-            ]),
+            'layers'   => $grundEbenen(),
         ],
     ];
 
