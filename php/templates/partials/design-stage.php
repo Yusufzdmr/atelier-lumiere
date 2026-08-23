@@ -153,7 +153,7 @@ use Atelier\Design;
       <div class="d-stage-mitte flex items-center justify-center px-6">
         <div class="d-card t-card relative w-full max-w-2xl overflow-hidden"
              data-speed="<?= $tempo ?>"
-             style="aspect-ratio: <?= $ratio ?>; background: var(--d-paper);
+             style="aspect-ratio: <?= e($ratio) ?>; background: var(--d-paper);
                     container-type: inline-size;
                     /* Die Ebenen der Karte tragen eigene z-index-Werte aus
                        Design::css(). Ohne eigenen Stapelkontext klettern sie
@@ -247,7 +247,7 @@ use Atelier\Design;
              man sah den Sprung.
           */ ?>
           <video class="w-full max-w-2xl cursor-pointer object-cover"
-                 style="aspect-ratio: <?= $ratio ?>;" data-intro-film
+                 style="aspect-ratio: <?= e($ratio) ?>;" data-intro-film
                  src="<?= e($introFilm) ?>"
                  <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
                  muted playsinline preload="auto"></video>

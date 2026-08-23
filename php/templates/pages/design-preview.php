@@ -17,6 +17,7 @@
  * @var string $locale
  */
 
+use Atelier\Design;
 use Atelier\I18n;
 use Atelier\View;
 use function Atelier\e;
@@ -84,7 +85,26 @@ $idle = (string) $design['animation']['idle'];
      Spalte. Ein einzelner zentrierter Kasten waere eine schwarze Saeule auf
      cremefarbenem Grund - genau der Bruch, der weg soll.
   */ ?>
-  <div class="<?= e($scope) ?> d-sec-flaeche">
+  <?php
+    /*
+     * Das Blatt der Karte laeuft nach unten weiter.
+     *
+     * Die Farbe allein reicht nicht: das Papier des Kunden hat eine Struktur,
+     * und ohne sie bricht der Eindruck an der Unterkante der Karte ab. Das
+     * Bild kommt aus der hintersten Ebene der Karte - dieselbe Datei, die
+     * oben schon liegt. safeSrc(), weil es in ein style-Attribut geht.
+     */
+    $papier = '';
+    foreach ($design['layers'] as $ebene) {
+        if (in_array($ebene['type'], ['photo', 'image'], true)
+            && $ebene['spot'] === 'card' && (string) $ebene['src'] !== '') {
+            $papier = Design::safeSrc((string) $ebene['src']);
+            break;
+        }
+    }
+  ?>
+  <div class="<?= e($scope) ?> d-sec-flaeche"
+       <?= $papier !== '' ? 'style="background-image:url(\'' . e($papier) . '\')"' : '' ?>>
     <div class="d-sections mx-auto max-w-2xl px-6 py-16 pb-32">
       <?= $abschnitte ?>
     </div>

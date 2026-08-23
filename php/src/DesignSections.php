@@ -279,7 +279,18 @@ final class DesignSections
          * Vorsicht ohne Grund: eine Vorlage ohne Papiermarke gibt es (Noir
          * hat keine), und ohne ihn stuende die Flaeche dann auf transparent.
          */
-        return $scope . '.d-sec-flaeche{background:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);}'
+        /*
+         * background-COLOR, nicht die Kurzform: die Vorlage haengt der
+         * Flaeche ein Bild an (das Blatt der Karte), und die Kurzform wuerde
+         * es jedes Mal wieder wegwischen.
+         *
+         * Unten ausgerichtet und beschnitten, mit Absicht: der Schmuck des
+         * Blattes sitzt OBEN. Von unten gezeigt kommt der ruhige Teil des
+         * Papiers zum Vorschein - dasselbe Papier, das die Karte darueber
+         * schon hat, nur ohne die Goldecken ein zweites Mal.
+         */
+        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
+            . 'background-position:bottom center;background-size:cover;background-repeat:no-repeat;}'
             . $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -

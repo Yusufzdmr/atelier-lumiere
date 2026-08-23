@@ -128,8 +128,20 @@ final class Design
         ));
 
         $canvas = is_array($doc['canvas']) ? $doc['canvas'] : [];
+
+        /*
+         * Zwei Zahlen mit einem Doppelpunkt, sonst nichts.
+         *
+         * Der Wert kommt als freier Text aus dem Panel und landet in einem
+         * style-Attribut ("aspect-ratio: 768 / 1376"). Ungeprueft traegt er
+         * ein Anfuehrungszeichen mit hinein und bricht aus dem Attribut aus.
+         * Die Ausgabestellen entkommen ihn zusaetzlich - aber richtig ist die
+         * Pruefung hier, weil es dieselbe Zahl an mehreren Stellen ist und
+         * eine vergessene Stelle sonst wieder offen stuende.
+         */
+        $ratio = trim((string) ($canvas['ratio'] ?? '9:16'));
         $doc['canvas'] = [
-            'ratio' => (string) ($canvas['ratio'] ?? '9:16'),
+            'ratio' => preg_match('/^\d{1,5}:\d{1,5}$/', $ratio) === 1 ? $ratio : '9:16',
             'safe'  => max(0, min(40, (int) ($canvas['safe'] ?? 6))),
         ];
 

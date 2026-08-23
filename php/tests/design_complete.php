@@ -129,3 +129,11 @@ $fremdIntro = Design::complete(['id' => 'x', 'intro' => [
 
 assert_same('', $fremdIntro['intro']['video'], 'complete: fremder Host wird verworfen');
 assert_same('', $fremdIntro['intro']['poster'], 'complete: auch beim Standbild');
+
+/* --- Das Seitenverhaeltnis geht in ein style-Attribut: zwei Zahlen, sonst nichts --- */
+
+$boese = Design::complete(['id' => 'x', 'canvas' => ['ratio' => '1:1" onload="alert(1)']]);
+assert_same('9:16', $boese['canvas']['ratio'], 'complete: ein Ausbruch aus dem Attribut faellt auf den Standard');
+
+$echt = Design::complete(['id' => 'x', 'canvas' => ['ratio' => '768:1376']]);
+assert_same('768:1376', $echt['canvas']['ratio'], 'complete: eine echte Angabe bleibt');

@@ -33,6 +33,7 @@
  */
 
 use function Atelier\e;
+use Atelier\Design;
 use Atelier\View;
 ?>
 <?= View::partial('partials/design-stage', [
@@ -70,7 +71,23 @@ use Atelier\View;
      Papier der Karte einfach weiterlaeuft; der Text darin bleibt in seiner
      Spalte. Dieselbe Anordnung wie im Schaufenster.
   */ ?>
-  <div class="<?= e($scope) ?> d-sec-flaeche">
+  <?php
+    /*
+     * Das Blatt der Karte laeuft nach unten weiter - dieselbe Datei, die oben
+     * schon liegt. Ohne sie braeche die Struktur des Papiers an der Unterkante
+     * der Karte ab. safeSrc(), weil es in ein style-Attribut geht.
+     */
+    $papier = '';
+    foreach ($design['layers'] as $ebene) {
+        if (in_array($ebene['type'], ['photo', 'image'], true)
+            && $ebene['spot'] === 'card' && (string) $ebene['src'] !== '') {
+            $papier = Design::safeSrc((string) $ebene['src']);
+            break;
+        }
+    }
+  ?>
+  <div class="<?= e($scope) ?> d-sec-flaeche"
+       <?= $papier !== '' ? 'style="background-image:url(\'' . e($papier) . '\')"' : '' ?>>
     <div class="d-sections mx-auto max-w-2xl px-6 py-16">
       <?= $abschnitte ?>
     </div>
