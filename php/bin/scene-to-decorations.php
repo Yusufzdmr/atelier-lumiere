@@ -21,6 +21,38 @@ declare(strict_types=1);
  * hingelegt hat, soll es behalten. Die neuen kommen dahinter, und die
  * Obergrenze von zwoelf gilt weiter - was nicht mehr passt, wird gemeldet
  * und nicht still weggeworfen.
+ *
+ * ---------------------------------------------------------------------------
+ * ACHTUNG: SO WIE ES HIER STEHT, REICHT ES NICHT. Aufgabe 9 bleibt zu.
+ *
+ * Einmal durchgelaufen und angesehen (sechzehn Themen, vorher/nachher unter
+ * .superpowers/szene-vorher und -nachher). Ergebnis: nach dem Schreiben ist
+ * von der Szene NICHTS mehr zu sehen. Drei Gruende, alle gemessen:
+ *
+ * 1. DER ORT. $scene steht in pages/invitation.php:233 INNERHALB von
+ *    .t-envelope-stage - "fixed inset-0 z-50", mit der Hintergrundfarbe des
+ *    Themas. $decorations('page') steht in Zeile 221 davor, also DAHINTER.
+ *    Eine page-Dekoration liegt hinter dem geschlossenen Kuvert und wird erst
+ *    sichtbar, wenn es aufgeht. Themes::SPOTS kennt card, page und envelope -
+ *    und 'envelope' ist der kleine Briefumschlag selbst (Zeile 254), nicht
+ *    die Buehne. Fuer den Ort der Szene gibt es keinen Spot.
+ *
+ * 2. DIE BREITE. Die Stilvorlage sagt ".scene-tl{width:38vw;max-width:240px}".
+ *    Auf 1280 px sind 38vw = 486 px, der Deckel greift also immer. Eine
+ *    Dekoration kennt kein max-width. Mit den rohen 38 % kam das Teil 1099 px
+ *    breit heraus - viermal zu gross. Die Breiten unten sind deshalb aus dem
+ *    Deckel gerechnet, bezogen auf 1280 px; auf einem breiteren Bildschirm
+ *    wachsen sie trotzdem mit, das Original nicht.
+ *
+ * 3. DIE UNTERKANTE. ".scene-bl{bottom:0}" - eine Dekoration hat nur y von
+ *    oben, und .scene spannt die GANZE Seite, deren Hoehe der Inhalt
+ *    bestimmt. Unten klebende Teile lassen sich nicht ausrechnen.
+ *
+ * Was fehlt, ist also kein Zahlendreher, sondern ein Feld und ein Ort. Wer
+ * hier weitermacht, entscheidet zuerst, welcher der drei Wege es sein soll -
+ * ein vierter Spot fuer die Buehne, ein Ankerfeld an der Dekoration, oder
+ * v1 abschalten und die Frage verschwinden lassen.
+ * ---------------------------------------------------------------------------
  */
 
 require __DIR__ . '/../src/bootstrap.php';
@@ -51,25 +83,31 @@ if ($theme === null) {
 
 /*
  * Die Lage je Klasse, uebersetzt in das, was eine Dekoration kann: x, y und
- * width in Prozent, dazu rotate. Die Quelle sind dieselben Regeln, die
- * export-scene-art.php ausdruckt - hier nur gerechnet statt vorgelesen.
+ * width in Prozent, dazu rotate.
  *
- * "auge" heisst: die Uebersetzung ist eine Naeherung und gehoert vor Aufgabe 9
- * angesehen. Ein Teil, das unten klebt (scene-bottom), kennt seine eigene
- * Hoehe nicht, und scene-wide sagt nur eine Breite und keinen Ort - beides
- * laesst sich nicht ausrechnen, nur schaetzen.
+ * Die Breiten sind NICHT die vw-Werte aus der Stilvorlage, und das ist
+ * gemessen und nicht vermutet: .scene-tl heisst "width:38vw;max-width:240px".
+ * Auf einem Bildschirm von 1280 px sind 38vw = 486 px, der Deckel greift also
+ * immer, und die wahre Breite ist 240 px = 19 %. Mit den 38 % kam das Teil
+ * 1099 px breit heraus - viermal zu gross. Eine Dekoration kennt kein
+ * max-width, deshalb steht hier der Deckel, umgerechnet auf 1280 px.
+ *
+ * "unten" heisst: das Teil klebt in der Stilvorlage an der Unterkante
+ * ("bottom:0"). Eine Dekoration hat dafuer kein Feld - sie kennt nur y von
+ * oben, und .scene spannt die GANZE Seite, deren Hoehe vom Inhalt abhaengt.
+ * Solche Teile lassen sich nicht ausrechnen; sie werden gemeldet.
  */
 $lage = [
-    'scene-tl'     => ['x' =>  0, 'y' =>  0, 'width' =>  38, 'auge' => false],
-    'scene-tr'     => ['x' => 62, 'y' =>  0, 'width' =>  38, 'auge' => false],
-    'scene-bl'     => ['x' =>  0, 'y' => 68, 'width' =>  32, 'auge' => false],
-    'scene-br'     => ['x' => 68, 'y' => 68, 'width' =>  32, 'auge' => false],
-    'scene-left'   => ['x' =>  0, 'y' =>  6, 'width' =>  42, 'auge' => false],
-    'scene-ml'     => ['x' =>  0, 'y' => 18, 'width' =>  20, 'auge' => false],
-    'scene-mr'     => ['x' => 74, 'y' => 30, 'width' =>  22, 'auge' => false],
-    'scene-top'    => ['x' =>  0, 'y' =>  0, 'width' => 100, 'auge' => false],
-    'scene-bottom' => ['x' =>  0, 'y' => 72, 'width' => 100, 'auge' => true],
-    'scene-wide'   => ['x' => 27, 'y' => 27, 'width' =>  46, 'auge' => true],
+    'scene-tl'     => ['x' =>  0, 'y' =>  0, 'width' => 19, 'unten' => false],
+    'scene-tr'     => ['x' => 81, 'y' =>  0, 'width' => 19, 'unten' => false],
+    'scene-bl'     => ['x' =>  0, 'y' =>  0, 'width' => 16, 'unten' => true],
+    'scene-br'     => ['x' => 84, 'y' =>  0, 'width' => 16, 'unten' => true],
+    'scene-left'   => ['x' =>  0, 'y' =>  6, 'width' => 22, 'unten' => false],
+    'scene-ml'     => ['x' =>  0, 'y' => 18, 'width' =>  9, 'unten' => false],
+    'scene-mr'     => ['x' => 86, 'y' => 30, 'width' => 10, 'unten' => false],
+    'scene-top'    => ['x' =>  0, 'y' =>  0, 'width' => 100, 'unten' => false],
+    'scene-bottom' => ['x' =>  0, 'y' =>  0, 'width' => 100, 'unten' => true],
+    'scene-wide'   => ['x' => 39, 'y' => 27, 'width' => 23, 'unten' => false],
 ];
 
 /**
@@ -144,8 +182,8 @@ foreach ($klassen as $i => $klasse) {
     foreach (explode(' ', $klasse) as $stueck) {
         if (isset($lage[$stueck])) {
             $box = ['x' => $lage[$stueck]['x'], 'y' => $lage[$stueck]['y'], 'width' => $lage[$stueck]['width']];
-            if ($lage[$stueck]['auge']) {
-                $auge[] = $stueck;
+            if ($lage[$stueck]['unten']) {
+                $auge[] = $stueck . ' (klebt unten - eine Dekoration kann das nicht)';
             }
         }
         if (isset($dreht[$stueck])) {
