@@ -434,23 +434,32 @@ final class Design
                 $moves[$el['motion']['move']] = true;
 
                 /*
-                 * Die Bedingung ist der ganze Punkt: ohne sie liefe die
-                 * Bewegung, sobald die Seite da ist - also HINTER dem
-                 * geschlossenen Kuvert. Wenn die Karte dann auftaucht, ist
-                 * das Einblenden laengst vorbei und der Text steht einfach
-                 * da. Dieselbe Falle wie beim Video (Aufgabe 6), nur leiser,
-                 * weil hier niemand fuer verschwendete Daten zahlt.
+                 * ZWEI Regeln, nicht eine - und die erste ist die wichtige.
+                 *
+                 * Die Bewegung an die Marke zu haengen reicht nicht: solange
+                 * sie fehlt, laeuft keine Animation, und ohne Animation steht
+                 * das Element bei seiner eigenen Deckkraft. Der Text stand
+                 * also waehrend des ganzen Vorspanns sichtbar da und sprang
+                 * erst beim Setzen der Marke auf null zurueck, um dann
+                 * einzublenden. Gemessen: 1/1/1 fuer vier Sekunden, dann
+                 * 0.13/0/0. Genau das hat der Kunde gesehen.
+                 *
+                 * Deshalb sagt die Marke jetzt DREI Dinge statt zwei:
+                 *
+                 *   fehlt   kein Skript - der Text steht da. So bleibt die
+                 *           Vorschau im Panel und im Assistenten heil, die
+                 *           invitation.js gar nicht laedt.
+                 *   "false" Skript da, Kuvert noch zu - der Text ist noch
+                 *           nicht.
+                 *   "true"  die Karte liegt frei - jetzt kommt er.
                  *
                  * Die Marke sitzt am <html>, nicht an der Buehne: dasselbe
                  * Skript bedient beide Fassungen, und in der ersten gibt es
-                 * keine .d-stage. invitation.js setzt sie, wenn die Karte
-                 * frei liegt.
-                 *
-                 * Ohne Skript bleibt sie aus - und dann steht der Text
-                 * einfach da, sichtbar. Das ist die richtige Reihenfolge:
-                 * erst was ohne Skript traegt, dann die Verbesserung.
+                 * keine .d-stage.
                  */
-                $css .= '[data-karte-frei] ' . $selector . '{'
+                $css .= '[data-karte-frei="false"] ' . $selector . '{opacity:0;}';
+
+                $css .= '[data-karte-frei="true"] ' . $selector . '{'
                     . 'animation:d-move-' . $el['motion']['move'] . ' '
                     . $el['motion']['duration'] . 'ms ease-out '
                     . $el['motion']['delay'] . 'ms both;'

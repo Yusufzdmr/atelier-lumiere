@@ -14,6 +14,12 @@
 
   /* ---------------------------- Umschlag ---------------------------- */
   if (envelope) {
+    // Sofort, nicht erst beim Oeffnen: solange das Kuvert zu ist, sind die
+    // bewegten Ebenen der Karte noch nicht da. Ohne diese Zeile stuenden sie
+    // waehrend des ganzen Vorspanns sichtbar hinter dem Film und spraengen
+    // beim Freiwerden der Karte auf null zurueck, um dann einzublenden.
+    document.documentElement.setAttribute("data-karte-frei", "false");
+
     var open = envelope.querySelector("[data-envelope-open]");
     var kind = envelope.getAttribute("data-animation") || "seal";
 
@@ -127,13 +133,18 @@
       // Erst wenn die Karte frei liegt, duerfen die Abschnitte anlaufen.
       // Vorher haette der Beobachter sie hinter der Huelle abgehakt, und
       // beim Aufschlagen stuende alles schon fertig da.
-      // Jetzt erst duerfen sich die Ebenen der Karte bewegen. Bis hierher
-      // steht ihr Text sichtbar, aber unbewegt hinter dem Kuvert - Design::css()
-      // bindet jede Bewegung an diese Marke. Ohne sie liefe das Einblenden
-      // beim Laden ab, unter der Huelle, und die Karte kaeme fertig heraus.
+      /*
+       * Jetzt erst duerfen sich die Ebenen der Karte bewegen.
+       *
+       * Und zwar bei introMs + 1700, nicht bei introMs: das ist derselbe
+       * Zeitpunkt, an dem die Karte selbst zu steigen anfaengt (siehe delay
+       * unten). Frueher waere das Einblenden wieder fuer niemanden - die
+       * Karte liegt bis dahin auf Deckkraft 0, und der Text blendete unter
+       * ihr ein. "Nach dem Kuvert" heisst: wenn die Karte da ist.
+       */
       setTimeout(function () {
         document.documentElement.setAttribute("data-karte-frei", "true");
-      }, introMs);
+      }, introMs + 1700);
 
       // Die Filme der Ebenen. Sie tragen kein autoplay - sonst liefen sie
       // hinter dem geschlossenen Kuvert, unsichtbar und im Mobilfunk bezahlt.
@@ -160,7 +171,9 @@
       if (event.target === envelope) reveal();
     });
   } else {
-    // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen.
+    // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen. Die
+    // Marke wird hier NIE auf "false" gesetzt - es gibt nichts, worauf zu
+    // warten waere.
     document.documentElement.setAttribute("data-karte-frei", "true");
     var ruhig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!ruhig) {

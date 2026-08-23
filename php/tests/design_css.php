@@ -222,11 +222,27 @@ $bewegt = Design::css(['id' => 'x', 'layers' => [
 
 // Ohne die Bedingung liefe die Bewegung beim Laden - also hinter dem
 // geschlossenen Kuvert, wo sie niemand sieht. Dieselbe Falle wie beim Video.
-assert_contains($bewegt, '[data-karte-frei] .d-x .d-el-namen{animation:', 'css: Bewegung haengt an der freien Karte');
+assert_contains($bewegt, '[data-karte-frei="true"] .d-x .d-el-namen{animation:', 'css: Bewegung haengt an der freien Karte');
 // Und zwar NUR so: eine zweite, ungebundene Regel liefe wieder beim Laden.
 // Nicht mit assert_not_contains geprueft - die gebundene Regel enthaelt die
 // ungebundene als Teilzeichenkette, die Pruefung koennte nie bestehen.
 assert_same(1, substr_count($bewegt, '{animation:d-move-'), 'css: es gibt genau eine Bewegungsregel');
+
+/*
+ * Und der Zustand DAVOR muss auch gebunden sein - daran ist der erste
+ * Versuch gescheitert: ohne Marke laeuft keine Animation, ohne Animation
+ * steht das Element bei seiner eigenen Deckkraft, und der Text stand
+ * waehrend des ganzen Vorspanns sichtbar da. Gemessen: 1/1/1 fuer vier
+ * Sekunden, dann Sprung auf 0.13/0/0.
+ */
+assert_contains($bewegt, '[data-karte-frei="false"] .d-x .d-el-namen{opacity:0;}', 'css: vor der freien Karte ist die Ebene noch nicht da');
+
+/*
+ * Fehlt die Marke ganz, steht die Ebene da: die Vorschau im Panel und im
+ * Assistenten laedt invitation.js nicht, und dort darf nichts unsichtbar
+ * bleiben. Deshalb "false" und nicht die blosse Abwesenheit der Marke.
+ */
+assert_not_contains($bewegt, ':not([data-karte-frei])', 'css: die blosse Abwesenheit der Marke versteckt nichts');
 
 /* --- Ohne Bewegung keine Bedingung: die Ebene steht einfach da --- */
 
