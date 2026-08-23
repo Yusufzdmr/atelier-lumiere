@@ -8,6 +8,7 @@ declare(strict_types=1);
  *   php bin/seed-designs.php noir         Noir schreiben
  *   php bin/seed-designs.php noir --dry   nur zeigen
  *   php bin/seed-designs.php referenz     die zwei Vorlagen "film" und "bild"
+ *   php bin/seed-designs.php referenz --neu   dieselben, auch wenn es sie gibt
  *
  * Zwei Vorlagen, weil eine nichts beweist: Élysée ist hell, floral und ruhig,
  * Noir dunkel und geometrisch. Was das Format nur bei einer von beiden kann,
@@ -82,7 +83,9 @@ $tasarimlar = [
 
 $id = 'elysee';
 foreach (array_slice($argv, 1) as $arg) {
-    if ($arg !== '--dry') { $id = $arg; }
+    // Schalter sind keine Kennungen: ohne diese Zeile wuerde '--neu' als Name
+    // eines Themas gelesen und das Skript braeche mit "Unbekannt: --neu" ab.
+    if (!str_starts_with($arg, '--')) { $id = $arg; }
 }
 
 /*
@@ -103,17 +106,21 @@ foreach (array_slice($argv, 1) as $arg) {
  */
 if ($id === 'referenz') {
     /*
+     * Die Farben kommen vom Material, nicht aus dem Haus: das Blatt ist
+     * schwarzes Papier mit Goldfolie. Die creme Palette der anderen Vorlagen
+     * waere hier unlesbar - dunkler Text auf dunklem Papier.
+     *
      * Marken statt roher Werte, wie ueberall: eine Vorlage ohne Palette und
      * ohne Schriftmarken zeigt im Panel fuer jede Textebene eine Warnung, und
      * eine Referenz, die warnt, ist keine.
      */
     $referenzPalette = [
-        'paper'  => ['value' => '#FBF6EE', 'label' => ['de' => 'Papier',   'tr' => 'Kagit'],  'customer' => false],
-        'bg'     => ['value' => '#F3EADC', 'label' => ['de' => 'Seite',    'tr' => 'Sayfa'],  'customer' => false],
-        'fg'     => ['value' => '#2E2A26', 'label' => ['de' => 'Schrift',  'tr' => 'Yazi'],   'customer' => false],
-        'soft'   => ['value' => '#8A8078', 'label' => ['de' => 'Gedaempft','tr' => 'Soluk'],  'customer' => false],
+        'paper'  => ['value' => '#12100E', 'label' => ['de' => 'Papier',   'tr' => 'Kagit'],  'customer' => false],
+        'bg'     => ['value' => '#0B0A09', 'label' => ['de' => 'Seite',    'tr' => 'Sayfa'],  'customer' => false],
+        'fg'     => ['value' => '#F2E7D5', 'label' => ['de' => 'Schrift',  'tr' => 'Yazi'],   'customer' => false],
+        'soft'   => ['value' => '#C9B896', 'label' => ['de' => 'Gedaempft','tr' => 'Soluk'],  'customer' => false],
         // Das Gold darf der Kunde waehlen - dieselbe Regel wie bei Elysee.
-        'accent' => ['value' => '#B08D57', 'label' => ['de' => 'Gold',     'tr' => 'Altin'],  'customer' => true],
+        'accent' => ['value' => '#C9A24B', 'label' => ['de' => 'Gold',     'tr' => 'Altin'],  'customer' => true],
     ];
 
     $referenzSchriften = [
@@ -123,27 +130,40 @@ if ($id === 'referenz') {
                       'tracking' => 0, 'lineHeight' => 150, 'customer' => false],
     ];
 
+    /*
+     * Die hinterste Ebene sitzt auf der KARTE und nicht auf der Seite.
+     *
+     * Der Plan hatte sie auf die Seite gelegt, hinter eine querformatige
+     * Karte - geschrieben, bevor das Material da war. Beide Dateien des
+     * Kunden sind aber hochkant (Bild 768 x 1376, Film 478 x 850) und beide
+     * sind ein FERTIGES Blatt: schwarzes Papier, oben zwei Goldecken, in der
+     * Mitte zwei senkrechte Goldlinien und dazwischen nichts. Auf der Seite
+     * laege dieses Blatt hinter der Karte und waere von ihr verdeckt. Es IST
+     * die Karte.
+     *
+     * Deshalb faellt auch die Ebene "rahmen" weg: der Rahmen ist in das Blatt
+     * gedruckt. Ein leerer Bilderplatz darueber waere eine Warnung ohne Zweck.
+     * Kommt spaeter ein freigestelltes Motiv als PNG (so macht es die
+     * Toskana-Referenz), bekommt es eine eigene Ebene.
+     */
     $grundEbenen = static function (array $hinten): array {
         return array_merge([$hinten], [
-            // Der Rahmen aus Motiven. Er liegt auf der Seite, hinter der Karte,
-            // und laesst die Mitte offen - die Datei selbst hat dort nichts.
-            [
-                'id'    => 'rahmen',
-                'label' => 'Bluetenrahmen',
-                'type'  => 'image',
-                'spot'  => 'page',
-                'src'   => '',   // Der Grafiker legt die Datei; leer faellt sie weg.
-                'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
-                'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1200],
-            ],
+            /*
+             * Die drei Zeilen stehen in der Spalte ZWISCHEN den Goldlinien.
+             * Gemessen am Blatt: die Linien laufen senkrecht von 31 % bis
+             * 61 % der Hoehe und stehen bei 8 % und 92 % der Breite. Der
+             * Kasten ist deshalb 14 bis 86 - beim ersten Versuch stand er
+             * genau AUF den Linien, und "Sophia & Maximilian" beruehrte
+             * beide. Wer die Zahlen aendert, misst am Blatt nach.
+             */
             [
                 'id'    => 'obertitel',
                 'label' => 'Ueberschrift',
                 'type'  => 'text',
                 'spot'  => 'card',
                 'text'  => ['de' => 'WIR HEIRATEN', 'en' => 'WE ARE GETTING MARRIED'],
-                'box'   => ['x' => 10, 'y' => 30, 'w' => 80],
-                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 26, 'align' => 'center'],
+                'box'   => ['x' => 14, 'y' => 33, 'w' => 72],
+                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 22, 'align' => 'center'],
                 'motion' => ['move' => 'fade', 'delay' => 200, 'duration' => 1200],
             ],
             [
@@ -152,8 +172,8 @@ if ($id === 'referenz') {
                 'type'  => 'text',
                 'spot'  => 'card',
                 'bind'  => 'couple_names',
-                'box'   => ['x' => 8, 'y' => 42, 'w' => 84],
-                'style' => ['font' => 'display', 'color' => 'fg', 'size' => 108, 'align' => 'center'],
+                'box'   => ['x' => 14, 'y' => 39, 'w' => 72],
+                'style' => ['font' => 'display', 'color' => 'fg', 'size' => 92, 'align' => 'center'],
                 'motion' => ['move' => 'fade', 'delay' => 500, 'duration' => 1400],
             ],
             [
@@ -162,29 +182,39 @@ if ($id === 'referenz') {
                 'type'  => 'text',
                 'spot'  => 'card',
                 'bind'  => 'wedding_date',
-                'box'   => ['x' => 10, 'y' => 60, 'w' => 80],
-                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 30, 'align' => 'center'],
+                'box'   => ['x' => 14, 'y' => 52, 'w' => 72],
+                'style' => ['font' => 'body', 'color' => 'accent', 'size' => 26, 'align' => 'center'],
                 'motion' => ['move' => 'fade', 'delay' => 800, 'duration' => 1200],
             ],
         ]);
     };
 
+    /*
+     * Das Seitenverhaeltnis ist gemessen, nicht gewaehlt: 768 x 1376 ist das
+     * Blatt des Kunden. Die anderen Vorlagen stehen auf 632:490, weil der
+     * alte Motor quer gebaut hat - hier waere das ein Zuschnitt quer durch
+     * die Goldecken.
+     */
     $vorlagen = [
         [
             'id'   => 'film',
             'slug' => 'film',
             'name' => ['de' => 'Film', 'en' => 'Film'],
-            'category' => 'floral',
+            'category' => 'luxury',
             'status'   => 'draft',
-            'canvas'   => ['ratio' => '632:490', 'safe' => 6],
+            'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
             'layers'   => $grundEbenen([
                 'id'     => 'hintergrund',
                 'label'  => 'Hintergrundfilm',
                 'type'   => 'video',
-                'spot'   => 'page',
-                'src'    => '',      // kommt aus der Bibliothek oder vom Grafiker
+                'spot'   => 'card',
+                'src'    => '/assets/vorlagen/film.mp4',
+                // Kein Standbild: der Server kann keins aus dem Film
+                // schneiden (kein ffmpeg), und preload="metadata" zeigt
+                // ohnehin das erste Bild. Legt der Grafiker eins an, kommt es
+                // ins Feld daneben.
                 'poster' => '',
                 'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
                 // Das Recht, aus der Bibliothek zu waehlen: edit ist der
@@ -196,17 +226,17 @@ if ($id === 'referenz') {
             'id'   => 'bild',
             'slug' => 'bild',
             'name' => ['de' => 'Bild', 'en' => 'Image'],
-            'category' => 'floral',
+            'category' => 'luxury',
             'status'   => 'draft',
-            'canvas'   => ['ratio' => '632:490', 'safe' => 6],
+            'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
             'layers'   => $grundEbenen([
                 'id'    => 'hintergrund',
                 'label' => 'Hintergrundbild',
                 'type'  => 'photo',
-                'spot'  => 'page',
-                'src'   => '',
+                'spot'  => 'card',
+                'src'   => '/assets/vorlagen/bild.jpg',
                 'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
                 'permissions' => ['edit' => true, 'photo' => true],
             ]),
@@ -216,9 +246,9 @@ if ($id === 'referenz') {
     foreach ($vorlagen as $roh) {
         // Nicht ueberschreiben, was schon da ist: der Grafiker hat womoeglich
         // laengst Dateien hinterlegt, und ein zweiter Seed-Lauf soll seine
-        // Arbeit nicht wegwerfen.
-        if (Design::findById($roh['id']) !== null) {
-            echo "  {$roh['id']}: gibt es schon, uebersprungen\n";
+        // Arbeit nicht wegwerfen. --neu schreibt sie trotzdem.
+        if (Design::findById($roh['id']) !== null && !in_array('--neu', $argv, true)) {
+            echo "  {$roh['id']}: gibt es schon, uebersprungen (--neu ueberschreibt)\n";
             continue;
         }
         if ($dry) {
@@ -226,7 +256,7 @@ if ($id === 'referenz') {
             continue;
         }
         Design::save(Design::complete($roh));
-        echo "  {$roh['id']}: angelegt\n";
+        echo "  {$roh['id']}: geschrieben\n";
     }
 
     exit(0);
