@@ -1208,8 +1208,36 @@ final class Design
          * Kennung oder mit unbekanntem Typ faellt in DesignSections::complete()
          * still weg; hier wird nur eingesammelt.
          */
+        /*
+         * Welche Zeilen, in welcher Reihenfolge.
+         *
+         * Bisher WAR der Index die Reihenfolge: sec_*_0 stand vor sec_*_1.
+         * Das reicht, solange die Zeilen untereinander in einem Formular
+         * stehen - aber nicht, sobald man sie in einer Liste schieben kann.
+         * Ein Feldname ist die Kennung einer Zeile; aenderte er sich beim
+         * Schieben, verloere jedes Feld dabei seinen Wert.
+         *
+         * Deshalb dieselbe Loesung wie bei den Ebenen: eine Reihe von
+         * Nummern in einem versteckten Feld. Wer nicht darin steht, ist
+         * geloescht - Umordnen und Loeschen sind dieselbe Bewegung.
+         *
+         * Fehlt das Feld, zaehlt wie bisher der Index. Ein Aufrufer, der von
+         * Abschnitten nichts weiss, soll nichts umsortieren.
+         */
+        $reihe = [];
+        if (isset($post['sec_reihenfolge'])) {
+            foreach (explode(',', (string) $post['sec_reihenfolge']) as $nummer) {
+                $nummer = trim($nummer);
+                if ($nummer !== '' && ctype_digit($nummer)) {
+                    $reihe[] = (int) $nummer;
+                }
+            }
+        } else {
+            $reihe = range(0, 39);
+        }
+
         $abschnitte = [];
-        for ($i = 0; $i < 40; $i++) {
+        foreach ($reihe as $i) {
             if (!isset($post['sec_type_' . $i])) {
                 continue;
             }

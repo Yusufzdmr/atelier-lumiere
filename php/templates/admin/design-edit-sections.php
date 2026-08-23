@@ -482,18 +482,36 @@ use function Atelier\e;
   $achsen = [
       'anim_intro'    => [$tr ? 'Giriş' : 'Auftakt',      Themes::INTROS,                 (string) $design['animation']['intro']],
       'anim_idle'     => [$tr ? 'Boşta' : 'Ruhe',         Themes::IDLES,                  (string) $design['animation']['idle']],
-      'anim_card'     => [$tr ? 'Kart' : 'Karte',         array_keys(Themes::ANIMATIONS), (string) $design['animation']['card']],
+      'anim_card'     => [$tr ? 'Kart' : 'Karte',         Themes::ANIMATIONS, (string) $design['animation']['card']],
       'anim_name'     => [$tr ? 'İsimler' : 'Namen',      Themes::NAME_ANIMATIONS,        (string) $design['animation']['nameMove']],
       'anim_particle' => [$tr ? 'Partikül' : 'Teilchen',  Themes::PARTICLES,              (string) $design['animation']['particle']],
       'anim_reveal'   => [$tr ? 'Açılış' : 'Enthüllung',  Themes::REVEALS,                (string) $design['animation']['reveal']],
   ];
   ?>
+  <?php /*
+     Was gespeichert ist, steht zur Wahl - auch wenn der Katalog es nicht mehr
+     kennt.
+
+     Gefunden am 24.08.2026 an noir: das Dokument trug idle=pulse,
+     reveal=side, particle=spark, nameMove=letters und card=seal. Die Listen
+     hier boten je zwei bis drei Woerter, keines davon war der gespeicherte
+     Wert - und ein <select> ohne passende Option waehlt die erste. Einmal
+     oeffnen, einmal speichern, und die ganze Bewegung einer Vorlage war eine
+     andere. Sichtbar erst auf der Seite, nie hier.
+
+     Die schmalen Listen sind Absicht (siehe Themes: "Weniger, mit Absicht" -
+     der Kunde wollte weniger Bewegung). Deshalb wird die Liste NICHT wieder
+     breit: der alte Wert erscheint nur, weil er der aktuelle ist, und
+     verschwindet, sobald jemand einen anderen waehlt. Neu waehlen kann man
+     ihn nicht - wegwerfen aber auch niemand aus Versehen.
+  */ ?>
   <div class="grid gap-4 sm:grid-cols-3">
     <?php foreach ($achsen as $name => [$titel, $liste, $wert]) : ?>
       <label class="<?= $label ?>"><?= e($titel) ?>
         <select name="<?= e($name) ?>" class="<?= $feld ?>">
-          <?php foreach ($liste as $option) : ?>
-            <option value="<?= e((string) $option) ?>" <?= $wert === (string) $option ? 'selected' : '' ?>><?= e((string) $option) ?></option>
+          <?php foreach (Themes::withCurrent($liste, $wert) as $option) : ?>
+            <option value="<?= e((string) $option) ?>" <?= $wert === (string) $option ? 'selected' : '' ?>>
+              <?= e((string) $option) ?><?= in_array((string) $option, $liste, true) ? '' : ($tr ? ' (eski)' : ' (alt)') ?></option>
           <?php endforeach; ?>
         </select></label>
     <?php endforeach; ?>
@@ -546,103 +564,15 @@ use function Atelier\e;
   <?php endforeach; ?>
 <?= $zu ?>
 
-<?= $auf($tr ? '8 · Bölümler' : '8 · Abschnitte') ?>
-  <p class="<?= $label ?>">
-    <?= $tr
-        ? 'Kartın altında görünenler. Sıra buradaki sıradır. "Düzenlenebilir" ana şalter: kapalıyken müşteri bu bölüme hiç dokunamaz.'
-        : 'Was unter der Karte steht. Die Reihenfolge hier ist die Reihenfolge auf der Seite. „Bearbeitbar" ist der Hauptschalter: ist er aus, fasst der Kunde diesen Abschnitt gar nicht an.' ?>
-  </p>
-  <?php
-  $sekmeler = $design['sections'];
-  // Immer eine leere Zeile mehr, damit ein Abschnitt ohne Umweg dazukommt.
-  $sekmeler[] = ['id' => '', 'type' => '', 'variant' => 'default', 'settings' => [],
-                 'title' => ['de' => '', 'en' => ''],
-                 'enabled' => false, 'style' => ['color' => '', 'font' => ''],
-                 'permissions' => ['edit' => false, 'hide' => false]];
-  ?>
-  <?php foreach ($sekmeler as $i => $abschnitt) : ?>
-    <div class="grid gap-3 border-b border-sand-deep py-3 sm:grid-cols-6">
-      <input class="<?= $feld ?>" name="sec_id_<?= $i ?>" value="<?= e((string) $abschnitt['id']) ?>"
-             placeholder="<?= $tr ? 'kimlik' : 'Kennung' ?>">
-      <select class="<?= $feld ?>" name="sec_type_<?= $i ?>">
-        <option value=""><?= $tr ? '— yok —' : '— keiner —' ?></option>
-        <?php foreach (DesignSections::TYPES as $typ) : ?>
-          <option value="<?= e($typ) ?>" <?= (string) $abschnitt['type'] === $typ ? 'selected' : '' ?>><?= e($typ) ?></option>
-        <?php endforeach; ?>
-      </select>
-      <input class="<?= $feld ?>" name="sec_title_de_<?= $i ?>" value="<?= e((string) $abschnitt['title']['de']) ?>" placeholder="DE">
-      <input class="<?= $feld ?>" name="sec_title_en_<?= $i ?>" value="<?= e((string) $abschnitt['title']['en']) ?>" placeholder="EN">
-      <input class="<?= $feld ?>" name="sec_color_<?= $i ?>" value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="<?= $tr ? 'renk markası' : 'Farbmarke' ?>">
-      <input class="<?= $feld ?>" name="sec_font_<?= $i ?>" value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="<?= $tr ? 'yazı markası' : 'Schriftmarke' ?>">
-      <label class="flex items-center gap-2 text-[0.66rem] text-ink">
-        <input type="checkbox" name="sec_on_<?= $i ?>" <?= $abschnitt['enabled'] ? 'checked' : '' ?>>
-        <?= $tr ? 'Açık' : 'An' ?></label>
-      <label class="flex items-center gap-2 text-[0.66rem] text-ink">
-        <input type="checkbox" name="perm_sec_edit_<?= $i ?>" <?= $abschnitt['permissions']['edit'] ? 'checked' : '' ?>>
-        <?= $tr ? 'Düzenlenebilir' : 'Bearbeitbar' ?></label>
-      <label class="flex items-center gap-2 text-[0.66rem] text-muted">
-        <input type="checkbox" name="perm_sec_hide_<?= $i ?>" <?= $abschnitt['permissions']['hide'] ? 'checked' : '' ?>>
-        <?= $tr ? 'Gizlenebilir' : 'Ausblendbar' ?></label>
-
-      <?php /*
-         Variante und Einstellungen kommen aus dem Katalog, nicht von hier.
-         Eine Liste im Panel und eine im Code waeren zwei Wahrheiten - und die
-         im Panel gewinnt beim Absehen, waehrend die im Code beim Drucken
-         gewinnt. Genau so entstehen Knoepfe, die nichts tun.
-
-         Was ein Abschnitt anbieten kann, haengt an seiner ART. Eine frische
-         Zeile hat noch keine, also gibt es hier auch nichts zu waehlen -
-         Kennung und Art eintragen, speichern, dann steht es da. Derselbe Weg
-         wie bei einer neuen Ebene.
-      */ ?>
-      <?php
-        $art       = (string) $abschnitt['type'];
-        $varianten = SectionRegistry::variants($art);
-        $schema    = SectionRegistry::settings($art);
-        $werte     = is_array($abschnitt['settings'] ?? null) ? $abschnitt['settings'] : [];
-        $sprache   = $tr ? 'tr' : 'de';
-      ?>
-
-      <?php if (count($varianten) > 1) : ?>
-        <label class="<?= $label ?>"><?= $tr ? 'görünüm' : 'Gestalt' ?>
-          <select class="<?= $feld ?>" name="sec_variant_<?= $i ?>">
-            <?php foreach ($varianten as $kennung => $etikett) : ?>
-              <option value="<?= e((string) $kennung) ?>"
-                <?= (string) ($abschnitt['variant'] ?? 'default') === (string) $kennung ? 'selected' : '' ?>>
-                <?= e($etikett[$sprache] ?? (string) $kennung) ?></option>
-            <?php endforeach; ?>
-          </select></label>
-      <?php elseif ($art !== '') : ?>
-        <?php /*
-           Genau eine Gestalt: das Feld trotzdem mitschicken, sonst faellt die
-           Variante beim naechsten Speichern still auf die Voreinstellung -
-           was hier zwar dasselbe waere, aber nicht, sobald jemand dieser Art
-           eine zweite Gestalt gibt.
-        */ ?>
-        <input type="hidden" name="sec_variant_<?= $i ?>"
-               value="<?= e((string) ($abschnitt['variant'] ?? 'default')) ?>">
-      <?php endif; ?>
-
-      <?php foreach ($schema as $schluessel => $s) : ?>
-        <?php if ((string) $s['type'] === 'bool') : ?>
-          <label class="flex items-center gap-2 text-[0.66rem] text-muted">
-            <input type="checkbox" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
-                   <?= ($werte[$schluessel] ?? $s['default']) ? 'checked' : '' ?>>
-            <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
-        <?php elseif ((string) $s['type'] === 'select') : ?>
-          <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
-            <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">
-              <?php foreach ($s['options'] as $option) : ?>
-                <option value="<?= e((string) $option) ?>"
-                  <?= (string) ($werte[$schluessel] ?? $s['default']) === (string) $option ? 'selected' : '' ?>>
-                  <?= e((string) $option) ?></option>
-              <?php endforeach; ?>
-            </select></label>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </div>
-  <?php endforeach; ?>
-<?= $zu ?>
+<?php /*
+   Die Abschnitte standen hier einmal als Zeilen mit je zehn Feldern
+   nebeneinander - Kennung, Art, Gestalt, zwei Titel, zwei Marken, drei Haken.
+   Sie sind in die linke Liste (design-edit-liste.php) und ihre Tafeln
+   (design-edit-tafeln.php) gezogen: der BAU der Seite gehoert nach links,
+   der INHALT eines Abschnitts nach rechts, und beides zusammen in eine
+   Tabellenzeile zu pressen war der Grund, warum niemand hier schnell
+   arbeiten konnte.
+*/ ?>
 
 <?= $auf($tr ? '9 · Yayın' : '9 · Veröffentlichen') ?>
   <p class="text-sm text-ink">

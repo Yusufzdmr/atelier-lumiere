@@ -423,3 +423,56 @@ assert_true(
     !array_key_exists('map', $fremd['sections'][0]['settings']),
     'fromPost: eine fremde Einstellung kommt nicht ins Dokument'
 );
+
+/*
+ * ------------------------------------------------------------------
+ * Die Reihenfolge der Abschnitte kommt aus dem Formular.
+ * ------------------------------------------------------------------
+ *
+ * Bisher WAR der Index die Reihenfolge: sec_*_0 stand vor sec_*_1. Das
+ * reicht, solange die Zeilen untereinander in einem Formular stehen - aber
+ * nicht, sobald man sie in einer Liste schieben kann. Ein Feldname ist die
+ * Kennung einer Zeile und darf sich beim Schieben nicht aendern, sonst
+ * verliert jedes Feld beim Umsortieren seinen Wert.
+ *
+ * Deshalb dieselbe Loesung wie bei den Ebenen: eine Reihe von Nummern in
+ * einem versteckten Feld. Wer nicht darin steht, ist geloescht - Umordnen
+ * und Loeschen sind dieselbe Bewegung.
+ */
+
+$dreiAbschnitte = [
+    'sec_id_0' => 'wo',    'sec_type_0' => 'location',
+    'sec_id_1' => 'wann',  'sec_type_1' => 'countdown',
+    'sec_id_2' => 'ablauf', 'sec_type_2' => 'program',
+];
+
+$umgedreht = Design::fromPost($basis, $dreiAbschnitte + ['sec_reihenfolge' => '2,0,1']);
+
+assert_same('ablauf', $umgedreht['sections'][0]['id'], 'Abschnitte: die Reihe bestimmt, wer vorn steht');
+assert_same('wo', $umgedreht['sections'][1]['id'], 'Abschnitte: und wer in der Mitte');
+assert_same('wann', $umgedreht['sections'][2]['id'], 'Abschnitte: und wer hinten');
+
+// Ohne das Feld bleibt es beim Index - ein Aufrufer, der von Abschnitten
+// nichts weiss, soll nichts umsortieren.
+$ohneReihe = Design::fromPost($basis, $dreiAbschnitte);
+
+assert_same('wo', $ohneReihe['sections'][0]['id'], 'Abschnitte: ohne Reihe zaehlt der Index');
+assert_same(3, count($ohneReihe['sections']), 'Abschnitte: ohne Reihe fehlt keiner');
+
+// Wer nicht genannt wird, ist weg.
+$geloescht = Design::fromPost($basis, $dreiAbschnitte + ['sec_reihenfolge' => '0,2']);
+
+assert_same(2, count($geloescht['sections']), 'Abschnitte: der ungenannte ist geloescht');
+assert_same('wo', $geloescht['sections'][0]['id'], 'Abschnitte: die uebrigen behalten ihre Ordnung');
+assert_same('ablauf', $geloescht['sections'][1]['id'], 'Abschnitte: die uebrigen behalten ihre Ordnung (2)');
+
+// Eine Nummer, zu der es keine Zeile gibt, erfindet keinen Abschnitt.
+$erfunden = Design::fromPost($basis, $dreiAbschnitte + ['sec_reihenfolge' => '0,9,1']);
+
+assert_same(2, count($erfunden['sections']), 'Abschnitte: eine leere Nummer erfindet nichts');
+
+// Eine leere Reihe raeumt ab - das Formular schickt das Feld immer mit, und
+// ein veraltetes faengt die Fassungspruefung im Controller ab.
+$alleWeg = Design::fromPost($basis, $dreiAbschnitte + ['sec_reihenfolge' => '']);
+
+assert_same(0, count($alleWeg['sections']), 'Abschnitte: eine leere Reihe raeumt alles ab');

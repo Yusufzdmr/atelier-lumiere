@@ -548,6 +548,35 @@ final class Themes
         'envelope' => ['de' => 'Auf dem Kuvert', 'tr' => 'Zarfın üzerinde'],
     ];
 
+    /**
+     * Eine Auswahlliste, die den gespeicherten Wert nicht wegwirft.
+     *
+     * Gefunden am 24.08.2026 an noir: das Dokument trug idle=pulse,
+     * reveal=side, particle=spark, nameMove=letters und card=seal, und der
+     * Editor bot fuer diese fuenf Achsen nur je zwei bis drei Woerter an -
+     * keines davon war der gespeicherte Wert. Ein <select> ohne passende
+     * Option waehlt die erste; beim Speichern stand danach breathe, up, none
+     * und fade im Dokument.
+     *
+     * Niemand haette das getan, jeder haette es ausgeloest: einmal oeffnen,
+     * einmal speichern. Sichtbar wird es erst auf der Seite, nie im Panel.
+     *
+     * Der unbekannte Wert kommt nach VORN und nicht ans Ende: er ist der
+     * gewaehlte, und er soll dort stehen, wo man ihn sieht, wenn die Liste
+     * lang ist.
+     *
+     * @param list<string> $liste
+     * @return list<string>
+     */
+    public static function withCurrent(array $liste, string $aktuell): array
+    {
+        if ($aktuell === '' || in_array($aktuell, $liste, true)) {
+            return $liste;
+        }
+
+        return array_merge([$aktuell], $liste);
+    }
+
     /** Wie ein Schmuckelement hereinkommt. */
     public const MOVES = ['none', 'fade'];
 

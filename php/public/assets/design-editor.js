@@ -133,7 +133,8 @@
     });
   });
 
-  if (!liste || !reihe) return;
+  (function () {
+    if (!liste || !reihe) return;
 
   /*
    * Neu stapeln heisst neu zaehlen: der z-Index IST die Position in der Liste
@@ -199,5 +200,139 @@
     }
 
     stapleNeu();
+    });
+  })();
+
+  /*
+   * Die drei Spalten: links waehlen, rechts erscheint die Tafel.
+   *
+   * Alle Tafeln stehen im Markup, sichtbar ist eine. Das Skript blendet nur
+   * um - es laedt nichts nach und schickt nichts weg. Eine Tafel, die man
+   * nicht sieht, traegt ihre Werte trotzdem, und beim Absenden geht alles
+   * gemeinsam mit; genau deshalb verliert das Umschalten nichts.
+   *
+   * Ohne Skript steht die Tafel der Vorlage offen und die Abschnittstafeln
+   * bleiben zu. Das ist wenig, aber es ist nicht kaputt: die Liste links ist
+   * dann eine Liste, und gespeichert wird trotzdem alles.
+   */
+  var secListe = form.querySelector("[data-sec-liste]");
+  var secReihe = form.querySelector("[data-sec-reihe]");
+
+  var tafeln = form.querySelectorAll("[data-panel]");
+
+  var zeigeTafel = function (name) {
+    tafeln.forEach(function (tafel) {
+      tafel.hidden = tafel.getAttribute("data-panel") !== name;
+    });
+  };
+
+  var markiere = function (zeile) {
+    form.querySelectorAll("[data-sec-zeile]").forEach(function (z) {
+      z.removeAttribute("data-aktiv");
+    });
+    zeile.setAttribute("data-aktiv", "");
+  };
+
+  // Anfangs steht die Tafel der Vorlage offen; die Abschnittstafeln sind im
+  // Markup bereits hidden. Hier wird nichts umgeschaltet, damit ein Fehler im
+  // Skript nicht die einzige sichtbare Tafel wegnimmt.
+
+  form.addEventListener("click", function (ereignis) {
+    var knopf = ereignis.target.closest("[data-sec-waehl]");
+    if (!knopf) return;
+
+    var zeile = knopf.closest("[data-sec-zeile]");
+    if (!zeile) return;
+
+    var welche = zeile.getAttribute("data-sec-zeile");
+    markiere(zeile);
+    zeigeTafel(welche === "thema" ? "thema" : "sec-" + welche);
   });
+
+  if (!secListe || !secReihe) return; // ab hier nur noch die Abschnittsliste
+
+  /*
+   * Die Reihe neu schreiben. Sie ist die Wahrheit ueber Ordnung UND Bestand:
+   * fromPost() liest die Abschnitte in dieser Reihenfolge, und wer nicht
+   * darin steht, ist geloescht.
+   *
+   * Die NUMMER bleibt an ihrer Zeile kleben, auch wenn die Zeile wandert -
+   * die Feldnamen tragen sie (sec_title_de_3). Wuerde beim Schieben
+   * umnummeriert, verlore jedes Feld dabei seinen Wert.
+   */
+  var reiheNeu = function () {
+    var nummern = [];
+
+    secListe.querySelectorAll("[data-sec-zeile]").forEach(function (zeile) {
+      if (zeile.hasAttribute("data-weg")) return;
+      nummern.push(zeile.getAttribute("data-sec-zeile"));
+    });
+
+    secReihe.value = nummern.join(",");
+  };
+
+  secListe.addEventListener("click", function (ereignis) {
+    var knopf = ereignis.target.closest("button");
+    if (!knopf) return;
+
+    var zeile = knopf.closest("[data-sec-zeile]");
+    if (!zeile) return;
+
+    if (knopf.hasAttribute("data-sec-hoch") && zeile.previousElementSibling) {
+      secListe.insertBefore(zeile, zeile.previousElementSibling);
+    }
+    if (knopf.hasAttribute("data-sec-runter") && zeile.nextElementSibling) {
+      secListe.insertBefore(zeile.nextElementSibling, zeile);
+    }
+
+    /*
+     * Wegnehmen ist ein Schalter, kein Schnitt: solange nicht gespeichert
+     * wurde, holt ein zweiter Klick den Abschnitt zurueck. Ein
+     * unwiderrufliches Loeschen mitten in einem langen Formular waere eine
+     * Falle - ein Fehlklick, und der Ablauf mit zwoelf Zeilen ist weg.
+     */
+    if (knopf.hasAttribute("data-sec-weg")) {
+      var weg = zeile.hasAttribute("data-weg");
+
+      if (weg) {
+        zeile.removeAttribute("data-weg");
+        knopf.textContent = knopf.getAttribute("data-wort-weg");
+      } else {
+        zeile.setAttribute("data-weg", "");
+        knopf.textContent = knopf.getAttribute("data-wort-zurueck");
+      }
+    }
+
+    reiheNeu();
+  });
+
+  /*
+   * Der Titel steht an zwei Stellen: im Feld rechts und als Name der Zeile
+   * links. Ohne diese Zeile heisst der Abschnitt in der Liste noch "(ohne
+   * Titel)", waehrend rechts sein Name schon dasteht - und man sucht, warum.
+   */
+  form.querySelectorAll("[data-sec-titel]").forEach(function (feld) {
+    feld.addEventListener("input", function () {
+      var zeile = secListe.querySelector('[data-sec-zeile="' + feld.getAttribute("data-sec-titel") + '"]');
+      if (!zeile) return;
+      var greifer = zeile.querySelector("[data-sec-waehl]");
+      if (!greifer) return;
+      var klein = greifer.querySelector("small");
+      greifer.childNodes[0].nodeValue = feld.value.trim() !== "" ? feld.value : " ";
+      if (klein) greifer.appendChild(klein);
+    });
+  });
+
+  // Dieselbe Doppelung bei der Gestalt: sie steht klein unter dem Namen.
+  form.querySelectorAll("[data-sec-gestalt]").forEach(function (feld) {
+    feld.addEventListener("change", function () {
+      var zeile = secListe.querySelector('[data-sec-zeile="' + feld.getAttribute("data-sec-gestalt") + '"]');
+      if (!zeile) return;
+      var klein = zeile.querySelector("[data-sec-waehl] small");
+      if (!klein) return;
+      var art = klein.textContent.split("·")[0].trim();
+      klein.textContent = art + " · " + feld.options[feld.selectedIndex].textContent.trim();
+    });
+  });
+
 })();
