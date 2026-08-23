@@ -110,6 +110,18 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-gruppe{display:grid;gap:0.7rem;}
   @media (min-width:520px){.b-zwei{grid-template-columns:1fr 1fr;}}
 
+  /* Die Tafel eines Abschnitts steht offen - sie IST der Inhalt der Spalte,
+     und ein Dreieck davor waere ein Klick, der nichts entscheidet. */
+  .b-falte-offen{border:1px solid var(--color-sand-deep,#dccebc);padding:1rem;display:grid;gap:1.1rem;}
+
+  .b-karten{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:0.4rem;}
+  .b-karte{border:1px solid var(--color-sand-deep,#dccebc);background:transparent;cursor:pointer;
+           padding:0.6rem 0.4rem;text-align:left;color:var(--color-ink,#14110f);font:inherit;
+           font-size:0.76rem;line-height:1.3;}
+  .b-karte:hover{border-color:var(--color-ink,#14110f);}
+  .b-karte[data-aktiv]{border-color:var(--color-ink,#14110f);background:var(--color-sand,#ede4d8);}
+  .b-karte small{display:block;margin-top:0.2rem;font-size:0.6rem;color:var(--color-muted,#7a6f65);}
+
   .b-fuss{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:0.8rem;
           background:var(--color-cream,#faf7f2);border-top:1px solid var(--color-sand-deep,#dccebc);
           padding:0.9rem 0;margin-top:1rem;}

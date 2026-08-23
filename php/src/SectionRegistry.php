@@ -159,6 +159,21 @@ final class SectionRegistry
         return $out;
     }
 
+    /**
+     * Die Einstellungen, die JEDE Art hat.
+     *
+     * Das Panel braucht die Trennung: die gemeinsamen stehen bei jeder Zeile,
+     * die eigenen nur bei ihrer Art. Ohne diese Auskunft muesste das Panel
+     * raten, welcher Schluessel woher kommt - und raten heisst hier, eine
+     * zweite Liste zu fuehren.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public static function commonSettings(): array
+    {
+        return self::GRUND;
+    }
+
     public static function has(string $type): bool
     {
         return isset(self::KATALOG[$type]);

@@ -12,12 +12,20 @@
  * Vorher standen dieselben Felder als Zeile mit zehn Spalten nebeneinander.
  * Das war lesbar fuer den, der sie geschrieben hat.
  *
+ * ALLES steht im Markup, auch was zur gewaehlten Art gerade nicht passt: die
+ * Gestalten aller Arten, die Einstellungen aller Arten. Das Skript blendet
+ * aus, was nicht dazugehoert. Der Grund ist derselbe wie bei den Tafeln
+ * selbst - so aendert sich die Art OHNE Speichern, und der Katalog bleibt
+ * die einzige Quelle. Und es ist gefahrlos: fromPost() liest nur die
+ * Schluessel, die zur tatsaechlich gewaehlten Art gehoeren; ein
+ * mitgeschicktes sec_set_map_3 an einem Countdown faellt still weg.
+ *
  * Was hier NICHT steht: an/aus. Das Auge gehoert in die Liste, weil es zum
  * Bau der Seite gehoert und nicht zum Inhalt eines Abschnitts - und weil man
  * beim Umschalten die ganze Liste sehen will.
  *
- * Erwartet aus design-edit-liste.php: $sekmeler. Aus design-edit.php:
- * $design, $tr, $label, $feld.
+ * Erwartet aus design-edit-liste.php: $sekmeler, $neuIndex. Aus
+ * design-edit.php: $design, $tr, $label, $feld.
  *
  * @var list<array<string,mixed>> $sekmeler
  */
@@ -27,116 +35,163 @@ use Atelier\SectionRegistry;
 use function Atelier\e;
 
 $sprache = $tr ? 'tr' : 'de';
+$katalog = SectionRegistry::all();
+$gemein  = SectionRegistry::commonSettings();
+
+/*
+ * Der Katalog als JSON, einmal. Das Skript baut daraus die Gestaltliste neu,
+ * wenn jemand die Art wechselt. Eine zweite Liste im Skript waere eine
+ * zweite Wahrheit - und die im Skript gewinnt beim Ansehen, waehrend die im
+ * PHP beim Drucken gewinnt.
+ */
+$fuerSkript = [];
+foreach ($katalog as $art => $eintrag) {
+    $fuerSkript[$art] = [];
+    foreach ($eintrag['variants'] as $kennung => $etikett) {
+        $fuerSkript[$art][(string) $kennung] = (string) ($etikett[$sprache] ?? $kennung);
+    }
+}
 ?>
+
+<script type="application/json" data-sec-katalog>
+  <?= json_encode($fuerSkript, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+</script>
 
 <?php foreach ($sekmeler as $i => $abschnitt) : ?>
   <?php
+    $neu       = $i === $neuIndex;
     $art       = (string) $abschnitt['type'];
+    $gestalt   = (string) ($abschnitt['variant'] ?? 'default');
     $varianten = SectionRegistry::variants($art);
-    $schema    = SectionRegistry::settings($art);
     $werte     = is_array($abschnitt['settings'] ?? null) ? $abschnitt['settings'] : [];
   ?>
   <div class="b-panel" data-panel="sec-<?= $i ?>" hidden>
+    <div class="b-falte-offen">
 
-    <div class="b-falte" open>
-      <div class="b-falte-inhalt">
-        <div class="b-gruppe b-zwei">
-          <label class="<?= $label ?>"><?= $tr ? 'kimlik' : 'Kennung' ?>
-            <input class="<?= $feld ?>" name="sec_id_<?= $i ?>"
-                   value="<?= e((string) $abschnitt['id']) ?>"
-                   placeholder="<?= $tr ? 'ör. ablauf' : 'z. B. ablauf' ?>"></label>
-
-          <label class="<?= $label ?>"><?= $tr ? 'tür' : 'Art' ?>
-            <select class="<?= $feld ?>" name="sec_type_<?= $i ?>">
-              <option value=""><?= $tr ? '— yok —' : '— keine —' ?></option>
-              <?php foreach (DesignSections::TYPES as $typ) : ?>
-                <option value="<?= e($typ) ?>" <?= $art === $typ ? 'selected' : '' ?>><?= e($typ) ?></option>
-              <?php endforeach; ?>
-            </select></label>
-        </div>
-
+      <?php if ($neu) : ?>
         <?php /*
-           Die Gestalt kommt aus dem Katalog, nicht von hier: eine Liste im
-           Panel und eine im Code waeren zwei Wahrheiten, und die im Panel
-           gewinnt beim Ansehen, waehrend die im Code beim Drucken gewinnt.
-           So entstehen Knoepfe, die nichts tun.
-
-           Was ein Abschnitt anbieten kann, haengt an seiner ART. Eine frische
-           Zeile hat noch keine - Kennung und Art eintragen, speichern, dann
-           steht es da. Derselbe Weg wie bei einer neuen Ebene.
-        */ ?>
-        <?php if (count($varianten) > 1) : ?>
-          <label class="<?= $label ?>"><?= $tr ? 'görünüm' : 'Gestalt' ?>
-            <select class="<?= $feld ?>" name="sec_variant_<?= $i ?>" data-sec-gestalt="<?= $i ?>">
-              <?php foreach ($varianten as $kennung => $etikett) : ?>
-                <option value="<?= e((string) $kennung) ?>"
-                  <?= (string) ($abschnitt['variant'] ?? 'default') === (string) $kennung ? 'selected' : '' ?>>
-                  <?= e($etikett[$sprache] ?? (string) $kennung) ?></option>
-              <?php endforeach; ?>
-            </select></label>
-        <?php elseif ($art !== '') : ?>
-          <?php /*
-             Genau eine Gestalt: das Feld trotzdem mitschicken, sonst faellt
-             sie beim naechsten Speichern still auf die Voreinstellung - was
-             heute dasselbe waere, aber nicht mehr, sobald diese Art eine
-             zweite Gestalt bekommt.
-          */ ?>
-          <input type="hidden" name="sec_variant_<?= $i ?>"
-                 value="<?= e((string) ($abschnitt['variant'] ?? 'default')) ?>">
-        <?php endif; ?>
-
-        <div class="b-gruppe b-zwei">
-          <label class="<?= $label ?>"><?= $tr ? 'başlık DE' : 'Titel DE' ?>
-            <input class="<?= $feld ?>" name="sec_title_de_<?= $i ?>"
-                   value="<?= e((string) $abschnitt['title']['de']) ?>" data-sec-titel="<?= $i ?>"></label>
-          <label class="<?= $label ?>"><?= $tr ? 'başlık EN' : 'Titel EN' ?>
-            <input class="<?= $feld ?>" name="sec_title_en_<?= $i ?>"
-                   value="<?= e((string) $abschnitt['title']['en']) ?>"></label>
-        </div>
-
-        <?php foreach ($schema as $schluessel => $s) : ?>
-          <?php if ((string) $s['type'] === 'bool') : ?>
-            <label class="flex items-center gap-2 text-[0.66rem] text-muted">
-              <input type="checkbox" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
-                     <?= ($werte[$schluessel] ?? $s['default']) ? 'checked' : '' ?>>
-              <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
-          <?php elseif ((string) $s['type'] === 'select') : ?>
-            <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
-              <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">
-                <?php foreach ($s['options'] as $option) : ?>
-                  <option value="<?= e((string) $option) ?>"
-                    <?= (string) ($werte[$schluessel] ?? $s['default']) === (string) $option ? 'selected' : '' ?>>
-                    <?= e((string) $option) ?></option>
-                <?php endforeach; ?>
-              </select></label>
-          <?php endif; ?>
-        <?php endforeach; ?>
-
-        <div class="b-gruppe b-zwei">
-          <label class="<?= $label ?>"><?= $tr ? 'renk markası' : 'Farbmarke' ?>
-            <input class="<?= $feld ?>" name="sec_color_<?= $i ?>"
-                   value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="accent"></label>
-          <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
-            <input class="<?= $feld ?>" name="sec_font_<?= $i ?>"
-                   value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="body"></label>
-        </div>
-
-        <?php /*
-           Die Rechte des Kunden. edit ist der Hauptschalter, wie bei den
-           Ebenen: ist er aus, zaehlt hide nicht - so ist Sperren ein Haken
-           und nicht zwei.
+           Zwei Schritte, nicht ein leeres Feld: erst WAS der Abschnitt zeigt,
+           dann WIE er aussieht. Wer hier eine Kennung tippen musste, bevor
+           irgendetwas zu sehen war, hat die Liste der Arten im Kopf gebraucht -
+           und die steht im Katalog, nicht im Kopf.
         */ ?>
         <div class="b-gruppe">
-          <span class="<?= $label ?>"><?= $tr ? 'müşteri hakları' : 'Kundenrechte' ?></span>
-          <label class="flex items-center gap-2 text-[0.66rem] text-ink">
-            <input type="checkbox" name="perm_sec_edit_<?= $i ?>" <?= $abschnitt['permissions']['edit'] ? 'checked' : '' ?>>
-            <?= $tr ? 'Düzenlenebilir' : 'Bearbeitbar' ?></label>
-          <label class="flex items-center gap-2 text-[0.66rem] text-muted">
-            <input type="checkbox" name="perm_sec_hide_<?= $i ?>" <?= $abschnitt['permissions']['hide'] ? 'checked' : '' ?>>
-            <?= $tr ? 'Gizlenebilir' : 'Ausblendbar' ?></label>
+          <span class="<?= $label ?>"><?= $tr ? 'ne göstersin?' : 'Was soll er zeigen?' ?></span>
+          <div class="b-karten">
+            <?php foreach ($katalog as $kArt => $kEintrag) : ?>
+              <button type="button" class="b-karte" data-sec-art="<?= e((string) $kArt) ?>" data-fuer="<?= $i ?>">
+                <?= e((string) $kArt) ?>
+                <small><?= e((string) ($kEintrag['variants']['default'][$sprache] ?? '')) ?></small>
+              </button>
+            <?php endforeach; ?>
+          </div>
         </div>
-      </div>
-    </div>
+      <?php endif; ?>
 
+      <div class="b-gruppe b-zwei">
+        <label class="<?= $label ?>"><?= $tr ? 'kimlik' : 'Kennung' ?>
+          <input class="<?= $feld ?>" name="sec_id_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['id']) ?>"
+                 data-sec-kennung="<?= $i ?>"
+                 placeholder="<?= $tr ? 'ör. ablauf' : 'z. B. ablauf' ?>"></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'tür' : 'Art' ?>
+          <select class="<?= $feld ?>" name="sec_type_<?= $i ?>" data-sec-art-feld="<?= $i ?>">
+            <option value="" <?= $art === '' ? 'selected' : '' ?>><?= $tr ? '— yok —' : '— keine —' ?></option>
+            <?php foreach (DesignSections::TYPES as $typ) : ?>
+              <option value="<?= e($typ) ?>" <?= $art === $typ ? 'selected' : '' ?>><?= e($typ) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+      </div>
+
+      <?php /*
+         Die Gestalt steht IMMER als Auswahl da, auch wenn die Art nur eine
+         kennt oder noch keine gewaehlt ist. Sonst muesste das Skript ein Feld
+         erfinden, sobald jemand die Art wechselt - und ein Feld, das es beim
+         Absenden nur manchmal gibt, ist genau die Sorte Unterschied, die man
+         erst am fehlenden Wert bemerkt.
+      */ ?>
+      <label class="<?= $label ?>"><?= $tr ? 'görünüm' : 'Gestalt' ?>
+        <select class="<?= $feld ?>" name="sec_variant_<?= $i ?>" data-sec-gestalt="<?= $i ?>">
+          <?php if ($varianten === []) : ?>
+            <option value="default" selected>default</option>
+          <?php else : ?>
+            <?php foreach ($varianten as $kennung => $etikett) : ?>
+              <option value="<?= e((string) $kennung) ?>" <?= $gestalt === (string) $kennung ? 'selected' : '' ?>>
+                <?= e($etikett[$sprache] ?? (string) $kennung) ?></option>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </select></label>
+
+      <div class="b-gruppe b-zwei">
+        <label class="<?= $label ?>"><?= $tr ? 'başlık DE' : 'Titel DE' ?>
+          <input class="<?= $feld ?>" name="sec_title_de_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['title']['de']) ?>" data-sec-titel="<?= $i ?>"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'başlık EN' : 'Titel EN' ?>
+          <input class="<?= $feld ?>" name="sec_title_en_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['title']['en']) ?>"></label>
+      </div>
+
+      <?php /* Was jede Art hat. */ ?>
+      <?php foreach ($gemein as $schluessel => $s) : ?>
+        <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+          <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">
+            <?php foreach ($s['options'] as $option) : ?>
+              <option value="<?= e((string) $option) ?>"
+                <?= (string) ($werte[$schluessel] ?? $s['default']) === (string) $option ? 'selected' : '' ?>>
+                <?= e((string) $option) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+      <?php endforeach; ?>
+
+      <?php /* Und was nur eine bestimmte Art hat. */ ?>
+      <?php foreach ($katalog as $kArt => $kEintrag) : ?>
+        <?php foreach ($kEintrag['settings'] as $schluessel => $s) : ?>
+          <?php if (array_key_exists($schluessel, $gemein)) { continue; } ?>
+          <div data-fuer-art="<?= e((string) $kArt) ?>" <?= $art === (string) $kArt ? '' : 'hidden' ?>>
+            <?php if ((string) $s['type'] === 'bool') : ?>
+              <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+                <input type="checkbox" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       <?= ($werte[$schluessel] ?? $s['default']) ? 'checked' : '' ?>>
+                <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
+            <?php else : ?>
+              <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+                <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">
+                  <?php foreach ($s['options'] as $option) : ?>
+                    <option value="<?= e((string) $option) ?>"
+                      <?= (string) ($werte[$schluessel] ?? $s['default']) === (string) $option ? 'selected' : '' ?>>
+                      <?= e((string) $option) ?></option>
+                  <?php endforeach; ?>
+                </select></label>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      <?php endforeach; ?>
+
+      <div class="b-gruppe b-zwei">
+        <label class="<?= $label ?>"><?= $tr ? 'renk markası' : 'Farbmarke' ?>
+          <input class="<?= $feld ?>" name="sec_color_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="accent"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
+          <input class="<?= $feld ?>" name="sec_font_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="body"></label>
+      </div>
+
+      <?php /*
+         Die Rechte des Kunden. edit ist der Hauptschalter, wie bei den
+         Ebenen: ist er aus, zaehlt hide nicht - so ist Sperren ein Haken und
+         nicht zwei.
+      */ ?>
+      <div class="b-gruppe">
+        <span class="<?= $label ?>"><?= $tr ? 'müşteri hakları' : 'Kundenrechte' ?></span>
+        <label class="flex items-center gap-2 text-[0.66rem] text-ink">
+          <input type="checkbox" name="perm_sec_edit_<?= $i ?>" <?= $abschnitt['permissions']['edit'] ? 'checked' : '' ?>>
+          <?= $tr ? 'Düzenlenebilir' : 'Bearbeitbar' ?></label>
+        <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+          <input type="checkbox" name="perm_sec_hide_<?= $i ?>" <?= $abschnitt['permissions']['hide'] ? 'checked' : '' ?>>
+          <?= $tr ? 'Gizlenebilir' : 'Ausblendbar' ?></label>
+      </div>
+
+    </div>
   </div>
 <?php endforeach; ?>

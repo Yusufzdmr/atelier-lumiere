@@ -335,4 +335,110 @@
     });
   });
 
+
+  /*
+   * Die Art wechseln, ohne zu speichern.
+   *
+   * Was ein Abschnitt anbieten kann, haengt an seiner Art: der Ablauf kennt
+   * den Zeitstrahl, der Ort den Kartenlink. Bis hierher musste man erst
+   * speichern, um zu sehen, was die neue Art ueberhaupt hat - und wer eine
+   * Vorlage baut, wechselt die Art fuenfmal, bevor sie sitzt.
+   *
+   * Die Gestalten kommen aus dem Katalog, den der Server als JSON mitgibt.
+   * Eine zweite Liste hier waere eine zweite Wahrheit, und die hier gewinnt
+   * beim Ansehen, waehrend die im PHP beim Drucken gewinnt - so entstehen
+   * Knoepfe, die nichts tun.
+   */
+  var katalogKnoten = document.querySelector("[data-sec-katalog]");
+  var katalog = {};
+
+  if (katalogKnoten) {
+    try {
+      katalog = JSON.parse(katalogKnoten.textContent);
+    } catch (fehler) {
+      katalog = {};
+    }
+  }
+
+  var gestaltenNeu = function (nummer, art) {
+    var wahl = form.querySelector('[data-sec-gestalt="' + nummer + '"]');
+    if (!wahl) return;
+
+    var vorher = wahl.value;
+    var liste = katalog[art] || { "default": "default" };
+
+    wahl.textContent = "";
+    Object.keys(liste).forEach(function (kennung) {
+      var option = document.createElement("option");
+      option.value = kennung;
+      option.textContent = liste[kennung];
+      // Beim Wechsel der Art bleibt die Gestalt stehen, wenn es sie auch
+      // dort gibt - "gross" heisst beim Ort und beim Countdown etwas
+      // anderes, aber beide Male ist es die, die jemand gewaehlt hat.
+      if (kennung === vorher) option.selected = true;
+      wahl.appendChild(option);
+    });
+  };
+
+  var eigenesNeu = function (tafel, art) {
+    tafel.querySelectorAll("[data-fuer-art]").forEach(function (kasten) {
+      kasten.hidden = kasten.getAttribute("data-fuer-art") !== art;
+    });
+  };
+
+  form.querySelectorAll("[data-sec-art-feld]").forEach(function (feld) {
+    feld.addEventListener("change", function () {
+      var nummer = feld.getAttribute("data-sec-art-feld");
+      var tafel = form.querySelector('[data-panel="sec-' + nummer + '"]');
+
+      gestaltenNeu(nummer, feld.value);
+      if (tafel) eigenesNeu(tafel, feld.value);
+
+      // Die Zeile links traegt die Art unter dem Namen.
+      var zeile = form.querySelector('[data-sec-zeile="' + nummer + '"] [data-sec-waehl] small');
+      if (zeile) zeile.textContent = feld.value;
+    });
+  });
+
+  /*
+   * Der erste Schritt beim Anlegen: WAS soll der Abschnitt zeigen. Die
+   * Kennung schlaegt das Skript vor, statt sie zu verlangen - sie ist eine
+   * technische Notwendigkeit (im Stilblock adressierbar sein) und keine
+   * Entscheidung, die jemand treffen will. Aendern kann man sie trotzdem.
+   */
+  form.querySelectorAll("[data-sec-art]").forEach(function (karte) {
+    karte.addEventListener("click", function () {
+      var nummer = karte.getAttribute("data-fuer");
+      var art = karte.getAttribute("data-sec-art");
+      var feld = form.querySelector('[data-sec-art-feld="' + nummer + '"]');
+      var kennung = form.querySelector('[data-sec-kennung="' + nummer + '"]');
+
+      karte.parentNode.querySelectorAll("[data-sec-art]").forEach(function (k) {
+        k.removeAttribute("data-aktiv");
+      });
+      karte.setAttribute("data-aktiv", "");
+
+      if (feld) {
+        feld.value = art;
+        feld.dispatchEvent(new Event("change"));
+      }
+
+      if (kennung && kennung.value.trim() === "") {
+        // Schon vergeben? Dann eine Zahl dahinter. Zwei Abschnitte mit
+        // derselben Kennung waeren im Stilblock ein und derselbe.
+        var genommen = {};
+        form.querySelectorAll("[data-sec-kennung]").forEach(function (k) {
+          if (k !== kennung && k.value.trim() !== "") genommen[k.value.trim()] = true;
+        });
+
+        var vorschlag = art;
+        var zaehler = 2;
+        while (genommen[vorschlag]) {
+          vorschlag = art + "-" + zaehler;
+          zaehler++;
+        }
+        kennung.value = vorschlag;
+      }
+    });
+  });
 })();
