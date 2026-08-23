@@ -29,10 +29,48 @@
       var intro = document.querySelector("[data-intro]");
       var introMs = Number(envelope.getAttribute("data-intro-ms")) || 0;
 
+      // Der Filmvorspann des Themas. Er ersetzt die gezeichnete Szene, wenn
+      // das Thema einen mitbringt - und er sagt selbst, wie lange er dauert,
+      // statt dass wir eine Zahl raten.
+      var introBox = document.querySelector("[data-intro-video]");
+      var introFilm = introBox && introBox.querySelector("[data-intro-film]");
+
       // Wer Bewegung abbestellt hat, bekommt die Szene gar nicht erst zu
       // sehen (im Stylesheet auf display:none) – dann auch nicht warten.
       var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!intro || still) introMs = 0;
+
+      // Der Vorspann laeuft nur, wenn Bewegung erwuenscht ist. Wer sie
+      // abbestellt hat, bekommt sofort die Karte.
+      if (introFilm && !still) {
+        introBox.hidden = false;
+
+        // data-intro-ms bleibt die Obergrenze. Laedt der Film nicht - schlechtes
+        // Netz, Format vom Server nicht ausgeliefert -, haengt die Einladung
+        // sonst vor einem schwarzen Kasten fest.
+        var deckel = introMs > 0 ? introMs : 6000;
+        var fertig = false;
+        var schliessen = function () {
+          if (fertig) return;
+          fertig = true;
+          introBox.hidden = true;
+        };
+
+        introFilm.addEventListener("ended", schliessen, { once: true });
+        introFilm.addEventListener("error", schliessen, { once: true });
+        setTimeout(schliessen, deckel);
+
+        introFilm.play().catch(schliessen);
+
+        // Die Karte wartet, bis der Film durch ist - hoechstens aber deckel.
+        // Die Laenge sagt der Film selbst; steht sie noch nicht fest (die
+        // Metadaten sind beim Klick nicht immer da), gilt der Deckel. Sonst
+        // saehe der Gast bei einem Vorspann von drei Sekunden sechs Sekunden
+        // lang nichts.
+        var dauer = isFinite(introFilm.duration) ? Math.round(introFilm.duration * 1000) : 0;
+        introMs = dauer > 0 ? Math.min(dauer, deckel) : deckel;
+      } else if (!intro || still) {
+        introMs = 0;
+      }
 
       if (intro && introMs > 0) {
         intro.setAttribute("data-playing", "true");
@@ -89,6 +127,18 @@
       // Erst wenn die Karte frei liegt, duerfen die Abschnitte anlaufen.
       // Vorher haette der Beobachter sie hinter der Huelle abgehakt, und
       // beim Aufschlagen stuende alles schon fertig da.
+      // Die Filme der Ebenen. Sie tragen kein autoplay - sonst liefen sie
+      // hinter dem geschlossenen Kuvert, unsichtbar und im Mobilfunk bezahlt.
+      // Wer Bewegung abbestellt hat, sieht das Standbild und sonst nichts.
+      if (!still) {
+        setTimeout(function () {
+          var filme = document.querySelectorAll("video.d-el");
+          for (var i = 0; i < filme.length; i++) {
+            filme[i].play().catch(function () {});
+          }
+        }, introMs);
+      }
+
       setTimeout(startReveals, introMs + 1800);
 
       // Ton darf erst nach einer Nutzeraktion starten – hier ist sie.
@@ -103,6 +153,13 @@
     });
   } else {
     // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen.
+    var ruhig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!ruhig) {
+      var vorschau = document.querySelectorAll("video.d-el");
+      for (var v = 0; v < vorschau.length; v++) {
+        vorschau[v].play().catch(function () {});
+      }
+    }
     startReveals();
   }
 
