@@ -100,7 +100,7 @@ $idle = (string) $design['animation']['idle'];
     }
   ?>
   <div class="<?= e($scope) ?> d-sec-flaeche"
-       <?= $papier !== '' ? 'style="background-image:url(\'' . e($papier) . '\')"' : '' ?>>
+       <?= $papier !== '' ? 'style="--d-sec-blatt:url(\'' . e($papier) . '\')"' : '' ?>>
     <div class="d-sections mx-auto max-w-2xl px-6 py-16 pb-32">
       <?= $abschnitte ?>
     </div>

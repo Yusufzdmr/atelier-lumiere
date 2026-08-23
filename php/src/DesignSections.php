@@ -301,26 +301,47 @@ final class DesignSections
          * Goldecken alle paar hundert Pixel noch einmal.
          */
         return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
+            /*
+             * Das Blatt wiederholt sich nach unten - jede Laenge ein neues
+             * Blatt, nicht ein gedehntes.
+             *
+             * "Sayfaya sigmiyorsa mesela asagi dogru yeni bir sayfa ac."
+             * Genau das: repeat-y. Vorher endete das Bild mitten auf der
+             * Seite mit einer harten Kante, darunter lag die nackte Farbe -
+             * eine Naht quer durch die Einladung.
+             *
+             * Die Breite bleibt an die Karte gebunden: min(100%, 42rem) ist
+             * max-w-2xl. Cover mit fixed maass gegen den Bildschirm und kam
+             * unten fast doppelt so gross heraus wie oben.
+             *
+             * Der Pfad kommt als eigene Eigenschaft von der Vorlage, nicht
+             * als background-image: sonst wuerde diese Regel ihn ueberschreiben.
+             */
+            . $scope . '.d-sec-flaeche{background-image:var(--d-sec-blatt,none);'
             . 'background-position:top center;background-size:min(100%,42rem) auto;'
-            . 'background-repeat:no-repeat;}'
-            . $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
+            . 'background-repeat:repeat-y;}'
+            . $scope . ' .d-sec{margin-top:4.5rem;line-height:1.7;text-align:center;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
             // dieselben zwei Marken, die auf der Karte den Ton angeben.
-            . $scope . ' .d-sec-title{font-size:1.25rem;font-weight:600;line-height:1.3;margin-bottom:0.75rem;'
+            . $scope . ' .d-sec-title{font-size:1.5rem;font-weight:400;line-height:1.3;margin-bottom:1.5rem;'
             . 'font-family:var(--df-display,inherit);color:var(--d-accent,inherit);'
-            . 'letter-spacing:var(--dft-display,0);}'
+            . 'letter-spacing:0.16em;text-transform:uppercase;}'
             . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
-            . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto 1fr;gap:0.375rem 1.25rem;}'
+            // Als Block zentriert, innen ausgerichtet: die Uhrzeiten stehen
+            // untereinander, sonst waere die Spalte eine Treppe.
+            . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto auto;'
+            . 'gap:0.6rem 2rem;justify-content:center;text-align:left;}'
             . $scope . ' .d-sec-program dt{font-weight:600;}'
             . $scope . ' .d-sec-program dd{margin:0;}'
-            . $scope . ' .d-sec-form{display:grid;gap:0.85rem;max-width:26rem;}'
+            . $scope . ' .d-sec-form{display:grid;gap:1.1rem;max-width:24rem;'
+            . 'margin-inline:auto;text-align:left;}'
             . $scope . ' .d-sec-form-row{display:grid;gap:0.3rem;}'
             . $scope . ' .d-sec-form-row span{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;}'
             . $scope . ' .d-sec-form input[type=text],'
             . $scope . ' .d-sec-form input[type=number]{border:0;border-bottom:1px solid currentColor;background:transparent;padding:0.35rem 0;color:inherit;font:inherit;}'
-            . $scope . ' .d-sec-form button{justify-self:start;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}';
+            . $scope . ' .d-sec-form button{justify-self:center;margin-top:0.5rem;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}';
     }
 
     /**
