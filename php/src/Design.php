@@ -189,6 +189,7 @@ final class Design
             'spot'        => 'card',
             'box'         => [],
             'src'         => '',
+            'poster'      => '',
             'bind'        => '',
             'text'        => ['de' => '', 'en' => ''],
             'style'       => [],
@@ -203,6 +204,12 @@ final class Design
         $el['type']  = in_array($el['type'], self::TYPES, true) ? (string) $el['type'] : 'image';
         $el['spot']  = array_key_exists((string) $el['spot'], Themes::SPOTS) ? (string) $el['spot'] : 'card';
         $el['src']   = (string) $el['src'];
+
+        // Der Poster ist ein Bild, keine zweite Quelle: er wird sofort
+        // geprueft und nicht erst beim Zeichnen. Ein fremder Host hat in
+        // einem poster-Attribut nichts verloren - dieselbe Regel wie bei src,
+        // nur frueher, weil hier kein Zweig ihn spaeter noch abfangen wuerde.
+        $el['poster'] = self::safeSrc((string) $el['poster']);
 
         // Unbekannte Namen bleiben stehen: warnings() soll sie melden koennen.
         // Nur Sonderzeichen fliegen raus. Leerzeichen werden zum Unterstrich,
@@ -362,7 +369,7 @@ final class Design
                 // Karte. Gemessen vor der Einfuehrung: von 11 Bildebenen
                 // lokal und 16 in der Produktion hatte KEINE eine Hoehe, die
                 // Zeile aendert also an keiner bestehenden Vorlage etwas.
-                . ($el['type'] === 'image' || $el['type'] === 'photo' ? 'object-fit:cover;' : '')
+                . (in_array($el['type'], ['image', 'photo', 'video'], true) ? 'object-fit:cover;' : '')
                 . '}';
 
             if ($el['type'] === 'text') {
@@ -544,7 +551,29 @@ final class Design
                 $out .= '<div class="' . e($class) . '" aria-hidden="true"></div>';
             }
 
-            // video: Faz 3. Bis dahin wird das Element still uebersprungen.
+            if ($el['type'] === 'video') {
+                $src = self::safeSrc($el['src']);
+
+                // Kein autoplay. Das Attribut wuerde den Film hinter dem
+                // geschlossenen Kuvert laufen lassen - unsichtbar, und im
+                // Mobilfunk bezahlt. invitation.js startet ihn, wenn die
+                // Karte frei liegt (und gar nicht bei reduzierter Bewegung).
+                $attr = ' muted loop playsinline preload="metadata" aria-hidden="true"';
+
+                if ($src === '') {
+                    // Wie bei photo: der Knoten bleibt stehen, damit die
+                    // Vorschau im Assistenten etwas hat, worin sie das
+                    // gerade Gewaehlte zeigen kann.
+                    $out .= '<video class="' . e($class) . '"' . $attr . ' hidden></video>';
+                    continue;
+                }
+
+                $poster = self::safeSrc($el['poster']);
+
+                $out .= '<video class="' . e($class) . '" src="' . e($src) . '"'
+                    . ($poster !== '' ? ' poster="' . e($poster) . '"' : '')
+                    . $attr . '></video>';
+            }
         }
 
         return $out;

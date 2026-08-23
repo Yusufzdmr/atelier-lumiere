@@ -166,3 +166,40 @@ assert_not_contains($nurKarte, 'SEITE', 'html: Filter haelt andere Orte zurueck'
 assert_not_contains($nurKarte, 'KUVERT', 'html: Filter haelt andere Orte zurueck (2)');
 
 assert_same('', Design::html($doc, [], 'de', 'gibtesnicht'), 'html: unbekannter Ort ist leer');
+
+/* --- Video: wird gezeichnet, aber nie von allein gestartet --- */
+
+$doc = ['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'spot' => 'page',
+     'src' => '/uploads/film.mp4', 'poster' => '/uploads/film.jpg'],
+]];
+$html = Design::html($doc, [], 'de');
+
+assert_contains($html, '<video', 'html: video wird gezeichnet');
+assert_contains($html, '/uploads/film.mp4', 'html: die Quelle steht da');
+assert_contains($html, 'poster="/uploads/film.jpg"', 'html: der Poster steht da');
+assert_contains($html, 'muted', 'html: video ist stumm');
+assert_contains($html, 'playsinline', 'html: video laeuft im Fluss, nicht im Vollbild');
+assert_contains($html, 'loop', 'html: video laeuft in der Schleife');
+assert_contains($html, 'd-spot-page', 'html: video traegt seinen Ort');
+
+// Das Wichtigste: OHNE autoplay. Sonst dreht sich der Film hinter dem
+// geschlossenen Kuvert, sieht ihn niemand, und das Handy zahlt.
+assert_not_contains($html, 'autoplay', 'html: video startet NICHT von allein');
+
+/* --- Video ohne Quelle: der Knoten bleibt, wie bei photo --- */
+
+$leer = Design::html(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => ''],
+]], [], 'de');
+
+assert_contains($leer, '<video', 'html: leeres Video behaelt seinen Knoten');
+assert_contains($leer, 'hidden', 'html: und ist versteckt');
+
+/* --- Fremde Quelle faellt weg --- */
+
+$fremd = Design::html(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => 'https://beispiel.de/f.mp4'],
+]], [], 'de');
+
+assert_not_contains($fremd, 'beispiel.de', 'html: fremder Host wird verworfen');

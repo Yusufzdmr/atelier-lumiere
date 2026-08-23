@@ -95,3 +95,16 @@ $doc = Design::complete(['fonts' => ['display' => ['family' => 'Cormorant Garamo
 
 assert_same('Cormorant Garamond', $doc['fonts']['display']['family'], 'complete: Schriftfamilie bleibt');
 assert_same(false, $doc['fonts']['display']['customer'], 'complete: Schrift ist standardmaessig gesperrt');
+
+/* --- Video: poster ist ein eigenes Feld und geht durch dieselbe Pruefung --- */
+
+$doc = Design::complete(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => '/uploads/film.mp4', 'poster' => '/uploads/film.jpg'],
+    ['id' => 'fremd', 'type' => 'video', 'src' => '/uploads/a.mp4', 'poster' => 'https://beispiel.de/x.jpg'],
+    ['id' => 'ohne', 'type' => 'video', 'src' => '/uploads/b.mp4'],
+]]);
+
+assert_same('video', $doc['layers'][0]['type'], 'complete: video bleibt video');
+assert_same('/uploads/film.jpg', $doc['layers'][0]['poster'], 'complete: eigener Poster kommt durch');
+assert_same('', $doc['layers'][1]['poster'], 'complete: fremder Host wird zu leer');
+assert_same('', $doc['layers'][2]['poster'], 'complete: ohne Angabe ist der Poster leer');

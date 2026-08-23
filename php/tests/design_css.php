@@ -193,3 +193,22 @@ assert_contains($sch, '--dfl-display:1.15;', 'css: Zeilenhoehe steht als Variabl
 assert_contains($sch, 'font-weight:var(--dfw-display);', 'css: die Elementregel liest das Gewicht');
 assert_contains($sch, 'letter-spacing:var(--dft-display);', 'css: die Elementregel liest die Laufweite');
 assert_contains($sch, 'line-height:var(--dfl-display);', 'css: die Elementregel liest die Zeilenhoehe');
+
+/* --- Video fuellt seine Flaeche wie ein Bild --- */
+
+$mitFilm = Design::css(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => '/uploads/f.mp4',
+     'box' => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100]],
+]], '.d-x');
+
+assert_contains($mitFilm, 'object-fit:cover', 'css: video wird beschnitten, nicht gezerrt');
+
+/* --- Ohne Hoehe hat object-fit nichts zu tun: die Regel bleibt trotzdem
+       harmlos, aber die Hoehe muss auto sein --- */
+
+$ohneHoehe = Design::css(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => '/uploads/f.mp4',
+     'box' => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 0]],
+]], '.d-x');
+
+assert_contains($ohneHoehe, 'height:auto', 'css: ohne Hoehe bestimmt der Film seine Proportion selbst');
