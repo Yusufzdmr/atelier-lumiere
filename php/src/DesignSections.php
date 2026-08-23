@@ -284,13 +284,19 @@ final class DesignSections
          * Flaeche ein Bild an (das Blatt der Karte), und die Kurzform wuerde
          * es jedes Mal wieder wegwischen.
          *
-         * Unten ausgerichtet und beschnitten, mit Absicht: der Schmuck des
-         * Blattes sitzt OBEN. Von unten gezeigt kommt der ruhige Teil des
-         * Papiers zum Vorschein - dasselbe Papier, das die Karte darueber
-         * schon hat, nur ohne die Goldecken ein zweites Mal.
+         * Oben ausgerichtet und festgestellt (background-attachment:fixed):
+         * das Blatt steht hinter dem Text, waehrend er darueber wegscrollt -
+         * eine Flaeche, nicht eine Kachel. Beim ersten Versuch war es unten
+         * ausgerichtet und mitlaufend; dann sah man nur den ruhigen Teil des
+         * Papiers und das Blatt war nicht wiederzuerkennen. Der Kunde wollte
+         * SEIN Bild sehen: "sayfanin arkaplani yine attigim resim olacak".
+         *
+         * Der Schmuck sitzt oben und die Mitte des Blattes ist leer - genau
+         * deshalb traegt es Text, ohne mit ihm zu streiten.
          */
         return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
-            . 'background-position:bottom center;background-size:cover;background-repeat:no-repeat;}'
+            . 'background-position:top center;background-size:cover;background-repeat:no-repeat;'
+            . 'background-attachment:fixed;}'
             . $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
