@@ -460,3 +460,54 @@ assert_same(true, $bleibt['sections'][1]['enabled'], 'personalize: ohne hide-Rec
 // Erfundene Kennung faellt still.
 $erfunden = DesignWizard::personalize($basis, ['sections' => ['gibtesnicht' => ['hidden' => true]]]);
 assert_same(2, count($erfunden['sections']), 'personalize: erfundener Abschnitt fuegt nichts hinzu');
+
+/* --- Eine Videoebene mit photo-Recht wird angeboten --- */
+
+$doc = ['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => '/uploads/a.mp4',
+     'permissions' => ['edit' => true, 'photo' => true]],
+]];
+
+$wahl = DesignWizard::choices($doc);
+
+assert_true(isset($wahl['layers']['film']), 'wizard: Videoebene wird angeboten');
+assert_true($wahl['layers']['film']['photo'], 'wizard: und zwar mit dem photo-Recht');
+
+/* --- Ohne edit bleibt sie gesperrt, wie jede andere Ebene --- */
+
+$zu = DesignWizard::choices(['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'permissions' => ['edit' => false, 'photo' => true]],
+]]);
+
+assert_true(!isset($zu['layers']['film']), 'wizard: ohne edit wird nichts angeboten');
+
+/* --- Der Poster reist mit der Quelle, sonst stuende hinter dem gewaehlten
+       Film das Standbild des vorigen --- */
+
+$sockel = ['id' => 'x', 'layers' => [
+    ['id' => 'film', 'type' => 'video', 'src' => '/uploads/vorlage.mp4',
+     'poster' => '/uploads/vorlage.jpg',
+     'permissions' => ['edit' => true, 'photo' => true]],
+]];
+
+$fertig = DesignWizard::personalize($sockel, ['layers' => ['film' => [
+    'src' => '/uploads/videos/neu.mp4', 'poster' => '/uploads/videos/neu.jpg',
+]]]);
+
+assert_same('/uploads/videos/neu.mp4', $fertig['layers'][0]['src'], 'personalize: der gewaehlte Film steht da');
+assert_same('/uploads/videos/neu.jpg', $fertig['layers'][0]['poster'], 'personalize: und sein eigenes Standbild');
+
+/* --- Ein Film ohne Standbild loescht das alte, statt ein falsches zu behalten --- */
+
+$ohne = DesignWizard::personalize($sockel, ['layers' => ['film' => [
+    'src' => '/uploads/videos/neu.mp4', 'poster' => '',
+]]]);
+
+assert_same('', $ohne['layers'][0]['poster'], 'personalize: kein Standbild heisst kein Standbild');
+
+/* --- Ohne Wahl bleibt beides, wie die Vorlage es hatte --- */
+
+$nichts = DesignWizard::personalize($sockel, []);
+
+assert_same('/uploads/vorlage.mp4', $nichts['layers'][0]['src'], 'personalize: ohne Wahl bleibt der Film der Vorlage');
+assert_same('/uploads/vorlage.jpg', $nichts['layers'][0]['poster'], 'personalize: und ihr Standbild auch');

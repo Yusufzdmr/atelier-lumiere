@@ -7,6 +7,7 @@ namespace Atelier\Controllers;
 use Atelier\Config;
 use Atelier\Design;
 use Atelier\DesignSections;
+use Atelier\DesignVideos;
 use Atelier\DesignWizard;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
@@ -155,6 +156,7 @@ final class InviteV2Controller
             'design'  => $design,
             'steps'   => DesignWizard::steps($design),
             'choices' => DesignWizard::choices($design),
+            'filme'   => DesignVideos::all(),
             'values'    => $values,
             'token'     => $token,
             'draftLink' => $draftLink,
@@ -477,9 +479,17 @@ final class InviteV2Controller
      * @param array<string,mixed> $alt
      * @return array{palette:array<string,string>,fonts:array<string,string>,layers:array<string,mixed>,sections:array<string,mixed>}
      */
-    private function sammleWahl(array $darf, string $slug, array $alt): array
+    private function sammleWahl(array $darf, string $slug, array $alt, array $sockel): array
     {
         $altLayers = is_array($alt['layers'] ?? null) ? $alt['layers'] : [];
+
+        // Der Typ je Ebene. $darf traegt nur Rechte, und eine Videoebene wird
+        // anders gefragt als eine Bildebene: dort eine Datei, hier eine
+        // Kennung aus der Bibliothek.
+        $typen = [];
+        foreach (($sockel['layers'] ?? []) as $el) {
+            $typen[(string) ($el['id'] ?? '')] = (string) ($el['type'] ?? '');
+        }
 
         $wahl = ['palette' => [], 'fonts' => [], 'layers' => [], 'sections' => []];
 
@@ -521,7 +531,35 @@ final class InviteV2Controller
             if ($rechte['hide'] && isset($_POST['layer_hidden_' . $id])) {
                 $eintrag['hidden'] = true;
             }
-            if ($rechte['photo']) {
+            if ($rechte['photo'] && ($typen[$id] ?? '') === 'video') {
+                /*
+                 * Der gewaehlte Film. Nicht der Pfad kommt aus dem Formular,
+                 * sondern die Kennung - so kann niemand eine fremde Adresse
+                 * einschleusen, und safeSrc muss hier gar nicht erst greifen.
+                 *
+                 * Die Wahl steht in der Wahl und nicht im Dokument: gedruckt
+                 * wird personalize(snapshot, wahl) bei jedem Aufruf neu (siehe
+                 * publish()). Ein Film, der einmal ins Dokument geschrieben
+                 * wuerde, waere beim naechsten Zeichnen wieder der der
+                 * Vorlage.
+                 *
+                 * Wer nichts waehlt, behaelt den Film der Vorlage - beim
+                 * Bearbeiten den vorher gewaehlten.
+                 */
+                $kennung = Security::clean($_POST['film_' . $id] ?? '', 64);
+                $film    = $kennung !== '' ? DesignVideos::find($kennung) : null;
+
+                if ($film !== null) {
+                    $eintrag['src']    = $film['mp4'];
+                    $eintrag['poster'] = $film['poster'];
+                } else {
+                    $vorher = $altLayers[$id]['src'] ?? null;
+                    if (is_string($vorher) && $vorher !== '') {
+                        $eintrag['src']    = $vorher;
+                        $eintrag['poster'] = (string) ($altLayers[$id]['poster'] ?? '');
+                    }
+                }
+            } elseif ($rechte['photo']) {
                 // Media::store() sieht in die Datei, nicht auf ihren Namen.
                 $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
                 if ($pfad !== null) {
@@ -628,7 +666,7 @@ final class InviteV2Controller
         // Die Wahl einsammeln, mit dem Slug fuer den Bilderordner. Leeres
         // drittes Argument: beim Veroeffentlichen gibt es keine alte Wahl,
         // aus der ein Foto uebernommen werden koennte.
-        $wahl = $this->sammleWahl($darf, $slug, []);
+        $wahl = $this->sammleWahl($darf, $slug, [], $design);
 
         /*
          * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
@@ -1078,6 +1116,7 @@ final class InviteV2Controller
             // die Ausgangsfarbe einer Ebene.
             'design'     => Design::complete($sockel),
             'choices'    => $darf,
+            'filme'      => DesignVideos::all(),
             'values'     => $werte,
             'wahl'       => $wahl,
             'darfDesign' => InvitationsV2::canEditDesign($data),
@@ -1196,7 +1235,7 @@ final class InviteV2Controller
          * hochgeladen wurde, behaelt seinen Pfad (sammleWahl).
          */
         if (InvitationsV2::canEditDesign($alt)) {
-            $neu['wahl'] = $this->sammleWahl($darf, $slug, (array) $alt['wahl']);
+            $neu['wahl'] = $this->sammleWahl($darf, $slug, (array) $alt['wahl'], $einladung['design_snapshot']);
         }
 
         // Der neue Stand fuer die naechste Zwei-Tabs-Kontrolle. Zuletzt, damit

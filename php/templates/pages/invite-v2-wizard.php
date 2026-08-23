@@ -17,6 +17,7 @@
  * @var string $karte
  * @var string $abschnitte  was unter der Karte steht, serverseitig gezeichnet
  * @var string $sectionCss
+ * @var list<array{id:string,label:string,mp4:string,webm:string,poster:string,category:string}> $filme
  * @var string $csrf
  * @var string $token      Kennung des Entwurfs, leer solange keiner gespeichert ist
  * @var string $draftLink  gesetzt, wenn gerade eben gespeichert wurde
@@ -245,6 +246,23 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
         <?php if ($key === 'bilder') : ?>
           <?php foreach ($choices['layers'] as $id => $rechte) : ?>
             <?php if (!$rechte['photo']) { continue; } ?>
+            <?php $ebeneTyp = (string) ($ebene((string) $id)['type'] ?? ''); ?>
+            <?php if ($ebeneTyp === 'video') : ?>
+              <?php /*
+                 Auswahl statt Upload. Nicht aus Bequemlichkeit: ein Paar
+                 findet keinen Hintergrundfilm im richtigen Format, und was es
+                 faende, waere 200 MB Querformat mit Text im Bild.
+              */ ?>
+              <label class="block <?= $label ?>">
+                <?= e($ebeneName((string) $id)) ?>
+                <select name="film_<?= e($id) ?>" class="<?= $field ?> normal-case tracking-normal">
+                  <option value=""><?= $locale === 'de' ? 'Wie in der Vorlage' : 'As in the template' ?></option>
+                  <?php foreach ($filme as $film) : ?>
+                    <option value="<?= e($film['id']) ?>"><?= e($film['label'] ?: $film['id']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </label>
+            <?php else : ?>
             <?php
               /*
                * Das Bild, das die Vorlage heute an dieser Stelle zeigt: ohne
@@ -306,6 +324,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <?php endif; ?>
               </div>
             </div>
+            <?php endif; ?>
           <?php endforeach; ?>
         <?php endif; ?>
 

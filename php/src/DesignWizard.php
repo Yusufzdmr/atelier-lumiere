@@ -90,7 +90,10 @@ final class DesignWizard
                 // Ein bind holt seinen Wert aus den Daten. Ein fester Text
                 // daneben waere eine zweite Wahrheit, die nie gewinnt.
                 'text'  => $p['text'] && $el['bind'] === '' && in_array($el['type'], ['text', 'button'], true),
-                'photo' => $p['photo'] && in_array($el['type'], ['image', 'photo'], true),
+                // video haengt am selben Recht wie photo: es ist dieselbe
+                // Frage - "darf das Paar den Inhalt dieser Flaeche tauschen".
+                // Ein siebtes Recht waere ein zweiter Name fuer eine Sache.
+                'photo' => $p['photo'] && in_array($el['type'], ['image', 'photo', 'video'], true),
                 'hide'  => $p['hide'],
             ];
 
@@ -300,6 +303,14 @@ final class DesignWizard
                 $pfad = Design::safeSrc((string) $gewaehlt['src']);
                 if ($pfad !== '') {
                     $doc['layers'][$i]['src'] = $pfad;
+                }
+
+                // Der Poster reist mit der Quelle, sonst stuende hinter dem
+                // gewaehlten Film das Standbild des vorigen. Er darf leer
+                // werden: ein Film aus der Bibliothek ohne Standbild hat
+                // keines, und das alte waere dann schlicht falsch.
+                if (isset($gewaehlt['poster'])) {
+                    $doc['layers'][$i]['poster'] = Design::safeSrc((string) $gewaehlt['poster']);
                 }
             }
 

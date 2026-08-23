@@ -19,6 +19,7 @@
  * @var string $locale
  * @var array<string,mixed> $design      der eingefrorene Sockel, vollstaendig
  * @var array<string,mixed> $choices
+ * @var list<array{id:string,label:string,mp4:string,webm:string,poster:string,category:string}> $filme
  * @var array<string,string> $values     Formularnamen, nicht Datennamen
  * @var array<string,mixed> $wahl        was der Kunde beim Veroeffentlichen waehlte
  * @var bool   $darfDesign               Spec §4: ohne wahl kein Design-Tab
@@ -364,7 +365,30 @@ if ($darfDesign) {
                     <input type="text" name="layer_text_<?= e((string) $id) ?>" class="<?= $field ?>" maxlength="600" value="<?= e($textWert) ?>">
                   <?php endif; ?>
 
-                  <?php if ($rechte['photo']) : ?>
+                  <?php $ebeneTyp = (string) ($ebene((string) $id)['type'] ?? ''); ?>
+                  <?php if ($rechte['photo'] && $ebeneTyp === 'video') : ?>
+                    <?php
+                      /*
+                       * Auswahl statt Upload - dieselbe Ueberlegung wie im
+                       * Assistenten. Vorausgewaehlt ist der Film, der heute
+                       * laeuft: die eigene Wahl, sonst der der Vorlage.
+                       */
+                      $filmJetzt = is_string($eigen['src'] ?? null) && $eigen['src'] !== ''
+                          ? (string) $eigen['src']
+                          : (string) ($ebene((string) $id)['src'] ?? '');
+                    ?>
+                    <label class="mt-4 block <?= $label ?>">
+                      <?= e($locale === 'de' ? 'Film' : 'Film') ?>
+                      <select name="film_<?= e((string) $id) ?>" class="<?= $field ?> normal-case tracking-normal">
+                        <option value=""><?= $locale === 'de' ? 'Unveraendert' : 'Unchanged' ?></option>
+                        <?php foreach ($filme as $film) : ?>
+                          <option value="<?= e($film['id']) ?>" <?= $film['mp4'] === $filmJetzt ? 'selected' : '' ?>>
+                            <?= e($film['label'] ?: $film['id']) ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </label>
+                  <?php elseif ($rechte['photo']) : ?>
                     <?php
                       /*
                        * Was heute auf der Einladung steht - und das ist hier
