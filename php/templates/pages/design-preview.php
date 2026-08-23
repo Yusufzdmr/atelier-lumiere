@@ -78,8 +78,16 @@ $idle = (string) $design['animation']['idle'];
    Der Abstand unten haelt den festen Balken frei, der gleich darunter kommt.
 */ ?>
 <?php if ($abschnitte !== '') : ?>
-  <div class="<?= e($scope) ?> d-sections mx-auto max-w-2xl px-6 py-16 pb-32">
-    <?= $abschnitte ?>
+  <?php /*
+     Zwei Kaesten, nicht einer: die Flaeche geht von Kante zu Kante, damit das
+     Papier der Karte einfach weiterlaeuft; der Text darin bleibt in seiner
+     Spalte. Ein einzelner zentrierter Kasten waere eine schwarze Saeule auf
+     cremefarbenem Grund - genau der Bruch, der weg soll.
+  */ ?>
+  <div class="<?= e($scope) ?> d-sec-flaeche">
+    <div class="d-sections mx-auto max-w-2xl px-6 py-16 pb-32">
+      <?= $abschnitte ?>
+    </div>
   </div>
 <?php endif; ?>
   <?php if ($intern) : ?>

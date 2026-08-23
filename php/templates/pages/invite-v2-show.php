@@ -65,7 +65,14 @@ use Atelier\View;
    auch nichts - kein leerer Kasten.
 */ ?>
 <?php if ($abschnitte !== '') : ?>
-  <div class="<?= e($scope) ?> d-sections mx-auto max-w-2xl px-6 py-16">
-    <?= $abschnitte ?>
+  <?php /*
+     Zwei Kaesten, nicht einer: die Flaeche geht von Kante zu Kante, damit das
+     Papier der Karte einfach weiterlaeuft; der Text darin bleibt in seiner
+     Spalte. Dieselbe Anordnung wie im Schaufenster.
+  */ ?>
+  <div class="<?= e($scope) ?> d-sec-flaeche">
+    <div class="d-sections mx-auto max-w-2xl px-6 py-16">
+      <?= $abschnitte ?>
+    </div>
   </div>
 <?php endif; ?>

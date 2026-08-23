@@ -152,6 +152,20 @@ final class DesignController
                 'title'     => $design['name'][$locale] ?? $design['name']['de'],
                 'noindex'   => true,
                 'canonical' => Config::url() . I18n::path('/v2/designs/' . $design['slug'], $locale),
+                /*
+                 * Ohne Kopf und Fuss des Hauses - wie die echte Einladung
+                 * (InviteV2Controller: 'bare' => true).
+                 *
+                 * Solange die Buehne fest ueber allem lag, deckte sie den
+                 * Kopf zu und niemand sah ihn. Jetzt steht sie im Fluss, und
+                 * der Kopf ist "fixed top-0 z-50": er legte sich quer ueber
+                 * die Goldecken der Karte. Angesehen, nicht vermutet.
+                 *
+                 * Die zwei Wege hinaus gehen nicht verloren - der feste
+                 * Balken unten traegt sie ohnehin: zurueck zur Auswahl, oder
+                 * mit dieser Vorlage anfangen.
+                 */
+                'bare'      => true,
                 // Die Choreografie wird geteilt, nicht nachgebaut: dasselbe
                 // Skript wie bei der ersten Fassung. Es kennt keine Farben und
                 // keine Formen - es oeffnet ein Kuvert und laesst eine Karte

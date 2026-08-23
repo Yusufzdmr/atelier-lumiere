@@ -263,9 +263,30 @@ final class DesignSections
      */
     private static function baseline(string $scope): string
     {
-        return $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
+        /*
+         * Die Abschnitte tragen die Welt der Karte weiter.
+         *
+         * Bis hierher stand hier nur Struktur - Abstaende, Raster, Formfelder -
+         * und Farbe wie Schrift kamen von der Seite. Auf einer cremefarbenen
+         * Seite unter einer Karte aus schwarzem Papier hiess das: oben die
+         * Einladung, unten ein nacktes Formular. Der Kunde hat genau das
+         * gesehen: "alt tarafa dogru kaydirinca ayni kartin devami gibi
+         * olacak."
+         *
+         * Die Marken stehen ohnehin schon am Bereich - Design::css() schreibt
+         * --d-paper, --d-fg, --d-accent und die Schriftvariablen dorthin.
+         * Hier werden sie nur gelesen. Der Ersatzwert dahinter ist keine
+         * Vorsicht ohne Grund: eine Vorlage ohne Papiermarke gibt es (Noir
+         * hat keine), und ohne ihn stuende die Flaeche dann auf transparent.
+         */
+        return $scope . '.d-sec-flaeche{background:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);}'
+            . $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
-            . $scope . ' .d-sec-title{font-size:1.25rem;font-weight:600;line-height:1.3;margin-bottom:0.75rem;}'
+            // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
+            // dieselben zwei Marken, die auf der Karte den Ton angeben.
+            . $scope . ' .d-sec-title{font-size:1.25rem;font-weight:600;line-height:1.3;margin-bottom:0.75rem;'
+            . 'font-family:var(--df-display,inherit);color:var(--d-accent,inherit);'
+            . 'letter-spacing:var(--dft-display,0);}'
             . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
             . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto 1fr;gap:0.375rem 1.25rem;}'
