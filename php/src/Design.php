@@ -1213,9 +1213,40 @@ final class Design
             if (!isset($post['sec_type_' . $i])) {
                 continue;
             }
+            $typ = Security::clean($post['sec_type_' . $i] ?? '', 24);
+
+            /*
+             * Welche Einstellungen dieser Abschnitt ueberhaupt hat, weiss der
+             * Katalog - und er weiss es erst, wenn der Typ gelesen ist.
+             *
+             * Deshalb wird hier nicht blind alles eingesammelt, was mit
+             * sec_set_ anfaengt: ein Ort hat einen Kartenlink, ein Countdown
+             * nicht. Ein Wert ohne Schema waere ein Schluessel, der jahrelang
+             * im Dokument mitreist, ohne je etwas zu tun.
+             *
+             * Haken werden gelesen wie die Rechte: da heisst an, weg heisst
+             * aus. Das Formular schickt die Zeile immer mit, also ist ein
+             * fehlender Haken eine Aussage und kein Zufall.
+             */
+            $einstellungen = [];
+            foreach (SectionRegistry::settings($typ) as $schluessel => $schema) {
+                $name = 'sec_set_' . $schluessel . '_' . $i;
+                if ((string) $schema['type'] === 'bool') {
+                    $einstellungen[$schluessel] = isset($post[$name]);
+                    continue;
+                }
+                if (isset($post[$name])) {
+                    $einstellungen[$schluessel] = $post[$name];
+                }
+            }
+
             $abschnitte[] = [
                 'id'      => Security::clean($post['sec_id_' . $i] ?? '', 64),
-                'type'    => Security::clean($post['sec_type_' . $i] ?? '', 24),
+                'type'    => $typ,
+                // Eine unbekannte Variante faellt in DesignSections::complete()
+                // auf die Voreinstellung zurueck - hier wird nur eingesammelt.
+                'variant' => Security::clean($post['sec_variant_' . $i] ?? '', 48),
+                'settings' => $einstellungen,
                 'title'   => [
                     'de' => Security::clean($post['sec_title_de_' . $i] ?? '', 120),
                     'en' => Security::clean($post['sec_title_en_' . $i] ?? '', 120),

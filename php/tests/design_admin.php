@@ -366,3 +366,60 @@ assert_same(0, count($alleWeg['layers']), 'Loeschen: eine leere Reihe raeumt all
 $erfunden = Design::fromPost($dreiEbenen, ['ebenen_reihenfolge' => 'grund,gespenst,name,ecke']);
 
 assert_same(3, count($erfunden['layers']), 'Reihenfolge: ein fremder Name erfindet nichts');
+
+/*
+ * ------------------------------------------------------------------
+ * Variante und Einstellungen kommen aus dem Formular.
+ * ------------------------------------------------------------------
+ *
+ * Wie die Abschnitte selbst: indiziert (sec_variant_0, sec_set_align_0 ...),
+ * damit die Reihenfolge im Formular die Reihenfolge im Dokument bleibt.
+ *
+ * Welche Einstellungen ein Abschnitt ueberhaupt hat, weiss der Katalog - und
+ * er weiss es erst, wenn der Typ gelesen ist. Deshalb wird hier NICHT blind
+ * alles eingesammelt, was mit sec_set_ anfaengt: ein Ort hat einen
+ * Kartenlink, ein Countdown nicht, und ein Wert ohne Schema waere ein
+ * Schluessel, der jahrelang mitreist, ohne je etwas zu tun.
+ */
+
+$mitVariante = Design::fromPost($basis, [
+    'sec_id_0'         => 'ablauf',
+    'sec_type_0'       => 'program',
+    'sec_variant_0'    => 'zeitstrahl',
+    'sec_set_align_0'  => 'left',
+    'sec_set_space_0'  => 'weit',
+
+    'sec_id_1'         => 'wo',
+    'sec_type_1'       => 'location',
+    'sec_variant_1'    => 'discokugel',
+    'sec_set_map_1'    => '1',
+]);
+
+assert_same('zeitstrahl', $mitVariante['sections'][0]['variant'], 'fromPost: die Variante kommt an');
+assert_same('left', $mitVariante['sections'][0]['settings']['align'], 'fromPost: die Ausrichtung kommt an');
+assert_same('weit', $mitVariante['sections'][0]['settings']['space'], 'fromPost: die Luft kommt an');
+assert_same('default', $mitVariante['sections'][1]['variant'], 'fromPost: eine erfundene Variante faellt zurueck');
+assert_same(true, $mitVariante['sections'][1]['settings']['map'], 'fromPost: der Haken kommt an');
+
+// Ein Haken, der nicht mitkommt, ist abgeraeumt - dieselbe Regel wie bei den
+// Rechten. Das Formular schickt die Zeile immer mit, also ist sein Fehlen
+// eine Aussage und kein Zufall.
+$ohneHaken = Design::fromPost($basis, [
+    'sec_id_0'   => 'wo',
+    'sec_type_0' => 'location',
+]);
+
+assert_same(false, $ohneHaken['sections'][0]['settings']['map'], 'fromPost: ohne Haken kein Kartenlink');
+assert_same('center', $ohneHaken['sections'][0]['settings']['align'], 'fromPost: ohne Angabe die Voreinstellung');
+
+// Eine Einstellung, die dieser Art nicht gehoert, kommt nicht ins Dokument.
+$fremd = Design::fromPost($basis, [
+    'sec_id_0'      => 'wann',
+    'sec_type_0'    => 'countdown',
+    'sec_set_map_0' => '1',
+]);
+
+assert_true(
+    !array_key_exists('map', $fremd['sections'][0]['settings']),
+    'fromPost: eine fremde Einstellung kommt nicht ins Dokument'
+);

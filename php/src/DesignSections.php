@@ -74,6 +74,28 @@ final class DesignSections
             $out[] = [
                 'id'      => $id,
                 'type'    => $type,
+                /*
+                 * Die Variante: dieselbe Art, ein anderes Aussehen. Sie steht
+                 * neben dem Typ und nicht darin - "program-zeitstrahl" als
+                 * eigene Art haette jeden match()-Block um einen Zweig
+                 * verlaengert, und der Assistent haette zwei Namen fuer
+                 * denselben Inhalt lernen muessen.
+                 *
+                 * Eine unbekannte Variante faellt still auf die Voreinstellung
+                 * zurueck, genau wie ein unbekannter Typ wegfaellt: ein
+                 * Dokument soll sich nicht wegen eines Werts aus dem Panel
+                 * nicht mehr oeffnen lassen.
+                 */
+                'variant' => SectionRegistry::isVariant($type, (string) ($eintrag['variant'] ?? ''))
+                    ? (string) $eintrag['variant']
+                    : SectionRegistry::defaultVariant($type),
+                // Was der Grafiker dreht, ohne dass es eine Variante wird.
+                // Der Katalog prueft: Fremdes faellt weg, Danebenliegendes
+                // faellt zurueck.
+                'settings' => SectionRegistry::completeSettings(
+                    $type,
+                    is_array($eintrag['settings'] ?? null) ? $eintrag['settings'] : []
+                ),
                 'title'   => [
                     'de' => (string) ($title['de'] ?? ''),
                     'en' => (string) ($title['en'] ?? ''),
@@ -230,9 +252,45 @@ final class DesignSections
                     . 'letter-spacing:var(--dft-' . $schrift . ');'
                     . 'line-height:var(--dfl-' . $schrift . ');';
             }
+            /*
+             * Nur schreiben, was abweicht. Die Grundregel sagt bereits
+             * center und ein gerechnetes Polster; eine zweite center-Zeile
+             * je Abschnitt waere Rauschen im Stilblock, und der steht inline
+             * in JEDER Seite - nicht in einer Datei, die der Browser einmal
+             * holt und behaelt.
+             */
+            $einstellung = is_array($abschnitt['settings'] ?? null) ? $abschnitt['settings'] : [];
+
+            $aus = (string) ($einstellung['align'] ?? 'center');
+            if ($aus !== 'center') {
+                $regeln .= 'text-align:' . $aus . ';';
+            }
+
+            // Die Luft UNTEN. Oben sitzt das gerechnete Polster, mit dem der
+            // Titel zwischen die Goldlinien des Blattes faellt - daran darf
+            // ein Knopf im Panel nicht drehen.
+            $luft = (string) ($einstellung['space'] ?? 'normal');
+            if ($luft !== 'normal') {
+                $regeln .= 'padding-bottom:' . ($luft === 'eng' ? '6' : '22') . '%;';
+            }
+
             if ($regeln !== '') {
                 $css .= $scope . ' .d-sec-' . $abschnitt['id'] . '{' . $regeln . '}';
             }
+        }
+
+        /*
+         * Die Variantenbloecke, und nur die benutzten. Tote Regeln in jedem
+         * Dokument mitzuschleppen waere Ballast; und weil zwei Abschnitte
+         * dieselbe Variante tragen koennen, sammelt der Schluessel sie zu
+         * einer.
+         */
+        $varianten = [];
+        foreach ($doc['sections'] as $abschnitt) {
+            $varianten[(string) $abschnitt['variant']] = true;
+        }
+        foreach (array_keys($varianten) as $variante) {
+            $css .= self::variantCss($variante, $scope);
         }
 
         return $css;
@@ -351,10 +409,10 @@ final class DesignSections
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
             // Als Block zentriert, innen ausgerichtet: die Uhrzeiten stehen
             // untereinander, sonst waere die Spalte eine Treppe.
-            . $scope . ' .d-sec-program{display:grid;grid-template-columns:auto auto;'
+            . $scope . ' .d-sec-plan{display:grid;grid-template-columns:auto auto;'
             . 'gap:0.6rem 2rem;justify-content:center;text-align:left;}'
-            . $scope . ' .d-sec-program dt{font-weight:600;}'
-            . $scope . ' .d-sec-program dd{margin:0;}'
+            . $scope . ' .d-sec-plan dt{font-weight:600;}'
+            . $scope . ' .d-sec-plan dd{margin:0;}'
             . $scope . ' .d-sec-form{display:grid;gap:1.1rem;max-width:24rem;'
             . 'margin-inline:auto;text-align:left;}'
             . $scope . ' .d-sec-form-row{display:grid;gap:0.3rem;}'
@@ -362,6 +420,43 @@ final class DesignSections
             . $scope . ' .d-sec-form input[type=text],'
             . $scope . ' .d-sec-form input[type=number]{border:0;border-bottom:1px solid currentColor;background:transparent;padding:0.35rem 0;color:inherit;font:inherit;}'
             . $scope . ' .d-sec-form button{justify-self:center;margin-top:0.5rem;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}';
+    }
+
+    /**
+     * Der Stilblock einer Variante.
+     *
+     * Getrennt von baseline(), weil er nur dann geschrieben wird, wenn ihn
+     * ein Abschnitt auch traegt. Und getrennt vom Markup, weil eine Variante
+     * genau das sein soll: ein anderes AUSSEHEN derselben Sache. Sobald eine
+     * Variante eigenes Markup braucht, ist sie in Wahrheit eine eigene Art -
+     * dann gehoert sie in TYPES und nicht hierher.
+     *
+     * Der Zeitstrahl ist die erste. Ein Ablauf mit acht Zeilen liest sich als
+     * Strahl besser denn als Tabelle: die Uhrzeit fuehrt, der Punkt sitzt auf
+     * der Linie, und die Zeile darunter gehoert sichtbar dazu.
+     *
+     * currentColor und keine Marke - so nimmt der Strahl die Farbe an, die
+     * der Grafiker dem Abschnitt gegeben hat, statt eine zweite Quelle
+     * dafuer aufzumachen. Dieselbe Entscheidung wie beim Formular.
+     */
+    private static function variantCss(string $variante, string $scope): string
+    {
+        return match ($variante) {
+            'zeitstrahl' => $scope . ' .d-sec-v-zeitstrahl .d-sec-plan{display:block;'
+                . 'grid-template-columns:none;text-align:left;max-width:22rem;'
+                . 'margin-inline:auto;padding-left:1.25rem;border-left:1px solid currentColor;}'
+                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt{position:relative;'
+                . 'margin-top:1.1rem;font-weight:600;}'
+                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt:first-child{margin-top:0;}'
+                // Der Punkt sitzt auf der Linie, nicht daneben: das Blatt ist
+                // 1.25rem breit gepolstert, der Punkt 0.36rem - halb davon
+                // zurueck ergibt 1.43rem.
+                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dt::before{content:"";'
+                . 'position:absolute;left:-1.43rem;top:0.5em;width:0.36rem;height:0.36rem;'
+                . 'border-radius:50%;background:currentColor;}'
+                . $scope . ' .d-sec-v-zeitstrahl .d-sec-plan dd{margin:0;opacity:0.8;}',
+            default => '',
+        };
     }
 
     /**
@@ -385,7 +480,10 @@ final class DesignSections
             $id = (string) $abschnitt['id'];
             $typ = (string) $abschnitt['type'];
 
-            $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ) . '">';
+            // Drei Klassen, drei Fragen: welcher Abschnitt (fuer die eigene
+            // Regel des Grafikers), welche Art, welches Aussehen.
+            $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ)
+                . ' d-sec-v-' . e((string) $abschnitt['variant']) . '">';
 
             // Explizit auf '' pruefen, nicht mit ?? verketten: complete()
             // schreibt beide Sprachen immer als String, also feuert ?? nie -
@@ -400,7 +498,7 @@ final class DesignSections
             }
 
             $out .= match ($typ) {
-                'location'  => self::ort($data, $locale),
+                'location'  => self::ort($data, $locale, $abschnitt['settings']),
                 'countdown' => self::countdown($data, $locale),
                 'family'    => self::familien($data),
                 'program'   => self::programm($data),
@@ -415,8 +513,11 @@ final class DesignSections
         return $out;
     }
 
-    /** @param array<string,mixed> $data */
-    private static function ort(array $data, string $locale): string
+    /**
+     * @param array<string,mixed> $data
+     * @param array<string,mixed> $settings
+     */
+    private static function ort(array $data, string $locale, array $settings = []): string
     {
         $adresse = trim((string) ($data['address'] ?? ''));
         $ort = trim((string) ($data['venue'] ?? ''));
@@ -429,9 +530,15 @@ final class DesignSections
 
         // Der Link geht zur Routenplanung, nicht auf eine Karte: wer die
         // Adresse liest, will hinfahren.
-        $out .= '<a class="d-sec-map" rel="noopener noreferrer" target="_blank" href="'
-            . e('https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse))
-            . '">' . e($locale === 'de' ? 'Route planen' : 'Plan route') . '</a>';
+        //
+        // Abschaltbar, weil er nicht immer traegt: kennt Google die Adresse
+        // nicht, fuehrt er ins Leere - und ein Link ins Leere ist schlimmer
+        // als keiner. Die Adresse selbst steht in beiden Faellen da.
+        if ($settings['map'] ?? true) {
+            $out .= '<a class="d-sec-map" rel="noopener noreferrer" target="_blank" href="'
+                . e('https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse))
+                . '">' . e($locale === 'de' ? 'Route planen' : 'Plan route') . '</a>';
+        }
 
         return $out;
     }
@@ -481,7 +588,13 @@ final class DesignSections
     /** @param array<string,mixed> $data */
     private static function programm(array $data): string
     {
-        $out = '<dl class="d-sec-program">';
+        // d-sec-plan und nicht d-sec-program: die <section> traegt bereits
+        // d-sec-<typ>, also d-sec-program. Solange die Liste denselben Namen
+        // trug, galt JEDE Regel fuer beide - und die Zweispaltenregel machte
+        // aus dem Abschnitt selbst ein Raster, in dem die Ueberschrift NEBEN
+        // ihrer Liste stand statt darueber. Genau dieselbe Falle, die bei
+        // freitext() vermieden wurde und hier jahrelang zuschnappte.
+        $out = '<dl class="d-sec-plan">';
 
         foreach (self::programRows($data) as $zeile) {
             $out .= '<dt>' . e($zeile['time']) . '</dt><dd>' . e($zeile['title']) . '</dd>';

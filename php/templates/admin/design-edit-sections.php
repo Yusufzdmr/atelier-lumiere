@@ -12,6 +12,7 @@
 
 use Atelier\Design;
 use Atelier\DesignSections;
+use Atelier\SectionRegistry;
 use Atelier\Themes;
 use function Atelier\e;
 ?>
@@ -554,7 +555,8 @@ use function Atelier\e;
   <?php
   $sekmeler = $design['sections'];
   // Immer eine leere Zeile mehr, damit ein Abschnitt ohne Umweg dazukommt.
-  $sekmeler[] = ['id' => '', 'type' => '', 'title' => ['de' => '', 'en' => ''],
+  $sekmeler[] = ['id' => '', 'type' => '', 'variant' => 'default', 'settings' => [],
+                 'title' => ['de' => '', 'en' => ''],
                  'enabled' => false, 'style' => ['color' => '', 'font' => ''],
                  'permissions' => ['edit' => false, 'hide' => false]];
   ?>
@@ -581,6 +583,63 @@ use function Atelier\e;
       <label class="flex items-center gap-2 text-[0.66rem] text-muted">
         <input type="checkbox" name="perm_sec_hide_<?= $i ?>" <?= $abschnitt['permissions']['hide'] ? 'checked' : '' ?>>
         <?= $tr ? 'Gizlenebilir' : 'Ausblendbar' ?></label>
+
+      <?php /*
+         Variante und Einstellungen kommen aus dem Katalog, nicht von hier.
+         Eine Liste im Panel und eine im Code waeren zwei Wahrheiten - und die
+         im Panel gewinnt beim Absehen, waehrend die im Code beim Drucken
+         gewinnt. Genau so entstehen Knoepfe, die nichts tun.
+
+         Was ein Abschnitt anbieten kann, haengt an seiner ART. Eine frische
+         Zeile hat noch keine, also gibt es hier auch nichts zu waehlen -
+         Kennung und Art eintragen, speichern, dann steht es da. Derselbe Weg
+         wie bei einer neuen Ebene.
+      */ ?>
+      <?php
+        $art       = (string) $abschnitt['type'];
+        $varianten = SectionRegistry::variants($art);
+        $schema    = SectionRegistry::settings($art);
+        $werte     = is_array($abschnitt['settings'] ?? null) ? $abschnitt['settings'] : [];
+        $sprache   = $tr ? 'tr' : 'de';
+      ?>
+
+      <?php if (count($varianten) > 1) : ?>
+        <label class="<?= $label ?>"><?= $tr ? 'gÃ¶rÃ¼nÃ¼m' : 'Gestalt' ?>
+          <select class="<?= $feld ?>" name="sec_variant_<?= $i ?>">
+            <?php foreach ($varianten as $kennung => $etikett) : ?>
+              <option value="<?= e((string) $kennung) ?>"
+                <?= (string) ($abschnitt['variant'] ?? 'default') === (string) $kennung ? 'selected' : '' ?>>
+                <?= e($etikett[$sprache] ?? (string) $kennung) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+      <?php elseif ($art !== '') : ?>
+        <?php /*
+           Genau eine Gestalt: das Feld trotzdem mitschicken, sonst faellt die
+           Variante beim naechsten Speichern still auf die Voreinstellung -
+           was hier zwar dasselbe waere, aber nicht, sobald jemand dieser Art
+           eine zweite Gestalt gibt.
+        */ ?>
+        <input type="hidden" name="sec_variant_<?= $i ?>"
+               value="<?= e((string) ($abschnitt['variant'] ?? 'default')) ?>">
+      <?php endif; ?>
+
+      <?php foreach ($schema as $schluessel => $s) : ?>
+        <?php if ((string) $s['type'] === 'bool') : ?>
+          <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+            <input type="checkbox" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                   <?= ($werte[$schluessel] ?? $s['default']) ? 'checked' : '' ?>>
+            <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
+        <?php elseif ((string) $s['type'] === 'select') : ?>
+          <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+            <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">
+              <?php foreach ($s['options'] as $option) : ?>
+                <option value="<?= e((string) $option) ?>"
+                  <?= (string) ($werte[$schluessel] ?? $s['default']) === (string) $option ? 'selected' : '' ?>>
+                  <?= e((string) $option) ?></option>
+              <?php endforeach; ?>
+            </select></label>
+        <?php endif; ?>
+      <?php endforeach; ?>
     </div>
   <?php endforeach; ?>
 <?= $zu ?>

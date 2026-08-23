@@ -158,15 +158,15 @@ assert_not_contains($css, '.d-sec-fam-1{', 'css: ohne Stil keine Regel');
  */
 assert_same(1, substr_count($css, '.d-elysee .d-sec{'), 'css: der Grundstil wird nur einmal ausgegeben');
 assert_contains($css, '.d-elysee .d-sec-title{', 'css: die Ueberschrift bekommt einen Grundstil');
-assert_contains($css, '.d-elysee .d-sec-program{', 'css: das Programm bekommt eine Zweispaltenregel');
-assert_contains($css, '.d-elysee .d-sec-program dt{', 'css: dt bekommt eine Regel');
-assert_contains($css, '.d-elysee .d-sec-program dd{', 'css: dd bekommt eine Regel');
+assert_contains($css, '.d-elysee .d-sec-plan{', 'css: das Programm bekommt eine Zweispaltenregel');
+assert_contains($css, '.d-elysee .d-sec-plan dt{', 'css: dt bekommt eine Regel');
+assert_contains($css, '.d-elysee .d-sec-plan dd{', 'css: dd bekommt eine Regel');
 
 // Jeder Selektor des Grundstils steht unter dem Bereich - keine nackte
 // Klasse ohne $scope davor. Ein Selektor ohne Bereich ist genau dann drin,
 // wenn er ohne das vorangestellte "$scope " im CSS vorkaeme; hier wird
 // direkt geprueft, dass jede erwartete Regel *mit* dem Bereich davor steht.
-foreach (['.d-sec{', '.d-sec:first-child{', '.d-sec-title{', '.d-sec p{', '.d-sec-program{', '.d-sec-program dt{', '.d-sec-program dd{'] as $sel) {
+foreach (['.d-sec{', '.d-sec:first-child{', '.d-sec-title{', '.d-sec p{', '.d-sec-plan{', '.d-sec-plan dt{', '.d-sec-plan dd{'] as $sel) {
     assert_contains($css, '.d-elysee ' . $sel, 'css: Grundstil-Selektor "' . $sel . '" ist am Bereich verankert');
 }
 
@@ -193,7 +193,7 @@ $html = DesignSections::html(sec_doc([
     ['id' => 'prog-1', 'type' => 'program',   'title' => ['de' => 'Ablauf', 'en' => 'Schedule']],
 ]), $daten, 'de', '2027-01-01');
 
-assert_contains($html, 'class="d-sec d-sec-ort-1 d-sec-location"', 'html: Kennung und Art stehen in der Klasse');
+assert_contains($html, 'class="d-sec d-sec-ort-1 d-sec-location d-sec-v-default"', 'html: Kennung, Art und Variante stehen in der Klasse');
 assert_contains($html, '<h2', 'html: Titel wird gedruckt');
 assert_contains($html, 'Ort', 'html: der deutsche Titel');
 assert_not_contains($html, '<h2 class="d-sec-title"></h2>', 'html: leerer Titel wird nicht gedruckt');
@@ -314,7 +314,7 @@ $formular = DesignSections::html(sec_doc([
     ['id' => 'rsvp-1', 'type' => 'rsvp', 'title' => ['de' => 'Kommt ihr?', 'en' => 'Are you coming?']],
 ]), ['date' => '2027-06-12'], 'de', '2027-01-01', ['csrf' => 'ZEICHEN123', 'sent' => false]);
 
-assert_contains($formular, 'class="d-sec d-sec-rsvp-1 d-sec-rsvp"', 'html: Kennung und Art stehen in der Klasse');
+assert_contains($formular, 'class="d-sec d-sec-rsvp-1 d-sec-rsvp d-sec-v-default"', 'html: Kennung, Art und Variante stehen in der Klasse');
 assert_contains($formular, '<h2 class="d-sec-title">Kommt ihr?</h2>', 'html: der Titel des Grafikers steht darueber');
 assert_contains($formular, '<form class="d-sec-form" method="post">', 'html: es ist ein Formular und es sendet per POST');
 
@@ -472,3 +472,105 @@ $kollision = DesignSections::html(sec_doc([['id' => 'dc', 'type' => 'text']]), [
 ]], 'de', '2027-01-01');
 assert_same(1, substr_count($kollision, 'd-sec-text'), 'html: d-sec-text steht nur an der section, nicht am Absatz');
 assert_contains($kollision, '<p class="d-sec-absatz">', 'html: der Absatz hat seinen eigenen Namen');
+
+/*
+ * ------------------------------------------------------------------
+ * Variante und Einstellungen: dieselbe Art, ein anderes Aussehen.
+ * ------------------------------------------------------------------
+ *
+ * Der Katalog (SectionRegistry) sagt, welche Varianten eine Art hat und
+ * woran sich drehen laesst. Hier wird geprueft, dass das Dokument es
+ * uebernimmt, der Stilblock es schreibt und das Markup es traegt.
+ */
+
+$mitVariante = DesignSections::complete(sec_doc([
+    ['id' => 'ablauf', 'type' => 'program', 'variant' => 'zeitstrahl',
+     'settings' => ['align' => 'left', 'space' => 'weit']],
+    ['id' => 'wo', 'type' => 'location', 'variant' => 'discokugel'],
+    ['id' => 'wann', 'type' => 'countdown'],
+]));
+
+assert_same('zeitstrahl', $mitVariante['sections'][0]['variant'], 'complete: die Variante bleibt');
+assert_same('default', $mitVariante['sections'][1]['variant'], 'complete: eine erfundene Variante faellt zurueck');
+assert_same('default', $mitVariante['sections'][2]['variant'], 'complete: ohne Angabe die Voreinstellung');
+
+assert_same('left', $mitVariante['sections'][0]['settings']['align'], 'complete: die Einstellung bleibt');
+assert_same('weit', $mitVariante['sections'][0]['settings']['space'], 'complete: die zweite auch');
+assert_same('center', $mitVariante['sections'][2]['settings']['align'], 'complete: ohne Angabe die Voreinstellung');
+
+// Die eigene Einstellung einer Art steht neben den gemeinsamen.
+assert_same(true, $mitVariante['sections'][1]['settings']['map'], 'complete: der Ort bringt seinen Kartenlink mit');
+assert_true(!array_key_exists('map', $mitVariante['sections'][2]['settings']), 'complete: der Countdown hat keinen');
+
+/* --- Das Markup traegt die Variante als Klasse --- */
+
+$html = DesignSections::html($mitVariante, [
+    'program' => [['time' => '15:00', 'title' => 'Trauung']],
+    'address' => 'Beispielweg 1',
+    'date'    => '2099-01-01',
+], 'de', '2026-01-01');
+
+assert_contains($html, 'd-sec-v-zeitstrahl', 'html: die Variante steht als Klasse im Markup');
+assert_contains($html, 'd-sec-v-default', 'html: auch die Voreinstellung steht da');
+
+/* --- Der Stilblock schreibt die Einstellungen --- */
+
+$css = DesignSections::css($mitVariante, '.d-x');
+
+assert_contains($css, '.d-x .d-sec-ablauf{', 'css: der Abschnitt bekommt eine eigene Regel');
+assert_contains($css, 'text-align:left', 'css: die Ausrichtung wird geschrieben');
+
+/*
+ * Der Variantenblock steht genau dann da, wenn ihn jemand benutzt. Tote
+ * Regeln in jedem Dokument mitzuschleppen waere Ballast - und der Stilblock
+ * steht inline in jeder Seite, nicht in einer Datei, die der Browser einmal
+ * holt und behaelt.
+ */
+assert_contains($css, '.d-x .d-sec-v-zeitstrahl', 'css: der Variantenblock steht da, weil er gebraucht wird');
+
+$ohneVariante = DesignSections::complete(sec_doc([['id' => 'wann', 'type' => 'countdown']]));
+$cssOhne = DesignSections::css($ohneVariante, '.d-x');
+
+assert_true(
+    !str_contains($cssOhne, 'd-sec-v-zeitstrahl'),
+    'css: ein unbenutzter Variantenblock wird nicht geschrieben'
+);
+
+/* --- Der Kartenlink laesst sich abschalten --- */
+
+$ohneKarte = DesignSections::complete(sec_doc([
+    ['id' => 'wo', 'type' => 'location', 'settings' => ['map' => false]],
+]));
+
+$htmlOhneKarte = DesignSections::html($ohneKarte, ['address' => 'Beispielweg 1'], 'de', '2026-01-01');
+
+assert_true(!str_contains($htmlOhneKarte, 'google.com/maps'), 'html: ohne Haken kein Kartenlink');
+assert_contains($htmlOhneKarte, 'Beispielweg 1', 'html: die Adresse steht trotzdem da');
+
+/*
+ * --- Die Liste heisst nicht wie ihr Abschnitt ---
+ *
+ * Die <section> traegt d-sec-<typ>, also d-sec-program. Trug die Liste
+ * darin denselben Namen, galt jede Regel fuer beide - und die
+ * Zweispaltenregel machte aus dem ABSCHNITT ein Raster, in dem die
+ * Ueberschrift neben ihrer Liste stand statt darueber. Das lief so, seit es
+ * den Abschnitt gibt, und faellt nur auf, wenn man hinsieht.
+ *
+ * Derselbe Grund, aus dem das Formular d-sec-form heisst und der Absatz
+ * d-sec-absatz. Hier steht die Regel als Test, damit der naechste Name
+ * nicht wieder zurueckfaellt.
+ */
+
+$plan = DesignSections::complete(sec_doc([['id' => 'ablauf', 'type' => 'program']]));
+$planHtml = DesignSections::html($plan, ['program' => [['time' => '15:00', 'title' => 'Trauung']]], 'de', '2026-01-01');
+$planCss  = DesignSections::css($plan, '.d-x');
+
+assert_contains($planHtml, '<dl class="d-sec-plan">', 'html: die Liste hat einen eigenen Namen');
+assert_true(
+    !str_contains($planHtml, '<dl class="d-sec-program"'),
+    'html: die Liste heisst nicht wie ihr Abschnitt'
+);
+assert_true(
+    !str_contains($planCss, ' .d-sec-program{'),
+    'css: keine Regel traegt den Namen, den auch die Section traegt'
+);
