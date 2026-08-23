@@ -253,11 +253,31 @@ use Atelier\Design;
                  muted playsinline preload="auto"></video>
         </div>
       <?php endif; ?>
+      <?php /*
+         Bringt das Thema einen Oeffnungsfilm mit, faellt unser gezeichnetes
+         Kuvert ganz weg - Huelle, Klappe, Siegel, Hinweis.
+
+         Zwei Kuverts hintereinander waeren einmal zu viel: der Film zeigt ein
+         echtes, und danach kam bisher noch die gezeichnete Klappe zum
+         Vorschein. Sichtbar war das zwischen dem Ende des Films (5,2 s) und
+         dem Verschwinden der Huelle (8,6 s) - drei Sekunden, in denen der
+         Gast ein zweites Kuvert sah, das niemand angefasst hat.
+
+         Der Knoten selbst BLEIBT, leer und durchsichtig: er traegt den
+         Vertrag von invitation.js (data-envelope, data-animation,
+         data-intro-ms). Nur zu sehen ist an ihm nichts mehr.
+
+         Der Schalter dafuer ist kein eigenes Feld, sondern der Film selbst:
+         ein Thema mit Oeffnungsfilm bekommt keins, ein Thema ohne behaelt
+         seins. Wer die gezeichnete Klappe zurueckwill, nimmt im Panel den
+         Film heraus.
+      */ ?>
       <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 z-30 flex flex-col items-center justify-center gap-9 px-6"
            data-envelope
            data-animation="<?= e($karteAn) ?>"
            data-intro-ms="<?= $introMs ?>"
-           style="background: var(--d-bg);">
+           <?= $introFilm === '' ? 'style="background: var(--d-bg);"' : '' ?>>
+      <?php if ($introFilm === '') : ?>
 
         <button type="button" data-envelope-open
                 class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
@@ -288,6 +308,7 @@ use Atelier\Design;
         <p class="text-[0.62rem] uppercase tracking-[0.28em]" style="color: var(--d-accent);">
           <?= $locale === 'de' ? 'Tippen zum Öffnen' : 'Tap to open' ?>
         </p>
+      <?php endif; ?>
       </div>
   </div>
 
