@@ -39,6 +39,7 @@ $zu = '</div></details>';
 $textEbenen = array_filter($design['layers'], static fn (array $l): bool => $l['type'] === 'text' && (string) $l['bind'] === '');
 $bindEbenen = array_filter($design['layers'], static fn (array $l): bool => (string) $l['bind'] !== '');
 $bildEbenen = array_filter($design['layers'], static fn (array $l): bool => in_array($l['type'], ['image', 'photo'], true));
+$videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l['type'] === 'video');
 ?>
 <style><?= $styles ?></style>
 

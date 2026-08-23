@@ -1006,6 +1006,14 @@ final class Design
                 $doc['layers'][$i]['src'] = $quelle;
             }
 
+            // Eigenes Feld und nicht src: ein Video hat zwei Adressen, und
+            // wer den Film tauscht, will nicht jedes Mal auch das Standbild
+            // neu setzen muessen. complete() prueft beide.
+            $bild = $text('posterpfad_' . $id);
+            if ($bild !== null) {
+                $doc['layers'][$i]['poster'] = $bild;
+            }
+
             if (isset($post['move_' . $id])) {
                 $doc['layers'][$i]['motion']['move'] = (string) $post['move_' . $id];
             }

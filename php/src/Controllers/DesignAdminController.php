@@ -315,7 +315,7 @@ final class DesignAdminController
         $ebene = Design::completeElement([
             'id'    => $id,
             'label' => $name,
-            'type'  => 'photo',
+            'type'  => ($post['neue_ebene_typ'] ?? 'photo') === 'video' ? 'video' : 'photo',
             'spot'  => (string) ($post['neue_ebene_spot'] ?? 'card'),
             'box'   => $box + ['anchor' => 'topleft'],
             // Genau die drei, um die es geht: bearbeitbar ist der Hauptschalter,
@@ -324,9 +324,11 @@ final class DesignAdminController
             'permissions' => ['edit' => true, 'photo' => true, 'hide' => true],
         ]);
 
-        $bild = $_FILES['neue_ebene_bild'] ?? null;
-        if (is_array($bild) && ((int) ($bild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
-            $pfad = Media::storeGraphic($bild, 'designs');
+        $start = $_FILES['neue_ebene_bild'] ?? null;
+        if (is_array($start) && ((int) ($start['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = $ebene['type'] === 'video'
+                ? Media::storeVideo($start, 'designs')
+                : Media::storeGraphic($start, 'designs');
             if ($pfad !== null) {
                 $ebene['src'] = $pfad;
             }
@@ -364,24 +366,49 @@ final class DesignAdminController
     private function mitHochgeladenenBildern(array $design, array $post): array
     {
         foreach (Design::complete($design)['layers'] as $ebene) {
-            if (!in_array((string) ($ebene['type'] ?? ''), ['image', 'photo'], true)) {
+            $typ = (string) ($ebene['type'] ?? '');
+            $id  = (string) $ebene['id'];
+
+            if (in_array($typ, ['image', 'photo'], true)) {
+                $file = $_FILES['bild_' . $id] ?? null;
+                if (!is_array($file) || ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                // storeGraphic und nicht store: die Vorlagen arbeiten mit SVG, und
+                // getimagesize() erkennt SVG nicht - store() gaebe hier fuer jede
+                // Zeichnung null zurueck. storeGraphic putzt das SVG und behaelt
+                // bei allem anderen den Alphakanal, den eine Ebene ueber der Karte
+                // braucht.
+                $pfad = Media::storeGraphic($file, 'designs');
+                if ($pfad !== null) {
+                    $post['src_' . $id] = $pfad;
+                }
                 continue;
             }
 
-            $id   = (string) $ebene['id'];
-            $file = $_FILES['bild_' . $id] ?? null;
-            if (!is_array($file) || ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
-                continue;
-            }
+            if ($typ === 'video') {
+                $film = $_FILES['video_' . $id] ?? null;
+                if (is_array($film) && ((int) ($film['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+                    // storeVideo prueft die Art am Dateiinhalt und laesst nur
+                    // mp4/webm/mov durch. Kein Umkodieren - der Server kann es
+                    // nicht, und die Vorgabe im Panel sagt das auch so.
+                    $pfad = Media::storeVideo($film, 'designs');
+                    if ($pfad !== null) {
+                        $post['src_' . $id] = $pfad;
+                    }
+                }
 
-            // storeGraphic und nicht store: die Vorlagen arbeiten mit SVG, und
-            // getimagesize() erkennt SVG nicht - store() gaebe hier fuer jede
-            // Zeichnung null zurueck. storeGraphic putzt das SVG und behaelt
-            // bei allem anderen den Alphakanal, den eine Ebene ueber der Karte
-            // braucht.
-            $pfad = Media::storeGraphic($file, 'designs');
-            if ($pfad !== null) {
-                $post['src_' . $id] = $pfad;
+                $bild = $_FILES['poster_' . $id] ?? null;
+                if (is_array($bild) && ((int) ($bild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+                    // store und nicht storeGraphic: ein Standbild ist ein Foto,
+                    // kein Schmuck - Transparenz braucht es nicht, und 1600 px
+                    // reichen hinter einem Film allemal.
+                    $pfad = Media::store($bild, 'designs');
+                    if ($pfad !== null) {
+                        $post['posterpfad_' . $id] = $pfad;
+                    }
+                }
             }
         }
 

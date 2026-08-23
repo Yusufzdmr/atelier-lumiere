@@ -199,3 +199,23 @@ assert_same('/assets/designs/noir-1.svg', $angezogen['layers'][0]['src'], 'dress
 // Hat es keine, bleibt die alte stehen - lieber fremdes Blattwerk als leere Ecken.
 $ohne = Design::dress($anordnung, $thema, []);
 assert_same('/assets/designs/elysee-1.svg', $ohne['layers'][0]['src'], 'dress: ohne eigene Szene bleibt die alte');
+
+/* --- Video-Ebene: Pfad und Poster kommen aus dem Formular --- */
+
+$mitFilm = Design::complete([
+    'id' => 'pruef2', 'slug' => 'pruef2',
+    'layers' => [['id' => 'film', 'type' => 'video', 'spot' => 'page']],
+]);
+
+$neu = Design::fromPost($mitFilm, [
+    'src_film'        => '/uploads/designs/a.mp4',
+    'posterpfad_film' => '/uploads/designs/a.jpg',
+]);
+
+assert_same('/uploads/designs/a.mp4', $neu['layers'][0]['src'], 'fromPost: Videopfad wird uebernommen');
+assert_same('/uploads/designs/a.jpg', $neu['layers'][0]['poster'], 'fromPost: Posterpfad wird uebernommen');
+
+/* --- Ein fremder Poster kommt nicht durch, auch nicht ueber das Formular --- */
+
+$fremd = Design::fromPost($mitFilm, ['posterpfad_film' => 'https://beispiel.de/x.jpg']);
+assert_same('', $fremd['layers'][0]['poster'], 'fromPost: fremder Poster wird verworfen');

@@ -163,7 +163,7 @@ use function Atelier\e;
      sind deshalb alle volle Breite - dafuer braucht es keine Koordinaten.
   */ ?>
   <div class="mt-6 border-t border-sand-deep pt-5">
-    <div class="<?= $label ?>"><?= $tr ? 'Yeni görsel katmanı' : 'Neue Bildebene' ?></div>
+    <div class="<?= $label ?>"><?= $tr ? 'Yeni görsel/video katmanı' : 'Neue Bild- oder Videoebene' ?></div>
     <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
       <?= $tr
         ? 'Adı yazıp kaydedersen katman eklenir ve müşterinin sihirbazında kendi görselini yükleyebileceği bir alan olarak çıkar. En alta, her şeyin arkasına konur. Boş bırakırsan hiçbir şey olmaz.'
@@ -171,6 +171,12 @@ use function Atelier\e;
     </p>
 
     <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <label class="<?= $label ?>"><?= $tr ? 'Ne' : 'Was' ?>
+        <select name="neue_ebene_typ" class="<?= $feld ?>">
+          <option value="photo"><?= $tr ? 'Görsel' : 'Bild' ?></option>
+          <option value="video"><?= $tr ? 'Video' : 'Video' ?></option>
+        </select></label>
+
       <label class="<?= $label ?>"><?= $tr ? 'Adı (müşteri bunu görür)' : 'Name (das Paar liest ihn)' ?>
         <input name="neue_ebene_label" value="" maxlength="60" class="<?= $feld ?>"
                placeholder="<?= $tr ? 'ör. Fotoğrafınız' : 'z. B. Euer Foto' ?>"></label>
@@ -193,9 +199,79 @@ use function Atelier\e;
 
       <label class="<?= $label ?>"><?= $tr ? 'Başlangıç görseli (isteğe bağlı)' : 'Startbild (optional)' ?>
         <input type="file" name="neue_ebene_bild"
-               accept="image/png,image/jpeg,image/webp,image/svg+xml" class="<?= $feld ?>"></label>
+               accept="image/png,image/jpeg,image/webp,image/svg+xml,video/mp4,video/webm" class="<?= $feld ?>"></label>
     </div>
   </div>
+<?= $zu ?>
+
+<?= $auf($tr ? '5b · Videolar' : '5b · Videos') ?>
+  <?php if ($videoEbenen === []) : ?>
+    <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda video katmanı yok.' : 'Diese Vorlage hat keine Videoebene.' ?></p>
+  <?php endif; ?>
+  <?php foreach ($videoEbenen as $ebene) : ?>
+    <?php
+      $filmQuelle  = Design::safeSrc((string) $ebene['src']);
+      $filmPoster  = Design::safeSrc((string) $ebene['poster']);
+    ?>
+    <div class="border-t border-sand-deep pt-5 first:border-0 first:pt-0">
+      <div class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?></div>
+
+      <div class="mt-3 flex items-start gap-5">
+        <div class="w-24 shrink-0">
+          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+            <?php if ($filmQuelle !== '') : ?>
+              <video src="<?= e($filmQuelle) ?>" muted preload="metadata"
+                     <?= $filmPoster !== '' ? 'poster="' . e($filmPoster) . '"' : '' ?>
+                     class="h-full w-full object-cover"></video>
+            <?php else : ?>
+              <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+                <?= $tr ? 'video yok' : 'kein Video' ?>
+              </span>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="w-full">
+          <label class="<?= $label ?>"><?= $tr ? 'Yeni video yükle' : 'Neues Video hochladen' ?>
+            <input type="file" name="video_<?= e($ebene['id']) ?>"
+                   accept="video/mp4,video/webm,video/quicktime" class="<?= $feld ?>"></label>
+
+          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol' : 'oder Pfad' ?>
+            <input name="src_<?= e($ebene['id']) ?>" value="<?= e((string) $ebene['src']) ?>"
+                   class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+
+          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'Kapak görseli yükle' : 'Standbild hochladen' ?>
+            <input type="file" name="poster_<?= e($ebene['id']) ?>"
+                   accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da kapak yolu' : 'oder Standbild-Pfad' ?>
+            <input name="posterpfad_<?= e($ebene['id']) ?>" value="<?= e((string) $ebene['poster']) ?>"
+                   class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+        </div>
+      </div>
+    </div>
+  <?php endforeach; ?>
+
+  <?php /*
+     Die Vorgaben stehen schon einmal im Haus: templates/admin/themes.php
+     schreibt sie beim Karten-Hintergrundvideo aus. Dieselben Zahlen, damit
+     nicht zwei Antworten auf dieselbe Frage im Panel stehen.
+  */ ?>
+  <ul class="mt-4 space-y-1 text-[0.72rem] leading-relaxed text-muted">
+    <li><span class="uppercase tracking-[0.14em] text-gold"><?= $tr ? 'Oran' : 'Format' ?>:</span>
+      <?= $tr ? 'dikey 9:16 veya 3:4 – örn. 1080 × 1920 ya da 1080 × 1440.'
+              : 'hochkant 9:16 oder 3:4 – z. B. 1080 × 1920 bzw. 1080 × 1440.' ?></li>
+    <li><span class="uppercase tracking-[0.14em] text-gold"><?= $tr ? 'Çözünürlük' : 'Auflösung' ?>:</span>
+      <?= $tr ? 'en az 720 × 1280, tercihen 1080 × 1920.' : 'mindestens 720 × 1280, besser 1080 × 1920.' ?></li>
+    <li><span class="uppercase tracking-[0.14em] text-gold"><?= $tr ? 'Süre' : 'Länge' ?>:</span>
+      <?= $tr ? '4–10 s yeterli (döngü olur).' : '4–10 s reichen (läuft als Schleife).' ?></li>
+    <li><span class="uppercase tracking-[0.14em] text-gold"><?= $tr ? 'İçerik' : 'Inhalt' ?>:</span>
+      <?= $tr ? 'yavaş, sakin hareket. Yazı, logo veya insan yüzü olmamalı.'
+              : 'ruhige, langsame Bewegung. Kein Text, kein Logo, keine Gesichter.' ?></li>
+    <li><span class="uppercase tracking-[0.14em] text-gold"><?= $tr ? 'Boyut' : 'Größe' ?>:</span>
+      <?= $tr ? 'en fazla 100 MB. Yüklemeden önce sıkıştır – sunucu yeniden kodlamaz.'
+              : 'höchstens 100 MB. Vorher komprimieren – der Server transkodiert nicht.' ?></li>
+  </ul>
 <?= $zu ?>
 
 <?= $auf($tr ? '6 · Animasyon' : '6 · Bewegung') ?>
