@@ -441,4 +441,80 @@
       }
     });
   });
+
+  /*
+   * Karte oder Geraet.
+   *
+   * Die Karte ist die lebende: sie folgt jedem Tastendruck. Die drei Geraete
+   * zeigen die ganze oeffentliche Seite in einem Rahmen - und damit den
+   * GESPEICHERTEN Stand, denn der Rahmen holt sich die Seite vom Server.
+   *
+   * Der Rahmen entsteht beim ersten Klick und nicht im Markup: sonst laedt
+   * jeder Aufruf des Editors die Einladung samt Kuvertfilm mit, auch wenn
+   * niemand hinsieht.
+   *
+   * Verkleinert statt abgeschnitten: ein Schreibtisch ist 1280 breit und die
+   * Spalte ist es nicht. Die Hoehe wird mitgerechnet, sonst stuende unter
+   * dem verkleinerten Rahmen ein Loch in seiner vollen Hoehe.
+   */
+  var geraete = form.querySelectorAll("[data-ansicht]");
+  var rahmen  = form.querySelector("[data-ansicht-rahmen]");
+  var karte   = vorschau;
+  var hinweisAnsicht = form.querySelector("[data-ansicht-hinweis]");
+
+  if (geraete.length && rahmen) {
+    var worte = {
+      karte: hinweisAnsicht ? hinweisAnsicht.textContent.trim() : "",
+      seite: rahmen.getAttribute("data-wort-seite") || "Der Rahmen zeigt den gespeicherten Stand."
+    };
+
+    var passeAn = function (breite) {
+      var kind = rahmen.querySelector("iframe");
+      if (!kind) return;
+
+      var platz = rahmen.clientWidth;
+      var faktor = Math.min(1, platz / breite);
+      var hoehe = Math.round(breite * 1.9);
+
+      kind.style.width = breite + "px";
+      kind.style.height = hoehe + "px";
+      kind.style.transform = "scale(" + faktor + ")";
+      rahmen.style.height = Math.round(hoehe * faktor) + "px";
+    };
+
+    geraete.forEach(function (knopf) {
+      knopf.addEventListener("click", function () {
+        geraete.forEach(function (k) { k.removeAttribute("data-aktiv"); });
+        knopf.setAttribute("data-aktiv", "");
+
+        var welche = knopf.getAttribute("data-ansicht");
+
+        if (welche === "karte") {
+          karte.hidden = false;
+          rahmen.hidden = true;
+          if (hinweisAnsicht) hinweisAnsicht.textContent = worte.karte;
+          return;
+        }
+
+        karte.hidden = true;
+        rahmen.hidden = false;
+
+        if (!rahmen.querySelector("iframe")) {
+          var kind = document.createElement("iframe");
+          kind.setAttribute("loading", "lazy");
+          kind.src = rahmen.getAttribute("data-adresse");
+          rahmen.appendChild(kind);
+        }
+
+        passeAn(parseInt(welche, 10));
+        if (hinweisAnsicht) hinweisAnsicht.textContent = worte.seite;
+      });
+    });
+
+    window.addEventListener("resize", function () {
+      var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
+      if (!aktiv || aktiv.getAttribute("data-ansicht") === "karte") return;
+      passeAn(parseInt(aktiv.getAttribute("data-ansicht"), 10));
+    });
+  }
 })();

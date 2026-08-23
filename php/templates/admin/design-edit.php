@@ -122,6 +122,15 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-karte[data-aktiv]{border-color:var(--color-ink,#14110f);background:var(--color-sand,#ede4d8);}
   .b-karte small{display:block;margin-top:0.2rem;font-size:0.6rem;color:var(--color-muted,#7a6f65);}
 
+  .b-geraete{display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.6rem;}
+  .b-knopf[data-aktiv]{border-color:var(--color-ink,#14110f);color:var(--color-ink,#14110f);}
+  /* Der Rahmen wird auf die Spalte heruntergerechnet, statt sie zu sprengen:
+     ein Telefon ist 390 breit, ein Schreibtisch 1280, und die Spalte ist,
+     was sie ist. Die Hoehe folgt derselben Rechnung - sonst stuende unter
+     einem verkleinerten Rahmen ein Loch in seiner vollen Hoehe. */
+  .b-rahmen{border:1px solid var(--color-sand-deep,#dccebc);overflow:hidden;}
+  .b-rahmen iframe{border:0;display:block;transform-origin:top left;background:#fff;}
+
   .b-fuss{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:0.8rem;
           background:var(--color-cream,#faf7f2);border-top:1px solid var(--color-sand-deep,#dccebc);
           padding:0.9rem 0;margin-top:1rem;}
@@ -184,6 +193,31 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
     */ ?>
     <div class="b-spalte">
       <div class="b-buehne">
+        <?php /*
+           Zwei Ansichten, und sie beantworten verschiedene Fragen.
+
+           "Karte" ist die Karte selbst - dieselbe, die der Gast sieht, nur
+           kleiner. Sie folgt jedem Tastendruck ohne Speichern, weil das
+           Skript nur CSS-Variablen, Textknoten und Inline-Kaesten setzt.
+
+           Die drei Geraete zeigen die GANZE Seite in einem Rahmen, und zwar
+           die oeffentliche Adresse selbst - Kuvert, Film, Karte, Abschnitte,
+           alles. Sie zeigt den GESPEICHERTEN Stand: ein Rahmen holt sich die
+           Seite vom Server, und der kennt nur, was in der Datenbank steht.
+           Das ist keine Einschraenkung, die sich beheben liesse, sondern der
+           Unterschied zwischen "was ich gerade tippe" und "was da draussen
+           steht" - deshalb sagt es die Zeile darunter auch so.
+
+           Telefon zuerst: Einladungen werden auf Telefonen geoeffnet, fast
+           nie am Schreibtisch.
+        */ ?>
+        <div class="b-geraete">
+          <button type="button" class="b-knopf" data-ansicht="karte" data-aktiv><?= $tr ? 'Kart' : 'Karte' ?></button>
+          <button type="button" class="b-knopf" data-ansicht="390"><?= $tr ? 'Telefon' : 'Telefon' ?></button>
+          <button type="button" class="b-knopf" data-ansicht="820"><?= $tr ? 'Tablet' : 'Tablet' ?></button>
+          <button type="button" class="b-knopf" data-ansicht="1280"><?= $tr ? 'Masaüstü' : 'Schreibtisch' ?></button>
+        </div>
+
         <div class="<?= e($scope) ?> relative overflow-hidden border border-sand-deep"
              data-design-preview
              style="aspect-ratio: <?= e(str_replace(':', ' / ', (string) $design['canvas']['ratio'])) ?>;
@@ -191,7 +225,20 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
           <div class="absolute inset-0"><?= $seite ?></div>
           <div class="absolute inset-0"><?= $karte ?></div>
         </div>
-        <p class="b-fein" style="margin-top:0.75rem;">
+
+        <?php /*
+           Der Rahmen entsteht erst beim ersten Klick auf ein Geraet. Ein
+           iframe im Markup laedt die Seite mit - samt Kuvertfilm - und zwar
+           jedes Mal, wenn jemand den Editor oeffnet, auch wenn er ihn nie
+           ansieht.
+        */ ?>
+        <div class="b-rahmen" data-ansicht-rahmen hidden
+             data-adresse="<?= e(I18n::path('/v2/designs/' . $design['slug'], 'de')) ?>"
+             data-wort-seite="<?= $tr
+                ? 'Bu çerçeve KAYDEDİLMİŞ hâli gösterir — sayfanın kendisini sunucudan alır. Değişikliği görmek için önce kaydet.'
+                : 'Der Rahmen zeigt den GESPEICHERTEN Stand - er holt die Seite vom Server. Erst speichern, dann sieht man die Änderung.' ?>"></div>
+
+        <p class="b-fein" style="margin-top:0.75rem;" data-ansicht-hinweis>
           <?= $tr
             ? 'Renk, yazı, metin ve yerleşim anında değişir. Hareket ve görsel için kaydet.'
             : 'Farbe, Schrift, Text und Anordnung ändern sich sofort. Bewegung und Bild brauchen ein Speichern.' ?>
