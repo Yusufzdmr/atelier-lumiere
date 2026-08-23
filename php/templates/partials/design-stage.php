@@ -199,8 +199,28 @@ use Atelier\Design;
            danach aus. Ohne Skript sieht der Gast ihn nie und bekommt sofort
            die Karte - das ist die richtige Reihenfolge, nicht ein Fehler.
         */ ?>
-        <div class="absolute inset-0 z-40" data-intro-video hidden>
-          <video class="h-full w-full object-cover" data-intro-film
+        <?php /*
+           Der Film laeuft in seiner eigenen Groesse, nicht ueber die ganze
+           Flaeche.
+
+           Zuerst stand hier "h-full w-full object-cover" - und das war der
+           Fehler, nicht die Datei. Der Film des Kunden ist 478 x 850 bei
+           1,5 Mbit/s, also sauber fuer das, was er ist. Ueber ein Fenster von
+           1280 gezogen sind das 2,7-fach hochskaliert, und dann sieht jede
+           saubere Datei weich aus.
+
+           object-contain statt cover, und die Breite gedeckelt: 30rem sind
+           480 px, also ungefaehr seine eigene Breite. So wird er nie
+           groesser gezeigt, als er ist - und bleibt scharf. Bringt der
+           Grafiker spaeter einen groesseren, hebt eine Zahl hier den Deckel.
+
+           Der dunkle Grund dahinter ist die Seitenfarbe des Themas: der Film
+           fuellt die Flaeche nicht mehr, also muss etwas darunter liegen.
+        */ ?>
+        <div class="absolute inset-0 z-40 flex items-center justify-center"
+             style="background: var(--d-bg, #0b0a09);" data-intro-video hidden>
+          <video class="max-h-full w-auto object-contain"
+                 style="max-width: min(92vw, 30rem);" data-intro-film
                  src="<?= e($introFilm) ?>"
                  <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
                  muted playsinline preload="auto"></video>
