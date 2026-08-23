@@ -300,7 +300,7 @@ final class DesignSections
          * darunter traegt die Papierfarbe weiter. Wiederholt kaemen die
          * Goldecken alle paar hundert Pixel noch einmal.
          */
-        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
+        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);}'
             /*
              * Das Blatt wiederholt sich nach unten - jede Laenge ein neues
              * Blatt, nicht ein gedehntes.
