@@ -97,6 +97,16 @@ final class Design
             // Achtung, zwei Bedeutungen von "intro": animation.intro ist die
             // Auftaktbewegung, dieser Block ist der Film davor.
             'intro'     => ['video' => '', 'poster' => ''],
+            /*
+             * Der Grund unter den Abschnitten.
+             *
+             * Leer heisst NICHT "keiner": leer heisst "derselbe wie auf der
+             * Karte" - die Vorlage sucht sich dann die hinterste Bildebene
+             * selbst. Das ist der Normalfall und der Grund, warum es kein
+             * Pflichtfeld ist. Wer unten etwas anderes will, traegt es hier
+             * ein.
+             */
+            'sectionsBg' => '',
         ];
 
         $doc = array_merge($defaults, $doc);
@@ -115,6 +125,8 @@ final class Design
         $doc['sort']     = (int) $doc['sort'];
         $doc['cover']    = (string) $doc['cover'];
         $doc['family']   = self::key((string) $doc['family']);
+
+        $doc['sectionsBg'] = self::safeSrc((string) $doc['sectionsBg']);
 
         $intro = is_array($doc['intro']) ? $doc['intro'] : [];
         $doc['intro'] = [
@@ -1020,6 +1032,12 @@ final class Design
             if ($wert !== null) {
                 $doc['intro'][$teil] = $wert;
             }
+        }
+
+        // Leer abschicken ist erlaubt und heisst "wieder wie die Karte".
+        $grund = $text('sectionsbg');
+        if ($grund !== null) {
+            $doc['sectionsBg'] = $grund;
         }
         if (isset($post['tags'])) {
             $roh = explode(',', (string) $post['tags']);

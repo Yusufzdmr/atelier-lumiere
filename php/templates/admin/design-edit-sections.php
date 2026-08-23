@@ -302,6 +302,48 @@ use function Atelier\e;
   </div>
 
   <?php /*
+     Der Grund unter den Abschnitten - also das, was der Gast sieht, wenn er
+     unter der Karte weiterwischt.
+
+     Leer heisst nicht "keiner", sondern "derselbe wie auf der Karte": die
+     Seite nimmt dann die hinterste Bildebene. Das ist fast immer richtig,
+     deshalb steht hier nichts drin. Wer unten ein anderes Blatt will - ein
+     ruhigeres, ein dunkleres -, legt es hier hinein.
+  */ ?>
+  <div class="mt-6 border-t border-sand-deep pt-5">
+    <div class="<?= $label ?>"><?= $tr ? 'Alt bölümlerin arka planı' : 'Grund unter den Abschnitten' ?></div>
+    <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
+      <?= $tr
+        ? 'Boş bırakırsan kartın kâğıdı aşağıda da devam eder. Başka bir görsel koyarsan onu kullanır. Sabit durur, yazı üstünden kayar.'
+        : 'Leer gelassen laeuft das Papier der Karte nach unten weiter. Ein eigenes Bild hier ersetzt es. Es steht fest, der Text scrollt darueber.' ?>
+    </p>
+
+    <div class="mt-4 flex items-start gap-5">
+      <div class="w-24 shrink-0">
+        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+          <?php $grundBild = Design::safeSrc((string) $design['sectionsBg']); ?>
+          <?php if ($grundBild !== '') : ?>
+            <img src="<?= e($grundBild) ?>" alt="" class="h-full w-full object-cover">
+          <?php else : ?>
+            <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+              <?= $tr ? 'kart gibi' : 'wie die Karte' ?>
+            </span>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <label class="<?= $label ?>"><?= $tr ? 'Görsel yükle' : 'Bild hochladen' ?>
+          <input type="file" name="sectionsbg_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş = kart gibi)' : 'oder Pfad (leer = wie die Karte)' ?>
+          <input name="sectionsbg" value="<?= e((string) $design['sectionsBg']) ?>"
+                 class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+      </div>
+    </div>
+  </div>
+
+  <?php /*
      Die Vorgaben stehen schon einmal im Haus: templates/admin/themes.php
      schreibt sie beim Karten-Hintergrundvideo aus. Dieselben Zahlen, damit
      nicht zwei Antworten auf dieselbe Frage im Panel stehen.

@@ -137,3 +137,13 @@ assert_same('9:16', $boese['canvas']['ratio'], 'complete: ein Ausbruch aus dem A
 
 $echt = Design::complete(['id' => 'x', 'canvas' => ['ratio' => '768:1376']]);
 assert_same('768:1376', $echt['canvas']['ratio'], 'complete: eine echte Angabe bleibt');
+
+/* --- Der Grund unter den Abschnitten: leer heisst "wie die Karte" --- */
+
+$g = Design::complete(['id' => 'x', 'sectionsBg' => '/uploads/designs/grund.jpg']);
+assert_same('/uploads/designs/grund.jpg', $g['sectionsBg'], 'complete: eigener Grund kommt durch');
+
+$gf = Design::complete(['id' => 'x', 'sectionsBg' => 'https://beispiel.de/g.jpg']);
+assert_same('', $gf['sectionsBg'], 'complete: fremder Host wird verworfen');
+
+assert_same('', Design::complete(['id' => 'x'])['sectionsBg'], 'complete: ohne Angabe leer - also wie die Karte');

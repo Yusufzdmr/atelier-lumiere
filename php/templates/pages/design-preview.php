@@ -87,15 +87,11 @@ $idle = (string) $design['animation']['idle'];
   */ ?>
   <?php
     /*
-     * Das Blatt der Karte laeuft nach unten weiter.
-     *
-     * Die Farbe allein reicht nicht: das Papier des Kunden hat eine Struktur,
-     * und ohne sie bricht der Eindruck an der Unterkante der Karte ab. Das
-     * Bild kommt aus der hintersten Ebene der Karte - dieselbe Datei, die
-     * oben schon liegt. safeSrc(), weil es in ein style-Attribut geht.
+     * Erst das eigene Feld, dann die Karte: der Grafiker kann unten ein
+     * anderes Blatt hinlegen, muss aber nicht. Leer heisst "wie die Karte".
      */
-    $papier = '';
-    foreach ($design['layers'] as $ebene) {
+    $papier = Design::safeSrc((string) ($design['sectionsBg'] ?? ''));
+    foreach ($papier === '' ? $design['layers'] : [] as $ebene) {
         if (in_array($ebene['type'], ['photo', 'image'], true)
             && $ebene['spot'] === 'card' && (string) $ebene['src'] !== '') {
             $papier = Design::safeSrc((string) $ebene['src']);

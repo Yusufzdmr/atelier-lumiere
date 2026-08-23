@@ -439,6 +439,14 @@ final class DesignAdminController
             }
         }
 
+        $grund = $_FILES['sectionsbg_datei'] ?? null;
+        if (is_array($grund) && ((int) ($grund['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::store($grund, 'designs');
+            if ($pfad !== null) {
+                $post['sectionsbg'] = $pfad;
+            }
+        }
+
         return $post;
     }
 
