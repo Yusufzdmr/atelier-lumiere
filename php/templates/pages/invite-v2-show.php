@@ -47,6 +47,10 @@ use Atelier\View;
     'tempo'     => $tempo,
     'karteAn'   => $karteAn,
     'introMs'   => $introMs,
+    // Der Oeffnungsfilm steht im Dokument, nicht im lebenden Thema: bei einer
+    // Einladung im eingefrorenen Sockel, hier in der Vorlage selbst.
+    'introVideo'  => (string) $design['intro']['video'],
+    'introPoster' => (string) $design['intro']['poster'],
     'idle'      => $idle,
     'initialen' => $initialen,
     // Immer leer: eine echte Einladung zeigt keine Vorlagenmaengel an.

@@ -162,3 +162,18 @@ assert_same(106, $mitSchrift['fonts']['script']['lineHeight'], 'fromTheme: gemes
 // Der Kopf der Karte ist quer, nicht hochkant: 9:16 waere die Voreinstellung
 // des Formats, aber der alte Motor zeigt 632:490.
 assert_same('632:490', $mitSchrift['canvas']['ratio'], 'fromTheme: das gemessene Seitenverhaeltnis');
+
+/* --- Der Oeffnungsfilm des Themas wird EINMAL kopiert --- */
+
+$ausThema = Design::fromTheme([
+    'id' => 'tuscany', 'name' => 'Tuscany',
+    'introVideo' => '/uploads/themen/tuscany/kuvert.mp4',
+    'introPoster' => '/uploads/themen/tuscany/kuvert.jpg',
+]);
+
+assert_same('/uploads/themen/tuscany/kuvert.mp4', $ausThema['intro']['video'], 'fromTheme: der Oeffnungsfilm kommt mit');
+assert_same('/uploads/themen/tuscany/kuvert.jpg', $ausThema['intro']['poster'], 'fromTheme: sein Standbild auch');
+
+$ohne = Design::fromTheme(['id' => 'schlicht', 'name' => 'Schlicht']);
+
+assert_same('', $ohne['intro']['video'], 'fromTheme: ein Thema ohne Film gibt keinen weiter');

@@ -48,6 +48,10 @@ $idle = (string) $design['animation']['idle'];
     'tempo'     => $tempo,
     'karteAn'   => $karteAn,
     'introMs'   => $introMs,
+    // Der Oeffnungsfilm steht im Dokument, nicht im lebenden Thema: bei einer
+    // Einladung im eingefrorenen Sockel, hier in der Vorlage selbst.
+    'introVideo'  => (string) $design['intro']['video'],
+    'introPoster' => (string) $design['intro']['poster'],
     'idle'      => $idle,
     // Nicht aus $design ableitbar: initialen kommt aus den (Beispiel-)
     // Werten des Paares, warnings betrifft die konkrete Vorlage.

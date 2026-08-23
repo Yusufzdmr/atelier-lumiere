@@ -88,6 +88,15 @@ final class Design
             'layers'    => [],
             'sections'  => [],
             'animation' => ['intro' => 'none', 'idle' => 'none', 'reveal' => 'up', 'particle' => 'none'],
+            // Der Oeffnungsfilm. Er steht im DOKUMENT und nicht im lebenden
+            // Thema: fromTheme() kopiert ihn einmal, danach friert er mit dem
+            // Sockel ein. Eine versendete Einladung oeffnet also morgen so wie
+            // heute, auch wenn der Grafiker das Thema inzwischen umgebaut hat -
+            // dieselbe Zusage wie fuer alles andere am Sockel.
+            //
+            // Achtung, zwei Bedeutungen von "intro": animation.intro ist die
+            // Auftaktbewegung, dieser Block ist der Film davor.
+            'intro'     => ['video' => '', 'poster' => ''],
         ];
 
         $doc = array_merge($defaults, $doc);
@@ -106,6 +115,12 @@ final class Design
         $doc['sort']     = (int) $doc['sort'];
         $doc['cover']    = (string) $doc['cover'];
         $doc['family']   = self::key((string) $doc['family']);
+
+        $intro = is_array($doc['intro']) ? $doc['intro'] : [];
+        $doc['intro'] = [
+            'video'  => self::safeSrc((string) ($intro['video'] ?? '')),
+            'poster' => self::safeSrc((string) ($intro['poster'] ?? '')),
+        ];
 
         $doc['tags'] = array_values(array_filter(
             array_map(static fn (mixed $t): string => self::key((string) $t), (array) $doc['tags']),
@@ -849,6 +864,11 @@ final class Design
             // am gerenderten Original. 9:16 waere die Voreinstellung des
             // Formats und hier schlicht falsch.
             'canvas'    => ['ratio' => '632:490', 'safe' => 6],
+            // Einmal kopiert, nicht nachgeschlagen: siehe complete().
+            'intro'     => [
+                'video'  => (string) ($theme['introVideo'] ?? ''),
+                'poster' => (string) ($theme['introPoster'] ?? ''),
+            ],
             'layers'    => array_merge($back, $front),
             // Achtung, zwei Bedeutungen: das Thema hat ein skalares Feld
             // "animation" (der Karteneinzug); das Dokument nennt so den
@@ -950,6 +970,17 @@ final class Design
         }
         if (isset($post['sort'])) {
             $doc['sort'] = (int) $post['sort'];
+        }
+
+        // Der Oeffnungsfilm. Beide Felder duerfen ausdruecklich leer
+        // abgeschickt werden: ohne Film laeuft wieder die gezeichnete Klappe,
+        // und genau das will jemand, der das Feld leert. complete() prueft
+        // beide Adressen.
+        foreach (['video', 'poster'] as $teil) {
+            $wert = $text('intro_' . $teil);
+            if ($wert !== null) {
+                $doc['intro'][$teil] = $wert;
+            }
         }
         if (isset($post['tags'])) {
             $roh = explode(',', (string) $post['tags']);

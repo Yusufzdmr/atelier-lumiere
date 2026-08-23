@@ -219,3 +219,25 @@ assert_same('/uploads/designs/a.jpg', $neu['layers'][0]['poster'], 'fromPost: Po
 
 $fremd = Design::fromPost($mitFilm, ['posterpfad_film' => 'https://beispiel.de/x.jpg']);
 assert_same('', $fremd['layers'][0]['poster'], 'fromPost: fremder Poster wird verworfen');
+
+/* --- Der Oeffnungsfilm laesst sich im Editor setzen und leeren --- */
+
+$basis = Design::complete(['id' => 'pruef3', 'slug' => 'pruef3']);
+
+$mitIntro = Design::fromPost($basis, [
+    'intro_video'  => '/uploads/designs/k.mp4',
+    'intro_poster' => '/uploads/designs/k.jpg',
+]);
+
+assert_same('/uploads/designs/k.mp4', $mitIntro['intro']['video'], 'fromPost: der Oeffnungsfilm wird uebernommen');
+assert_same('/uploads/designs/k.jpg', $mitIntro['intro']['poster'], 'fromPost: sein Standbild auch');
+
+// Leeren ist ein Wunsch, kein Unfall: ohne Film laeuft wieder die
+// gezeichnete Klappe, und genau das will jemand, der das Feld leert.
+$geleert = Design::fromPost($mitIntro, ['intro_video' => '', 'intro_poster' => '']);
+
+assert_same('', $geleert['intro']['video'], 'fromPost: der Oeffnungsfilm laesst sich entfernen');
+
+$fremd = Design::fromPost($basis, ['intro_video' => 'https://beispiel.de/k.mp4']);
+
+assert_same('', $fremd['intro']['video'], 'fromPost: fremder Host wird verworfen');

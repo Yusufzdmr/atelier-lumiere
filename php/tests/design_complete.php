@@ -108,3 +108,24 @@ assert_same('video', $doc['layers'][0]['type'], 'complete: video bleibt video');
 assert_same('/uploads/film.jpg', $doc['layers'][0]['poster'], 'complete: eigener Poster kommt durch');
 assert_same('', $doc['layers'][1]['poster'], 'complete: fremder Host wird zu leer');
 assert_same('', $doc['layers'][2]['poster'], 'complete: ohne Angabe ist der Poster leer');
+
+/* --- Der Oeffnungsfilm gehoert dem Dokument, nicht dem lebenden Thema --- */
+
+$mitIntro = Design::complete(['id' => 'x', 'intro' => [
+    'video' => '/uploads/themen/a/intro.mp4', 'poster' => '/uploads/themen/a/intro.jpg',
+]]);
+
+assert_same('/uploads/themen/a/intro.mp4', $mitIntro['intro']['video'], 'complete: der Oeffnungsfilm bleibt');
+assert_same('/uploads/themen/a/intro.jpg', $mitIntro['intro']['poster'], 'complete: sein Standbild auch');
+
+$ohneIntro = Design::complete(['id' => 'x']);
+
+assert_same('', $ohneIntro['intro']['video'], 'complete: ohne Angabe ist der Vorspann leer');
+assert_same('', $ohneIntro['intro']['poster'], 'complete: und sein Standbild ebenso');
+
+$fremdIntro = Design::complete(['id' => 'x', 'intro' => [
+    'video' => 'https://beispiel.de/i.mp4', 'poster' => 'https://beispiel.de/i.jpg',
+]]);
+
+assert_same('', $fremdIntro['intro']['video'], 'complete: fremder Host wird verworfen');
+assert_same('', $fremdIntro['intro']['poster'], 'complete: auch beim Standbild');

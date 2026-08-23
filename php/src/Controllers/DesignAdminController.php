@@ -420,6 +420,25 @@ final class DesignAdminController
             }
         }
 
+        // Der Vorspann haengt an keiner Ebene, also auch an keiner Schleife.
+        // Derselbe Weg ueber $_POST wie oben: der Upload sagt nur, was in dem
+        // Feld stehen soll.
+        $vorspann = $_FILES['intro_datei'] ?? null;
+        if (is_array($vorspann) && ((int) ($vorspann['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::storeVideo($vorspann, 'designs');
+            if ($pfad !== null) {
+                $post['intro_video'] = $pfad;
+            }
+        }
+
+        $vorspannBild = $_FILES['intro_poster_datei'] ?? null;
+        if (is_array($vorspannBild) && ((int) ($vorspannBild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::store($vorspannBild, 'designs');
+            if ($pfad !== null) {
+                $post['intro_poster'] = $pfad;
+            }
+        }
+
         return $post;
     }
 

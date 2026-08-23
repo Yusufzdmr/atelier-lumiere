@@ -253,6 +253,55 @@ use function Atelier\e;
   <?php endforeach; ?>
 
   <?php /*
+     Der Vorspann. Er steht bei den Videos und nicht bei der Bewegung, weil
+     er eine Datei ist und keine Auswahl - und er gehoert dem DOKUMENT: das
+     Thema hat ihn einmal mitgegeben (fromTheme), ab hier entscheidet die
+     Vorlage. Eine versendete Einladung behaelt ohnehin ihren eingefrorenen.
+  */ ?>
+  <div class="mt-6 border-t border-sand-deep pt-5">
+    <div class="<?= $label ?>"><?= $tr ? 'Açılış videosu (zarf)' : 'Öffnungsfilm (Kuvert)' ?></div>
+    <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
+      <?= $tr
+        ? 'Kart gelmeden önce oynar. Boşsa bugünkü çizilmiş zarf çalışır. Dikey 9:16, 2–5 saniye, açılmış zarfın üzerinde bitmeli.'
+        : 'Laeuft, bevor die Karte kommt. Leer bedeutet die bisherige gezeichnete Klappe. Hochkant 9:16, 2-5 s, und am Ende auf dem geoeffneten Kuvert stehen bleiben.' ?>
+    </p>
+
+    <div class="mt-4 flex items-start gap-5">
+      <div class="w-24 shrink-0">
+        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+          <?php $introQuelle = Design::safeSrc((string) $design['intro']['video']); ?>
+          <?php if ($introQuelle !== '') : ?>
+            <video src="<?= e($introQuelle) ?>" muted preload="metadata"
+                   <?php $introBild = Design::safeSrc((string) $design['intro']['poster']); ?>
+                   <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
+                   class="h-full w-full object-cover"></video>
+          <?php else : ?>
+            <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+              <?= $tr ? 'video yok' : 'kein Film' ?>
+            </span>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <label class="<?= $label ?>"><?= $tr ? 'Video yükle' : 'Film hochladen' ?>
+          <input type="file" name="intro_datei" accept="video/mp4,video/webm,video/quicktime" class="<?= $feld ?>"></label>
+
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt ihn)' ?>
+          <input name="intro_video" value="<?= e((string) $design['intro']['video']) ?>"
+                 class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'Kapak görseli yükle' : 'Standbild hochladen' ?>
+          <input type="file" name="intro_poster_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da kapak yolu' : 'oder Standbild-Pfad' ?>
+          <input name="intro_poster" value="<?= e((string) $design['intro']['poster']) ?>"
+                 class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+      </div>
+    </div>
+  </div>
+
+  <?php /*
      Die Vorgaben stehen schon einmal im Haus: templates/admin/themes.php
      schreibt sie beim Karten-Hintergrundvideo aus. Dieselben Zahlen, damit
      nicht zwei Antworten auf dieselbe Frage im Panel stehen.
