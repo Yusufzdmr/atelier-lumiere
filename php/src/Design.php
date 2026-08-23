@@ -1102,6 +1102,35 @@ final class Design
                 $doc['layers'][$i]['poster'] = $bild;
             }
 
+            /*
+             * Der Kasten. Bis hierher stand hier nichts: eine Ebene liess
+             * sich faerben, beschriften und bewegen, aber nicht hinstellen.
+             * Wer eine neue anlegte, bekam einen von drei festen Zuschnitten
+             * und danach nie wieder eine Handhabe - die letzte Stelle, an der
+             * eine Vorlage nur ueber die Datenbank entstehen konnte.
+             *
+             * Jede Zahl einzeln und nur, wenn das Feld wirklich da war: ein
+             * Formular, das nur eine Ebene nennt, darf die anderen nicht auf
+             * null ziehen. Geklemmt wird hier nicht, sondern in completeBox() -
+             * dort stehen die Grenzen, und zwei Stellen mit denselben Zahlen
+             * laufen frueher oder spaeter auseinander.
+             */
+            foreach (['x', 'y', 'w', 'h', 'rotate', 'opacity'] as $mass) {
+                if (isset($post['box_' . $mass . '_' . $id])) {
+                    $doc['layers'][$i]['box'][$mass] = (int) $post['box_' . $mass . '_' . $id];
+                }
+            }
+            if (isset($post['box_anchor_' . $id])) {
+                $doc['layers'][$i]['box']['anchor'] = (string) $post['box_anchor_' . $id];
+            }
+            // Die Spiegelungen sind Haken und werden wie die Rechte gelesen:
+            // da heisst an, weg heisst aus. Das darf hier stehen, weil genau
+            // ein Formular diese Funktion aufruft - der Assistent des Paares
+            // geht einen anderen Weg.
+            foreach (['flipx', 'flipy'] as $spiegel) {
+                $doc['layers'][$i]['box'][$spiegel] = isset($post['box_' . $spiegel . '_' . $id]) ? 1 : 0;
+            }
+
             if (isset($post['move_' . $id])) {
                 $doc['layers'][$i]['motion']['move'] = (string) $post['move_' . $id];
             }
@@ -1114,6 +1143,44 @@ final class Design
             foreach (self::PERMISSIONS as $recht) {
                 $doc['layers'][$i]['permissions'][$recht] = isset($post['perm_' . $recht . '_' . $id]);
             }
+        }
+
+        /*
+         * Die Reihenfolge - und damit der Stapel, denn Design::css() schreibt
+         * z-index als index+1. Es gibt kein Feld je Ebene, sondern EINE Reihe
+         * von Kennungen: "nach vorn" ist dann ein Tausch zweier Nachbarn und
+         * kein Zahlenraten, und zwei Ebenen koennen nicht auf derselben Stufe
+         * landen.
+         *
+         * Wer nicht in der Reihe steht, ist geloescht. Loeschen und Umordnen
+         * sind dieselbe Bewegung, deshalb dasselbe Feld - zwei Wege koennten
+         * die eine Aenderung speichern und die andere verlieren.
+         *
+         * Fehlt das Feld ganz, bleibt die Liste unangetastet: ein Aufrufer,
+         * der von Ebenen nichts weiss, soll sie nicht abraeumen. Eine LEERE
+         * Reihe dagegen ist eine Aussage - das Formular schickt das Feld immer
+         * mit, und ein veraltetes faengt die Fassungspruefung im Controller
+         * ab, bevor es hier ankommt.
+         */
+        if (isset($post['ebenen_reihenfolge'])) {
+            $nach    = [];
+            $genannt = [];
+            foreach (explode(',', (string) $post['ebenen_reihenfolge']) as $kennung) {
+                $kennung = self::key(trim($kennung));
+                // Zweimal genannt bleibt einmal: sonst stuende dieselbe Ebene
+                // doppelt im Dokument und traege zwei z-Indizes.
+                if ($kennung === '' || isset($genannt[$kennung])) {
+                    continue;
+                }
+                foreach ($doc['layers'] as $ebene) {
+                    if ((string) $ebene['id'] === $kennung) {
+                        $nach[] = $ebene;
+                        $genannt[$kennung] = true;
+                        break;
+                    }
+                }
+            }
+            $doc['layers'] = $nach;
         }
 
         foreach ([

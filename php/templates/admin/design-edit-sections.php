@@ -157,10 +157,10 @@ use function Atelier\e;
      Paar deshalb nirgends ein Feld fuer sein eigenes Bild, und daran war im
      Panel nichts zu machen.
 
-     Bewusst ohne Koordinaten: der Editor hat fuer KEINE Ebene Felder fuer
-     Position und Groesse, und eine neue Ebene irgendwo hinzusetzen, wo man
-     sie danach nicht mehr bewegen kann, waere eine Falle. Die drei Zuschnitte
-     sind deshalb alle volle Breite - dafuer braucht es keine Koordinaten.
+     Die drei Zuschnitte sind ein Startpunkt, kein Urteil: sie stehen alle
+     ueber die volle Breite, und danach steht die Ebene im Abschnitt
+     "Anordnung" mit ihrem Kasten da wie jede andere. Solange es dort keine
+     Felder gab, war der Zuschnitt endgueltig - deshalb waren es genau drei.
   */ ?>
   <div class="mt-6 border-t border-sand-deep pt-5">
     <div class="<?= $label ?>"><?= $tr ? 'Yeni görsel/video katmanı' : 'Neue Bild- oder Videoebene' ?></div>
@@ -363,6 +363,117 @@ use function Atelier\e;
       <?= $tr ? 'en fazla 100 MB. Yüklemeden önce sıkıştır – sunucu yeniden kodlamaz.'
               : 'höchstens 100 MB. Vorher komprimieren – der Server transkodiert nicht.' ?></li>
   </ul>
+<?= $zu ?>
+
+<?php /*
+   5c · Die Anordnung. Der Kasten jeder Ebene, ihre Stapelfolge und der Weg,
+   eine wegzunehmen.
+
+   Bis hierher war das die einzige Stelle, an der eine Vorlage nur ueber die
+   Datenbank entstehen konnte: eine neue Ebene fiel in einen von drei festen
+   Zuschnitten und liess sich danach nie wieder bewegen.
+
+   Die Liste steht in der Reihenfolge des Dokuments, und die IST die
+   Stapelfolge - Design::css() schreibt z-index als index+1. Deshalb ist die
+   UNTERSTE Zeile die vorderste Ebene, und die Knoepfe heissen "nach vorn"
+   und "nach hinten" statt hoch und runter: hoch und runter waeren an dieser
+   Stelle zweideutig, und die Zahl daneben sagt es noch einmal.
+
+   Loeschen nimmt die Zeile nur aus der Reihe. Gespeichert wird es erst mit
+   dem Formular - ein Neuladen holt die Ebene zurueck, solange nicht
+   gespeichert wurde.
+*/ ?>
+<?= $auf($tr ? '5c · Yerleşim ve sıra' : '5c · Anordnung und Stapel') ?>
+  <p class="text-[0.78rem] leading-relaxed text-muted">
+    <?= $tr
+      ? 'Sayılar kartın yüzdesidir, pikseli değil: kart büyüyünce her şey birlikte büyür. Yazdığın an sağdaki kart oynar, kaydetmeden görürsün. Listede AŞAĞIDAKİ katman üsttedir.'
+      : 'Die Zahlen sind Prozent der Karte, keine Pixel: waechst die Karte, waechst alles mit. Die Karte daneben bewegt sich sofort, ohne Speichern. Die UNTERSTE Zeile ist die vorderste Ebene.' ?>
+  </p>
+
+  <?php if ($design['layers'] === []) : ?>
+    <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda katman yok.' : 'Diese Vorlage hat keine Ebene.' ?></p>
+  <?php endif; ?>
+
+  <?php
+  /*
+    Die Reihe der Kennungen. Sie ist die Wahrheit ueber Ordnung UND Bestand:
+    fromPost() baut die Ebenenliste daraus. Das Skript schreibt sie neu, wenn
+    jemand schiebt oder loescht; ohne Skript bleibt sie stehen, wie sie ist,
+    und dann aendert sich nichts - kein stiller Verlust.
+  */
+  $reihe = implode(',', array_map(static fn (array $l): string => (string) $l['id'], $design['layers']));
+
+  $masse = [
+      'x'       => [$tr ? 'x %' : 'x %',            -50, 150],
+      'y'       => [$tr ? 'y %' : 'y %',            -50, 150],
+      'w'       => [$tr ? 'en %' : 'Breite %',        1, 200],
+      'h'       => [$tr ? 'boy %' : 'Höhe %',         0, 200],
+      'rotate'  => [$tr ? 'açı °' : 'Drehung °',   -180, 180],
+      'opacity' => [$tr ? 'saydam %' : 'Deckkraft %', 0, 100],
+  ];
+
+  $ankerNamen = [
+      'topleft'     => $tr ? 'sol üst'  : 'oben links',
+      'topright'    => $tr ? 'sağ üst'  : 'oben rechts',
+      'bottomleft'  => $tr ? 'sol alt'  : 'unten links',
+      'bottomright' => $tr ? 'sağ alt'  : 'unten rechts',
+  ];
+
+  $klein = 'mt-1 block w-full border border-sand-deep bg-transparent px-2 py-1.5 text-sm text-ink';
+  $knopf = 'border border-sand-deep px-2 py-1 text-[0.66rem] uppercase tracking-[0.14em] text-muted hover:text-ink';
+  ?>
+
+  <input type="hidden" name="ebenen_reihenfolge" value="<?= e($reihe) ?>" data-ebenen-reihe>
+
+  <div data-ebenen-liste class="space-y-3">
+    <?php foreach ($design['layers'] as $nr => $ebene) : ?>
+      <div class="border border-sand-deep p-3" data-ebene="<?= e((string) $ebene['id']) ?>">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-sm text-ink">
+            <?= e($ebene['label'] ?: $ebene['id']) ?>
+            <span class="<?= $label ?>">· <?= e((string) $ebene['type']) ?> · <?= e((string) $ebene['spot']) ?></span>
+          </span>
+          <div class="flex items-center gap-1">
+            <span class="<?= $label ?>" data-ebene-stufe>z <?= (int) $nr + 1 ?></span>
+            <button type="button" class="<?= $knopf ?>" data-ebene-hinten title="<?= $tr ? 'arkaya' : 'nach hinten' ?>">↑</button>
+            <button type="button" class="<?= $knopf ?>" data-ebene-vorn title="<?= $tr ? 'öne' : 'nach vorn' ?>">↓</button>
+            <button type="button" class="<?= $knopf ?>" data-ebene-weg
+                    data-wort-weg="<?= $tr ? 'sil' : 'weg' ?>" data-wort-zurueck="<?= $tr ? 'geri al' : 'zurück' ?>"><?= $tr ? 'sil' : 'weg' ?></button>
+          </div>
+        </div>
+
+        <div class="mt-3 grid gap-2 sm:grid-cols-4">
+          <?php foreach ($masse as $mass => [$titel, $min, $max]) : ?>
+            <label class="<?= $label ?>"><?= e($titel) ?>
+              <input type="number" name="box_<?= e($mass) ?>_<?= e((string) $ebene['id']) ?>"
+                     value="<?= (int) $ebene['box'][$mass] ?>" min="<?= (int) $min ?>" max="<?= (int) $max ?>"
+                     class="<?= $klein ?>"
+                     data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="<?= e($mass) ?>"></label>
+          <?php endforeach; ?>
+
+          <label class="<?= $label ?>"><?= $tr ? 'çapa' : 'Anker' ?>
+            <select name="box_anchor_<?= e((string) $ebene['id']) ?>" class="<?= $klein ?>"
+                    data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="anchor">
+              <?php foreach (Design::ANCHORS as $anker) : ?>
+                <option value="<?= e($anker) ?>" <?= $ebene['box']['anchor'] === $anker ? 'selected' : '' ?>>
+                  <?= e($ankerNamen[$anker] ?? $anker) ?></option>
+              <?php endforeach; ?>
+            </select></label>
+
+          <div class="flex items-end gap-3">
+            <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+              <input type="checkbox" name="box_flipx_<?= e((string) $ebene['id']) ?>" <?= $ebene['box']['flipx'] ? 'checked' : '' ?>
+                     data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="flipx">
+              <?= $tr ? 'yatay çevir' : 'spiegeln ↔' ?></label>
+            <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+              <input type="checkbox" name="box_flipy_<?= e((string) $ebene['id']) ?>" <?= $ebene['box']['flipy'] ? 'checked' : '' ?>
+                     data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="flipy">
+              <?= $tr ? 'dikey çevir' : 'spiegeln ↕' ?></label>
+          </div>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
 <?= $zu ?>
 
 <?= $auf($tr ? '6 · Animasyon' : '6 · Bewegung') ?>

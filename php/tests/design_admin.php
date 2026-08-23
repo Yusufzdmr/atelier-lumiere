@@ -72,7 +72,15 @@ $rechte = Design::fromPost($basis, ['perm_color_gruss' => 'an']);
 assert_same(true, $rechte['layers'][0]['permissions']['color'], 'fromPost: gesetztes Recht kommt an');
 assert_same(false, $rechte['layers'][0]['permissions']['text'], 'fromPost: fehlendes Haekchen loescht das Recht');
 
-/* --- Die Grenze der Phase: box und canvas bleiben unberuehrt --- */
+/* --- Der Kasten kommt jetzt aus dem Formular, das Seitenverhaeltnis nicht --- */
+
+/*
+ * Bis hierher stand hier "box bleibt unberuehrt". Das war richtig, solange es
+ * kein Feld dafuer gab: eine Ebene, die man nicht bewegen kann, ist besser als
+ * eine, die ein streunender Formularwert verschiebt. Jetzt gibt es Felder, und
+ * die Grenze liegt eine Stelle weiter - der Kasten gehoert dem Editor, das
+ * Seitenverhaeltnis der Vorlage. Ein canvas_* im Formular bleibt wirkungslos.
+ */
 
 $angriff = Design::fromPost($basis, [
     'box_x_gruss'  => '99',
@@ -84,8 +92,8 @@ $angriff = Design::fromPost($basis, [
     'version'      => '999',
 ]);
 
-assert_same(8, $angriff['layers'][0]['box']['x'], 'fromPost: box bleibt unberuehrt');
-assert_same(12, $angriff['layers'][0]['box']['y'], 'fromPost: box bleibt unberuehrt (y)');
+assert_same(99, $angriff['layers'][0]['box']['x'], 'fromPost: der Kasten kommt aus dem Formular');
+assert_same(99, $angriff['layers'][0]['box']['y'], 'fromPost: der Kasten kommt aus dem Formular (y)');
 assert_same('632:490', $angriff['canvas']['ratio'], 'fromPost: canvas bleibt unberuehrt');
 assert_same(6, $angriff['canvas']['safe'], 'fromPost: canvas safe bleibt unberuehrt');
 assert_same(1, count($angriff['layers']), 'fromPost: die Ebenenliste kommt nicht aus dem Formular');
@@ -241,3 +249,120 @@ assert_same('', $geleert['intro']['video'], 'fromPost: der Oeffnungsfilm laesst 
 $fremd = Design::fromPost($basis, ['intro_video' => 'https://beispiel.de/k.mp4']);
 
 assert_same('', $fremd['intro']['video'], 'fromPost: fremder Host wird verworfen');
+
+/*
+ * ------------------------------------------------------------------
+ * Faz 4: Der Kasten. Verschieben, drehen, stapeln, wegnehmen.
+ * ------------------------------------------------------------------
+ *
+ * Bis hierher konnte der Editor eine Ebene faerben, beschriften und bewegen,
+ * aber nicht hinstellen. Wer eine neue anlegte, bekam einen von drei festen
+ * Zuschnitten und danach nie wieder eine Handhabe. Das war die letzte Stelle,
+ * an der eine Vorlage nur ueber die Datenbank entstehen konnte.
+ */
+
+$dreiEbenen = Design::complete([
+    'id' => 'pruef4', 'slug' => 'pruef4',
+    'canvas' => ['ratio' => '632:490', 'safe' => 6],
+    'layers' => [
+        ['id' => 'grund', 'type' => 'image', 'spot' => 'card', 'box' => ['x' => 0, 'y' => 0, 'w' => 100]],
+        ['id' => 'name',  'type' => 'text',  'spot' => 'card', 'box' => ['x' => 8, 'y' => 20, 'w' => 85]],
+        ['id' => 'ecke',  'type' => 'image', 'spot' => 'card', 'box' => ['x' => 4, 'y' => 4, 'w' => 17]],
+    ],
+]);
+
+/* --- Jede Zahl des Kastens hat ein Feld --- */
+
+$gestellt = Design::fromPost($dreiEbenen, [
+    'box_x_name'       => '12',
+    'box_y_name'       => '34',
+    'box_w_name'       => '60',
+    'box_h_name'       => '25',
+    'box_rotate_name'  => '-15',
+    'box_opacity_name' => '80',
+    'box_anchor_name'  => 'bottomright',
+    'box_flipx_name'   => '1',
+]);
+
+assert_same(12, $gestellt['layers'][1]['box']['x'], 'Kasten: x kommt an');
+assert_same(34, $gestellt['layers'][1]['box']['y'], 'Kasten: y kommt an');
+assert_same(60, $gestellt['layers'][1]['box']['w'], 'Kasten: Breite kommt an');
+assert_same(25, $gestellt['layers'][1]['box']['h'], 'Kasten: Hoehe kommt an');
+assert_same(-15, $gestellt['layers'][1]['box']['rotate'], 'Kasten: Drehung kommt an');
+assert_same(80, $gestellt['layers'][1]['box']['opacity'], 'Kasten: Deckkraft kommt an');
+assert_same('bottomright', $gestellt['layers'][1]['box']['anchor'], 'Kasten: der Anker kommt an');
+assert_same(1, $gestellt['layers'][1]['box']['flipx'], 'Kasten: gespiegelt');
+assert_same(0, $gestellt['layers'][1]['box']['flipy'], 'Kasten: ohne Haken nicht gespiegelt');
+
+// Die Nachbarn bleiben stehen: ein Formular, das nur eine Ebene nennt, darf
+// die anderen nicht mitziehen.
+assert_same(0, $gestellt['layers'][0]['box']['x'], 'Kasten: die Nachbarebene bleibt stehen');
+assert_same(17, $gestellt['layers'][2]['box']['w'], 'Kasten: die Nachbarebene behaelt ihre Breite');
+
+/* --- Was ausserhalb liegt, wird geklemmt, nicht abgelehnt --- */
+
+$masslos = Design::fromPost($dreiEbenen, [
+    'box_x_name'       => '9999',
+    'box_w_name'       => '0',
+    'box_opacity_name' => '-40',
+    'box_anchor_name'  => 'schraeg',
+]);
+
+assert_same(150, $masslos['layers'][1]['box']['x'], 'Kasten: zu weit rechts wird geklemmt');
+assert_same(1, $masslos['layers'][1]['box']['w'], 'Kasten: Breite null wird geklemmt');
+assert_same(0, $masslos['layers'][1]['box']['opacity'], 'Kasten: negative Deckkraft wird geklemmt');
+assert_same('topleft', $masslos['layers'][1]['box']['anchor'], 'Kasten: unbekannter Anker faellt zurueck');
+
+/*
+ * --- Die Reihenfolge ist der z-Index ---
+ *
+ * Design::css() schreibt z-index als index+1, es gibt also kein eigenes Feld
+ * dafuer. Wer stapeln will, ordnet die Liste um - und die Liste kommt als
+ * eine Kennungsreihe aus dem Formular, damit "hoch" ein Klick ist und kein
+ * Zahlenraten.
+ */
+
+$umgeordnet = Design::fromPost($dreiEbenen, ['ebenen_reihenfolge' => 'name,ecke,grund']);
+
+assert_same('name', $umgeordnet['layers'][0]['id'], 'Reihenfolge: die erste steht vorn');
+assert_same('ecke', $umgeordnet['layers'][1]['id'], 'Reihenfolge: die zweite in der Mitte');
+assert_same('grund', $umgeordnet['layers'][2]['id'], 'Reihenfolge: die dritte hinten');
+assert_same(3, count($umgeordnet['layers']), 'Reihenfolge: es geht keine verloren');
+
+// Der Kasten faehrt mit der Ebene mit und nicht mit ihrem Platz.
+assert_same(20, $umgeordnet['layers'][0]['box']['y'], 'Reihenfolge: der Kasten bleibt bei seiner Ebene');
+
+/* --- Fehlt die Reihe, bleibt die Liste, wie sie war --- */
+
+$ohneReihe = Design::fromPost($dreiEbenen, ['box_x_name' => '12']);
+
+assert_same('grund', $ohneReihe['layers'][0]['id'], 'Reihenfolge: ohne Feld bleibt die Liste stehen');
+assert_same(3, count($ohneReihe['layers']), 'Reihenfolge: ohne Feld verschwindet nichts');
+
+/*
+ * --- Wer nicht in der Reihe steht, ist geloescht ---
+ *
+ * Loeschen und Umordnen sind dieselbe Bewegung, deshalb dasselbe Feld: eine
+ * Zeile aus der Liste nehmen heisst, die Ebene wegnehmen. Ein zweiter Weg mit
+ * eigenem Knopf koennte die eine Aenderung speichern und die andere verlieren.
+ *
+ * Dass ein veraltetes Formular so nichts wegraeumen kann, haelt die
+ * Fassungspruefung im Controller - sie laeuft vor fromPost.
+ */
+
+$geloescht = Design::fromPost($dreiEbenen, ['ebenen_reihenfolge' => 'grund,name']);
+
+assert_same(2, count($geloescht['layers']), 'Loeschen: die Ebene ist weg');
+assert_same('grund', $geloescht['layers'][0]['id'], 'Loeschen: die uebrigen behalten ihre Ordnung');
+assert_same('name', $geloescht['layers'][1]['id'], 'Loeschen: die uebrigen behalten ihre Ordnung (2)');
+
+// Eine leere Reihe ist eine Aussage, kein Unfall: die Vorlage hat keine Ebenen
+// mehr. Das Formular schickt das Feld immer mit.
+$alleWeg = Design::fromPost($dreiEbenen, ['ebenen_reihenfolge' => '']);
+
+assert_same(0, count($alleWeg['layers']), 'Loeschen: eine leere Reihe raeumt alles ab');
+
+// Eine Kennung, die es nicht gibt, erfindet keine Ebene.
+$erfunden = Design::fromPost($dreiEbenen, ['ebenen_reihenfolge' => 'grund,gespenst,name,ecke']);
+
+assert_same(3, count($erfunden['layers']), 'Reihenfolge: ein fremder Name erfindet nichts');

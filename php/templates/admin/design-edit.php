@@ -1,9 +1,10 @@
 <?php
 /**
  * Editor der zweiten Fassung. Bearbeitet die Oberflaeche: Farben, Schriften,
- * Texte, Bilder, Bewegung, Kundenrechte. Die Kaesten der Ebenen stehen NICHT
- * hier - sie gehoeren der vierten Phase, und tests/design_admin.php haelt die
- * Grenze.
+ * Texte, Bilder, Bewegung, Anordnung, Kundenrechte. Seit der vierten Phase
+ * gehoert auch der Kasten jeder Ebene hierher - Position, Groesse, Drehung,
+ * Stapel. Was NICHT aus diesem Formular kommt, ist das Seitenverhaeltnis der
+ * Karte; tests/design_admin.php haelt diese Grenze.
  *
  * @var array<string,mixed> $design
  * @var string $scope

@@ -287,9 +287,10 @@ final class DesignAdminController
      * Ebenen bleibt dabei unveraendert, ihre Nummern ruecken nur gemeinsam um
      * eins.
      *
-     * Ohne Koordinaten, mit drei Zuschnitten ueber die volle Breite: der Editor
-     * hat fuer keine Ebene Felder fuer Position und Groesse. Eine Ebene irgendwo
-     * hinzusetzen, wo man sie danach nicht mehr bewegen kann, waere eine Falle.
+     * Mit einem der drei Zuschnitte ueber die volle Breite - als Startpunkt,
+     * nicht als Urteil: seit es den Kasten im Abschnitt "Anordnung" gibt, laesst
+     * sich jede Ebene danach hinstellen. Vorher war der Zuschnitt endgueltig,
+     * und eine Ebene irgendwo hinzusetzen waere eine Falle gewesen.
      *
      * @param array<string,mixed> $doc
      * @param array<string,mixed> $post
