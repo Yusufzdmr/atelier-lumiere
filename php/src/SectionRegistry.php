@@ -160,6 +160,78 @@ final class SectionRegistry
     }
 
     /**
+     * Startsaetze: die uebliche Reihenfolge, einmal hingelegt.
+     *
+     * Eine leere Vorlage ist die Stelle, an der Bauen am laengsten dauert.
+     * Man weiss, dass unter der Karte etwas stehen soll - aber jede Zeile
+     * muss erst angelegt, benannt und einsortiert werden. elysee und noir,
+     * die zwei gemessenen Vorlagen des Hauses, hatten deshalb bis heute NULL
+     * Abschnitte: nicht, weil dort nichts hingehoert, sondern weil der Weg
+     * dorthin zu lang war.
+     *
+     * Ein Anfang und kein Urteil: danach ist alles wie sonst - schieben,
+     * umbenennen, wegnehmen. Deshalb legen die Saetze auch nur Arten hin, die
+     * es gibt, und keine Inhalte; was drinsteht, kommt vom Paar.
+     *
+     * Die Reihenfolge ist die Dramaturgie einer Einladung: erst wo und wann,
+     * dann wer, dann was passiert, dann die Frage - und der freie Text
+     * dazwischen, wo das Paar etwas zu sagen hat.
+     *
+     * @var array<string,array{label:array<string,string>,sections:list<array<string,mixed>>}>
+     */
+    private const START = [
+        'klassisch' => [
+            'label' => ['de' => 'Klassische Hochzeit', 'tr' => 'Klasik düğün'],
+            'sections' => [
+                ['type' => 'location',  'title' => ['de' => 'Wo wir feiern',  'en' => 'Where we celebrate']],
+                ['type' => 'countdown', 'title' => ['de' => 'Noch',           'en' => 'Still']],
+                ['type' => 'family',    'title' => ['de' => 'Unsere Familien', 'en' => 'Our families']],
+                ['type' => 'program',   'title' => ['de' => 'Ablauf des Tages', 'en' => 'The day']],
+                ['type' => 'text',      'title' => ['de' => 'Gut zu wissen',  'en' => 'Good to know']],
+                ['type' => 'rsvp',      'title' => ['de' => 'Kommt ihr?',     'en' => 'Are you coming?']],
+            ],
+        ],
+        'schlicht' => [
+            'label' => ['de' => 'Schlicht', 'tr' => 'Sade'],
+            'sections' => [
+                ['type' => 'location', 'title' => ['de' => 'Wo wir feiern', 'en' => 'Where we celebrate']],
+                ['type' => 'text',     'title' => ['de' => 'Gut zu wissen', 'en' => 'Good to know']],
+                ['type' => 'rsvp',     'title' => ['de' => 'Kommt ihr?',    'en' => 'Are you coming?']],
+            ],
+        ],
+        'ablauf' => [
+            'label' => ['de' => 'Mit ausführlichem Ablauf', 'tr' => 'Ayrıntılı programlı'],
+            'sections' => [
+                ['type' => 'location',  'title' => ['de' => 'Wo wir feiern', 'en' => 'Where we celebrate']],
+                ['type' => 'countdown', 'title' => ['de' => 'Noch',          'en' => 'Still'],
+                 'variant' => 'gross'],
+                ['type' => 'program',   'title' => ['de' => 'Ablauf des Tages', 'en' => 'The day'],
+                 'variant' => 'zeitstrahl'],
+                ['type' => 'family',    'title' => ['de' => 'Unsere Familien', 'en' => 'Our families'],
+                 'variant' => 'paar'],
+                ['type' => 'rsvp',      'title' => ['de' => 'Kommt ihr?',    'en' => 'Are you coming?'],
+                 'variant' => 'rahmen'],
+            ],
+        ],
+    ];
+
+    /**
+     * @return array<string,array{label:array<string,string>,sections:list<array<string,mixed>>}>
+     */
+    public static function starters(): array
+    {
+        return self::START;
+    }
+
+    /**
+     * @return array{label:array<string,string>,sections:list<array<string,mixed>>}|null
+     */
+    public static function starter(string $name): ?array
+    {
+        return self::START[$name] ?? null;
+    }
+
+    /**
      * Die Einstellungen, die JEDE Art hat.
      *
      * Das Panel braucht die Trennung: die gemeinsamen stehen bei jeder Zeile,

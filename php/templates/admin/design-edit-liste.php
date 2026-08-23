@@ -100,6 +100,34 @@ $sprache  = $tr ? 'tr' : 'de';
   <?php endforeach; ?>
 </ul>
 
+<?php /*
+   Ein Anfang, kein Urteil.
+
+   Eine leere Vorlage ist die Stelle, an der Bauen am laengsten dauert: man
+   weiss, dass unter der Karte etwas stehen soll, aber jede Zeile muss erst
+   angelegt, benannt und einsortiert werden. elysee und noir hatten deshalb
+   bis heute NULL Abschnitte - nicht, weil dort nichts hingehoert.
+
+   Der Knopf schickt dasselbe Formular ab wie "Speichern". So geht die
+   angefangene Arbeit nicht verloren, bloss weil jemand mitten darin einen
+   Satz hinlegen will. Angehaengt wird nur, was fehlt: wer drei Saetze
+   nacheinander probiert, hat danach nicht vier Ortsabschnitte.
+*/ ?>
+<div style="margin-top:1rem;">
+  <div class="b-fein" style="margin-bottom:0.4rem;"><?= $tr ? 'Hazır düzen ekle' : 'Startsatz hinlegen' ?></div>
+  <div class="b-liste">
+    <?php foreach (SectionRegistry::starters() as $kennung => $satz) : ?>
+      <button type="submit" name="starter" value="<?= e((string) $kennung) ?>" class="b-karte">
+        <?= e($satz['label'][$sprache] ?? (string) $kennung) ?>
+        <small><?= e(implode(' · ', array_map(
+            static fn (array $a): string => (string) $a['type'],
+            $satz['sections']
+        ))) ?></small>
+      </button>
+    <?php endforeach; ?>
+  </div>
+</div>
+
 <p class="b-fein" style="margin-top:0.8rem;line-height:1.7;text-transform:none;letter-spacing:0.02em;">
   <?= $tr
     ? 'Sıra buradaki sıradır. Göz kapalıysa bölüm sayfada görünmez. "sil" kaydedene kadar geri alınabilir.'

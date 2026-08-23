@@ -471,6 +471,25 @@ final class DesignAdminController
 
         $doc = Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST));
         $doc = $this->mitNeuerBildebene($doc, $_POST);
+
+        /*
+         * Ein Startsatz, falls jemand einen der Knoepfe gedrueckt hat.
+         *
+         * NACH fromPost und aus demselben Grund wie die neue Bildebene: die
+         * Abschnitte aus dem Formular sind dann schon eingelesen, und der
+         * Satz haengt nur an, was noch fehlt. Anders herum stuenden die neuen
+         * Abschnitte im Dokument, bevor das Formular gelesen wird - und das
+         * Formular kennt sie nicht, also raeumte es sie sofort wieder weg.
+         *
+         * Kein eigener Zweig in handle(): der Knopf schickt dasselbe Formular
+         * ab wie "Speichern". So geht die angefangene Arbeit nicht verloren,
+         * bloss weil jemand mitten darin einen Satz hinlegen will.
+         */
+        $satz = Security::clean($_POST['starter'] ?? '', 32);
+        if ($satz !== '') {
+            $doc = Design::withStarter($doc, $satz);
+        }
+
         Design::save($doc);
 
         header('Location: ' . $ziel . '?ok=gespeichert', true, 303);

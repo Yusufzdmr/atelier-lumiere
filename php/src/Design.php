@@ -1299,6 +1299,70 @@ final class Design
     }
 
     /**
+     * Einen Startsatz hinlegen.
+     *
+     * Fuegt nur an, was noch fehlt: eine Art, die schon steht, kommt nicht
+     * ein zweites Mal. Der Grund ist der Umgang damit - man drueckt den Knopf
+     * nicht einmal und nie wieder, sondern probiert einen Satz, nimmt zwei
+     * Abschnitte weg, drueckt den naechsten. Ein Satz, der stur anhaengt,
+     * haette nach dem dritten Versuch vier Ortsabschnitte im Dokument.
+     *
+     * Die Kennung kommt aus der Art und bekommt eine Zahl, wenn sie belegt
+     * ist. Zwei Abschnitte mit derselben Kennung waeren im Stilblock ein und
+     * derselbe.
+     *
+     * Die Rechte stehen auf offen: ein Startsatz, den das Paar nicht fuellen
+     * darf, ist ein Satz leerer Ueberschriften. Wer das enger will, macht es
+     * hinterher zu - das ist ein Haken, und das Zumachen ist die Ausnahme.
+     *
+     * @param array<string,mixed> $doc
+     * @return array<string,mixed>
+     */
+    public static function withStarter(array $doc, string $name): array
+    {
+        $satz = SectionRegistry::starter($name);
+        if ($satz === null) {
+            return $doc;
+        }
+
+        $doc = DesignSections::complete($doc);
+
+        $vorhanden = [];
+        $kennungen = [];
+        foreach ($doc['sections'] as $abschnitt) {
+            $vorhanden[(string) $abschnitt['type']] = true;
+            $kennungen[(string) $abschnitt['id']] = true;
+        }
+
+        foreach ($satz['sections'] as $eintrag) {
+            $art = (string) $eintrag['type'];
+            if (isset($vorhanden[$art])) {
+                continue;
+            }
+
+            $kennung = $art;
+            $zaehler = 2;
+            while (isset($kennungen[$kennung])) {
+                $kennung = $art . '-' . $zaehler;
+                $zaehler++;
+            }
+            $kennungen[$kennung] = true;
+            $vorhanden[$art] = true;
+
+            $doc['sections'][] = [
+                'id'      => $kennung,
+                'type'    => $art,
+                'variant' => (string) ($eintrag['variant'] ?? SectionRegistry::DEFAULT_VARIANT),
+                'title'   => $eintrag['title'],
+                'enabled' => true,
+                'permissions' => ['edit' => true, 'hide' => true],
+            ];
+        }
+
+        return DesignSections::complete($doc);
+    }
+
+    /**
      * Eine Vorlage als neuer Entwurf.
      *
      * Dient zwei Wegen: dem Kopieren im Katalog und dem Uebernehmen eines alten
