@@ -127,6 +127,14 @@
       // Erst wenn die Karte frei liegt, duerfen die Abschnitte anlaufen.
       // Vorher haette der Beobachter sie hinter der Huelle abgehakt, und
       // beim Aufschlagen stuende alles schon fertig da.
+      // Jetzt erst duerfen sich die Ebenen der Karte bewegen. Bis hierher
+      // steht ihr Text sichtbar, aber unbewegt hinter dem Kuvert - Design::css()
+      // bindet jede Bewegung an diese Marke. Ohne sie liefe das Einblenden
+      // beim Laden ab, unter der Huelle, und die Karte kaeme fertig heraus.
+      setTimeout(function () {
+        document.documentElement.setAttribute("data-karte-frei", "true");
+      }, introMs);
+
       // Die Filme der Ebenen. Sie tragen kein autoplay - sonst liefen sie
       // hinter dem geschlossenen Kuvert, unsichtbar und im Mobilfunk bezahlt.
       // Wer Bewegung abbestellt hat, sieht das Standbild und sonst nichts.
@@ -153,6 +161,7 @@
     });
   } else {
     // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen.
+    document.documentElement.setAttribute("data-karte-frei", "true");
     var ruhig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!ruhig) {
       var vorschau = document.querySelectorAll("video.d-el");

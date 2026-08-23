@@ -432,7 +432,25 @@ final class Design
 
             if ($el['motion']['move'] !== 'none') {
                 $moves[$el['motion']['move']] = true;
-                $css .= $selector . '{'
+
+                /*
+                 * Die Bedingung ist der ganze Punkt: ohne sie liefe die
+                 * Bewegung, sobald die Seite da ist - also HINTER dem
+                 * geschlossenen Kuvert. Wenn die Karte dann auftaucht, ist
+                 * das Einblenden laengst vorbei und der Text steht einfach
+                 * da. Dieselbe Falle wie beim Video (Aufgabe 6), nur leiser,
+                 * weil hier niemand fuer verschwendete Daten zahlt.
+                 *
+                 * Die Marke sitzt am <html>, nicht an der Buehne: dasselbe
+                 * Skript bedient beide Fassungen, und in der ersten gibt es
+                 * keine .d-stage. invitation.js setzt sie, wenn die Karte
+                 * frei liegt.
+                 *
+                 * Ohne Skript bleibt sie aus - und dann steht der Text
+                 * einfach da, sichtbar. Das ist die richtige Reihenfolge:
+                 * erst was ohne Skript traegt, dann die Verbesserung.
+                 */
+                $css .= '[data-karte-frei] ' . $selector . '{'
                     . 'animation:d-move-' . $el['motion']['move'] . ' '
                     . $el['motion']['duration'] . 'ms ease-out '
                     . $el['motion']['delay'] . 'ms both;'

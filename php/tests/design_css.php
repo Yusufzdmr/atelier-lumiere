@@ -212,3 +212,27 @@ $ohneHoehe = Design::css(['id' => 'x', 'layers' => [
 ]], '.d-x');
 
 assert_contains($ohneHoehe, 'height:auto', 'css: ohne Hoehe bestimmt der Film seine Proportion selbst');
+
+/* --- Die Bewegung einer Ebene wartet auf die freie Karte --- */
+
+$bewegt = Design::css(['id' => 'x', 'layers' => [
+    ['id' => 'namen', 'type' => 'text', 'text' => ['de' => 'A', 'en' => 'A'],
+     'motion' => ['move' => 'fade', 'delay' => 500, 'duration' => 1400]],
+]], '.d-x');
+
+// Ohne die Bedingung liefe die Bewegung beim Laden - also hinter dem
+// geschlossenen Kuvert, wo sie niemand sieht. Dieselbe Falle wie beim Video.
+assert_contains($bewegt, '[data-karte-frei] .d-x .d-el-namen{animation:', 'css: Bewegung haengt an der freien Karte');
+// Und zwar NUR so: eine zweite, ungebundene Regel liefe wieder beim Laden.
+// Nicht mit assert_not_contains geprueft - die gebundene Regel enthaelt die
+// ungebundene als Teilzeichenkette, die Pruefung koennte nie bestehen.
+assert_same(1, substr_count($bewegt, '{animation:d-move-'), 'css: es gibt genau eine Bewegungsregel');
+
+/* --- Ohne Bewegung keine Bedingung: die Ebene steht einfach da --- */
+
+$still = Design::css(['id' => 'x', 'layers' => [
+    ['id' => 'namen', 'type' => 'text', 'text' => ['de' => 'A', 'en' => 'A'],
+     'motion' => ['move' => 'none']],
+]], '.d-x');
+
+assert_not_contains($still, 'data-karte-frei', 'css: ohne Bewegung steht die Bedingung gar nicht da');

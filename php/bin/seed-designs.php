@@ -123,11 +123,28 @@ if ($id === 'referenz') {
         'accent' => ['value' => '#C9A24B', 'label' => ['de' => 'Gold',     'tr' => 'Altin'],  'customer' => true],
     ];
 
+    /*
+     * Drei Marken, drei Aufgaben - und keine davon ist "Fliesstext":
+     * auf diesem Blatt stehen genau drei Zeilen.
+     *
+     * script  Die Namen. Eine Schreibschrift auf schwarzem Papier mit Gold
+     *         ist der Griff, den beide Referenzen des Kunden benutzen; die
+     *         Datei liegt seit dem alten Motor im Projekt und ist in
+     *         style.css als @font-face eingetragen (geprueft - eine Familie,
+     *         die dort fehlt, tut still gar nichts).
+     * label   Die Zeile darueber. Ihr Wesen ist die Laufweite, nicht die
+     *         Groesse: 0.28em, dieselbe wie bei den Ueberschriften des
+     *         Hauses (invitation.php benutzt tracking-[0.28em]).
+     * display Das Datum. Cormorant und nicht Jost - eine Antiqua neben der
+     *         Schreibschrift, nicht eine Grotesk dazwischen.
+     */
     $referenzSchriften = [
+        'script'  => ['family' => 'Great Vibes', 'size' => 100, 'weight' => 400,
+                      'tracking' => 0, 'lineHeight' => 118, 'customer' => false],
+        'label'   => ['family' => 'Jost', 'size' => 100, 'weight' => 400,
+                      'tracking' => 28, 'lineHeight' => 150, 'customer' => false],
         'display' => ['family' => 'Cormorant Garamond', 'size' => 100, 'weight' => 300,
-                      'tracking' => 4, 'lineHeight' => 115, 'customer' => false],
-        'body'    => ['family' => 'Jost', 'size' => 100, 'weight' => 400,
-                      'tracking' => 0, 'lineHeight' => 150, 'customer' => false],
+                      'tracking' => 12, 'lineHeight' => 130, 'customer' => false],
     ];
 
     /*
@@ -149,6 +166,19 @@ if ($id === 'referenz') {
     $grundEbenen = static function (array $hinten): array {
         return array_merge([$hinten], [
             /*
+             * Die Verzoegerungen sind eine Reihenfolge, keine Dekoration:
+             * 300 - 900 - 1500. Erst sagt die kleine Zeile, worum es geht,
+             * dann kommen die Namen, dann der Tag. Sie laufen ab dem Moment,
+             * in dem die Karte frei liegt - Design::css() bindet jede
+             * Bewegung an [data-karte-frei], das invitation.js dann setzt.
+             * Vorher lief das Einblenden beim Laden ab, hinter dem
+             * geschlossenen Kuvert, und die Karte kam fertig heraus.
+             *
+             * Die Groesse der Namen ist gemessen, nicht geschaetzt: bei 165
+             * wurde der Block 262 px hoch, zwei Zeilen Schreibschrift, und
+             * lief dem Datum in die Unterlaengen. Bei 120 sind es 190, und
+             * zwischen Namen und Datum bleibt Luft.
+             *
              * Die drei Zeilen stehen in der Spalte ZWISCHEN den Goldlinien.
              * Gemessen am Blatt: die Linien laufen senkrecht von 31 % bis
              * 61 % der Hoehe und stehen bei 8 % und 92 % der Breite. Der
@@ -162,9 +192,9 @@ if ($id === 'referenz') {
                 'type'  => 'text',
                 'spot'  => 'card',
                 'text'  => ['de' => 'WIR HEIRATEN', 'en' => 'WE ARE GETTING MARRIED'],
-                'box'   => ['x' => 14, 'y' => 33, 'w' => 72],
-                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 22, 'align' => 'center'],
-                'motion' => ['move' => 'fade', 'delay' => 200, 'duration' => 1200],
+                'box'   => ['x' => 14, 'y' => 34, 'w' => 72],
+                'style' => ['font' => 'label', 'color' => 'soft', 'size' => 18, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 300, 'duration' => 1200],
             ],
             [
                 'id'    => 'namen',
@@ -172,9 +202,9 @@ if ($id === 'referenz') {
                 'type'  => 'text',
                 'spot'  => 'card',
                 'bind'  => 'couple_names',
-                'box'   => ['x' => 14, 'y' => 39, 'w' => 72],
-                'style' => ['font' => 'display', 'color' => 'fg', 'size' => 92, 'align' => 'center'],
-                'motion' => ['move' => 'fade', 'delay' => 500, 'duration' => 1400],
+                'box'   => ['x' => 12, 'y' => 39, 'w' => 76],
+                'style' => ['font' => 'script', 'color' => 'fg', 'size' => 120, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 900, 'duration' => 1600],
             ],
             [
                 'id'    => 'datum',
@@ -182,9 +212,9 @@ if ($id === 'referenz') {
                 'type'  => 'text',
                 'spot'  => 'card',
                 'bind'  => 'wedding_date',
-                'box'   => ['x' => 14, 'y' => 52, 'w' => 72],
-                'style' => ['font' => 'body', 'color' => 'accent', 'size' => 26, 'align' => 'center'],
-                'motion' => ['move' => 'fade', 'delay' => 800, 'duration' => 1200],
+                'box'   => ['x' => 14, 'y' => 57, 'w' => 72],
+                'style' => ['font' => 'display', 'color' => 'accent', 'size' => 30, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 1500, 'duration' => 1200],
             ],
         ]);
     };
