@@ -284,19 +284,25 @@ final class DesignSections
          * Flaeche ein Bild an (das Blatt der Karte), und die Kurzform wuerde
          * es jedes Mal wieder wegwischen.
          *
-         * Oben ausgerichtet und festgestellt (background-attachment:fixed):
-         * das Blatt steht hinter dem Text, waehrend er darueber wegscrollt -
-         * eine Flaeche, nicht eine Kachel. Beim ersten Versuch war es unten
-         * ausgerichtet und mitlaufend; dann sah man nur den ruhigen Teil des
-         * Papiers und das Blatt war nicht wiederzuerkennen. Der Kunde wollte
-         * SEIN Bild sehen: "sayfanin arkaplani yine attigim resim olacak".
+         * Die Groesse ist an die KARTE gebunden, nicht an das Fenster.
          *
-         * Der Schmuck sitzt oben und die Mitte des Blattes ist leer - genau
-         * deshalb traegt es Text, ohne mit ihm zu streiten.
+         * Zuerst stand hier cover mit background-attachment:fixed. Beides
+         * zusammen misst gegen den Bildschirm: die Karte ist 672 px breit,
+         * das Fenster 1280 - dasselbe Blatt kam unten fast doppelt so gross
+         * heraus wie oben. Der Kunde hat es sofort gesehen: "ilk boyle olup
+         * sonra niye buyuyor arkaplan".
+         *
+         * min(100%, 42rem) ist genau die Breite der Karte (max-w-2xl). Damit
+         * steht das Blatt unten im selben Massstab wie oben, und auf einem
+         * schmalen Telefon nimmt es die volle Breite.
+         *
+         * Oben ausgerichtet und ohne Wiederholung: der Schmuck sitzt oben,
+         * darunter traegt die Papierfarbe weiter. Wiederholt kaemen die
+         * Goldecken alle paar hundert Pixel noch einmal.
          */
         return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
-            . 'background-position:top center;background-size:cover;background-repeat:no-repeat;'
-            . 'background-attachment:fixed;}'
+            . 'background-position:top center;background-size:min(100%,42rem) auto;'
+            . 'background-repeat:no-repeat;}'
             . $scope . ' .d-sec{margin-top:2.5rem;line-height:1.6;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
