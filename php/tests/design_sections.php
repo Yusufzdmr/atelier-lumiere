@@ -624,3 +624,41 @@ assert_true(
     !str_contains($cssBeide, '.d-x .d-sec-v-gross '),
     'Gestalt: kein Selektor ohne Art davor'
 );
+
+/*
+ * --- Das Blatt liegt in einer eigenen Schicht und blendet unten aus ---
+ *
+ * Das Blatt ist 1,79 mal so hoch wie breit, ein Abschnitt ist meist kuerzer.
+ * Die senkrechten Goldlinien fangen bei 55 % der Breite an und enden bei
+ * 110 % - ein Abschnitt von 580 px bei 672 px Breite schneidet also mitten
+ * durch sie hindurch, und eine Linie, die einfach aufhoert, sieht aus wie ein
+ * Druckfehler.
+ *
+ * Eine eigene Schicht muss es sein: eine Maske auf dem Abschnitt selbst
+ * wuerde auch seinen Text ausblenden.
+ */
+
+$blatt = DesignSections::css(
+    DesignSections::complete(sec_doc([['id' => 'wo', 'type' => 'location']])),
+    '.d-x'
+);
+
+assert_contains($blatt, '.d-x .d-sec::before{', 'Blatt: es liegt in einer eigenen Schicht');
+assert_contains($blatt, 'background-image:var(--d-sec-blatt,none)', 'Blatt: das Bild haengt an der Schicht');
+assert_contains($blatt, 'mask-image:linear-gradient', 'Blatt: und blendet unten aus');
+assert_contains($blatt, '.d-x .d-sec > *{position:relative;z-index:1;}', 'Blatt: der Text liegt darueber');
+
+/*
+ * Die Papierfarbe bleibt am Abschnitt selbst. Blendete sie mit aus, fiele am
+ * Fuss jedes Blattes die Farbe der Seite durch - und die ist bei einer
+ * dunklen Vorlage auf einer hellen Seite genau der Bruch, den das Ausblenden
+ * verhindern soll.
+ */
+assert_true(
+    (bool) preg_match('/\.d-x \.d-sec\{[^}]*background-color:var\(--d-paper/', $blatt),
+    'Blatt: die Papierfarbe bleibt am Abschnitt'
+);
+assert_true(
+    !preg_match('/\.d-x \.d-sec\{[^}]*background-image/', $blatt),
+    'Blatt: das Bild steht nicht mehr am Abschnitt selbst'
+);

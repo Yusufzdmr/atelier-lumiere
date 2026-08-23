@@ -398,12 +398,44 @@ final class DesignSections
              * der Breite. Prozente im padding beziehen sich auf die Breite,
              * deshalb steht dort 56 %.
              */
-            . $scope . ' .d-sec{background-image:var(--d-sec-blatt,none);'
+            . $scope . ' .d-sec{position:relative;'
             . 'background-color:var(--d-paper,#faf7f2);'
-            . 'background-position:top center;background-size:100% auto;'
-            . 'background-repeat:no-repeat;padding:56% 14% 12%;'
+            . 'padding:56% 14% 12%;'
             . 'margin-top:0;line-height:1.7;text-align:center;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
+            /*
+             * Das Blatt liegt in einer eigenen Schicht - und blendet unten aus.
+             *
+             * Der Fehler, der das noetig macht: das Blatt ist 1,79 mal so hoch
+             * wie breit, ein Abschnitt ist meist kuerzer. Die senkrechten
+             * Goldlinien fangen bei 55 % der Breite an und enden bei 110 % -
+             * ein Abschnitt von 580 px bei 672 px Breite schneidet also
+             * MITTEN durch sie hindurch. Eine Linie, die einfach aufhoert,
+             * sieht aus wie ein Druckfehler.
+             *
+             * Ausblenden statt abschneiden. Warum nicht einfach die
+             * Abschnitte hoeher machen: dann waere jeder von ihnen 1200 px
+             * hoch, sechs Abschnitte 7200 px, und der groesste Teil davon
+             * leeres Papier. Warum nicht das Bild strecken: weil es dann
+             * unten in einem anderen Massstab stuende als oben, und genau das
+             * hat der Kunde schon einmal sofort gesehen ("ilk boyle olup
+             * sonra niye buyuyor arkaplan").
+             *
+             * Eine eigene Schicht muss es sein, weil eine Maske auf dem
+             * Abschnitt selbst auch seinen TEXT ausblenden wuerde. Deshalb
+             * ::before mit dem Bild, und die Kinder eine Stufe darueber.
+             *
+             * Die Papierfarbe bleibt am Abschnitt und nicht an der Schicht:
+             * sie soll NICHT mit ausblenden, sonst faellt am Fuss jedes
+             * Blattes die Seitenfarbe durch.
+             */
+            . $scope . ' .d-sec::before{content:"";position:absolute;inset:0;z-index:0;'
+            . 'background-image:var(--d-sec-blatt,none);background-position:top center;'
+            . 'background-size:100% auto;background-repeat:no-repeat;pointer-events:none;'
+            . '-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 4.5rem),transparent);'
+            . 'mask-image:linear-gradient(to bottom,#000 calc(100% - 4.5rem),transparent);}'
+            // Ueber der Schicht, sonst laege der Text darunter.
+            . $scope . ' .d-sec > *{position:relative;z-index:1;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
             // dieselben zwei Marken, die auf der Karte den Ton angeben.
             . $scope . ' .d-sec-title{font-size:1.5rem;font-weight:400;line-height:1.3;margin-bottom:1.5rem;'
