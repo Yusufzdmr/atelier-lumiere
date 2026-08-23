@@ -7,6 +7,7 @@ declare(strict_types=1);
  *   php bin/seed-designs.php              Élysée schreiben
  *   php bin/seed-designs.php noir         Noir schreiben
  *   php bin/seed-designs.php noir --dry   nur zeigen
+ *   php bin/seed-designs.php referenz     die zwei Vorlagen "film" und "bild"
  *
  * Zwei Vorlagen, weil eine nichts beweist: Élysée ist hell, floral und ruhig,
  * Noir dunkel und geometrisch. Was das Format nur bei einer von beiden kann,
@@ -83,8 +84,156 @@ $id = 'elysee';
 foreach (array_slice($argv, 1) as $arg) {
     if ($arg !== '--dry') { $id = $arg; }
 }
+
+/*
+ * Ein dritter Aufruf, neben den beiden Themen: die zwei Vorlagen, mit denen
+ * der Kunde anfangen will. "1. video, 2. resim."
+ *
+ *   php bin/seed-designs.php referenz
+ *
+ * Sie kommen aus KEINEM Thema - deshalb dieser eigene Weg und nicht ein
+ * Eintrag in $tasarimlar: dort steht neben jeder Kennung ein Thema, das es
+ * fuer "film" und "bild" nicht gibt.
+ *
+ * Sie unterscheiden sich in genau einer Ebene - der hintersten. Alles andere
+ * ist gleich, mit Absicht: was der Kunde vergleichen will, ist der Film gegen
+ * das Foto, nicht zwei Entwuerfe gegeneinander.
+ *
+ * Die Mitte bleibt frei. "Ortasi bos dusun, sadece cicekler var."
+ */
+if ($id === 'referenz') {
+    /*
+     * Marken statt roher Werte, wie ueberall: eine Vorlage ohne Palette und
+     * ohne Schriftmarken zeigt im Panel fuer jede Textebene eine Warnung, und
+     * eine Referenz, die warnt, ist keine.
+     */
+    $referenzPalette = [
+        'paper'  => ['value' => '#FBF6EE', 'label' => ['de' => 'Papier',   'tr' => 'Kagit'],  'customer' => false],
+        'bg'     => ['value' => '#F3EADC', 'label' => ['de' => 'Seite',    'tr' => 'Sayfa'],  'customer' => false],
+        'fg'     => ['value' => '#2E2A26', 'label' => ['de' => 'Schrift',  'tr' => 'Yazi'],   'customer' => false],
+        'soft'   => ['value' => '#8A8078', 'label' => ['de' => 'Gedaempft','tr' => 'Soluk'],  'customer' => false],
+        // Das Gold darf der Kunde waehlen - dieselbe Regel wie bei Elysee.
+        'accent' => ['value' => '#B08D57', 'label' => ['de' => 'Gold',     'tr' => 'Altin'],  'customer' => true],
+    ];
+
+    $referenzSchriften = [
+        'display' => ['family' => 'Cormorant Garamond', 'size' => 100, 'weight' => 300,
+                      'tracking' => 4, 'lineHeight' => 115, 'customer' => false],
+        'body'    => ['family' => 'Jost', 'size' => 100, 'weight' => 400,
+                      'tracking' => 0, 'lineHeight' => 150, 'customer' => false],
+    ];
+
+    $grundEbenen = static function (array $hinten): array {
+        return array_merge([$hinten], [
+            // Der Rahmen aus Motiven. Er liegt auf der Seite, hinter der Karte,
+            // und laesst die Mitte offen - die Datei selbst hat dort nichts.
+            [
+                'id'    => 'rahmen',
+                'label' => 'Bluetenrahmen',
+                'type'  => 'image',
+                'spot'  => 'page',
+                'src'   => '',   // Der Grafiker legt die Datei; leer faellt sie weg.
+                'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+                'motion' => ['move' => 'fade', 'delay' => 0, 'duration' => 1200],
+            ],
+            [
+                'id'    => 'obertitel',
+                'label' => 'Ueberschrift',
+                'type'  => 'text',
+                'spot'  => 'card',
+                'text'  => ['de' => 'WIR HEIRATEN', 'en' => 'WE ARE GETTING MARRIED'],
+                'box'   => ['x' => 10, 'y' => 30, 'w' => 80],
+                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 26, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 200, 'duration' => 1200],
+            ],
+            [
+                'id'    => 'namen',
+                'label' => 'Namen',
+                'type'  => 'text',
+                'spot'  => 'card',
+                'bind'  => 'couple_names',
+                'box'   => ['x' => 8, 'y' => 42, 'w' => 84],
+                'style' => ['font' => 'display', 'color' => 'fg', 'size' => 108, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 500, 'duration' => 1400],
+            ],
+            [
+                'id'    => 'datum',
+                'label' => 'Datum',
+                'type'  => 'text',
+                'spot'  => 'card',
+                'bind'  => 'wedding_date',
+                'box'   => ['x' => 10, 'y' => 60, 'w' => 80],
+                'style' => ['font' => 'body', 'color' => 'soft', 'size' => 30, 'align' => 'center'],
+                'motion' => ['move' => 'fade', 'delay' => 800, 'duration' => 1200],
+            ],
+        ]);
+    };
+
+    $vorlagen = [
+        [
+            'id'   => 'film',
+            'slug' => 'film',
+            'name' => ['de' => 'Film', 'en' => 'Film'],
+            'category' => 'floral',
+            'status'   => 'draft',
+            'canvas'   => ['ratio' => '632:490', 'safe' => 6],
+            'palette'  => $referenzPalette,
+            'fonts'    => $referenzSchriften,
+            'layers'   => $grundEbenen([
+                'id'     => 'hintergrund',
+                'label'  => 'Hintergrundfilm',
+                'type'   => 'video',
+                'spot'   => 'page',
+                'src'    => '',      // kommt aus der Bibliothek oder vom Grafiker
+                'poster' => '',
+                'box'    => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+                // Das Recht, aus der Bibliothek zu waehlen: edit ist der
+                // Hauptschalter, photo die Erlaubnis fuer den Inhalt.
+                'permissions' => ['edit' => true, 'photo' => true],
+            ]),
+        ],
+        [
+            'id'   => 'bild',
+            'slug' => 'bild',
+            'name' => ['de' => 'Bild', 'en' => 'Image'],
+            'category' => 'floral',
+            'status'   => 'draft',
+            'canvas'   => ['ratio' => '632:490', 'safe' => 6],
+            'palette'  => $referenzPalette,
+            'fonts'    => $referenzSchriften,
+            'layers'   => $grundEbenen([
+                'id'    => 'hintergrund',
+                'label' => 'Hintergrundbild',
+                'type'  => 'photo',
+                'spot'  => 'page',
+                'src'   => '',
+                'box'   => ['x' => 0, 'y' => 0, 'w' => 100, 'h' => 100, 'opacity' => 100],
+                'permissions' => ['edit' => true, 'photo' => true],
+            ]),
+        ],
+    ];
+
+    foreach ($vorlagen as $roh) {
+        // Nicht ueberschreiben, was schon da ist: der Grafiker hat womoeglich
+        // laengst Dateien hinterlegt, und ein zweiter Seed-Lauf soll seine
+        // Arbeit nicht wegwerfen.
+        if (Design::findById($roh['id']) !== null) {
+            echo "  {$roh['id']}: gibt es schon, uebersprungen\n";
+            continue;
+        }
+        if ($dry) {
+            echo "  {$roh['id']}: wuerde angelegt (", count($roh['layers']), " Ebenen)\n";
+            continue;
+        }
+        Design::save(Design::complete($roh));
+        echo "  {$roh['id']}: angelegt\n";
+    }
+
+    exit(0);
+}
+
 if (!isset($tasarimlar[$id])) {
-    exit("Unbekannt: {$id}. Bekannt: " . implode(', ', array_keys($tasarimlar)) . PHP_EOL);
+    exit("Unbekannt: {$id}. Bekannt: " . implode(', ', array_keys($tasarimlar)) . ", referenz" . PHP_EOL);
 }
 $cfg = $tasarimlar[$id];
 $y   = $cfg['y'];
