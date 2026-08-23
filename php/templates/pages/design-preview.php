@@ -21,6 +21,8 @@ use Atelier\I18n;
 use Atelier\View;
 use function Atelier\e;
 
+/** @var string $abschnitte */
+
 $ratio = str_replace(':', ' / ', (string) $design['canvas']['ratio']);
 $intro = (string) $design['animation']['intro'];
 // Wie die Karte hereinkommt - beim Original steht das in data-animation.
@@ -57,10 +59,29 @@ $idle = (string) $design['animation']['idle'];
     // Werten des Paares, warnings betrifft die konkrete Vorlage.
     'initialen' => $initialen,
     'warnings'  => $warnings,
-    // Im Schaufenster liegt die Buehne ueber allem: hier gibt es nichts,
-    // was darunter scrollen muesste.
-    'fest'      => true,
+    /*
+     * Im Fluss, nicht fest.
+     *
+     * Bis hierher lag die Buehne fest ueber allem, mit der Begruendung "hier
+     * gibt es nichts, was darunter scrollen muesste". Das galt, solange eine
+     * Vorlage nur aus Ebenen bestand. Seit Faz 3C hat sie Abschnitte - und
+     * eine feste Buehne haelt sie unerreichbar unter sich fest. Wer wischte,
+     * fand nichts.
+     */
+    'fest'      => false,
 ]) ?>
+<?php /*
+   Unter der Buehne, nicht darin - dieselbe Anordnung wie auf der echten
+   Einladung (pages/invite-v2-show.php): die Karte hat einen festen Rahmen,
+   die Abschnitte haben eine variable Laenge.
+
+   Der Abstand unten haelt den festen Balken frei, der gleich darunter kommt.
+*/ ?>
+<?php if ($abschnitte !== '') : ?>
+  <div class="<?= e($scope) ?> d-sections mx-auto max-w-2xl px-6 py-16 pb-32">
+    <?= $abschnitte ?>
+  </div>
+<?php endif; ?>
   <?php if ($intern) : ?>
   <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">
     <span><?= e($design['name'][$locale] ?? $design['name']['de']) ?></span>

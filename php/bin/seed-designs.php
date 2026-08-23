@@ -245,6 +245,41 @@ if ($id === 'referenz') {
     };
 
     /*
+     * Was unter der Karte steht - und ohne das ist eine Vorlage kein
+     * Einladung, sondern ein Deckblatt.
+     *
+     * Der Kunde hat gewischt und nichts gefunden: "asagi dogru kaydiriyorum,
+     * hani nerede davetiyenin bilgileri". Zu Recht. Die Referenz aus der Spec
+     * ist EIN Scroll ueber elf Abschnitte; unsere drei Vorlagen hatten null.
+     *
+     * Die Reihenfolge ist die der Referenz, auf das eingedampft, was
+     * DesignSections::TYPES kann: erst wo und wann, dann der Ablauf des
+     * Tages, dann ein freier Text (Geschichte, Kleiderordnung - was das Paar
+     * schreiben will), dann die Zaehlung, die Familien, und zuletzt die
+     * Frage, auf die es ankommt.
+     *
+     * Alle mit hide-Recht: ein Paar ohne Programm soll den Abschnitt
+     * loswerden koennen, statt eine leere Ueberschrift zu verschicken.
+     */
+    $abschnitte = [
+        ['id' => 'ort',      'type' => 'location',
+         'title' => ['de' => 'Wo und wann',    'en' => 'Where and when']],
+        ['id' => 'ablauf',   'type' => 'program',
+         'title' => ['de' => 'Ablauf des Tages', 'en' => 'The day']],
+        ['id' => 'wort',     'type' => 'text',
+         'title' => ['de' => 'Ein Wort von uns', 'en' => 'A word from us']],
+        ['id' => 'zaehlung', 'type' => 'countdown',
+         'title' => ['de' => 'Noch',           'en' => 'Countdown']],
+        ['id' => 'familien', 'type' => 'family',
+         'title' => ['de' => 'Familien',       'en' => 'Families']],
+        ['id' => 'zusage',   'type' => 'rsvp',
+         'title' => ['de' => 'Kommt ihr?',     'en' => 'Are you coming?']],
+    ];
+    $abschnitte = array_map(static function (array $a): array {
+        return $a + ['enabled' => true, 'permissions' => ['edit' => true, 'hide' => true]];
+    }, $abschnitte);
+
+    /*
      * Das Seitenverhaeltnis ist gemessen, nicht gewaehlt: 768 x 1376 ist das
      * Blatt des Kunden. Die anderen Vorlagen stehen auf 632:490, weil der
      * alte Motor quer gebaut hat - hier waere das ein Zuschnitt quer durch
@@ -260,6 +295,7 @@ if ($id === 'referenz') {
             'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
+            'sections' => $abschnitte,
             /*
              * Der Oeffnungsfilm. Er steht im Dokument und nicht im Thema -
              * ein v2-Dokument hat keine lebende Verbindung dorthin, und was
@@ -282,6 +318,7 @@ if ($id === 'referenz') {
             'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
             'palette'  => $referenzPalette,
             'fonts'    => $referenzSchriften,
+            'sections' => $abschnitte,
             'layers'   => $grundEbenen([$blatt]),
         ],
     ];
@@ -314,6 +351,7 @@ if ($id === 'referenz') {
         'canvas'   => ['ratio' => '768:1376', 'safe' => 6],
         'palette'  => $referenzPalette,
         'fonts'    => $referenzSchriften,
+        'sections' => $abschnitte,
         'layers'   => $grundEbenen([
             [
                 'id'     => 'hintergrund',
