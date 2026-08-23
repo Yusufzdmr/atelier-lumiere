@@ -36,14 +36,14 @@ $neu = Design::fromPost($basis, [
     'category'       => 'luxury',
     'palette_accent' => '#C9A24B',
     'text_de_gruss'  => 'Wir feiern',
-    'move_gruss'     => 'rise',
+    'move_gruss'     => 'fade',
 ]);
 
 assert_same('Élysée', $neu['name']['de'], 'fromPost: Name wird uebernommen');
 assert_same('luxury', $neu['category'], 'fromPost: Kategorie wird uebernommen');
 assert_same('#C9A24B', $neu['palette']['accent']['value'], 'fromPost: Farbe wird uebernommen');
 assert_same('Wir feiern', $neu['layers'][0]['text']['de'], 'fromPost: Text wird uebernommen');
-assert_same('rise', $neu['layers'][0]['motion']['move'], 'fromPost: Bewegung wird uebernommen');
+assert_same('fade', $neu['layers'][0]['motion']['move'], 'fromPost: Bewegung wird uebernommen');
 
 /* --- Ein leeres Feld loescht nichts --- */
 

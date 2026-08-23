@@ -16,7 +16,7 @@ $thema = [
     'decorations'   => [
         ['id' => 'blumeli', 'label' => 'Blume links', 'src' => '/uploads/blume-l.webp',
          'spot' => 'card', 'x' => '2', 'y' => '70', 'width' => '28', 'rotate' => '-6',
-         'opacity' => '90', 'front' => false, 'move' => 'rise', 'delay' => '300', 'duration' => '900'],
+         'opacity' => '90', 'front' => false, 'move' => 'fade', 'delay' => '300', 'duration' => '900'],
         ['id' => 'siegel', 'label' => 'Siegel', 'src' => '/uploads/siegel.webp',
          'spot' => 'envelope', 'x' => '40', 'y' => '45', 'width' => '20', 'rotate' => '0',
          'opacity' => '100', 'front' => true, 'move' => 'zoom', 'delay' => '0', 'duration' => '600'],
@@ -62,7 +62,7 @@ assert_same(70, $blume['box']['y'], 'fromTheme: y bleibt');
 assert_same(28, $blume['box']['w'], 'fromTheme: width wird zu w');
 assert_same(-6, $blume['box']['rotate'], 'fromTheme: rotate bleibt');
 assert_same(90, $blume['box']['opacity'], 'fromTheme: opacity bleibt');
-assert_same('rise', $blume['motion']['move'], 'fromTheme: Bewegung bleibt');
+assert_same('fade', $blume['motion']['move'], 'fromTheme: Bewegung bleibt');
 assert_same(300, $blume['motion']['delay'], 'fromTheme: Verzoegerung bleibt');
 assert_same(900, $blume['motion']['duration'], 'fromTheme: Dauer bleibt');
 assert_same('Blume links', $blume['label'], 'fromTheme: Beschriftung bleibt');
@@ -88,8 +88,11 @@ $doc = Design::fromTheme([
 
 assert_same('darkroom', $doc['animation']['intro'], 'fromTheme: intro bleibt');
 assert_same('breathe', $doc['animation']['idle'], 'fromTheme: idle bleibt');
-assert_same('mask', $doc['animation']['reveal'], 'fromTheme: reveal bleibt');
-assert_same('petal', $doc['animation']['particle'], 'fromTheme: particle bleibt');
+// 'mask' und 'petal' hat die Beschneidung entfernt (Themes::REVEALS,
+// Themes::PARTICLES). Ein Thema, das sie noch traegt, faellt beim
+// Uebernehmen auf das, was uebrig ist - es wirft nicht.
+assert_same('up', $doc['animation']['reveal'], 'fromTheme: geschnittener reveal faellt auf die eine Richtung');
+assert_same('none', $doc['animation']['particle'], 'fromTheme: geschnittene Teilchen fallen weg');
 
 /* --- Das Ergebnis ist ein fertiges Dokument --- */
 
@@ -100,12 +103,12 @@ assert_same([], $doc['sections'], 'fromTheme: sections bleibt leer (Faz 3)');
 /* --- Die Bewegung der Karte und der Namen geht mit --- */
 
 $doc = Design::fromTheme([
-    'id' => 'x', 'animation' => 'seal', 'nameAnimation' => 'letters',
+    'id' => 'x', 'animation' => 'seal', 'nameAnimation' => 'fade',
     'animationSpeed' => 1400, 'animationDelay' => 250,
 ]);
 
 assert_same('seal', $doc['animation']['card'], 'fromTheme: Karteneinzug geht mit');
-assert_same('letters', $doc['animation']['nameMove'], 'fromTheme: Namensbewegung geht mit');
+assert_same('fade', $doc['animation']['nameMove'], 'fromTheme: Namensbewegung geht mit');
 assert_same(1400, $doc['animation']['speed'], 'fromTheme: Tempo geht mit');
 assert_same(250, $doc['animation']['delay'], 'fromTheme: Verzoegerung geht mit');
 

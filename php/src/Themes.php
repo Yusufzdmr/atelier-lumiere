@@ -90,39 +90,35 @@ final class Themes
      * dass hier etwas zum Antippen ist. Deshalb hat es eine eigene Achse und
      * nicht nur eine feste Bewegung für alle Themen.
      */
-    public const IDLES = ['breathe', 'ring', 'sheen', 'pulse', 'heartbeat', 'glow', 'tilt', 'none'];
+    /*
+     * Weniger, mit Absicht.
+     *
+     * Der Kunde hat die Einladung mit "Cizgifilm gibi" beschrieben und zwei
+     * Referenzen gezeigt, die ueberhaupt nichts bewegen. Die Auswahl war
+     * vorher 32 Eintraege gross - und eine grosse Auswahl laedt dazu ein,
+     * mehrere davon zu nehmen. Was hier fehlt, fehlt nicht aus Versehen.
+     *
+     * Die zugehoerigen Keyframes im Stylesheet bleiben stehen: versendete
+     * Einladungen tragen die alten Werte in ihrem themeSnapshot und zeigen
+     * auf sie. Waehlen kann man sie nicht mehr.
+     */
+
+    /** Das Atmen bleibt: es ist kein Schmuck, sondern das Zeichen "fass mich an". */
+    public const IDLES = ['breathe', 'none'];
 
     public static function idleLabel(string $key, string $locale): string
     {
         $labels = [
             'de' => [
                 'breathe'   => 'Atmet ruhig auf und ab',
-                'ring'      => 'Ring läuft um das Siegel',
-                'sheen'     => 'Licht wandert über das Kuvert',
-                'pulse'     => 'Siegel pulsiert',
-                'heartbeat' => 'Herzschlag (zwei Schläge)',
-                'glow'      => 'Sanftes Leuchten hinter dem Siegel',
-                'tilt'      => 'Neigt sich leicht',
                 'none'      => 'Steht still',
             ],
             'en' => [
                 'breathe' => 'Breathes quietly',
-                'ring' => 'A ring travels out from the seal',
-                'sheen' => 'Light passes over the envelope',
-                'pulse' => 'The seal pulses',
-                'heartbeat' => 'Heartbeat (two beats)',
-                'glow' => 'A soft glow behind the seal',
-                'tilt' => 'Tilts gently',
                 'none' => 'Stands still',
             ],
             'tr' => [
                 'breathe'   => 'Sakince inip kalkar',
-                'ring'      => 'Mühürün çevresinde halka döner',
-                'sheen'     => 'Zarfın üzerinden ışık geçer',
-                'pulse'     => 'Mühür nabız gibi atar',
-                'heartbeat' => 'Kalp atışı (çift vuruş)',
-                'glow'      => 'Mühürün ardında yumuşak parıltı',
-                'tilt'      => 'Hafifçe eğilir',
                 'none'      => 'Hareketsiz durur',
             ],
         ];
@@ -131,13 +127,13 @@ final class Themes
     }
 
     /** Wie die Namen erscheinen. */
-    public const NAME_ANIMATIONS = ['write', 'fade', 'rise', 'glow', 'letters', 'none'];
+    public const NAME_ANIMATIONS = ['fade', 'none'];
 
-    /** Was im Hintergrund schwebt. */
-    public const PARTICLES = ['petal', 'leaf', 'round', 'spark', 'confetti', 'snow', 'none'];
+    /** Konfetti, Schnee, Funken - genau das war gemeint mit "zu viel". */
+    public const PARTICLES = ['none'];
 
     /** Wie die Abschnitte der Karte beim Scrollen kommen. */
-    public const REVEALS = ['up', 'mask', 'zoom', 'side', 'none'];
+    public const REVEALS = ['up', 'none'];
 
     public static function animationLabel(string $key, string $locale): string
     {
@@ -196,27 +192,15 @@ final class Themes
     {
         $labels = [
             'de' => [
-                'write'   => 'Wird geschrieben (von links)',
                 'fade'    => 'Blendet ein',
-                'rise'    => 'Steigt auf',
-                'glow'    => 'Nur Goldschimmer',
-                'letters' => 'Buchstabe für Buchstabe',
                 'none'    => 'Ohne Animation',
             ],
             'en' => [
-                'write' => 'Written out (left to right)',
                 'fade' => 'Fades in',
-                'rise' => 'Rises',
-                'glow' => 'Gold shimmer only',
-                'letters' => 'Letter by letter',
                 'none' => 'No animation',
             ],
             'tr' => [
-                'write'   => 'Yazılarak gelir (soldan sağa)',
                 'fade'    => 'Belirir',
-                'rise'    => 'Yükselir',
-                'glow'    => 'Yalnızca altın parıltısı',
-                'letters' => 'Harf harf',
                 'none'    => 'Animasyonsuz',
             ],
         ];
@@ -228,30 +212,12 @@ final class Themes
     {
         $labels = [
             'de' => [
-                'petal'    => 'Blütenblätter',
-                'leaf'     => 'Blätter',
-                'round'    => 'Runde Punkte',
-                'spark'    => 'Funken (leuchtend)',
-                'confetti' => 'Konfetti',
-                'snow'     => 'Schnee',
                 'none'     => 'Nichts',
             ],
             'en' => [
-                'petal' => 'Petals',
-                'leaf' => 'Leaves',
-                'round' => 'Round dots',
-                'spark' => 'Sparks (glowing)',
-                'confetti' => 'Confetti',
-                'snow' => 'Snow',
                 'none' => 'Nothing',
             ],
             'tr' => [
-                'petal'    => 'Çiçek yaprakları',
-                'leaf'     => 'Yapraklar',
-                'round'    => 'Yuvarlak noktalar',
-                'spark'    => 'Kıvılcım (parlayan)',
-                'confetti' => 'Konfeti',
-                'snow'     => 'Kar',
                 'none'     => 'Yok',
             ],
         ];
@@ -264,23 +230,14 @@ final class Themes
         $labels = [
             'de' => [
                 'up'   => 'Von unten herein',
-                'mask' => 'Unter einer Blende hervor',
-                'zoom' => 'Leicht heranwachsend',
-                'side' => 'Abwechselnd von den Seiten',
                 'none' => 'Alles steht sofort da',
             ],
             'en' => [
                 'up' => 'In from below',
-                'mask' => 'Out from under a blind',
-                'zoom' => 'Growing slightly',
-                'side' => 'From alternating sides',
                 'none' => 'Everything stands there at once',
             ],
             'tr' => [
                 'up'   => 'Aşağıdan gelir',
-                'mask' => 'Perde altından çıkar',
-                'zoom' => 'Hafifçe büyüyerek',
-                'side' => 'Dönüşümlü olarak yanlardan',
                 'none' => 'Hepsi hazır durur',
             ],
         ];
@@ -487,33 +444,45 @@ final class Themes
      */
     private static function defaultMoves(string $id): array
     {
+        /*
+         * Die Tabelle je Thema ist weg, und zwar folgerichtig: sie stand hier,
+         * damit nicht alle Themen dieselbe Antwort bekommen - "Alle Themen auf
+         * dieselbe Antwort zu setzen waere das Gegenteil von dem, wozu die
+         * Auswahl da ist." Nach der Beschneidung gibt es bei vier der sechs
+         * Achsen aber nur noch eine Antwort. Eine Tabelle, die zwischen einer
+         * Moeglichkeit waehlt, ist keine Tabelle.
+         *
+         * Die zwei Achsen mit echter Auswahl bleiben unterschieden:
+         * animation (ANIMATIONS, zwoelf Bewegungen der Karte) und intro
+         * (INTROS, die Auftakte der ersten Fassung).
+         */
         $sets = [
-            'elysee'    => ['seal',       'write',   'petal',    'up',   'sealLight', 'sheen'],
-            'sage'      => ['rise',       'write',   'leaf',     'up',   'focus',     'breathe'],
-            'foresta'   => ['rise',       'write',   'leaf',     'up',   'focus',     'breathe'],
-            'blush'     => ['fade',       'write',   'petal',    'mask', 'darkroom',  'glow'],
-            'lavande'   => ['blur',       'rise',    'petal',    'mask', 'focus',     'glow'],
-            'noir'      => ['flip',       'letters', 'spark',    'side', 'darkroom',  'pulse'],
-            'bordeaux'  => ['zoom',       'letters', 'spark',    'zoom', 'sealLight', 'pulse'],
-            'pearl'     => ['curtain',    'fade',    'round',    'mask', 'focus',     'ring'],
-            'marbre'    => ['zoomOut',    'fade',    'round',    'zoom', 'sealLight', 'ring'],
-            'azur'      => ['slideRight', 'fade',    'snow',     'side', 'focus',     'tilt'],
-            'terra'     => ['unfold',     'rise',    'leaf',     'up',   'darkroom',  'breathe'],
-            'safran'    => ['zoom',       'write',   'confetti', 'up',   'party',     'heartbeat'],
-            'rubis'     => ['slideLeft',  'letters', 'spark',    'side', 'party',     'heartbeat'],
-            'moderne'   => ['fade',       'fade',    'none',     'up',   'none',      'none'],
+            'elysee'   => ['seal',       'sealLight'],
+            'sage'     => ['rise',       'focus'],
+            'foresta'  => ['rise',       'focus'],
+            'blush'    => ['fade',       'darkroom'],
+            'lavande'  => ['blur',       'focus'],
+            'noir'     => ['flip',       'darkroom'],
+            'bordeaux' => ['zoom',       'sealLight'],
+            'pearl'    => ['curtain',    'focus'],
+            'marbre'   => ['zoomOut',    'sealLight'],
+            'azur'     => ['slideRight', 'focus'],
+            'terra'    => ['unfold',     'darkroom'],
+            'safran'   => ['zoom',       'party'],
+            'rubis'    => ['slideLeft',  'party'],
+            'moderne'  => ['fade',       'none'],
         ];
 
-        [$animation, $name, $particle, $reveal, $intro, $idle] =
-            $sets[$id] ?? ['seal', 'write', 'petal', 'up', 'sealLight', 'breathe'];
+        [$animation, $intro] = $sets[$id] ?? ['seal', 'sealLight'];
 
         return [
             'animation'     => $animation,
-            'nameAnimation' => $name,
-            'particle'      => $particle,
-            'reveal'        => $reveal,
             'intro'         => $intro,
-            'idle'          => $idle,
+            // Ab hier gibt es nichts mehr zu waehlen.
+            'nameAnimation' => 'fade',
+            'particle'      => 'none',
+            'reveal'        => 'up',
+            'idle'          => 'breathe',
         ];
     }
 
@@ -580,7 +549,7 @@ final class Themes
     ];
 
     /** Wie ein Schmuckelement hereinkommt. */
-    public const MOVES = ['none', 'fade', 'rise', 'float', 'sway', 'zoom'];
+    public const MOVES = ['none', 'fade'];
 
     public static function moveLabel(string $key, string $locale): string
     {
@@ -588,18 +557,10 @@ final class Themes
             'de' => [
                 'none'  => 'Steht still',
                 'fade'  => 'Blendet ein',
-                'rise'  => 'Steigt auf',
-                'float' => 'Schwebt',
-                'sway'  => 'Wiegt sich',
-                'zoom'  => 'Wächst heran',
             ],
             'tr' => [
                 'none'  => 'Sabit durur',
                 'fade'  => 'Belirir',
-                'rise'  => 'Yükselir',
-                'float' => 'Süzülür',
-                'sway'  => 'Salınır',
-                'zoom'  => 'Büyüyerek gelir',
             ],
         ];
 
