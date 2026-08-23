@@ -217,10 +217,37 @@ use Atelier\Design;
            Der dunkle Grund dahinter ist die Seitenfarbe des Themas: der Film
            fuellt die Flaeche nicht mehr, also muss etwas darunter liegen.
         */ ?>
-        <div class="absolute inset-0 z-40 flex items-center justify-center"
-             style="background: var(--d-bg, #0b0a09);" data-intro-video hidden>
-          <video class="max-h-full w-auto object-contain"
-                 style="max-width: min(92vw, 30rem);" data-intro-film
+        <?php /*
+           NICHT versteckt, und das ist der Kern.
+
+           Das erste Bild des Films IST das geschlossene Kuvert - echtes
+           Papier, echtes Siegel. Es waere Unsinn, daneben noch eine
+           gezeichnete Klappe zu zeigen und den Film erst danach
+           hervorzuholen. Der Film liegt also von Anfang an da, auf z-40 ueber
+           dem gezeichneten Kuvert, und ist selbst der Anklickpunkt.
+
+           Und sein LETZTES Bild ist das Blatt der Karte - gemessen, nicht
+           vermutet: bei 5,20 s stehen dort dieselben Goldecken und dieselben
+           zwei Senkrechten wie auf bild.jpg. Deshalb ist er so breit wie die
+           Karte (42rem, dasselbe max-w-2xl) und nicht so breit wie er selbst:
+           nur dann geht der Film in die Karte ueber, ohne dass es einen
+           Schnitt gibt. Das kostet 1,4-fache Vergroesserung - der Preis fuer
+           eine unsichtbare Naht, und weit weg von den 2,7 von vorhin.
+        */ ?>
+        <div class="absolute inset-0 z-40 flex items-center justify-center px-6"
+             style="background: var(--d-bg, #0b0a09);" data-intro-video>
+          <?php /*
+             Derselbe Kasten wie die Karte: volle Breite bis max-w-2xl, das
+             Seitenverhaeltnis des Dokuments, object-cover. Nur so liegt das
+             letzte Bild des Films genau dort, wo gleich das Blatt der Karte
+             liegt - sonst springt die Groesse im Schnitt.
+
+             Vorher stand hier max-h-full: dann bestimmte die Fensterhoehe die
+             Breite, der Film kam mit 478 px heraus und die Karte mit 672, und
+             man sah den Sprung.
+          */ ?>
+          <video class="w-full max-w-2xl cursor-pointer object-cover"
+                 style="aspect-ratio: <?= $ratio ?>;" data-intro-film
                  src="<?= e($introFilm) ?>"
                  <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
                  muted playsinline preload="auto"></video>

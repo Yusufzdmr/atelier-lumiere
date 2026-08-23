@@ -48,7 +48,8 @@
       // Der Vorspann laeuft nur, wenn Bewegung erwuenscht ist. Wer sie
       // abbestellt hat, bekommt sofort die Karte.
       if (introFilm && !still) {
-        introBox.hidden = false;
+        // Der Film liegt schon da - sein erstes Bild IST das geschlossene
+        // Kuvert. Hier ist nichts mehr einzublenden, nur zu starten.
 
         // data-intro-ms bleibt die Obergrenze. Laedt der Film nicht - schlechtes
         // Netz, Format vom Server nicht ausgeliefert -, haengt die Einladung
@@ -167,6 +168,17 @@
     };
 
     if (open) open.addEventListener("click", reveal);
+
+    /*
+     * Der Film ist selbst der Anklickpunkt, wenn es einen gibt.
+     *
+     * Sein erstes Bild ist das geschlossene Kuvert; wer darauf tippt, meint
+     * genau das. Das gezeichnete Kuvert liegt darunter und wird nie
+     * gesehen - es bleibt fuer die Vorlagen ohne Film und fuer den Fall,
+     * dass der Film nicht laedt.
+     */
+    var introKlick = document.querySelector("[data-intro-video]");
+    if (introKlick) introKlick.addEventListener("click", reveal);
     envelope.addEventListener("click", function (event) {
       if (event.target === envelope) reveal();
     });
