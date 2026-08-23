@@ -317,10 +317,30 @@ final class DesignSections
              * Der Pfad kommt als eigene Eigenschaft von der Vorlage, nicht
              * als background-image: sonst wuerde diese Regel ihn ueberschreiben.
              */
-            . $scope . '.d-sec-flaeche{background-image:var(--d-sec-blatt,none);'
-            . 'background-position:top center;background-size:min(100%,42rem) auto;'
-            . 'background-repeat:repeat-y;}'
-            . $scope . ' .d-sec{margin-top:4.5rem;line-height:1.7;text-align:center;}'
+            /*
+             * JEDER Abschnitt ist ein eigenes Blatt.
+             *
+             * Vorher lag EIN Blatt hinter allem und wiederholte sich nach
+             * unten - und die Naht fiel dorthin, wo sie gerade hinfiel:
+             * mitten ins Antwortformular, die Goldecken quer ueber "Wie viele
+             * Personen". Eine Wiederholung kennt den Inhalt nicht.
+             *
+             * "Yazilari bol, gerekirse yeni bir arkaplan daha koy." Genau so:
+             * das Blatt sitzt am Abschnitt, nicht an der Flaeche. Dann faellt
+             * die Kante immer ZWISCHEN zwei Abschnitte, nie in einen hinein -
+             * und wie viele Blaetter es werden, entscheidet der Inhalt.
+             *
+             * Das Polster oben ist gerechnet, nicht geraten: bei einer Breite
+             * W ist das Blatt 1,79 W hoch (768 x 1376), und die Goldlinien
+             * fangen bei 31 % seiner Hoehe an - also bei 0,31 x 1,79 = 55 %
+             * der Breite. Prozente im padding beziehen sich auf die Breite,
+             * deshalb steht dort 56 %.
+             */
+            . $scope . ' .d-sec{background-image:var(--d-sec-blatt,none);'
+            . 'background-color:var(--d-paper,#faf7f2);'
+            . 'background-position:top center;background-size:100% auto;'
+            . 'background-repeat:no-repeat;padding:56% 14% 12%;'
+            . 'margin-top:0;line-height:1.7;text-align:center;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
             // dieselben zwei Marken, die auf der Karte den Ton angeben.

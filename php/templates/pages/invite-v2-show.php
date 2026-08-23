@@ -87,7 +87,7 @@ use Atelier\View;
   ?>
   <div class="<?= e($scope) ?> d-sec-flaeche"
        <?= $papier !== '' ? 'style="--d-sec-blatt:url(\'' . e($papier) . '\')"' : '' ?>>
-    <div class="d-sections mx-auto max-w-2xl px-6 py-16">
+    <div class="d-sections mx-auto max-w-2xl">
       <?= $abschnitte ?>
     </div>
   </div>
