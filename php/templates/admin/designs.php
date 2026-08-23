@@ -13,6 +13,7 @@
  * @var list<string> $kategorien
  * @var string $filter
  * @var list<array<string,mixed>> $themen
+ * @var list<array{id:string,label:string,mp4:string,webm:string,poster:string,category:string}> $videos
  * @var string $csrf
  * @var string $locale
  */
@@ -36,6 +37,7 @@ $meldungen = [
     'uebernommen_teilweise' => $tr
         ? 'Oluşturuldu — ama temanın sahnesi taban tasarımdan az parça içeriyor; artan köşeler tabandan kaldı.'
         : 'Übernommen – aber die Szene des Themas hat weniger Teile als die Basis Ecken; die übrigen blieben die der Basis.',
+    'gespeichert' => $tr ? 'Kaydedildi.' : 'Gespeichert.',
     'aktiv'     => $tr ? 'Yayında.' : 'Veröffentlicht.',
     'inaktiv'   => $tr ? 'Yayından kaldırıldı.' : 'Aus der Veröffentlichung genommen.',
     'quelle'    => $tr ? 'Kaynak tasarım bulunamadı.' : 'Die Quellvorlage wurde nicht gefunden.',
@@ -198,3 +200,76 @@ $meldungen = [
     <?php endforeach; ?>
   </div>
 </div>
+
+<?php /*
+   Die Filmbibliothek. Sie gehoert hierher und nicht in einen eigenen Reiter:
+   sie ist Zubehoer der Vorlagen, und ein siebzehnter Reiter fuer eine Liste
+   mit einer Handvoll Eintraegen waere genau die Ueberdetaillierung, ueber die
+   sich der Kunde beschwert hat.
+*/ ?>
+<section class="mt-16 border-t border-sand-deep pt-10">
+  <h3 class="font-display text-lg text-ink"><?= $tr ? 'Video kitaplığı' : 'Filmbibliothek' ?></h3>
+  <p class="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+    <?= $tr
+      ? 'Buradaki videolar, izni açık olan video katmanlarında çifte seçenek olarak çıkar. Çift kendi videosunu yükleyemez — bulamaz.'
+      : 'Diese Filme bietet der Assistent dem Paar an, wenn die Videoebene das Recht dazu traegt. Eigene Dateien kann das Paar nicht laden - es findet keine.' ?>
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
+    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+
+    <?php foreach ($videos as $i => $film) : ?>
+      <div class="flex flex-wrap items-start gap-5 border-t border-sand-deep pt-5 first:border-0 first:pt-0">
+        <input type="hidden" name="vid_id_<?= (int) $i ?>" value="<?= e($film['id']) ?>">
+        <input type="hidden" name="vid_mp4_<?= (int) $i ?>" value="<?= e($film['mp4']) ?>">
+        <input type="hidden" name="vid_webm_<?= (int) $i ?>" value="<?= e($film['webm']) ?>">
+        <input type="hidden" name="vid_poster_<?= (int) $i ?>" value="<?= e($film['poster']) ?>">
+
+        <video src="<?= e($film['mp4']) ?>" muted preload="metadata"
+               <?= $film['poster'] !== '' ? 'poster="' . e($film['poster']) . '"' : '' ?>
+               class="h-20 w-14 shrink-0 bg-ink object-cover"></video>
+
+        <label class="min-w-[14rem] flex-1 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+          <?= $tr ? 'Adı' : 'Name' ?>
+          <input name="vid_label_<?= (int) $i ?>" value="<?= e($film['label']) ?>" maxlength="80"
+                 class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink"></label>
+
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+          <?= $tr ? 'Kategori' : 'Kategorie' ?>
+          <select name="vid_cat_<?= (int) $i ?>"
+                  class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink">
+            <option value="">—</option>
+            <?php foreach (Design::CATEGORIES as $k) : ?>
+              <option value="<?= e($k) ?>" <?= $film['category'] === $k ? 'selected' : '' ?>><?= e($k) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+
+        <button name="was" value="video-loeschen-<?= e($film['id']) ?>"
+                class="self-end pb-2 text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
+                data-confirm="<?= $tr ? 'Bu video silinsin mi?' : 'Diesen Film entfernen?' ?>">
+          <?= $tr ? 'Sil' : 'Entfernen' ?>
+        </button>
+      </div>
+    <?php endforeach; ?>
+
+    <div class="border-t border-sand-deep pt-5">
+      <div class="text-[0.66rem] uppercase tracking-[0.16em] text-muted"><?= $tr ? 'Yeni video' : 'Neuer Film' ?></div>
+      <div class="mt-3 grid gap-4 sm:grid-cols-2">
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted"><?= $tr ? 'Adı' : 'Name' ?>
+          <input name="vid_neu_label" maxlength="80"
+                 class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink"></label>
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted">mp4 / webm
+          <input type="file" name="vid_neu_datei" accept="video/mp4,video/webm,video/quicktime"
+                 class="mt-1 w-full text-[0.8rem] text-muted"></label>
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted"><?= $tr ? 'Kapak görseli' : 'Standbild' ?>
+          <input type="file" name="vid_neu_poster" accept="image/png,image/jpeg,image/webp"
+                 class="mt-1 w-full text-[0.8rem] text-muted"></label>
+      </div>
+    </div>
+
+    <button name="was" value="videos-kaydet"
+            class="bg-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
+      <?= $tr ? 'Kitaplığı kaydet' : 'Bibliothek speichern' ?>
+    </button>
+  </form>
+</section>

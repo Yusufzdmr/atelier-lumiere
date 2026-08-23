@@ -5,6 +5,7 @@ namespace Atelier\Controllers;
 
 use Atelier\Admin;
 use Atelier\Design;
+use Atelier\DesignVideos;
 use Atelier\I18n;
 use Atelier\Media;
 use Atelier\Security;
@@ -79,6 +80,7 @@ final class DesignAdminController
             'kategorien' => $kategorien,
             'filter'     => $filter,
             'themen'     => Themes::all(),
+            'videos'     => DesignVideos::all(),
             'csrf'       => Security::csrf(),
         ]);
     }
@@ -100,6 +102,12 @@ final class DesignAdminController
         }
         if ($was === 'durum') {
             $this->zurueck($locale, $this->durum());
+        }
+        if ($was === 'videos-kaydet') {
+            $this->zurueck($locale, $this->videosSpeichern());
+        }
+        if (str_starts_with($was, 'video-loeschen-')) {
+            $this->zurueck($locale, $this->videoLoeschen(substr($was, strlen('video-loeschen-'))));
         }
 
         $this->zurueck($locale, 'fehler=unbekannt');
@@ -439,5 +447,72 @@ final class DesignAdminController
 
         header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
         exit;
+    }
+
+    /**
+     * Die Bibliothek speichern - bestehende Zeilen und hoechstens einen neuen
+     * Film. Ein Upload je Absenden reicht: mehrere gleichzeitig waeren bei
+     * 100 MB je Datei ein Zeitlimit, kein Komfort.
+     *
+     * Die CSRF-Pruefung steht schon in handle() und nicht noch einmal hier:
+     * jeder Zweig kommt durch dieselbe Tuer.
+     */
+    private function videosSpeichern(): string
+    {
+        $rows = [];
+        for ($i = 0; $i < DesignVideos::MAX; $i++) {
+            if (!isset($_POST['vid_id_' . $i])) {
+                continue;
+            }
+            $rows[] = [
+                'id'       => (string) $_POST['vid_id_' . $i],
+                'label'    => (string) ($_POST['vid_label_' . $i] ?? ''),
+                'mp4'      => (string) ($_POST['vid_mp4_' . $i] ?? ''),
+                'webm'     => (string) ($_POST['vid_webm_' . $i] ?? ''),
+                'poster'   => (string) ($_POST['vid_poster_' . $i] ?? ''),
+                'category' => (string) ($_POST['vid_cat_' . $i] ?? ''),
+            ];
+        }
+
+        $datei = $_FILES['vid_neu_datei'] ?? null;
+        if (is_array($datei) && ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::storeVideo($datei, 'videos');
+            if ($pfad !== null) {
+                $poster = '';
+                $bild = $_FILES['vid_neu_poster'] ?? null;
+                if (is_array($bild) && ((int) ($bild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+                    $poster = (string) Media::store($bild, 'videos');
+                }
+                $rows[] = [
+                    'id'       => '',
+                    'label'    => (string) ($_POST['vid_neu_label'] ?? ''),
+                    'mp4'      => $pfad,
+                    'webm'     => '',
+                    'poster'   => $poster,
+                    'category' => '',
+                ];
+            }
+        }
+
+        DesignVideos::save($rows);
+
+        return 'ok=gespeichert';
+    }
+
+    /**
+     * Einen Film aus der Bibliothek nehmen.
+     *
+     * Die Datei bleibt liegen. Dieselbe Ueberlegung wie bei den Bildebenen:
+     * eine bereits versendete Einladung zeigt auf sie, und was fehlt, kostet
+     * eine Einladung - was liegen bleibt, kostet Platz.
+     */
+    private function videoLoeschen(string $id): string
+    {
+        DesignVideos::save(array_values(array_filter(
+            DesignVideos::all(),
+            static fn (array $row): bool => $row['id'] !== $id
+        )));
+
+        return 'ok=gespeichert';
     }
 }
