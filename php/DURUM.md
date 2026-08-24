@@ -1071,6 +1071,130 @@ Dikkat: `data-step` numaraları **geriye doğru** kaydırıldı (4→5, 3→4, 2
 1→2), yoksa 1→2 hemen ardından gelen 2'yi eziyor. Araya yeni bir adım
 eklerken aynı sırayı izleyin.
 
+## 24 Ağustos — bir hata sınıfı, açılış filmi, ve içerik motoru
+
+Uzun bir tur: on bir commit, hepsi canlıda. Ne yapıldığı ve — daha önemlisi —
+neden öyle yapıldığı.
+
+### Sabah: bölümler eksik geliyordu, panel uyarıyı forma yazıyordu
+
+Şikâyet: "Tasarım editöründe kaydettikten sonra önizleme eski hâli gösteriyor."
+
+Kök neden `Design::complete()`'teydi — her okumanın geçtiği yer bölümleri
+tamamlamıyordu, yalnız diziden olmayanları eliyordu. Asıl tamamlayıcı
+`DesignSections::complete()` ikinci bir çağrıydı, herkesin ayrıca hatırlaması
+gerekiyordu. Genel sayfa hatırlıyordu (`css()`, `visible()`, `html()` üçü de
+kendi içinde çağırıyor), panel hatırlamıyordu.
+
+Sonucu: `style` alanı olmayan eski biçimli bir belgede editör PHP uyarısını
+formun içine, bir input'un `value`'suna basıyordu. Kaydedince o metin belgeye
+giriyordu: `"color": "br-bwarningb-undefined-array-key"`. Renderer bundan
+`var(--d-br-bwarningb-…)` üretiyor, öyle bir değişken yok, renk yerinde
+kalıyor. Dışarıdan: kaydettim, hiçbir şey olmadı.
+
+Düzeltme tek satır. Yerelde `bild` ve `film` tasarımlarında her birinde 12
+çöp marka bulunup temizlendi. Canlıda çöp yoktu (`display_errors=0`), ama
+orada da sessiz kayıp mümkündü: eksik anahtar boş dönüyor, kaydeden marka
+siliyordu.
+
+Aynı hata sınıfı iki kez daha çıktı, iki kez daha kapatıldı:
+
+- Panelin "yeni bölüm" satırı elle kuruluyordu, katalog büyüyünce büyümüyordu
+  → artık `DesignSections::leer()` ile modelden geliyor; bir test iki şeklin
+  ayrışmasını engelliyor.
+- Bir şablon içe aktarmadığı sınıfı çağırdı → `php -l` görmez, test dizisi de
+  görmez (şablon render etmiyor), sayfa komple fatal verir. Artık her şablonu
+  PHP'nin kendi ayrıştırıcısıyla okuyup her sınıf çağrısı için `use` arayan
+  bir test var. Muster ile değil ayrıştırıcıyla: "Design::" yorumlarda da
+  geçiyor, muster iki düzine yalancı bulmuştu.
+
+### Eski sürüme bağlı davetiye sayacı
+
+Tasarım editörünün başlığında iki sayı: taslak ve yayında. Taslaklar tek
+düğmeyle, yayındakiler ayrı bir onay ekranından sonra tazeleniyor — o
+davetiyelerin bağlantısı misafirin elinde. Soruyu sayfa soruyor, tarayıcı
+değil (evde hiç `onclick=` yok, CSP `script-src 'self'`).
+
+Karar `InvitationsV2::outdated()` içinde ve saf: büyükse eski, farklıysa
+değil. Çiftin seçimleri (`data.wahl`) ellenmiyor; tazeleme yalnız tabanı
+değiştiriyor, `personalize()` seçimleri üstüne yeniden uyguluyor.
+
+### Açılış filmi — dört ayrı düzeltme
+
+1. Yumuşak geçiş. Film bitince bir karede yok oluyordu. Élysée filminde sorun
+   değildi (son karesi kartın kâğıdı), Ayhan'ın sakin döngülerinde kesme
+   görünüyordu. Artık 600 ms'de eriyor; kart altında beklediği için erime
+   geçişin kendisi.
+2. "Boş = filmin kendi boyu" artık doğru. Alan boşken tavan 6000 ms'e düşüp
+   filmi kesiyordu; 10 saniyelik film 6. saniyede bitiyordu ve etiket tersini
+   söylüyordu. Üç durum: grafikçinin sayısı → filmin kendi boyu (en çok 20 sn)
+   → süre bilinmiyorsa 6 sn acil freni.
+3. Tam ekran. Film kart genişliğinde bir kutuda oynuyordu; o sınırın sebebi
+   dikişsiz geçişti, erime gelince sebep kalktı.
+4. Film oynarken sayfa kilitli. `overflow:hidden` masaüstünde tuttu, telefonda
+   tutmadı; sabitlenmiş `body` + `touch-action` gerekti. Kilit zarf açıldığı
+   anda kalkıyor.
+
+### Bölümlerin arka planı, ve dikiş
+
+Her bölüm kendi arka planını taşıyabiliyor (`style.bg` + `bgFit`). Yükleme
+katmanlardaki yolu kullanıyor: dosya yalnız yol alanına ne yazılacağını
+söylüyor.
+
+Ayrı bir şey: telefonda her bölüm sınırında enine krem bir şerit vardı.
+Tekrar eden desen değildi — her bölüm kâğıdı kendi tepesinden yeniden
+çiziyordu (`.d-sec::before`), altını yumuşatıyordu. Altı bölüm, aynı görselin
+altı başlangıcı. Artık kâğıt bir kez, tüm alana, alanın yüksekliğine
+çekilerek. Bedeli bilerek kabul edildi: uzun davetiyede görsel boyuna uzar.
+Sıradaki adım gerekirse 9 dilim (köşeler sabit, orta gerilir).
+
+### İçerik motoru — Ayhan'ın taslağındaki beş madde
+
+Fikir: müşteri sayfa tasarlamasın, içerik seçsin. Boru hattının büyük kısmı
+zaten kuruluydu (`SectionRegistry`, `visible()`). Eksik olan iki uçtu:
+
+1. Ikon kataloğu — 18 SVG, Lucide (ISC), `public/assets/icons/`. Boyanma maske
+   ile: dosya gömülmüyor, `currentColor` üstüne maske olarak konuyor. Tek
+   dosya her renkte, CSP'ye dokunulmadı. Kimlik kalıcı, dosya değil: belgede
+   `pasta` yazıyor, hiçbir yerde yol yok.
+2. Zaman akışı — satır artık saat · tür · başlık · bir cümle. Tür listeden
+   seçiliyor, başlık boşsa katalog öneriyor, yazılırsa çift kazanıyor. Görünüş
+   Ayhan'ın örneğindeki gibi: daire içinde ikon, çizgi halkadan geçiyor.
+   Katalogda iki ayrı dil çifti var: panel etiketi (de/tr, "Torte") ve basılan
+   öneri (de/en, "Tortenanschnitt").
+3. `menu` tipi — altı gang, her birinin kendi ikonu (ikonu çift seçmiyor:
+   çorba çorbadır). Doldurulan basılır; hiçbiri doluysa değilse bölüm düşer.
+4. `dresscode` tipi — kural + açıklama, biri yeterli. "Hazır görsel" için ayrı
+   alan açılmadı: bölümün kendi arka planı o iş için var.
+5. Soru akışı — "gizle" kutusu "Bu davetiyede olsun mu?" sorusuna çevrildi,
+   önden işaretli. İki okuma yeri birden çevrildi; biri eskide kalsaydı
+   dokunulmamış her bölüm kaybolurdu (testte).
+
+Ölçülen sonuç: son üç bölüm tipinde çiftin formu hiç yazılmadı, katalogdan
+kendiliğinden geldi. Yeni bir tip artık: katalogda bir kayıt, `hatInhalt`'ta
+bir dal, bir basım bloğu, birkaç satır stil.
+
+### Panelde davetiye oluşturma
+
+Vitrinde her kartta vardı, panelde yoktu. Artık tasarım listesinde her kartta
+ve editörün başlığında "Davetiye oluştur" — sihirbaza `?design=<slug>` ile
+gidiyor, panele ayrı bir giriş yolu açılmadı.
+
+### Bu turdan kalanlar
+
+- nginx `charset utf-8;` — Yusuf'un elinde; süzgeç bana `/etc/nginx`'e
+  dokundurmuyor. Yalnız ham `.js` dosyasını doğrudan açınca görünen mojibake
+  için; sayfanın içinde bozukluk yok (ölçüldü). Yedek:
+  `/root/nginx-atelier-yedek-2026-08-24-1129`.
+- Ayhan'ın videoları panelden yüklenecek: editör → sağ kolon → "5b · Videolar"
+  (grup kapalı gelir) → Video yükle, süre alanı boş.
+- 9 dilim arka plan, uzun davetiyede gerilme rahatsız ederse.
+- Kart animasyonu + film birlikte: film bitiyor, kart 1.7 sn sonra geliyor,
+  arada boş arka plan. Bugün hiçbir tasarımda bu ikili yok.
+- Bölüm arka planı üstünde yazı okunmuyorsa kimse söylemiyor: kart için
+  kontrast uyarısı var, bölümler için yok.
+
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
