@@ -44,6 +44,25 @@
     var scrollSperre = function (an) {
       document.documentElement.style.overflow = an ? "hidden" : "";
       document.body.style.overflow = an ? "hidden" : "";
+
+      /*
+       * Auf dem Telefon reicht overflow:hidden nicht.
+       *
+       * Gemeldet an einem echten Geraet: "video oynasa da oynamasa da
+       * asagi iniyor". Am Schreibtisch hielt die Sperre, mit dem Finger
+       * nicht - mobile Browser scrollen das Fenster an einem versteckten
+       * Ueberlauf vorbei. Erst ein festgestellter body haelt wirklich.
+       *
+       * Die Breite muss mit, sonst faellt die Seite in dem Moment, in dem
+       * sie fixiert wird, auf ihre Inhaltsbreite zusammen.
+       */
+      document.body.style.position = an ? "fixed" : "";
+      document.body.style.width = an ? "100%" : "";
+      document.body.style.top = an ? "0" : "";
+      document.body.style.left = an ? "0" : "";
+
+      // Und der Finger findet auch ohne Ueberlauf noch Wege.
+      document.documentElement.style.touchAction = an ? "none" : "";
     };
 
     scrollSperre(true);

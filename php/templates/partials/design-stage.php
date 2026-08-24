@@ -234,7 +234,24 @@ use Atelier\Design;
            Schnitt gibt. Das kostet 1,4-fache Vergroesserung - der Preis fuer
            eine unsichtbare Naht, und weit weg von den 2,7 von vorhin.
         */ ?>
-        <div class="absolute inset-0 z-40 flex items-center justify-center px-6"
+        <?php /*
+           Ueber dem ganzen Bildschirm und nicht ueber der Buehne.
+
+           Bis hierher war der Film so breit wie die Karte (max-w-2xl, das
+           Seitenverhaeltnis des Dokuments). Das hatte einen Grund: sein
+           letztes Bild war das Blatt der Karte, und nur bei gleicher Breite
+           ging er ohne Schnitt in sie ueber.
+
+           Der Grund ist weg. Seit der Vorspann in 600 ms ausblendet, braucht
+           er kein passendes Schlussbild mehr - und ein Film, der auf einem
+           Telefon in einem Kaestchen mit Raendern laeuft, sieht aus wie ein
+           Video in einer Seite und nicht wie das Oeffnen einer Einladung.
+
+           fixed und nicht absolute: die Buehne ist nicht so hoch wie das
+           Fenster. Gefahrlos, weil die Seite waehrend des Vorspanns ohnehin
+           stillsteht.
+        */ ?>
+        <div class="fixed inset-0 z-40 flex items-center justify-center"
              style="background: var(--d-bg, #0b0a09);" data-intro-video>
           <?php /*
              Derselbe Kasten wie die Karte: volle Breite bis max-w-2xl, das
@@ -246,8 +263,13 @@ use Atelier\Design;
              Breite, der Film kam mit 478 px heraus und die Karte mit 672, und
              man sah den Sprung.
           */ ?>
-          <video class="w-full max-w-2xl cursor-pointer object-cover"
-                 style="aspect-ratio: <?= e($ratio) ?>;" data-intro-film
+          <?php /*
+             Fuellend und nicht einpassend: ein Rand um den Film herum waere
+             genau das Kaestchen, das hier nicht sein soll. object-cover
+             schneidet dafuer die Raender - bei einem hochkant gedrehten Film
+             auf einem hochkanten Telefon ist das wenig.
+          */ ?>
+          <video class="h-full w-full cursor-pointer object-cover" data-intro-film
                  src="<?= e($introFilm) ?>"
                  <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
                  muted playsinline preload="auto"></video>
