@@ -13,15 +13,16 @@ Commit'ler `8f6c3d5`…`3d66c6d`.
 asıl iş şu oldu: müşterinin dolduracağı alanlar artık katalogda
 (`SectionRegistry::inputs`), dört ayrı yerde değil.
 
-Kalan tek tip:
+**`gallery` de yapıldı** (commit `a0edac3`). Kuyrukta bölüm tipi kalmadı.
 
-- `gallery` — **pahalı olan bu.** Müşterinin kendi fotoğraflarını yüklemesi
-  gerekiyor: `invitations_v2` tarafında bir dosya deposu, `Media::store`
-  üzerinden yükleme, boyut/adet sınırı, ve sihirbazda yeni bir adım.
-  Ayrı bir iş olarak planlanmalı.
+Galeri yapılırken bir boşluk çıktı ve kapatıldı: sihirbaz ile düzenleme
+şablonları aynı bloğu iki kopya halinde taşıyordu, ve katalog alan
+kazandığında yalnız biri büyümüştü — düzenleme sayfasında hashtag, hesap
+sahibi ve IBAN yoktu. İkisi de artık `partials/abschnitt-felder.php`'yi
+kullanıyor.
 
 Not: hangi tasarımın hangi bölümü taşıyacağı Yusuf'un kararı. Test sırasında
-`bild`'e eklenen üç deneme bölümü tekrar kaldırıldı.
+`bild`'e eklenen deneme bölümleri tekrar kaldırıldı.
 
 ## 2 · Yayın durumu (taslak / yayında) — **yapıldı**
 
