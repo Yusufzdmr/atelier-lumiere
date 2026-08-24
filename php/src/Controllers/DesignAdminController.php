@@ -464,6 +464,35 @@ final class DesignAdminController
             }
         }
 
+
+        /*
+         * Und das eigene Blatt eines Abschnitts. Dieselbe Bewegung wie oben:
+         * die Datei sagt nur, was im Pfadfeld stehen soll.
+         *
+         * Ueber die Nummern des FORMULARS und nicht ueber das Dokument: ein
+         * Abschnitt, den jemand gerade erst hinzugefuegt hat, steht noch in
+         * keinem Dokument, soll sein Blatt aber schon mitbringen duerfen. Die
+         * Obergrenze ist dieselbe wie in Design::fromPost().
+         */
+        for ($i = 0; $i <= 39; $i++) {
+            if (!isset($post['sec_type_' . $i])) {
+                continue;
+            }
+
+            $blatt = $_FILES['sec_bg_datei_' . $i] ?? null;
+            if (!is_array($blatt) || ((int) ($blatt['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            // storeGraphic wie bei den Ebenen: SVG wird geputzt durchgereicht,
+            // alles andere behaelt seinen Alphakanal - ein Blatt mit
+            // durchsichtigen Raendern soll die Papierfarbe darunter zeigen.
+            $pfad = Media::storeGraphic($blatt, 'designs');
+            if ($pfad !== null) {
+                $post['sec_bg_' . $i] = $pfad;
+            }
+        }
+
         return $post;
     }
 

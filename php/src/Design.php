@@ -1333,6 +1333,11 @@ final class Design
                 'style'   => [
                     'color' => Security::clean($post['sec_color_' . $i] ?? '', 64),
                     'font'  => Security::clean($post['sec_font_' . $i] ?? '', 64),
+                    // Nur eingesammelt. Ob der Pfad taugt, entscheidet
+                    // DesignSections::complete() mit safeSrc() - eine Stelle,
+                    // dieselbe wie fuer jeden anderen Pfad im Dokument.
+                    'bg'    => Security::clean($post['sec_bg_' . $i] ?? '', 256),
+                    'bgFit' => Security::clean($post['sec_bgfit_' . $i] ?? '', 16),
                 ],
                 'permissions' => [
                     'edit' => isset($post['perm_sec_edit_' . $i]),

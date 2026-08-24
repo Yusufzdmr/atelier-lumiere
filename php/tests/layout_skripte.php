@@ -88,3 +88,57 @@ assert_contains($js, 'GRENZE_MS', 'invitation.js: und die Obergrenze auch');
 assert_contains($js, 'Math.min(dauer, GRENZE_MS)', 'invitation.js: ohne Zahl gilt die Laenge des Films');
 assert_not_contains($js, 'introMs > 0 ? introMs : 6000',
     'invitation.js: der Notnagel ist nicht mehr der Deckel fuer jeden Film');
+
+/*
+ * Und keine Vorlage ruft eine Klasse, die sie nicht geholt hat.
+ *
+ * Gefunden am 24.08.2026 auf die harte Tour: design-edit-liste.php bekam
+ * einen Aufruf von DesignSections::leer(), aber kein use dazu. php -l sagt
+ * dazu nichts (die Klasse fehlt erst zur Laufzeit), die Testreihe auch nicht
+ * (sie rendert keine Vorlagen) - erst die aufgerufene Seite stand als Fatal
+ * error da, und zwar die GANZE Seite, nicht nur eine Zeile.
+ *
+ * Grob wie die Tests darueber, und aus demselben Grund: die Eigenschaft, die
+ * halten muss, ist nicht das Verhalten einer Funktion, sondern dass eine
+ * Zeile in einer Datei vorkommt. Geprueft wird nur, was es in src/ wirklich
+ * gibt - ein DateTime:: oder PDO:: ist keine Sache dieses Tests.
+ */
+
+$klassen = [];
+foreach (glob(__DIR__ . '/../src/*.php') ?: [] as $datei) {
+    $klassen[basename($datei, '.php')] = true;
+}
+
+foreach (glob(__DIR__ . '/../templates/**/*.php') ?: [] as $vorlage) {
+    $quelle = (string) file_get_contents($vorlage);
+    $kurz   = 'templates/' . basename(dirname($vorlage)) . '/' . basename($vorlage);
+
+    /*
+     * Mit dem Zerleger und nicht mit einem Muster: "Design::" steht auch in
+     * Kommentaren und in Fliesstext, und ein Test, der davon ausgeht, meldet
+     * zwei Dutzend Stellen, an denen nichts kaputt ist. Der Zerleger sieht
+     * nur, was PHP auch sieht.
+     */
+    $marken = token_get_all($quelle);
+    $gerufen = [];
+    foreach ($marken as $nr => $marke) {
+        if (!is_array($marke) || $marke[0] !== T_STRING) {
+            continue;
+        }
+        $naechste = $marken[$nr + 1] ?? null;
+        if ($naechste === '::' || (is_array($naechste) && $naechste[0] === T_DOUBLE_COLON)) {
+            $gerufen[$marke[1]] = true;
+        }
+    }
+
+    foreach (array_keys($gerufen) as $name) {
+        if (!isset($klassen[$name])) {
+            continue;
+        }
+        // chr(92) statt eines Schraegstrichs im Text: der Weg durch die
+        // Werkzeuge frisst ihn sonst, und der Test suchte dann nach
+        // "use AtelierDesignSections;".
+        $holt = 'use Atelier' . chr(92) . $name . ';';
+        assert_contains($quelle, $holt, $kurz . ': holt ' . $name);
+    }
+}

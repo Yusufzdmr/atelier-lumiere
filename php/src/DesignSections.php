@@ -40,6 +40,18 @@ final class DesignSections
         'footer', 'gift', 'music', 'gallery',
     ];
 
+    /**
+     * Wie das eigene Blatt eines Abschnitts sitzt.
+     *
+     * "blatt" ist dieselbe Rechnung wie beim grossen Blatt: Breite an der
+     * Karte, oben ausgerichtet, nach unten wiederholt. Damit steht es auf
+     * dem Telefon im selben Massstab wie am Schreibtisch - der Grund steht
+     * ausfuehrlich in baseline().
+     *
+     * "cover" fuellt den Abschnitt und schneidet dafuer die Raender ab.
+     */
+    public const FITS = ['blatt', 'cover'];
+
     /** Wie viele Programmzeilen, und wie lang eine sein darf. */
     public const PROGRAM_MAX = 20;
     public const PROGRAM_LEN = 80;
@@ -129,6 +141,13 @@ final class DesignSections
                     // var(--d-<name>). Ein roher Wert ergaebe ungueltiges CSS.
                     'color' => Design::key((string) ($style['color'] ?? '')),
                     'font'  => Design::key((string) ($style['font'] ?? '')),
+                    // Das eigene Blatt. Derselbe Filter wie ueberall, wo ein
+                    // Pfad aus dem Panel kommt - er laesst nur zu, was wir
+                    // selbst vergeben haben.
+                    'bg'    => Design::safeSrc((string) ($style['bg'] ?? '')),
+                    'bgFit' => in_array((string) ($style['bgFit'] ?? ''), self::FITS, true)
+                        ? (string) $style['bgFit']
+                        : 'blatt',
                 ],
                 'permissions' => [
                     // edit ist der Hauptschalter, wie bei den Ebenen: ohne ihn
@@ -142,6 +161,37 @@ final class DesignSections
         $doc['sections'] = $out;
 
         return $doc;
+    }
+
+    /**
+     * Eine leere Zeile in der Gestalt einer echten.
+     *
+     * Das Panel haengt unter die Abschnitte eine Zeile fuer "neu". Sie wurde
+     * dort von Hand gebaut, und als der Stil um das Blatt wuchs, wuchs sie
+     * nicht mit: die Tafel las einen Schluessel, den es an dieser einen Zeile
+     * nicht gab, und die Warnung landete mitten im Formular.
+     *
+     * Hier entsteht sie aus complete(), also aus derselben Quelle wie jede
+     * echte. Was dazukommt, kommt an beiden Stellen zugleich an.
+     *
+     * Art und Kennung werden danach geleert: complete() laesst keine Zeile
+     * ohne beides durch, aber genau das soll die neue Zeile sein - leer, bis
+     * jemand sie ausfuellt.
+     *
+     * @return array<string,mixed>
+     */
+    public static function leer(): array
+    {
+        $satz = self::complete(['sections' => [['id' => 'neu', 'type' => self::TYPES[0]]]]);
+
+        // Ueberschrieben und nicht davorgesetzt: die Reihenfolge der
+        // Schluessel bleibt damit dieselbe wie an einem echten Abschnitt.
+        $zeile = $satz['sections'][0];
+        $zeile['id'] = '';
+        $zeile['type'] = '';
+        $zeile['enabled'] = false;
+
+        return $zeile;
     }
 
     /**
@@ -294,6 +344,27 @@ final class DesignSections
              * in JEDER Seite - nicht in einer Datei, die der Browser einmal
              * holt und behaelt.
              */
+            /*
+             * Das eigene Blatt des Abschnitts.
+             *
+             * Es liegt UEBER dem grossen Blatt: .d-sec-<id> steht innerhalb
+             * von .d-sec-flaeche. Ein Abschnitt mit eigenem Blatt zeigt
+             * seines, alle anderen tragen weiter das des Bereichs - dafuer
+             * braucht es keinen zweiten Schalter.
+             *
+             * Der Pfad ist durch safeSrc() gegangen und traegt weder
+             * Anfuehrungszeichen noch Klammern; er kann aus dem url() nicht
+             * ausbrechen.
+             */
+            $blatt = (string) ($abschnitt['style']['bg'] ?? '');
+            if ($blatt !== '') {
+                $regeln .= "background-image:url('" . $blatt . "');";
+                $regeln .= (string) ($abschnitt['style']['bgFit'] ?? 'blatt') === 'cover'
+                    ? 'background-size:cover;background-position:center;background-repeat:no-repeat;'
+                    : 'background-size:min(100%,42rem) auto;background-position:top center;'
+                      . 'background-repeat:repeat-y;';
+            }
+
             $einstellung = is_array($abschnitt['settings'] ?? null) ? $abschnitt['settings'] : [];
 
             $aus = (string) ($einstellung['align'] ?? 'center');

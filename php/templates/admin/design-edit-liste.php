@@ -23,6 +23,7 @@
  * @var array<string,mixed> $design
  */
 
+use Atelier\DesignSections;
 use Atelier\SectionRegistry;
 use function Atelier\e;
 
@@ -32,10 +33,10 @@ use function Atelier\e;
  * die die Liste liest, den Sonderfall kennen.
  */
 $sekmeler = $design['sections'];
-$sekmeler[] = ['id' => '', 'type' => '', 'variant' => 'default', 'settings' => [],
-               'title' => ['de' => '', 'en' => ''],
-               'enabled' => false, 'style' => ['color' => '', 'font' => ''],
-               'permissions' => ['edit' => false, 'hide' => false]];
+// Die leere Zeile fuer "neu" kommt aus dem Modell und wird hier nicht
+// nachgebaut: sie muss dieselben Schluessel tragen wie ein echter
+// Abschnitt, sonst liest die Tafel einen, den es nicht gibt.
+$sekmeler[] = DesignSections::leer();
 
 $neuIndex = array_key_last($sekmeler);
 $sprache  = $tr ? 'tr' : 'de';

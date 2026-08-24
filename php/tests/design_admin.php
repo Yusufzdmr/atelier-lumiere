@@ -476,3 +476,31 @@ assert_same(2, count($erfunden['sections']), 'Abschnitte: eine leere Nummer erfi
 $alleWeg = Design::fromPost($basis, $dreiAbschnitte + ['sec_reihenfolge' => '']);
 
 assert_same(0, count($alleWeg['sections']), 'Abschnitte: eine leere Reihe raeumt alles ab');
+
+/* --- Das eigene Blatt eines Abschnitts kommt aus dem Formular ------------- */
+
+$mitBlatt = Design::fromPost($basis, [
+    'sec_id_0'     => 'ort',
+    'sec_type_0'   => 'location',
+    'sec_bg_0'     => '/uploads/designs/rosen.webp',
+    'sec_bgfit_0'  => 'cover',
+
+    'sec_id_1'     => 'wort',
+    'sec_type_1'   => 'text',
+    'sec_bg_1'     => 'https://fremde-seite.example/bild.jpg',
+
+    'sec_id_2'     => 'ablauf',
+    'sec_type_2'   => 'program',
+]);
+
+assert_same('/uploads/designs/rosen.webp', $mitBlatt['sections'][0]['style']['bg'],
+    'fromPost: das Blatt kommt an');
+assert_same('cover', $mitBlatt['sections'][0]['style']['bgFit'], 'fromPost: und seine Passung');
+assert_same('', $mitBlatt['sections'][1]['style']['bg'],
+    'fromPost: ein fremder Ursprung faellt weg');
+assert_same('', $mitBlatt['sections'][2]['style']['bg'], 'fromPost: ohne Feld kein Blatt');
+assert_same('blatt', $mitBlatt['sections'][2]['style']['bgFit'], 'fromPost: und die Passung steht auf blatt');
+
+// Leeren muss gehen - sonst klebt ein einmal gesetztes Blatt fuer immer.
+$geleert = Design::fromPost($mitBlatt, ['sec_id_0' => 'ort', 'sec_type_0' => 'location', 'sec_bg_0' => '']);
+assert_same('', $geleert['sections'][0]['style']['bg'], 'fromPost: leer nimmt das Blatt wieder weg');

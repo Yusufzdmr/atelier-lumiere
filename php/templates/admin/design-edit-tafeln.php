@@ -226,6 +226,53 @@ foreach ($katalog as $art => $eintrag) {
           <input class="<?= $feld ?>" name="sec_font_<?= $i ?>"
                  value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="body"></label>
       </div>
+      <?php /*
+         Das eigene Blatt des Abschnitts.
+
+         Es steht hier bei Farbe und Schrift und nicht bei den Einstellungen
+         der Art: ein Blatt hat jeder Abschnitt, ein Kartenhaken nur der Ort.
+
+         Zwei Passungen, und die Voreinstellung ist die des grossen Blattes -
+         Breite an der Karte, nach unten wiederholt. Der Grund steht in
+         DesignSections::baseline(): mit cover und einer Bindung ans Fenster
+         kam dasselbe Blatt unten fast doppelt so gross heraus wie oben, und
+         genau das ist einmal aufgefallen.
+      */ ?>
+      <?php $blatt = $abschnitt['style']; ?>
+      <div class="b-gruppe">
+        <div class="flex items-start gap-4">
+          <div class="w-16 shrink-0">
+            <div class="flex aspect-square items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+              <?php if ($blatt['bg'] !== '') : ?>
+                <img src="<?= e($blatt['bg']) ?>" alt="" class="h-full w-full object-cover">
+              <?php else : ?>
+                <span class="px-1 text-center text-[0.58rem] leading-tight text-muted">
+                  <?= $tr ? 'arka plan yok' : 'kein Blatt' ?>
+                </span>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <div class="w-full">
+            <label class="<?= $label ?>"><?= $tr ? 'arka plan yükle' : 'Blatt hochladen' ?>
+              <input type="file" name="sec_bg_datei_<?= $i ?>" class="<?= $feld ?>"
+                     accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+
+            <label class="<?= $label ?> mt-3 block"><?= $tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt es)' ?>
+              <input class="<?= $feld ?> font-mono text-[0.78rem]" name="sec_bg_<?= $i ?>"
+                     value="<?= e((string) $blatt['bg']) ?>"></label>
+
+            <label class="<?= $label ?> mt-3 block"><?= $tr ? 'nasıl otursun' : 'wie es sitzt' ?>
+              <select class="<?= $feld ?>" name="sec_bgfit_<?= $i ?>">
+                <option value="blatt" <?= $blatt['bgFit'] === 'blatt' ? 'selected' : '' ?>>
+                  <?= $tr ? 'kart genişliğinde, aşağı tekrarlı' : 'Breite der Karte, nach unten wiederholt' ?></option>
+                <option value="cover" <?= $blatt['bgFit'] === 'cover' ? 'selected' : '' ?>>
+                  <?= $tr ? 'bölümü kaplasın' : 'füllt den Abschnitt' ?></option>
+              </select></label>
+          </div>
+        </div>
+      </div>
+
 
       <?php /*
          Die Rechte des Kunden. edit ist der Hauptschalter, wie bei den

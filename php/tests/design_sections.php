@@ -793,3 +793,78 @@ $galVorgabe = DesignSections::complete(sec_doc([
     ['id' => 'bilder', 'type' => 'gallery', 'defaults' => ['photos' => '/uploads/x.jpg']],
 ]));
 assert_same([], $galVorgabe['sections'][0]['defaults'], 'Vorgabe: Bilder haben keine');
+
+/* --- Jeder Abschnitt darf sein eigenes Blatt tragen ------------------------
+ *
+ * Bisher gab es ein Blatt fuer den ganzen Bereich (sectionsBg). Der Kunde
+ * will eines je Abschnitt: "her birinin arkaplanini ozel olarak ayarlayabi-
+ * leyim". Der Ort dafuer stand schon bereit - jeder Abschnitt hat eine eigene
+ * Regel (.d-sec-<id>), aus der heute Farbe, Schrift und Ausrichtung kommen.
+ *
+ * Zwei Passungen, weil beide gebraucht werden: "blatt" ist dieselbe Rechnung
+ * wie beim grossen Blatt (Breite an der Karte, oben, nach unten wiederholt),
+ * "cover" fuellt den Abschnitt und schneidet dafuer die Raender ab.
+ */
+
+$doc = DesignSections::complete(sec_doc([
+    ['id' => 'ort',    'type' => 'location',
+     'style' => ['bg' => '/uploads/designs/rosen.webp', 'bgFit' => 'cover']],
+    ['id' => 'wort',   'type' => 'text',
+     'style' => ['bg' => '/uploads/designs/blatt.webp', 'bgFit' => 'quatsch']],
+    ['id' => 'ablauf', 'type' => 'program'],
+]));
+
+assert_same('/uploads/designs/rosen.webp', $doc['sections'][0]['style']['bg'],
+    'complete: der Pfad des Blattes bleibt stehen');
+assert_same('cover', $doc['sections'][0]['style']['bgFit'], 'complete: cover bleibt cover');
+assert_same('blatt', $doc['sections'][1]['style']['bgFit'],
+    'complete: eine unbekannte Passung faellt auf blatt');
+assert_same('', $doc['sections'][2]['style']['bg'], 'complete: ohne Angabe kein eigenes Blatt');
+
+// Derselbe Filter wie ueberall, wo ein Pfad aus dem Panel kommt.
+$boese = DesignSections::complete(sec_doc([
+    ['id' => 'ort', 'type' => 'location', 'style' => ['bg' => 'javascript:alert(1)']],
+]));
+assert_same('', $boese['sections'][0]['style']['bg'], 'complete: ein unsauberer Pfad faellt weg');
+
+/* --- Und die Regel steht im Stilblock, an der Kennung des Abschnitts --- */
+
+$css = DesignSections::css(sec_doc([
+    ['id' => 'ort',    'type' => 'location', 'style' => ['bg' => '/uploads/a.webp', 'bgFit' => 'blatt']],
+    ['id' => 'wort',   'type' => 'text',     'style' => ['bg' => '/uploads/b.webp', 'bgFit' => 'cover']],
+    ['id' => 'ablauf', 'type' => 'program'],
+]), '.d-x');
+
+assert_contains($css, ".d-x .d-sec-ort{", 'css: der Abschnitt bekommt seine eigene Regel');
+assert_contains($css, "background-image:url('/uploads/a.webp');", 'css: mit seinem Blatt');
+assert_contains($css, 'background-size:min(100%,42rem) auto;', 'css: blatt haengt an der Breite der Karte');
+assert_contains($css, 'background-repeat:repeat-y;', 'css: und wiederholt sich nach unten');
+assert_contains($css, 'background-size:cover;', 'css: cover fuellt den Abschnitt');
+assert_contains($css, 'background-repeat:no-repeat;', 'css: und wiederholt sich nicht');
+
+// Ein Abschnitt ohne Blatt bekommt auch keine Regel dafuer - der Stilblock
+// steht inline in JEDER Seite, tote Zeilen kosten dort echtes Gewicht.
+assert_not_contains($css, '.d-x .d-sec-ablauf{background-image', 'css: ohne Blatt keine Regel');
+
+/* --- Die leere Zeile des Panels hat dieselbe Gestalt wie eine echte -------
+ *
+ * Unter die Abschnitte haengt das Panel eine leere Zeile fuer "neu". Sie war
+ * von Hand gebaut, und als der Stil um das Blatt wuchs, wuchs sie nicht mit:
+ * die Tafel las einen Schluessel, den es an dieser einen Zeile nicht gab, und
+ * die Warnung landete mitten im Formular. Derselbe Fehler wie heute frueh bei
+ * den Abschnitten aus der Datenbank, nur eine Zeile weiter.
+ *
+ * Also entsteht sie jetzt aus complete() - derselben Quelle wie jede echte -
+ * und dieser Test haelt fest, dass die beiden Gestalten sich nicht wieder
+ * auseinanderleben.
+ */
+
+$echt = DesignSections::complete(sec_doc([['id' => 'ort', 'type' => 'location']]))['sections'][0];
+$leer = DesignSections::leer();
+
+assert_same(array_keys($echt), array_keys($leer), 'leer: dieselben Schluessel wie ein echter Abschnitt');
+assert_same(array_keys($echt['style']), array_keys($leer['style']), 'leer: und derselbe Stil');
+assert_same(array_keys($echt['permissions']), array_keys($leer['permissions']), 'leer: und dieselben Rechte');
+assert_same('', $leer['id'], 'leer: ohne Kennung');
+assert_same('', $leer['type'], 'leer: ohne Art');
+assert_same(false, $leer['enabled'], 'leer: und ausgeschaltet');
