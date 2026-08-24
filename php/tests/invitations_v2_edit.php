@@ -277,8 +277,8 @@ assert_same(
         // Seit dem Zeitstrahl mit Zeichen traegt jede Zeile eine dritte
         // Angabe. Wer keine Art gewaehlt hat, traegt sie leer - und damit
         // steht hier, dass das Einsammeln sie nicht erfindet.
-        ['time' => '', 'title' => 'Nikah Toereni', 'icon' => ''],
-        ['time' => '19:30', 'title' => 'Abendessen', 'icon' => ''],
+        ['time' => '', 'title' => 'Nikah Toereni', 'icon' => '', 'text' => ''],
+        ['time' => '19:30', 'title' => 'Abendessen', 'icon' => '', 'text' => ''],
     ],
     $ersteRunde['program'],
     'sammleAngaben: die Zeile ohne Uhrzeit bleibt (mit leerer Uhrzeit), die Zeile ohne Titel faellt heraus - direkt am ersten Ergebnis geprueft, nicht erst ueber die Rundreise'

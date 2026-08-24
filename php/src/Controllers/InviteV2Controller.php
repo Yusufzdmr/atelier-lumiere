@@ -230,6 +230,7 @@ final class InviteV2Controller
                 'time'  => (string) ($values['prog_time_' . $z] ?? ''),
                 'title' => $titel,
                 'icon'  => $zeichen,
+                'text'  => (string) ($values['prog_text_' . $z] ?? ''),
             ];
         }
         if ($zeilen !== []) {
@@ -467,6 +468,7 @@ final class InviteV2Controller
                         'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
                         'title' => $titel,
                         'icon'  => $zeichen,
+                        'text'  => Security::clean($_POST['prog_text_' . $z] ?? '', DesignSections::PROGRAM_TEXT_LEN),
                     ];
                 }
                 if ($zeilen !== []) {

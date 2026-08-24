@@ -56,6 +56,9 @@ final class DesignSections
     public const PROGRAM_MAX = 20;
     public const PROGRAM_LEN = 80;
 
+    /** Und wie lang der Satz darunter sein darf. */
+    public const PROGRAM_TEXT_LEN = 200;
+
     /**
      * Vollstaendige Abschnitte, in der Reihenfolge des Feldes.
      *
@@ -235,6 +238,10 @@ final class DesignSections
                 'time'  => mb_substr(trim((string) ($zeile['time'] ?? '')), 0, self::PROGRAM_LEN),
                 'title' => mb_substr($titel, 0, self::PROGRAM_LEN),
                 'icon'  => $zeichen,
+                // Der Satz unter der Ueberschrift. Geschnitten und nicht
+                // abgelehnt, wie der Titel: eine Einladung soll nicht an einer
+                // zu langen Zeile scheitern.
+                'text'  => mb_substr(trim((string) ($zeile['text'] ?? '')), 0, self::PROGRAM_TEXT_LEN),
             ];
             if (count($out) >= self::PROGRAM_MAX) {
                 break;
@@ -628,6 +635,20 @@ final class DesignSections
              * Die Groesse haengt an der Schrift (em) und nicht an Pixeln:
              * ein Zeichen neben einer Zeile soll mit ihr wachsen.
              */
+            /*
+             * Titel und Satz einer Ablaufzeile. Der Satz steht unter dem
+             * Titel und leiser - er erklaert, er ruft nicht.
+             *
+             * Das Rozet ist hier nur eine Huelle, die ihr Zeichen mittig
+             * haelt. Rund wird es erst im Zeitstrahl, wo eine Linie
+             * hindurchlaeuft, die es zudecken muss.
+             */
+            . $scope . ' .d-sec-plan .d-plan-titel{display:block;}'
+            . $scope . ' .d-sec-plan .d-plan-text{display:block;margin-top:0.2rem;'
+              . 'font-size:0.88em;opacity:0.75;}'
+            . $scope . ' .d-sec-plan .d-plan-rozet{display:inline-flex;'
+              . 'align-items:center;justify-content:center;flex:none;}'
+
             . $scope . ' .d-ikon{display:inline-block;width:1.15em;height:1.15em;'
               . 'vertical-align:-0.15em;background-color:currentColor;'
               . '-webkit-mask-position:center;mask-position:center;'
@@ -663,18 +684,46 @@ final class DesignSections
              * so besser denn als Tabelle: die Uhrzeit fuehrt, der Punkt sitzt
              * auf der Linie, und was darunter steht, gehoert sichtbar dazu.
              */
-            'program/zeitstrahl' => $sel . ' .d-sec-plan{display:block;'
-                . 'grid-template-columns:none;text-align:left;max-width:22rem;'
-                . 'margin-inline:auto;padding-left:1.25rem;border-left:1px solid currentColor;}'
-                . $sel . ' .d-sec-plan dt{position:relative;margin-top:1.1rem;font-weight:600;}'
-                . $sel . ' .d-sec-plan dt:first-child{margin-top:0;}'
-                // Der Punkt sitzt auf der Linie, nicht daneben: das Blatt ist
-                // 1.25rem breit gepolstert, der Punkt 0.36rem - halb davon
-                // zurueck ergibt 1.43rem.
+            /*
+             * Der Ablauf als Strahl - jetzt mit dem Ring auf der Linie.
+             *
+             * Die Linie lag frueher am linken Rand der ganzen Liste, und auf
+             * ihr sass ein Punkt. Ayhan hat eine fremde Einladung geschickt
+             * und darin die Zeichen eingekreist: dort laeuft die Linie
+             * ZWISCHEN Uhrzeit und Text, und auf ihr sitzt ein Ring mit dem
+             * Zeichen darin.
+             *
+             * Also zwei Spalten und die Linie dazwischen. Sie wird nicht als
+             * Rand der Liste gezogen, sondern je Zeile hinter der Uhrzeit -
+             * nur so laeuft sie durch die Mitte des Rings, und nur so kann
+             * der Ring sie mit seiner eigenen Papierfarbe unterbrechen.
+             *
+             * Der Punkt bleibt fuer Zeilen ohne Zeichen. Ein leerer Ring auf
+             * der Linie saehe aus wie ein vergessenes Bild.
+             */
+            'program/zeitstrahl' => $sel . ' .d-sec-plan{display:grid;'
+                . 'grid-template-columns:auto 1fr;column-gap:1.15rem;text-align:left;'
+                . 'max-width:26rem;margin-inline:auto;}'
+                . $sel . ' .d-sec-plan dt{position:relative;display:flex;align-items:flex-start;'
+                . 'justify-content:flex-end;gap:0.65rem;margin-top:1.5rem;font-weight:600;}'
+                . $sel . ' .d-sec-plan dd{margin:0;margin-top:1.5rem;}'
+                . $sel . ' .d-sec-plan dt:first-of-type,'
+                . $sel . ' .d-sec-plan dd:first-of-type{margin-top:0;}'
+                // Die Linie: hinter der Uhrzeit, durch die Mitte des Rings,
+                // und ueber die Luecke hinaus zur naechsten Zeile.
+                . $sel . ' .d-sec-plan dt::after{content:"";position:absolute;'
+                . 'right:1.15em;top:-1.5rem;bottom:-1.5rem;width:1px;'
+                . 'background:currentColor;opacity:0.3;}'
+                // Der Punkt fuer Zeilen ohne Zeichen - an derselben Stelle.
                 . $sel . ' .d-sec-plan dt::before{content:"";position:absolute;'
-                . 'left:-1.43rem;top:0.5em;width:0.36rem;height:0.36rem;'
+                . 'right:1.0em;top:0.95em;width:0.36rem;height:0.36rem;'
                 . 'border-radius:50%;background:currentColor;}'
-                . $sel . ' .d-sec-plan dd{margin:0;opacity:0.8;}',
+                // Der Ring deckt Linie und Punkt zu: eigene Flaeche, eigene
+                // Ebene. Ohne den Grund liefe die Linie quer durch das Zeichen.
+                . $sel . ' .d-sec-plan .d-plan-rozet{position:relative;z-index:1;'
+                . 'width:2.3em;height:2.3em;border:1px solid currentColor;'
+                . 'border-radius:50%;background:var(--d-paper,#faf7f2);}'
+                . $sel . ' .d-sec-plan .d-plan-text{opacity:0.8;}',
 
             /*
              * Zwei Familien nebeneinander. Ohne eigenes Markup: die beiden
@@ -919,7 +968,14 @@ final class DesignSections
                 ? $zeile['title']
                 : SectionRegistry::iconTitle($zeile['icon'], $locale);
 
-            $out .= '<dt>' . e($zeile['time']) . '</dt><dd>';
+            /*
+             * Uhrzeit und Zeichen stehen zusammen im <dt>, Titel und Satz im
+             * <dd>. Beide Gestalten drucken dasselbe; sie kleiden es nur
+             * anders. Ein zweiter Druckweg je Gestalt waere eine zweite
+             * Wahrheit - und der Zeitstrahl braucht das Zeichen dort, wo seine
+             * Linie laeuft.
+             */
+            $out .= '<dt><span class="d-plan-zeit">' . e($zeile['time']) . '</span>';
 
             if ($zeile['icon'] !== '') {
                 /*
@@ -929,16 +985,23 @@ final class DesignSections
                  *
                  * Inline und nicht im Stilblock: welche Zeichen vorkommen, sagt
                  * die EINLADUNG, und den Stilblock schreibt die VORLAGE. Die
-                 * Grundregel (Groesse, Farbe, Wiederholung) steht dort; hier
-                 * steht nur, welche Zeichnung es ist.
+                 * Grundregel (Groesse, Farbe, Ring) steht dort; hier steht nur,
+                 * welche Zeichnung es ist.
                  */
                 $datei = SectionRegistry::iconFile($zeile['icon']);
                 $maske = "url('" . $datei . "')";
-                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
-                    . ';mask-image:' . $maske . '"></span> ';
+                $out .= '<span class="d-plan-rozet"><span class="d-ikon" style="-webkit-mask-image:'
+                    . $maske . ';mask-image:' . $maske . '"></span></span>';
             }
 
-            $out .= e($titel) . '</dd>';
+            $out .= '</dt><dd><span class="d-plan-titel">' . e($titel) . '</span>';
+
+            // Kein leerer Absatz fuer eine Zeile ohne Satz.
+            if ($zeile['text'] !== '') {
+                $out .= '<span class="d-plan-text">' . e($zeile['text']) . '</span>';
+            }
+
+            $out .= '</dd>';
         }
 
         return $out . '</dl>';

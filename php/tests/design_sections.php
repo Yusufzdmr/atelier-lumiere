@@ -911,3 +911,57 @@ assert_contains($gedruckt, "mask-image:url('/assets/icons/pasta.svg')", 'html: u
 assert_contains($gedruckt, 'Tortenanschnitt', 'html: ohne eigenen Titel steht der Vorschlag da');
 assert_contains($gedruckt, 'Bizim dans', 'html: mit eigenem Titel gewinnt das Paar');
 assert_not_contains($gedruckt, 'Tanz</dd>', 'html: und der Vorschlag tritt zurueck');
+
+/* --- Eine Ablaufzeile darf einen Satz tragen -----------------------------
+ *
+ * Ayhan hat eine fremde Einladung geschickt und die Zeichen darin gruen
+ * eingekreist. Was daneben steht, gehoert zum selben Bild: unter jeder
+ * Ueberschrift ein Satz - "Wir empfangen euch mit Aperitif in der Hand".
+ * Eine Zeile aus Uhrzeit und zwei Woertern ist ein Fahrplan; mit dem Satz
+ * wird sie eine Einladung.
+ *
+ * Leer bleibt leer: wer nichts schreibt, bekommt keinen leeren Absatz.
+ */
+
+$mitSatz = DesignSections::programRows(['program' => [
+    ['time' => '14:00', 'icon' => 'giris', 'title' => 'Ankommen',
+     'text' => '  Wir empfangen euch mit Aperitif in der Hand.  '],
+    ['time' => '15:00', 'title' => 'Trauung'],
+]]);
+
+assert_same('Wir empfangen euch mit Aperitif in der Hand.', $mitSatz[0]['text'],
+    'programRows: der Satz kommt an, ohne Rand');
+assert_same('', $mitSatz[1]['text'], 'programRows: ohne Angabe kein Satz');
+assert_same(DesignSections::PROGRAM_TEXT_LEN,
+    mb_strlen(DesignSections::programRows(['program' => [
+        ['title' => 'x', 'text' => str_repeat('ä', DesignSections::PROGRAM_TEXT_LEN + 40)],
+    ]])[0]['text']),
+    'programRows: ein zu langer Satz wird geschnitten, nicht abgelehnt');
+
+$gedruckt2 = DesignSections::html(
+    sec_doc([['id' => 'ablauf', 'type' => 'program', 'enabled' => true]]),
+    ['program' => [
+        ['time' => '14:00', 'icon' => 'giris', 'title' => 'Ankommen', 'text' => 'Mit Aperitif.'],
+        ['time' => '15:00', 'title' => 'Trauung'],
+    ]],
+    'de'
+);
+
+assert_contains($gedruckt2, '<dl class="d-sec-plan">', 'html: die Liste behaelt ihren Namen');
+assert_contains($gedruckt2, 'class="d-plan-zeit"', 'html: die Uhrzeit steht fuer sich');
+assert_contains($gedruckt2, 'class="d-plan-rozet"', 'html: das Zeichen sitzt in einem Rozet');
+assert_contains($gedruckt2, 'class="d-plan-titel"', 'html: der Titel steht fuer sich');
+assert_contains($gedruckt2, 'Mit Aperitif.', 'html: und der Satz steht darunter');
+assert_same(1, substr_count($gedruckt2, 'class="d-plan-text"'), 'html: nur die Zeile mit Satz bekommt einen');
+// Ohne Zeichen kein Rozet - ein leerer Ring auf der Linie waere schlimmer als
+// der schlichte Punkt, den die Regel ohnehin setzt.
+assert_same(1, substr_count($gedruckt2, 'class="d-plan-rozet"'), 'html: ohne Zeichen kein Rozet');
+
+/* --- Und der Strahl traegt den Ring --- */
+
+$strahl = DesignSections::css(sec_doc([
+    ['id' => 'ablauf', 'type' => 'program', 'variant' => 'zeitstrahl'],
+]), '.d-x');
+
+assert_contains($strahl, '.d-x .d-sec-plan .d-plan-rozet{', 'css: der Strahl kennt den Ring');
+assert_contains($strahl, 'border-radius:50%', 'css: und der Ring ist rund');

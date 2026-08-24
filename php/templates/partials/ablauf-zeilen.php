@@ -80,6 +80,18 @@ $progOffen = min(7, $progLetzteVoll + 1);
     <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
            placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
   </div>
+
+  <?php /*
+     Der Satz unter der Ueberschrift, auf eigener Zeile: er ist laenger als
+     die drei Felder darueber und saehe neben ihnen gequetscht aus. Leer
+     lassen ist die Regel und nicht die Ausnahme - eine Zeile ohne Satz
+     druckt auch keinen.
+  */ ?>
+  <input name="prog_text_<?= $z ?>" class="<?= $field ?> mt-2" maxlength="200"
+         placeholder="<?= e($locale === 'de'
+            ? 'Ein Satz dazu (freiwillig)'
+            : 'One sentence about it (optional)') ?>"
+         value="<?= e($old('prog_text_' . $z)) ?>">
 <?php endfor; ?>
 <?php if ($progOffen < 7) : ?>
       </div>
