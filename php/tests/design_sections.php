@@ -404,7 +404,7 @@ assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte b
  * ueberschreiben.
  */
 
-assert_same(11, count(DesignSections::TYPES), 'TYPES: elf Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie, Speisekarte');
+assert_same(12, count(DesignSections::TYPES), 'TYPES: zwoelf Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie, Speisekarte, Kleiderordnung');
 assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
 
 // Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer
@@ -1019,3 +1019,36 @@ assert_contains($karte, 'Suppe', 'html: und die Art steht dabei');
 // Liste leerer Versprechen.
 assert_not_contains($karte, 'Hauptgang', 'html: ein leerer Gang bleibt weg');
 assert_not_contains($karte, 'Vorspeise', 'html: und der auch');
+
+/* --- Die Kleiderordnung ---------------------------------------------------
+ *
+ * "Dress code gostermek istiyor musunuz? Evet: baslik, aciklama, onceden
+ * hazirlanmis gorsel."
+ *
+ * Zwei Eingaben und ein Zeichen - mehr braucht es nicht. Das vorbereitete
+ * Bild ist kein neues Feld: der Abschnitt hat seit heute frueh sein eigenes
+ * Blatt, und genau das ist der Ort dafuer. Ein zweiter Weg fuer dasselbe
+ * waere ein zweiter Ort, an dem man suchen muss.
+ */
+
+assert_true(in_array('dresscode', DesignSections::TYPES, true), 'dresscode: der Katalog kennt die Art');
+
+$kleid = sec_doc([['id' => 'kleidung', 'type' => 'dresscode', 'enabled' => true]]);
+
+assert_same([], DesignSections::visible($kleid, []), 'dresscode: ohne Angabe faellt sie weg');
+assert_same(1, count(DesignSections::visible($kleid, ['sections' => ['kleidung' => ['code' => 'Black Tie']]])),
+    'dresscode: der Code allein genuegt');
+assert_same(1, count(DesignSections::visible($kleid, ['sections' => ['kleidung' => ['note' => 'Bitte festlich.']]])),
+    'dresscode: und der Hinweis allein auch');
+
+$gedruckt3 = DesignSections::html($kleid, ['sections' => ['kleidung' => [
+    'code' => 'Elegant · Black Tie',
+    'note' => 'Lange Kleider, dunkler Anzug — bequeme Schuhe fuer die Wiese.',
+]]], 'de');
+
+assert_contains($gedruckt3, 'Elegant · Black Tie', 'html: der Code steht da');
+assert_contains($gedruckt3, 'bequeme Schuhe', 'html: und der Hinweis darunter');
+assert_contains($gedruckt3, "mask-image:url('/assets/icons/dresscode.svg')", 'html: mit seinem Zeichen');
+
+$nurCode = DesignSections::html($kleid, ['sections' => ['kleidung' => ['code' => 'Black Tie']]], 'de');
+assert_not_contains($nurCode, 'd-dress-note', 'html: ohne Hinweis kein leerer Absatz');

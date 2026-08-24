@@ -157,6 +157,31 @@ final class SectionRegistry
             ],
         ],
 
+        /*
+         * Die Kleiderordnung. Zwei Eingaben, ein Zeichen.
+         *
+         * Der Code ist die Ansage ("Black Tie"), der Hinweis das, was sie im
+         * Alltag bedeutet ("bequeme Schuhe fuer die Wiese"). Beide freiwillig,
+         * und einer genuegt: eine Ansage ohne Erklaerung steht fuer sich, eine
+         * Erklaerung ohne Ansage auch.
+         *
+         * Das vorbereitete Bild ist KEIN eigenes Feld. Jeder Abschnitt hat
+         * sein eigenes Blatt; das ist der Ort dafuer. Ein zweiter Weg fuer
+         * dasselbe waere ein zweiter Ort, an dem man suchen muss.
+         */
+        'dresscode' => [
+            'variants' => [
+                'default' => ['de' => 'Ansage über Hinweis', 'tr' => 'Kural, altında açıklama'],
+            ],
+            'settings' => [],
+            'inputs' => [
+                'code' => ['type' => 'text', 'max' => 80,
+                    'label' => ['de' => 'Kleiderordnung', 'en' => 'Dress code', 'tr' => 'Kıyafet kuralı']],
+                'note' => ['type' => 'textarea', 'max' => 300,
+                    'label' => ['de' => 'Hinweis dazu', 'en' => 'A note about it', 'tr' => 'Açıklama']],
+            ],
+        ],
+
         'rsvp' => [
             'variants' => [
                 'default' => ['de' => 'Formular', 'tr' => 'Form'],

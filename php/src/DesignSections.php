@@ -41,6 +41,8 @@ final class DesignSections
         // Die elfte Art kam mit den Zeichen: eine Karte, die nur zeigt,
         // was das Paar wirklich serviert.
         'menu',
+        // Und die zwoelfte: was man anzieht.
+        'dresscode',
     ];
 
     /**
@@ -331,6 +333,9 @@ final class DesignSections
             // Ein einziger Gang genuegt. Keiner heisst: eine Ueberschrift
             // ueber einer leeren Karte.
             'menu'      => self::speisekarteGefuellt($abschnitt, $data),
+            // Ansage oder Hinweis - eines genuegt.
+            'dresscode' => trim(self::inhalt($abschnitt, $data, 'code')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'note')) !== '',
             default     => false,
         };
     }
@@ -651,6 +656,14 @@ final class DesignSections
              * ein Zeichen neben einer Zeile soll mit ihr wachsen.
              */
             /*
+             * Die Kleiderordnung: die Ansage gross und mit ihrem Zeichen, der
+             * Hinweis darunter und leiser.
+             */
+            . $scope . ' .d-sec-dresscode .d-dress-code{display:flex;align-items:center;'
+              . 'justify-content:center;gap:0.6rem;font-size:1.15em;letter-spacing:0.06em;}'
+            . $scope . ' .d-sec-dresscode .d-dress-note{margin-top:0.6rem;opacity:0.75;'
+              . 'max-width:24rem;margin-inline:auto;}'
+            /*
              * Die Speisekarte. Zeichen links, darueber die Art, darunter das,
              * was serviert wird - das Zeichen ueber beide Zeilen.
              *
@@ -903,6 +916,7 @@ final class DesignSections
                 'music'     => self::musik($abschnitt),
                 'gallery'   => self::galerie($data, $id),
                 'menu'      => self::speisekarte($abschnitt, $data, $locale),
+                'dresscode' => self::kleiderordnung($abschnitt, $data),
                 default     => '',
             };
 
@@ -1356,6 +1370,43 @@ final class DesignSections
 
             $out .= '<span class="d-menu-art">' . e($etikett) . '</span>'
                 . '<span class="d-menu-wert">' . e($wert) . '</span></div>';
+        }
+
+        return $out;
+    }
+
+    /**
+     * Die Kleiderordnung.
+     *
+     * Das Zeichen steht bei der Ansage und nicht beim Hinweis: es zeigt, WAS
+     * hier steht, und das ist die Ansage. Ohne Ansage steht der Hinweis
+     * allein - dann ist er selbst die Ansage.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    private static function kleiderordnung(array $abschnitt, array $data): string
+    {
+        $code = trim(self::inhalt($abschnitt, $data, 'code'));
+        $hinweis = trim(self::inhalt($abschnitt, $data, 'note'));
+        $out = '';
+
+        if ($code !== '') {
+            $out .= '<p class="d-dress-code">';
+
+            $datei = SectionRegistry::iconFile('dresscode');
+            if ($datei !== '') {
+                $maske = "url('" . $datei . "')";
+                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
+                    . ';mask-image:' . $maske . '"></span>';
+            }
+
+            $out .= e($code) . '</p>';
+        }
+
+        // Kein leerer Absatz fuer einen fehlenden Hinweis.
+        if ($hinweis !== '') {
+            $out .= '<p class="d-dress-note">' . e($hinweis) . '</p>';
         }
 
         return $out;
