@@ -107,6 +107,10 @@ final class Design
              * ein.
              */
             'sectionsBg' => '',
+            // Das Blatt des SCHLUSSES. Ayhan: "Son sayfa da ayri eklensin -
+            // bastaki sayfa cicekler yukarda, son sayfada asagida." Es liegt
+            // ueber dem grossen Blatt, unten, in eigener Groesse.
+            'sectionsBgEnd' => '',
         ];
 
         $doc = array_merge($defaults, $doc);
@@ -127,6 +131,7 @@ final class Design
         $doc['family']   = self::key((string) $doc['family']);
 
         $doc['sectionsBg'] = self::safeSrc((string) $doc['sectionsBg']);
+        $doc['sectionsBgEnd'] = self::safeSrc((string) $doc['sectionsBgEnd']);
 
         $intro = is_array($doc['intro']) ? $doc['intro'] : [];
         $doc['intro'] = [
@@ -1073,6 +1078,11 @@ final class Design
         $grund = $text('sectionsbg');
         if ($grund !== null) {
             $doc['sectionsBg'] = $grund;
+        }
+
+        $schluss = $text('sectionsbg_end');
+        if ($schluss !== null) {
+            $doc['sectionsBgEnd'] = $schluss;
         }
         if (isset($post['tags'])) {
             $roh = explode(',', (string) $post['tags']);

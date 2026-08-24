@@ -360,6 +360,33 @@ use function Atelier\e;
         <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş = kart gibi)' : 'oder Pfad (leer = wie die Karte)' ?>
           <input name="sectionsbg" value="<?= e((string) $design['sectionsBg']) ?>"
                  class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+
+        <?php /*
+           Das Blatt des Schlusses.
+
+           "Son sayfa da ayri eklensin - bastaki sayfa cicekler yukarda, son
+           sayfada asagida." Das Blatt oben traegt die Struktur ueber die ganze
+           Laenge; dieses hier liegt darueber, unten, und wird NICHT gezogen -
+           eine Ranke, die sich mit der Laenge der Einladung streckt, sieht
+           sofort falsch aus.
+
+           Leer heisst: kein Schluss, alles wie bisher.
+        */ ?>
+        <div class="mt-6 border-t border-sand-deep pt-4">
+          <div class="<?= $label ?>"><?= $tr ? 'Son sayfanın kâğıdı' : 'Blatt des Schlusses' ?></div>
+          <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
+            <?= $tr
+              ? 'En alta bir kez konur, gerilmez. Çiçekleri altta olan bir kâğıt buraya.'
+              : 'Liegt einmal ganz unten und wird nicht gezogen. Ein Blatt, dessen Blumen unten sitzen, gehört hierher.' ?>
+          </p>
+
+          <label class="<?= $label ?> mt-3 block"><?= $tr ? 'Görsel yükle' : 'Bild hochladen' ?>
+            <input type="file" name="sectionsbg_end_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş = yok)' : 'oder Pfad (leer = keins)' ?>
+            <input name="sectionsbg_end" value="<?= e((string) ($design['sectionsBgEnd'] ?? '')) ?>"
+                   class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+        </div>
       </div>
     </div>
   </div>

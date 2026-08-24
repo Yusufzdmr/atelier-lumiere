@@ -456,6 +456,16 @@ final class DesignAdminController
             }
         }
 
+        // Dasselbe noch einmal fuer das Blatt des Schlusses - eine Zeile
+        // Unterschied, und beide sagen nur, was im Pfadfeld stehen soll.
+        $schluss = $_FILES['sectionsbg_end_datei'] ?? null;
+        if (is_array($schluss) && ((int) ($schluss['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::store($schluss, 'designs');
+            if ($pfad !== null) {
+                $post['sectionsbg_end'] = $pfad;
+            }
+        }
+
         $grund = $_FILES['sectionsbg_datei'] ?? null;
         if (is_array($grund) && ((int) ($grund['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
             $pfad = Media::store($grund, 'designs');

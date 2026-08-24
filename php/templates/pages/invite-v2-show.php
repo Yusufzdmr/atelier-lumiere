@@ -86,7 +86,14 @@ use Atelier\View;
     }
   ?>
   <div class="<?= e($scope) ?> d-sec-flaeche"
-       <?= $papier !== '' ? 'style="--d-sec-blatt:url(\'' . e($papier) . '\')"' : '' ?>>
+       <?php
+         // Zwei Variablen, eine style-Angabe: der Schluss ist freiwillig.
+         $schlussBlatt = Design::safeSrc((string) ($design['sectionsBgEnd'] ?? ''));
+         $stil = '';
+         if ($papier !== '') { $stil .= '--d-sec-blatt:url(\'' . e($papier) . '\');'; }
+         if ($schlussBlatt !== '') { $stil .= '--d-sec-blatt-end:url(\'' . e($schlussBlatt) . '\');'; }
+       ?>
+       <?= $stil !== '' ? 'style="' . $stil . '"' : '' ?>>
     <div class="d-sections mx-auto max-w-2xl">
       <?= $abschnitte ?>
     </div>

@@ -503,8 +503,20 @@ final class DesignSections
          * Goldecken alle paar hundert Pixel noch einmal.
          */
         return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
-            . 'background-image:var(--d-sec-blatt,none);background-position:top center;'
-            . 'background-size:min(100%,42rem) 100%;background-repeat:no-repeat;}'
+            /*
+             * Zwei Schichten. Oben das grosse Blatt, ueber die ganze Hoehe
+             * gezogen - es traegt die Papierstruktur. Darueber, unten und in
+             * EIGENER Groesse, das Blatt des Schlusses: der Blumenstrauss, der
+             * die Einladung zumacht.
+             *
+             * Die zuerst genannte Schicht liegt vorn - deshalb steht der
+             * Schluss zuerst. Er wird NICHT gezogen: eine Ranke, die sich mit
+             * der Laenge der Einladung streckt, sieht sofort falsch aus.
+             */
+            . 'background-image:var(--d-sec-blatt-end,none),var(--d-sec-blatt,none);'
+            . 'background-position:bottom center,top center;'
+            . 'background-size:min(100%,42rem) auto,min(100%,42rem) 100%;'
+            . 'background-repeat:no-repeat,no-repeat;}'
             /*
              * Das Blatt wiederholt sich nach unten - jede Laenge ein neues
              * Blatt, nicht ein gedehntes.
@@ -540,8 +552,17 @@ final class DesignSections
              * der Breite. Prozente im padding beziehen sich auf die Breite,
              * deshalb steht dort 56 %.
              */
+            /*
+             * OHNE eigene Papierfarbe.
+             *
+             * Sie stand hier, solange jeder Abschnitt sein Blatt selbst
+             * zeichnete: dann lag die Farbe unter dem eigenen Blatt und
+             * fuellte, was das Ausblenden freigab. Seit das Blatt einmal an
+             * der ganzen Flaeche liegt, ist der Abschnitt DAVOR - und eine
+             * deckende Farbe hier uebermalt genau das Blatt, das man sehen
+             * soll. Die Farbe traegt jetzt die Flaeche, durchgehend.
+             */
             . $scope . ' .d-sec{position:relative;'
-            . 'background-color:var(--d-paper,#faf7f2);'
             . 'padding:56% 14% 12%;'
             . 'margin-top:0;line-height:1.7;text-align:center;}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'

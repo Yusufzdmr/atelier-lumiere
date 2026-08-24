@@ -663,8 +663,14 @@ $blatt = DesignSections::css(
  */
 assert_not_contains($blatt, '.d-x .d-sec::before{', 'Blatt: kein Blatt mehr je Abschnitt');
 assert_contains($blatt, '.d-x.d-sec-flaeche{', 'Blatt: die Flaeche traegt es');
-assert_contains($blatt, 'background-image:var(--d-sec-blatt,none)', 'Blatt: und zwar als Bild');
-assert_contains($blatt, 'background-size:min(100%,42rem) 100%', 'Blatt: auf die volle Hoehe gezogen');
+// Zwei Schichten: der Schluss vorn und in eigener Groesse, das grosse
+// Blatt dahinter und ueber die volle Hoehe. Die Reihenfolge ist Teil
+// der Aussage - die erste Schicht liegt oben.
+assert_contains($blatt, 'background-image:var(--d-sec-blatt-end,none),var(--d-sec-blatt,none)',
+    'Blatt: Schluss vorn, grosses Blatt dahinter');
+assert_contains($blatt, 'background-position:bottom center,top center', 'Blatt: der Schluss sitzt unten');
+assert_contains($blatt, 'background-size:min(100%,42rem) auto,min(100%,42rem) 100%',
+    'Blatt: der Schluss wird nicht gezogen, das grosse schon');
 assert_contains($blatt, '.d-x .d-sec > *{position:relative;z-index:1;}', 'Blatt: der Text liegt darueber');
 
 /*
@@ -673,9 +679,12 @@ assert_contains($blatt, '.d-x .d-sec > *{position:relative;z-index:1;}', 'Blatt:
  * dunklen Vorlage auf einer hellen Seite genau der Bruch, den das Ausblenden
  * verhindern soll.
  */
+// Und zwar NUR dort. Am Abschnitt selbst waere sie deckend und
+// uebermalte das Blatt, das hinter ihm liegt - genau das ist beim
+// Einbauen des Schlussblattes passiert und hier festgehalten.
 assert_true(
-    (bool) preg_match('/\.d-x \.d-sec\{[^}]*background-color:var\(--d-paper/', $blatt),
-    'Blatt: die Papierfarbe bleibt am Abschnitt'
+    !preg_match('/\.d-x \.d-sec\{[^}]*background-color/', $blatt),
+    'Blatt: der Abschnitt malt keine eigene Farbe darueber'
 );
 assert_true(
     !preg_match('/\.d-x \.d-sec\{[^}]*background-image/', $blatt),
