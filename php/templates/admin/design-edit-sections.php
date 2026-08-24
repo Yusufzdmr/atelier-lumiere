@@ -263,8 +263,10 @@ use function Atelier\e;
     <div class="<?= $label ?>"><?= $tr ? 'Açılış videosu (zarf)' : 'Öffnungsfilm (Kuvert)' ?></div>
     <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
       <?= $tr
-        ? 'Kart gelmeden önce oynar. Boşsa bugünkü çizilmiş zarf çalışır. Dikey 9:16, 2–5 saniye, açılmış zarfın üzerinde bitmeli.'
-        : 'Laeuft, bevor die Karte kommt. Leer bedeutet die bisherige gezeichnete Klappe. Hochkant 9:16, 2-5 s, und am Ende auf dem geoeffneten Kuvert stehen bleiben.' ?>
+        ? 'Kart gelmeden önce oynar. Boşsa bugünkü çizilmiş zarf çalışır. Dikey 9:16 en iyi oturur, en çok 20 saniye. '
+          . 'Film bitince karta 600 ms içinde eriyerek geçer — özel bir bitiş karesi hazırlaman gerekmez.'
+        : 'Läuft, bevor die Karte kommt. Leer bedeutet die bisherige gezeichnete Klappe. Hochkant 9:16 sitzt am besten, höchstens 20 Sekunden. '
+          . 'Am Ende blendet der Film in 600 ms in die Karte über — ein eigenes Schlussbild braucht er nicht.' ?>
     </p>
 
     <div class="mt-4 flex items-start gap-5">

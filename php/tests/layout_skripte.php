@@ -142,3 +142,23 @@ foreach (glob(__DIR__ . '/../templates/**/*.php') ?: [] as $vorlage) {
         assert_contains($quelle, $holt, $kurz . ': holt ' . $name);
     }
 }
+
+/*
+ * Und der Hinweis am Oeffnungsfilm sagt nicht mehr, was einmal galt.
+ *
+ * Dort stand "2-5 s, und am Ende auf dem geoeffneten Kuvert stehen bleiben".
+ * Beides war richtig, solange der Film hart abgeschnitten wurde: sein letztes
+ * Bild musste das Blatt der Karte sein, sonst sah man den Schnitt, und laenger
+ * als sechs Sekunden lief er ohnehin nicht.
+ *
+ * Seit der Vorspann ausblendet und ein leeres Feld wirklich "so lang wie der
+ * Film" heisst, stimmt keine der beiden Angaben mehr - und ein Hinweis, der
+ * nicht stimmt, kostet mehr als keiner.
+ */
+
+$vorspann = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-sections.php');
+
+assert_not_contains($vorspann, '2–5 saniye', 'Vorspann-Hinweis: die alte Laengenangabe ist weg (tr)');
+assert_not_contains($vorspann, '2-5 s,', 'Vorspann-Hinweis: und auf Deutsch auch');
+assert_not_contains($vorspann, 'zarfın üzerinde bitmeli', 'Vorspann-Hinweis: das Schlussbild wird nicht mehr verlangt');
+assert_contains($vorspann, '20 saniye', 'Vorspann-Hinweis: dafuer steht die echte Obergrenze da');
