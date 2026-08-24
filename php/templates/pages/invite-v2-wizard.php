@@ -365,41 +365,15 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <?php endif; ?>
 
               <?php /*
-                 Die eigenen Felder dieses Abschnitts. WELCHE es sind, sagt der
-                 Katalog (SectionRegistry::inputs) - hier steht keine Liste
-                 mehr. Vorher stand hier ein Block je Feld, und eine neue Art
-                 mit eigenem Feld hiess: hier ein if, im Controller noch eins,
-                 beim Vorbelegen ein drittes. Wer eines vergass, bekam ein
-                 Feld, das sich fuellen aber nicht speichern liess.
-
-                 Der Feldname traegt die Kennung: ein Dokument kann mehrere
-                 Textbloecke haben ("Dress Code", "Anfahrt"), und ein fester
-                 Name waere fuer beide derselbe. Fuer den Schluessel 'text'
-                 ergibt sec_<schluessel>_<kennung> genau den bisherigen Namen.
-
-                 Die Obergrenze steht ebenfalls im Katalog - dasselbe maxlength
-                 hier und dieselbe Zahl im Controller waeren zwei Stellen, an
-                 denen sie auseinanderlaufen kann.
+                 Die eigenen Felder dieses Abschnitts - ein Teil, kein Block:
+                 dasselbe steht beim Bearbeiten, und zwei Kopien laufen
+                 auseinander, sobald der Katalog ein Feld dazubekommt. Genau
+                 das ist heute passiert.
               */ ?>
-              <?php foreach (($abschnitt['inputs'] ?? []) as $schluessel => $feld) : ?>
-                <?php
-                  $feldName = 'sec_' . $schluessel . '_' . $sid;
-                  $etikett  = $feld['label'][$locale] ?? $feld['label']['de'] ?? $schluessel;
-                ?>
-                <div class="mt-3">
-                  <label class="<?= $label ?>" for="sf-<?= e($sid . '-' . $schluessel) ?>"><?= e((string) $etikett) ?></label>
-                  <?php if ((string) $feld['type'] === 'textarea') : ?>
-                    <textarea id="sf-<?= e($sid . '-' . $schluessel) ?>" name="<?= e($feldName) ?>" rows="4"
-                              maxlength="<?= (int) $feld['max'] ?>"
-                              class="<?= $field ?>"><?= e($old($feldName)) ?></textarea>
-                    <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('sectionTextNote')) ?></p>
-                  <?php else : ?>
-                    <input id="sf-<?= e($sid . '-' . $schluessel) ?>" name="<?= e($feldName) ?>"
-                           maxlength="<?= (int) $feld['max'] ?>"
-                           class="<?= $field ?>" value="<?= e($old($feldName)) ?>">
-                  <?php endif; ?>
-                </div>
-              <?php endforeach; ?>
+              <?= \Atelier\View::partial('partials/abschnitt-felder', [
+                  'abschnitt' => $abschnitt, 'sid' => $sid, 'old' => $old, 't' => $t,
+                  'label' => $label, 'field' => $field, 'locale' => $locale, 'fotos' => [],
+              ]) ?>
 
               <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
                 <?= \Atelier\View::partial('partials/ablauf-zeilen', compact('old','t','field','locale')) ?>

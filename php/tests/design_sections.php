@@ -404,7 +404,7 @@ assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte b
  * ueberschreiben.
  */
 
-assert_same(9, count(DesignSections::TYPES), 'TYPES: neun Arten - sechs alte, dann Schluss, Geschenk, Musik');
+assert_same(10, count(DesignSections::TYPES), 'TYPES: zehn Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie');
 assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
 
 // Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer
@@ -727,4 +727,32 @@ $ohneTon = DesignSections::complete(sec_doc([['id' => 'ton', 'type' => 'music']]
 assert_true(
     !str_contains(DesignSections::html($ohneTon, [], 'de', '2026-01-01'), 'd-sec-music'),
     'Musik: ohne Tonspur kein Abschnitt'
+);
+
+/* --- Die Galerie: Bilder statt Zeichen --- */
+
+$galDoc = DesignSections::complete(sec_doc([['id' => 'bilder', 'type' => 'gallery']]));
+$galDaten = ['sections' => ['bilder' => ['photos' => [
+    '/uploads/einladungen/v2/a/1.jpg',
+    'https://fremd.example/2.jpg',
+    '/uploads/einladungen/v2/a/3.jpg',
+]]]];
+
+// Der Pfad geht durch safeSrc: er stammt zwar aus dem eigenen Upload, steht
+// seitdem aber in einem JSON-Feld - und was dort steht, ist beim Lesen wieder
+// eine Behauptung.
+assert_same(
+    ['/uploads/einladungen/v2/a/1.jpg', '/uploads/einladungen/v2/a/3.jpg'],
+    DesignSections::sectionPhotos($galDaten, 'bilder'),
+    'Galerie: ein fremder Host faellt weg'
+);
+
+$galHtml = DesignSections::html($galDoc, $galDaten, 'de', '2026-01-01');
+assert_contains($galHtml, '<div class="d-sec-bilder">', 'Galerie: die Bilder stehen in einem Kasten');
+assert_contains($galHtml, 'loading="lazy"', 'Galerie: sie laden erst, wenn jemand hinsieht');
+assert_true(!str_contains($galHtml, 'fremd.example'), 'Galerie: der fremde Host steht nicht im Markup');
+
+assert_true(
+    !str_contains(DesignSections::html($galDoc, [], 'de', '2026-01-01'), 'd-sec-gallery'),
+    'Galerie: ohne Bild kein Abschnitt'
 );

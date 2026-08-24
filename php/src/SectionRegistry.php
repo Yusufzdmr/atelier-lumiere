@@ -210,6 +210,37 @@ final class SectionRegistry
         ],
 
         /*
+         * Die Bilder des Paares.
+         *
+         * Die einzige Art, deren Inhalt keine Zeichen sind, sondern Dateien.
+         * Deshalb ein eigener Eingabetyp: der Assistent braucht ein Feld, das
+         * mehrere Dateien nimmt, und der Controller einen Weg, sie
+         * abzulegen - und zwar erst, wenn die Adresse der Einladung feststeht,
+         * denn sie ist der Ordner.
+         *
+         * Acht Bilder. Nicht, weil mehr technisch nicht ginge, sondern weil
+         * eine Einladung kein Album ist: wer zwanzig Bilder hinlegt, zwingt
+         * jeden Gast, zwanzig zu laden, bevor er die Adresse der Feier sieht.
+         */
+        'gallery' => [
+            'variants' => [
+                'default'  => ['de' => 'Raster', 'tr' => 'Izgara'],
+                // Ein Streifen, der seitwaerts laeuft. Auf dem Telefon ist das
+                // die natuerlichere Geste, und drei Bilder nebeneinander sind
+                // dort ohnehin drei Briefmarken.
+                'streifen' => ['de' => 'Streifen', 'tr' => 'Şerit'],
+            ],
+            'settings' => [],
+            'inputs' => [
+                'photos' => [
+                    'type'  => 'photos',
+                    'max'   => 8,
+                    'label' => ['de' => 'Eure Bilder', 'en' => 'Your photos', 'tr' => 'Fotoğraflarınız'],
+                ],
+            ],
+        ],
+
+        /*
          * Musik. Der Track gehoert dem Grafiker und nicht dem Paar - deshalb
          * eine Einstellung und kein Eingabefeld: die Vorlage bringt ihren
          * Klang mit, so wie sie ihre Schrift mitbringt.

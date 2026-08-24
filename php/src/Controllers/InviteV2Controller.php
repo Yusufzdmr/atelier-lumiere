@@ -499,6 +499,109 @@ final class InviteV2Controller
      * @param array<string,mixed> $alt
      * @return array{palette:array<string,string>,fonts:array<string,string>,layers:array<string,mixed>,sections:array<string,mixed>}
      */
+    /**
+     * Die Bilder einer Galerie ablegen - und die weggenommenen loeschen.
+     *
+     * Getrennt von sammleAngaben(), weil Dateien einen Ordner brauchen und
+     * der Ordner die Adresse der Einladung ist. Beim Veroeffentlichen
+     * entsteht der Slug AUS den Angaben (aus den Namen des Paares), existiert
+     * also erst danach: erst die Namen, dann die Adresse, dann die Bilder.
+     *
+     * $alt sind die bisherigen Daten - beim Veroeffentlichen leer, beim
+     * Bearbeiten die gespeicherten. Was darin steht und nicht abgewaehlt
+     * wurde, bleibt: ein Formular ohne neue Datei darf keine Galerie leeren.
+     *
+     * Ein abgewaehltes Bild wird von der Platte genommen und nicht nur aus
+     * der Liste: sonst bliebe es unter seiner Adresse oeffentlich abrufbar,
+     * obwohl die Einladung es nicht mehr zeigt. Dieselbe Ueberlegung wie beim
+     * ersetzten Foto einer Ebene.
+     *
+     * Die Obergrenze steht im Katalog und wird hier eingehalten, nicht nur im
+     * Formular: das Formular kann jeder umgehen, der ein zweites Fenster
+     * aufmacht.
+     *
+     * @param array<string,mixed> $data
+     * @param array<string,mixed> $darf
+     * @param array<string,mixed> $alt
+     * @return array<string,mixed>
+     */
+    private function mitBildern(array $data, array $darf, string $slug, array $alt): array
+    {
+        foreach ($darf['sections'] as $sid => $abschnitt) {
+            foreach ($abschnitt['inputs'] ?? [] as $schluessel => $feld) {
+                if ((string) $feld['type'] !== 'photos') {
+                    continue;
+                }
+
+                $weg = array_map(
+                    static fn (mixed $p): string => is_string($p) ? $p : '',
+                    (array) ($_POST['sec_photo_weg_' . $sid] ?? [])
+                );
+
+                $behalten = [];
+                foreach (DesignSections::sectionPhotos($alt, (string) $sid) as $pfad) {
+                    if (in_array($pfad, $weg, true)) {
+                        Media::delete($pfad);
+                        continue;
+                    }
+                    $behalten[] = $pfad;
+                }
+
+                foreach ($this->hochgeladene('sec_' . $schluessel . '_' . $sid) as $datei) {
+                    if (count($behalten) >= (int) $feld['max']) {
+                        break;
+                    }
+                    // Media::store() sieht in die Datei, nicht auf ihren Namen.
+                    $pfad = Media::store($datei, 'einladungen/v2/' . $slug);
+                    if ($pfad !== null) {
+                        $behalten[] = $pfad;
+                    }
+                }
+
+                if ($behalten !== []) {
+                    $data['sections'][$sid][$schluessel] = $behalten;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Ein Mehrfach-Dateifeld als Liste einzelner Dateien.
+     *
+     * PHP dreht $_FILES bei name="x[]" um: statt einer Liste von Dateien
+     * steht dort eine Datei, deren Felder Listen sind. Wer das nicht
+     * auseinandernimmt, uebergibt Media::store() ein Array als Dateinamen -
+     * und bekommt keinen Fehler, sondern nichts.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function hochgeladene(string $name): array
+    {
+        $feld = $_FILES[$name] ?? null;
+        if (!is_array($feld) || !isset($feld['tmp_name'])) {
+            return [];
+        }
+
+        if (!is_array($feld['tmp_name'])) {
+            return [$feld];
+        }
+
+        $out = [];
+        foreach (array_keys($feld['tmp_name']) as $i) {
+            $out[] = [
+                'name'     => $feld['name'][$i] ?? '',
+                'type'     => $feld['type'][$i] ?? '',
+                'tmp_name' => $feld['tmp_name'][$i] ?? '',
+                'error'    => $feld['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                'size'     => $feld['size'][$i] ?? 0,
+            ];
+        }
+
+        return $out;
+    }
+
     private function sammleWahl(array $darf, string $slug, array $alt, array $sockel): array
     {
         $altLayers = is_array($alt['layers'] ?? null) ? $alt['layers'] : [];
@@ -687,6 +790,17 @@ final class InviteV2Controller
         // drittes Argument: beim Veroeffentlichen gibt es keine alte Wahl,
         // aus der ein Foto uebernommen werden koennte.
         $wahl = $this->sammleWahl($darf, $slug, [], $design);
+
+        /*
+         * Die Bilder der Galerie - erst JETZT, weil sie einen Ordner brauchen
+         * und der Ordner die Adresse ist.
+         *
+         * sammleAngaben() kann das nicht: der Slug entsteht ein paar Zeilen
+         * weiter oben AUS den Angaben (aus den Namen des Paares), existiert
+         * dort also noch gar nicht. Erst die Namen, dann die Adresse, dann die
+         * Bilder.
+         */
+        $data = $this->mitBildern($data, $darf, $slug, []);
 
         /*
          * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
@@ -1163,6 +1277,10 @@ final class InviteV2Controller
             'values'     => $werte,
             'wahl'       => $wahl,
             'darfDesign' => InvitationsV2::canEditDesign($data),
+            // Fuer die Bilder, die schon abgelegt sind: sie stehen als Liste
+            // in den Daten und nicht in $values - dort landet nur, was sich
+            // als Zeichenkette in ein Formularfeld zuruecklegen laesst.
+            'daten'      => $data,
             'gastPfad'   => I18n::path('/v2/einladung/' . $slug),
             'stand'      => is_string($data['updatedAt'] ?? null) ? $data['updatedAt'] : '',
             'scope'      => ltrim($scope, '.'),
@@ -1257,6 +1375,14 @@ final class InviteV2Controller
          * locale, paid, manageKey und createdAt reisen so durch, ohne dass
          * dieser Weg sie kennen muss.
          */
+        /*
+         * Die Bilder VOR dem Wegnehmen der Inhaltsschluessel: mitBildern()
+         * liest aus $alt, was schon da liegt, und behaelt es. Danach ist
+         * $alt['sections'] fuer diesen Weg zwar weg, aber die Liste steht
+         * dann bereits in $neueAngaben.
+         */
+        $neueAngaben = $this->mitBildern($neueAngaben, $darf, $slug, $alt);
+
         $neu = $alt;
         unset($neu['families'], $neu['program'], $neu['sections']);
         foreach ($darf['fields'] as $feld) {

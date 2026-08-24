@@ -268,14 +268,17 @@ if ($darfDesign) {
             </div>
           <?php endif; ?>
 
-          <?php if (in_array('text', $abschnitt['fields'], true)) : ?>
-            <div class="mt-3">
-              <label class="<?= $label ?>" for="st-<?= e((string) $sid) ?>"><?= e($t('sectionText')) ?></label>
-              <textarea id="st-<?= e((string) $sid) ?>" name="sec_text_<?= e((string) $sid) ?>" rows="4" maxlength="1200"
-                        class="<?= $field ?>"><?= e($old('sec_text_' . $sid)) ?></textarea>
-              <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('sectionTextNote')) ?></p>
-            </div>
-          <?php endif; ?>
+          <?php /*
+             Dieselben Felder wie im Assistenten, aus demselben Teil. Vorher
+             stand hier eine Kopie, die nur "text" kannte - Hashtag,
+             Kontoinhaber, IBAN und Bilder fehlten beim Bearbeiten, und das
+             faellt niemandem auf, der die Einladung gerade erst angelegt hat.
+          */ ?>
+          <?= \Atelier\View::partial('partials/abschnitt-felder', [
+              'abschnitt' => $abschnitt, 'sid' => (string) $sid, 'old' => $old, 't' => $t,
+              'label' => $label, 'field' => $field, 'locale' => $locale,
+              'fotos' => \Atelier\DesignSections::sectionPhotos($daten ?? [], (string) $sid),
+          ]) ?>
 
           <?php if (in_array('program', $abschnitt['fields'], true)) : ?>
             <?= \Atelier\View::partial('partials/ablauf-zeilen', compact('old','t','field','locale')) ?>

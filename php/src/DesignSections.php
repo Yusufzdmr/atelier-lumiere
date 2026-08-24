@@ -37,7 +37,7 @@ final class DesignSections
         'location', 'countdown', 'family', 'program', 'rsvp', 'text',
         // Angehaengt und nicht eingeschoben: die Reihenfolge steht in Tests,
         // und ein Einschub verschoebe alles dahinter.
-        'footer', 'gift', 'music',
+        'footer', 'gift', 'music', 'gallery',
     ];
 
     /** Wie viele Programmzeilen, und wie lang eine sein darf. */
@@ -231,6 +231,9 @@ final class DesignSections
             // Die Tonspur gehoert der Vorlage, nicht dem Paar: ohne sie hat
             // dieser Abschnitt nichts zu spielen und wird nicht gedruckt.
             'music'     => trim((string) ($abschnitt['settings']['track'] ?? '')) !== '',
+            // Kein Bild, kein Abschnitt. Eine leere Galerie ist eine
+            // Ueberschrift ueber nichts.
+            'gallery'   => self::sectionPhotos($data, (string) $abschnitt['id']) !== [],
             default     => false,
         };
     }
@@ -479,6 +482,16 @@ final class DesignSections
              * Spieler und nicht wie Schmuck.
              */
             . $scope . ' .d-sec-ton{display:block;margin:1.2rem auto 0;width:100%;max-width:20rem;}'
+            /*
+             * Die Bilder. Quadratisch beschnitten und nicht in ihrem eigenen
+             * Format: acht Bilder aus acht Kameras haben acht Seitenverhaeltnisse,
+             * und untereinander gestellt ergibt das eine Treppe. Ein Raster
+             * verlangt eine gemeinsame Form.
+             */
+            . $scope . ' .d-sec-bilder{display:grid;grid-template-columns:repeat(2,1fr);'
+            . 'gap:0.5rem;margin-top:1.2rem;}'
+            . $scope . ' .d-sec-bilder img{display:block;width:100%;aspect-ratio:1;'
+            . 'object-fit:cover;}'
             // Als Block zentriert, innen ausgerichtet: die Uhrzeiten stehen
             // untereinander, sonst waere die Spalte eine Treppe.
             . $scope . ' .d-sec-plan{display:grid;grid-template-columns:auto auto;'
@@ -602,6 +615,20 @@ final class DesignSections
              * Einladung, das jemand abschreiben soll, und ein Rahmen sagt
              * genau das.
              */
+            /*
+             * Ein Streifen, der seitwaerts laeuft. Auf dem Telefon die
+             * natuerlichere Geste - und drei Bilder nebeneinander sind dort
+             * ohnehin drei Briefmarken.
+             *
+             * scroll-snap, damit er nach dem Wischen auf einem Bild steht und
+             * nicht zwischen zweien.
+             */
+            'gallery/streifen' => $sel . ' .d-sec-bilder{display:flex;grid-template-columns:none;'
+                . 'gap:0.5rem;overflow-x:auto;scroll-snap-type:x mandatory;'
+                . '-webkit-overflow-scrolling:touch;}'
+                . $sel . ' .d-sec-bilder img{flex:0 0 68%;scroll-snap-align:center;'
+                . 'aspect-ratio:3/4;}',
+
             'gift/rahmen' => $sel . ' .d-sec-konto{border:1px solid currentColor;'
                 . 'padding:1rem 1.2rem;max-width:22rem;margin-inline:auto;}',
 
@@ -665,6 +692,7 @@ final class DesignSections
                 // Als einzige Art liest sie ihre Einstellung und nicht die
                 // Daten des Paares - der Klang gehoert der Vorlage.
                 'music'     => self::musik($abschnitt),
+                'gallery'   => self::galerie($data, $id),
                 default     => '',
             };
 
@@ -781,6 +809,41 @@ final class DesignSections
     public static function sectionText(array $data, string $id): string
     {
         return self::sectionValue($data, $id, 'text');
+    }
+
+    /**
+     * Die Bilder, die das Paar in DIESEN Abschnitt gelegt hat.
+     *
+     * Der erste Inhalt, der kein Text ist - deshalb ein eigener Griff und
+     * nicht sectionValue(): dort kommt ein String heraus, hier eine Liste.
+     *
+     * Jeder Pfad geht durch Design::safeSrc. Er stammt zwar aus dem eigenen
+     * Upload, aber er steht seitdem in einem JSON-Feld, und was in einem
+     * JSON-Feld steht, ist beim Lesen wieder eine Behauptung.
+     *
+     * @param array<string,mixed> $data
+     * @return list<string>
+     */
+    public static function sectionPhotos(array $data, string $id): array
+    {
+        $alle = $data['sections'] ?? null;
+        if (!is_array($alle)) {
+            return [];
+        }
+        $eintrag = $alle[$id] ?? null;
+        if (!is_array($eintrag) || !is_array($eintrag['photos'] ?? null)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($eintrag['photos'] as $pfad) {
+            $sicher = Design::safeSrc(is_string($pfad) ? $pfad : '');
+            if ($sicher !== '') {
+                $out[] = $sicher;
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -919,6 +982,34 @@ final class DesignSections
         $roh = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $iban));
 
         return trim(chunk_split($roh, 4, ' '));
+    }
+
+    /**
+     * Die Bilder.
+     *
+     * loading="lazy" an jedem: acht Bilder sind schnell ein paar Megabyte,
+     * und die Galerie steht weit unten - die meisten Gaeste sehen zuerst die
+     * Karte und lesen dann, wo gefeiert wird.
+     *
+     * Ohne Bildunterschrift und ohne Reihenfolge zum Anklicken: eine
+     * Einladung ist kein Album. Was hier steht, sind ein paar Bilder des
+     * Paares, keine Ausstellung.
+     *
+     * alt bleibt leer und ist damit ausdruecklich Schmuck: ein Vorleser
+     * ueberspringt es, statt achtmal "Bild" zu sagen. Was der Gast wissen
+     * muss, steht in den Abschnitten darueber.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function galerie(array $data, string $id): string
+    {
+        $out = '';
+
+        foreach (self::sectionPhotos($data, $id) as $pfad) {
+            $out .= '<img src="' . e($pfad) . '" alt="" loading="lazy" decoding="async">';
+        }
+
+        return $out === '' ? '' : '<div class="d-sec-bilder">' . $out . '</div>';
     }
 
     /**
