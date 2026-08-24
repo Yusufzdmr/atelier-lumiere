@@ -23,37 +23,27 @@ Kalan tek tip:
 Not: hangi tasarımın hangi bölümü taşıyacağı Yusuf'un kararı. Test sırasında
 `bild`'e eklenen üç deneme bölümü tekrar kaldırıldı.
 
-## 2 · Yayın durumu (taslak / yayında)
+## 2 · Yayın durumu (taslak / yayında) — **yapıldı**
 
-Onaylandı. `invitations_v2` iki kolon alacak:
+Commit `f27404d`. `ALTER TABLE` **gerekmedi**: yeni bir tablo (`invite_status`)
+kuruldu, çünkü `schema.sql` baştan sona `CREATE TABLE IF NOT EXISTS` ve elle
+tekrar tekrar çalıştırılabiliyor. Bir `ALTER`, o dosyadaki ikinci çalıştırmada
+patlayacak ilk satır olurdu.
 
-```sql
-ALTER TABLE invitations_v2
-  ADD COLUMN status       VARCHAR(16) NOT NULL DEFAULT 'published',
-  ADD COLUMN published_at TIMESTAMP   NULL DEFAULT NULL;
-```
+**Canlıya alırken:** tek yapılacak şey `schema.sql`'i her zamanki gibi yeniden
+içe aktarmak. Sıralama riski yok — kod önce gitse bile satır olmayan her
+davetiye "yayında" sayılıyor.
 
-**Dikkat:** Projede migration mekanizması yok — `schema.sql` yalnızca
-`CREATE TABLE IF NOT EXISTS` kullanıyor. Yani bu ALTER canlıda **elle**
-çalıştırılacak, ve `schema.sql` de güncellenecek ki yeni kurulumlar aynı
-şemayı alsın.
+Ödeme kapısı buraya oturacak (spec §14) — fiyat kararı ayrı, bkz. hafızadaki
+`fiyatlandirma-karari`.
 
-Varsayılan `published` olmalı: bugün var olan bütün davetiyeler yayında ve
-linkleri dağıtılmış durumda. `draft` varsayılanı hepsini bir anda kapatırdı.
+## 3 · Undo/redo + sürükle-bırak — **yapıldı**
 
-Ödeme kapısı buraya oturacak (spec §14: müşteri önce sonucu görsün, sonra
-ödesin) — ama fiyat kararı ayrı, bkz. hafızadaki `fiyatlandirma-karari`.
+Commit `f50dbd5`. Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, ve hem bölüm hem katman
+listesinde sürükleyerek sıralama. Oklar duruyor: telefonda HTML5 sürükleme yok.
 
-## 3 · Undo/redo + sürükle-bırak
-
-Onaylandı, risksiz, tamamen tarayıcı tarafı.
-
-- Undo/redo: form durumunun anlık görüntüsü, ctrl+z / ctrl+shift+z. Spec §18
-  uyarıyor: her fare hareketini geçmişe yazma, slider'larda debounce.
-- Sürükle-bırak: `↑↓` düğmeleri zaten var ve `sec_reihenfolge` alanını
-  yazıyor; sürükleme aynı alana yazacak, yeni bir mekanizma gerekmiyor.
-
-**Autosave yapılmayacak** (spec §19 istiyor olsa da). Sebep: editör tek bir
-form ve tek bir `version` kilidiyle çalışıyor. Otomatik kayıt, iki sekme açık
-olduğunda birinin işini diğerinin üzerine yazar — kilit tam olarak bunu
+**Autosave yapılmadı** ve yapılmayacak (spec §19 istese de). Sebep: editör tek
+bir form ve tek bir `version` kilidiyle çalışıyor. Otomatik kayıt, iki sekme
+açık olduğunda birinin işini diğerinin üzerine yazar — kilit tam olarak bunu
 engellemek için var. İstenirse önce kilit modeli değişmeli.
+
