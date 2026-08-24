@@ -7,6 +7,7 @@ use Atelier\Admin;
 use Atelier\Design;
 use Atelier\DesignVideos;
 use Atelier\I18n;
+use Atelier\InvitationsV2;
 use Atelier\Media;
 use Atelier\Security;
 use Atelier\Themes;
@@ -243,6 +244,13 @@ final class DesignAdminController
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            // Der Auffrischknopf schickt sein eigenes Formular: er soll
+            // nicht nebenbei die Vorlage speichern.
+            $was = (string) ($_POST['was'] ?? '');
+            if (str_starts_with($was, 'auffrischen-')) {
+                $this->frischeAuf($locale, $design, substr($was, strlen('auffrischen-')));
+            }
+
             $this->speichere($locale, $design);
             return;
         }
@@ -266,6 +274,14 @@ final class DesignAdminController
             'styles'   => Design::css($design, $scope),
             'seite'    => Design::html($design, $werte, $locale, 'page'),
             'karte'    => Design::html($design, $werte, $locale, 'card'),
+            // Wer haengt noch an einer aelteren Fassung? Zwei Faecher,
+            // getrennt, weil der Weg dorthin verschieden lang ist.
+            'veraltet' => InvitationsV2::outdated(
+                InvitationsV2::byDesign((string) $design['id']),
+                (int) $design['version']
+            ),
+            // Die zweite Frage vor den veroeffentlichten Einladungen.
+            'fragen'   => (string) ($_GET['auffrischen'] ?? '') === 'veroeffentlicht',
             'warnings' => Design::warnings($design),
             'csrf'     => Security::csrf(),
         ]);
@@ -449,6 +465,57 @@ final class DesignAdminController
         }
 
         return $post;
+    }
+
+    /**
+     * Einladungen auf den heutigen Stand dieser Vorlage heben.
+     *
+     * Zwei Knoepfe und nicht einer, weil die beiden Gruppen nicht gleich
+     * schwer wiegen. Ein Entwurf ist noch niemandem geschickt worden. Eine
+     * veroeffentlichte Einladung liegt bei den Gaesten, ihr Bild aendert sich
+     * mit, und der Weg dorthin geht deshalb ueber eine zweite Frage - die
+     * Seite stellt sie, nicht der Browser: im ganzen Haus steht kein
+     * onclick=, und die Richtlinie laesst nur eigene Skriptdateien zu.
+     *
+     * Gezaehlt wird hier noch einmal und nicht aus dem Formular gelesen:
+     * zwischen dem Anzeigen und dem Druecken kann eine Einladung
+     * dazugekommen sein, und eine Zahl aus dem Browser waere eine Zahl, die
+     * jemand aendern kann.
+     *
+     * $design ist der Stand aus Design::find() und damit bereits durch
+     * complete() gegangen - genau die Form, die beim Erstellen eingefroren
+     * wird.
+     *
+     * @param array<string,mixed> $design
+     */
+    private function frischeAuf(string $locale, array $design, string $welche): never
+    {
+        $ziel = I18n::path('/admin/designs/' . $design['slug'], $locale);
+
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            header('Location: ' . $ziel . '?fehler=csrf', true, 303);
+            exit;
+        }
+
+        $veraltet = InvitationsV2::outdated(
+            InvitationsV2::byDesign((string) $design['id']),
+            (int) $design['version']
+        );
+
+        // Nur die beiden Woerter, die es gibt. Ein drittes taete sonst
+        // still das, was das erste tut.
+        $slugs = match ($welche) {
+            'entwuerfe'      => $veraltet['draft'],
+            'veroeffentlicht' => $veraltet['published'],
+            default          => [],
+        };
+
+        foreach ($slugs as $slug) {
+            InvitationsV2::refreshDesign($slug, $design);
+        }
+
+        header('Location: ' . $ziel . '?ok=aufgefrischt&n=' . count($slugs), true, 303);
+        exit;
     }
 
     private function speichere(string $locale, array $design): void

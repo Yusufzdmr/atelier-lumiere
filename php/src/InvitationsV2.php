@@ -111,12 +111,93 @@ final class InvitationsV2
     }
 
     /**
+     * Wer haengt noch an einer aelteren Fassung seiner Vorlage?
+     *
+     * Die Entscheidung ist eine Zahl gegen eine Zahl und steht deshalb hier
+     * und nicht in der Abfrage: so laesst sie sich ohne Datenbank pruefen.
+     *
+     * Getrennt nach Zustand, weil die beiden nicht gleich schwer wiegen. Ein
+     * Entwurf darf nachgezogen werden; eine veroeffentlichte Einladung liegt
+     * bereits bei den Gaesten, und ihr Bild aendert sich mit.
+     *
+     * Groesser heisst veraltet, ungleich nicht: eine von Hand zurueckgesetzte
+     * Vorlage macht aus einer Einladung keine alte.
+     *
+     * @param list<array{slug:string,status:string,fassung:mixed}> $zeilen
+     * @return array{draft:list<string>,published:list<string>}
+     */
+    public static function outdated(array $zeilen, int $liveVersion): array
+    {
+        $out = ['draft' => [], 'published' => []];
+
+        foreach ($zeilen as $zeile) {
+            // Ohne Fassung ist der Schnappschuss der aelteste, den es gibt.
+            $fassung = max(1, (int) ($zeile['fassung'] ?? 1));
+            if ($fassung >= $liveVersion) {
+                continue;
+            }
+
+            $out[self::cleanStatus((string) ($zeile['status'] ?? ''))][] = (string) $zeile['slug'];
+        }
+
+        return $out;
+    }
+
+    /**
      * Frei in BEIDEN Tabellen.
      *
      * Das v2 in der Adresse faellt eines Tages weg. Dann muss
      * /einladung/{slug} genau eine Einladung treffen - und eine bereits
      * verschickte Adresse laesst sich nicht umbenennen.
      */
+    /**
+     * Die Einladungen einer Vorlage - Zustand und die Fassung ihres
+     * Schnappschusses, sonst nichts.
+     *
+     * Drei Spalten und nicht das ganze Dokument: ein Schnappschuss ist eine
+     * vollstaendige Vorlage, und dreissig davon nur zum Zaehlen zu laden
+     * waere Verschwendung. JSON_EXTRACT holt die eine Zahl.
+     *
+     * @return list<array{slug:string,status:string,fassung:mixed}>
+     */
+    public static function byDesign(string $designId): array
+    {
+        return Db::all(
+            'SELECT i.slug,
+                    COALESCE(s.status, \'published\') AS status,
+                    JSON_EXTRACT(i.design_snapshot, \'$.version\') AS fassung
+               FROM invitations_v2 i
+          LEFT JOIN invite_status s ON s.slug = i.slug
+              WHERE i.design_id = ?
+           ORDER BY i.created_at DESC',
+            [$designId]
+        );
+    }
+
+    /**
+     * Eine Einladung auf den heutigen Stand ihrer Vorlage heben.
+     *
+     * Das ist die Ausnahme, die saveData() ausdruecklich nicht ist: dort
+     * steht der Schnappschuss bewusst nicht im UPDATE, weil eine verschickte
+     * Einladung einfriert. Hier wird genau dieses Einfrieren aufgehoben - aber
+     * nur, weil ein Mensch im Panel den Knopf gedrueckt hat, und bei einer
+     * veroeffentlichten Einladung erst nach einer zweiten Frage.
+     *
+     * Nur der Schnappschuss. data bleibt stehen, und damit bleibt die Wahl des
+     * Paares: personalize() legt sie auf den neuen Sockel.
+     *
+     * @param array<string,mixed> $live
+     */
+    public static function refreshDesign(string $slug, array $live): void
+    {
+        $slug = self::slug($slug);
+        if ($slug === '') {
+            return;
+        }
+
+        Db::run('UPDATE invitations_v2 SET design_snapshot = ? WHERE slug = ?', [Db::encode($live), $slug]);
+    }
+
     public static function slugAvailable(string $slug): bool
     {
         if ($slug === '') {

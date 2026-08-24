@@ -37,6 +37,8 @@
  * @var string $karte
  * @var string $seite
  * @var list<array{kind:string,element:string,detail:string}> $warnings
+ * @var array{draft:list<string>,published:list<string>} $veraltet
+ * @var bool $fragen
  * @var string $csrf
  * @var string $locale
  */
@@ -181,6 +183,75 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
     <p class="b-meldung b-meldung-fehler"><?= $tr ? 'Oturum düştü, sayfayı tazele.' : 'Die Sitzung ist abgelaufen.' ?></p>
   <?php endif; ?>
 
+  <?php /*
+     --- Wer haengt noch an einer aelteren Fassung? -----------------------
+
+     Eine verschickte Einladung traegt ihre eigene Kopie dieser Vorlage. Das
+     ist das Versprechen aus Phase 3B und es bleibt: was hier steht, ist der
+     einzige Weg, es fuer eine bestimmte Einladung aufzuheben.
+
+     Zwei Faecher, weil sie nicht gleich schwer wiegen. Ein Entwurf ist
+     niemandem geschickt worden - ein Knopf. Eine veroeffentlichte Einladung
+     liegt bei den Gaesten, und die Frage davor stellt die SEITE: ein Link
+     fuehrt in den Zustand, in dem der Satz und der endgueltige Knopf stehen.
+     Kein confirm() im Browser - im ganzen Haus steht kein onclick=, und die
+     Richtlinie laesst nur eigene Skriptdateien zu.
+
+     Die Knoepfe gehoeren zum zweiten Formular am Fuss der Datei (form="..."):
+     sie duerfen die Vorlage nicht nebenbei mitspeichern.
+  */ ?>
+  <?php
+  $nEntwurf = count($veraltet['draft']);
+  $nNetz    = count($veraltet['published']);
+  ?>
+
+  <?php if ($ok === 'aufgefrischt') : ?>
+    <p class="b-meldung">
+      <?= $tr
+        ? e((string) (int) ($_GET['n'] ?? 0)) . ' davetiye güncellendi.'
+        : e((string) (int) ($_GET['n'] ?? 0)) . ' Einladungen nachgezogen.' ?>
+    </p>
+  <?php endif; ?>
+
+  <?php if ($fragen && $nNetz > 0) : ?>
+    <div class="b-meldung b-meldung-fehler">
+      <p><?= $tr
+        ? 'Bu ' . $nNetz . ' davetiyenin bağlantısı misafirlerin elinde. Güncellersen gördükleri kart değişir: '
+          . 'sildiğin bir bölüm kaybolur, eklediğin bir bölüm şablonun hazır metniyle belirir. '
+          . 'Çiftin kendi yazdıkları duruyor. Geri alınamaz.'
+        : 'Bei diesen ' . $nNetz . ' Einladungen ist der Link schon bei den Gästen. Nach dem Nachziehen sehen sie '
+          . 'eine andere Karte: ein gelöschter Abschnitt verschwindet, ein neuer erscheint mit dem Vorschlagstext '
+          . 'der Vorlage. Was das Paar selbst geschrieben hat, bleibt. Rückgängig geht es nicht.' ?></p>
+      <p style="margin-top:0.75rem;">
+        <button class="b-knopf" form="b-auffrischen" name="was" value="auffrischen-veroeffentlicht">
+          <?= $tr ? 'Evet, ' . $nNetz . ' davetiyeyi güncelle' : 'Ja, ' . $nNetz . ' Einladungen nachziehen' ?>
+        </button>
+        <a class="b-fein" style="margin-left:0.75rem;" href="<?= e($p('/admin/designs/' . $design['slug'])) ?>">
+          <?= $tr ? 'Vazgeç' : 'Abbrechen' ?>
+        </a>
+      </p>
+    </div>
+  <?php elseif ($nEntwurf > 0 || $nNetz > 0) : ?>
+    <p class="b-meldung">
+      <?= $tr
+        ? 'Bu tasarımın eski bir sürümüne bağlı: ' . $nEntwurf . ' taslak, ' . $nNetz . ' yayında.'
+        : 'An einer älteren Fassung dieser Vorlage hängen: ' . $nEntwurf . ' Entwürfe, ' . $nNetz . ' veröffentlichte.' ?>
+      <?php if ($nEntwurf > 0) : ?>
+        <button class="b-knopf" style="margin-left:0.75rem;" form="b-auffrischen"
+                name="was" value="auffrischen-entwuerfe">
+          <?= $tr ? 'Taslakları güncelle (' . $nEntwurf . ')' : 'Entwürfe nachziehen (' . $nEntwurf . ')' ?>
+        </button>
+      <?php endif; ?>
+      <?php if ($nNetz > 0) : ?>
+        <a class="b-fein" style="margin-left:0.75rem;"
+           href="<?= e($p('/admin/designs/' . $design['slug'])) ?>?auffrischen=veroeffentlicht">
+          <?= $tr ? 'Yayındakilere de bak (' . $nNetz . ')' : 'Auch die veröffentlichten (' . $nNetz . ')' ?>
+        </a>
+      <?php endif; ?>
+    </p>
+  <?php endif; ?>
+
+
   <div class="b-schale">
 
     <?php /* --- Links: was die Seite zeigt ------------------------------- */ ?>
@@ -274,4 +345,14 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
       <?= $tr ? 'Soldan bir bölüm seç, ayarları sağda açılır.' : 'Links einen Abschnitt wählen - seine Einstellungen stehen dann rechts.' ?>
     </span>
   </div>
+</form>
+<?php /*
+   Das zweite Formular, leer bis auf das Token.
+
+   Die Auffrischknoepfe stehen oben im grossen Formular und zeigen mit
+   form="b-auffrischen" hierher - ein Formular im Formular waere ungueltig,
+   und im grossen mitzufahren hiesse, die Vorlage nebenbei zu speichern.
+*/ ?>
+<form method="post" id="b-auffrischen">
+  <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
 </form>
