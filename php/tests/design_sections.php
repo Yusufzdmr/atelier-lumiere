@@ -404,7 +404,7 @@ assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte b
  * ueberschreiben.
  */
 
-assert_same(10, count(DesignSections::TYPES), 'TYPES: zehn Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie');
+assert_same(11, count(DesignSections::TYPES), 'TYPES: elf Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie, Speisekarte');
 assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
 
 // Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer
@@ -965,3 +965,38 @@ $strahl = DesignSections::css(sec_doc([
 
 assert_contains($strahl, '.d-x .d-sec-plan .d-plan-rozet{', 'css: der Strahl kennt den Ring');
 assert_contains($strahl, 'border-radius:50%', 'css: und der Ring ist rund');
+
+/* --- Die Speisekarte -----------------------------------------------------
+ *
+ * "Davetiyede yemek menusu gosterilsin mi? Evet derse: Baslangic, Corba, Ana
+ * yemek, Meze, Tatli, Icecek alanlari acilir. Kullanici ne doldurduysa
+ * sadece onlar gorunur."
+ *
+ * Genau das, und ohne neuen Motor: die Gaenge sind Eingaben des Katalogs wie
+ * jeder andere Text eines Abschnitts, und "nur was gefuellt ist" ist die
+ * Regel, nach der jeder Abschnitt ohnehin gedruckt wird.
+ *
+ * Die Art traegt ihr Zeichen selbst - anders als beim Ablauf waehlt hier
+ * niemand: eine Suppe ist eine Suppe.
+ */
+
+assert_true(in_array('menu', DesignSections::TYPES, true), 'menu: der Katalog kennt die Art');
+
+$speise = sec_doc([['id' => 'menue', 'type' => 'menu', 'enabled' => true]]);
+
+// Leer heisst nicht gedruckt - eine Ueberschrift ueber nichts.
+assert_same([], DesignSections::visible($speise, []), 'menu: ohne einen einzigen Gang faellt sie weg');
+
+$mitGang = ['sections' => ['menue' => ['suppe' => 'Mercimek Çorbası', 'dessert' => 'Cheesecake']]];
+assert_same(1, count(DesignSections::visible($speise, $mitGang)), 'menu: ein Gang genuegt');
+
+$karte = DesignSections::html($speise, $mitGang, 'de');
+
+assert_contains($karte, 'Mercimek Çorbası', 'html: der gefuellte Gang steht da');
+assert_contains($karte, 'Cheesecake', 'html: und der zweite auch');
+assert_contains($karte, "mask-image:url('/assets/icons/corba.svg')", 'html: die Suppe bringt ihr Zeichen mit');
+assert_contains($karte, 'Suppe', 'html: und die Art steht dabei');
+// Was niemand gefuellt hat, steht auch nicht da - sonst waere die Karte eine
+// Liste leerer Versprechen.
+assert_not_contains($karte, 'Hauptgang', 'html: ein leerer Gang bleibt weg');
+assert_not_contains($karte, 'Vorspeise', 'html: und der auch');

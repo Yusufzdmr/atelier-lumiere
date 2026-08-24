@@ -121,6 +121,42 @@ final class SectionRegistry
             ],
             'settings' => [],
         ],
+        /*
+         * Die Speisekarte. Sechs Gaenge, und keiner davon ist Pflicht.
+         *
+         * "Kullanici ne doldurduysa sadece onlar gorunur" - genau deshalb ist
+         * jeder Gang eine EINGABE und keine Einstellung: Eingaben fuellt das
+         * Paar, und was leer bleibt, wird nicht gedruckt. Ein Abschnitt ohne
+         * einen einzigen Gang faellt ganz weg.
+         *
+         * Die Reihenfolge hier ist die Reihenfolge auf der Karte, und das ist
+         * die, in der serviert wird.
+         *
+         * Das Zeichen steht am Gang und nicht in der Vorlage: eine Suppe soll
+         * in jeder Vorlage wie eine Suppe aussehen. Ihre Farbe bekommt sie
+         * ohnehin von der Vorlage, das genuegt.
+         */
+        'menu' => [
+            'variants' => [
+                'default' => ['de' => 'Untereinander', 'tr' => 'Alt alta'],
+            ],
+            'settings' => [],
+            'inputs' => [
+                'vorspeise' => ['type' => 'text', 'max' => 120, 'icon' => 'baslangic',
+                    'label' => ['de' => 'Vorspeise', 'en' => 'Starter', 'tr' => 'Başlangıç']],
+                'suppe' => ['type' => 'text', 'max' => 120, 'icon' => 'corba',
+                    'label' => ['de' => 'Suppe', 'en' => 'Soup', 'tr' => 'Çorba']],
+                'hauptgang' => ['type' => 'text', 'max' => 160, 'icon' => 'anayemek',
+                    'label' => ['de' => 'Hauptgang', 'en' => 'Main course', 'tr' => 'Ana yemek']],
+                'meze' => ['type' => 'text', 'max' => 160, 'icon' => 'meze',
+                    'label' => ['de' => 'Meze', 'en' => 'Meze', 'tr' => 'Meze']],
+                'dessert' => ['type' => 'text', 'max' => 120, 'icon' => 'tatli',
+                    'label' => ['de' => 'Dessert', 'en' => 'Dessert', 'tr' => 'Tatlı']],
+                'getraenk' => ['type' => 'text', 'max' => 120, 'icon' => 'icecek',
+                    'label' => ['de' => 'Getränk', 'en' => 'Drinks', 'tr' => 'İçecek']],
+            ],
+        ],
+
         'rsvp' => [
             'variants' => [
                 'default' => ['de' => 'Formular', 'tr' => 'Form'],
@@ -427,6 +463,16 @@ final class SectionRegistry
                         'title' => ['de' => 'Geschenke', 'en' => 'Gifts']],
         'muzik'      => ['file' => 'muzik.svg',      'label' => ['de' => 'Musik',      'tr' => 'Müzik'],
                         'title' => ['de' => 'Musik', 'en' => 'Music']],
+        'baslangic'  => ['file' => 'baslangic.svg',  'label' => ['de' => 'Vorspeise',  'tr' => 'Başlangıç'],
+                        'title' => ['de' => 'Vorspeise', 'en' => 'Starter']],
+        'corba'      => ['file' => 'corba.svg',      'label' => ['de' => 'Suppe',      'tr' => 'Çorba'],
+                        'title' => ['de' => 'Suppe', 'en' => 'Soup']],
+        'anayemek'   => ['file' => 'anayemek.svg',   'label' => ['de' => 'Hauptgang',  'tr' => 'Ana yemek'],
+                        'title' => ['de' => 'Hauptgang', 'en' => 'Main course']],
+        'tatli'      => ['file' => 'tatli.svg',      'label' => ['de' => 'Dessert',    'tr' => 'Tatlı'],
+                        'title' => ['de' => 'Dessert', 'en' => 'Dessert']],
+        'icecek'     => ['file' => 'icecek.svg',     'label' => ['de' => 'Getränk',    'tr' => 'İçecek'],
+                        'title' => ['de' => 'Getränke', 'en' => 'Drinks']],
     ];
 
     /**

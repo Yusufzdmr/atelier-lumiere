@@ -165,3 +165,21 @@ assert_same('Tortenanschnitt', SectionRegistry::iconTitle('pasta', 'de'), 'iconT
 assert_same('Cutting the cake', SectionRegistry::iconTitle('pasta', 'en'), 'iconTitle: der englische');
 assert_same('Tortenanschnitt', SectionRegistry::iconTitle('pasta', 'tr'), 'iconTitle: eine fremde Sprache faellt auf Deutsch');
 assert_same('', SectionRegistry::iconTitle('gibtesnicht', 'de'), 'iconTitle: unbekannt bleibt leer');
+
+/* --- Die Gaenge der Speisekarte --- */
+
+$gaenge = SectionRegistry::inputs('menu');
+
+assert_same(['vorspeise', 'suppe', 'hauptgang', 'meze', 'dessert', 'getraenk'], array_keys($gaenge),
+    'menu: die sechs Gaenge stehen in der Reihenfolge, in der sie serviert werden');
+
+foreach ($gaenge as $schluessel => $feld) {
+    foreach (['de', 'en', 'tr'] as $sprache) {
+        assert_true(($feld['label'][$sprache] ?? '') !== '',
+            'menu: "' . $schluessel . '" hat ein Etikett auf ' . $sprache);
+    }
+    // Das Zeichen der Art steht im Katalog und nicht in der Vorlage: eine
+    // Suppe sieht in jeder Vorlage wie eine Suppe aus.
+    assert_true(SectionRegistry::iconFile((string) ($feld['icon'] ?? '')) !== '',
+        'menu: "' . $schluessel . '" traegt ein Zeichen, das es gibt');
+}

@@ -38,6 +38,9 @@ final class DesignSections
         // Angehaengt und nicht eingeschoben: die Reihenfolge steht in Tests,
         // und ein Einschub verschoebe alles dahinter.
         'footer', 'gift', 'music', 'gallery',
+        // Die elfte Art kam mit den Zeichen: eine Karte, die nur zeigt,
+        // was das Paar wirklich serviert.
+        'menu',
     ];
 
     /**
@@ -325,6 +328,9 @@ final class DesignSections
             // Kein Bild, kein Abschnitt. Eine leere Galerie ist eine
             // Ueberschrift ueber nichts.
             'gallery'   => self::sectionPhotos($data, (string) $abschnitt['id']) !== [],
+            // Ein einziger Gang genuegt. Keiner heisst: eine Ueberschrift
+            // ueber einer leeren Karte.
+            'menu'      => self::speisekarteGefuellt($abschnitt, $data),
             default     => false,
         };
     }
@@ -636,6 +642,23 @@ final class DesignSections
              * ein Zeichen neben einer Zeile soll mit ihr wachsen.
              */
             /*
+             * Die Speisekarte. Zeichen links, darueber die Art, darunter das,
+             * was serviert wird - das Zeichen ueber beide Zeilen.
+             *
+             * Die Art steht klein und leise: sie ordnet nur ein. Gelesen wird
+             * "Mercimek Corbasi", nicht "Suppe".
+             */
+            . $scope . ' .d-sec-menu .d-menu-zeile{display:grid;'
+              . 'grid-template-columns:auto 1fr;column-gap:0.85rem;'
+              . 'margin-top:1.15rem;text-align:left;max-width:22rem;margin-inline:auto;}'
+            . $scope . ' .d-sec-menu .d-menu-zeile:first-child{margin-top:0;}'
+            . $scope . ' .d-sec-menu .d-ikon{grid-column:1;grid-row:1 / span 2;'
+              . 'align-self:center;width:1.5em;height:1.5em;}'
+            . $scope . ' .d-sec-menu .d-menu-art{grid-column:2;grid-row:1;'
+              . 'font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;opacity:0.6;}'
+            . $scope . ' .d-sec-menu .d-menu-wert{grid-column:2;grid-row:2;}'
+
+            /*
              * Titel und Satz einer Ablaufzeile. Der Satz steht unter dem
              * Titel und leiser - er erklaert, er ruft nicht.
              *
@@ -870,6 +893,7 @@ final class DesignSections
                 // Daten des Paares - der Klang gehoert der Vorlage.
                 'music'     => self::musik($abschnitt),
                 'gallery'   => self::galerie($data, $id),
+                'menu'      => self::speisekarte($abschnitt, $data, $locale),
                 default     => '',
             };
 
@@ -1263,6 +1287,71 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
+    /**
+     * Steht auf der Karte ueberhaupt etwas?
+     *
+     * Dieselbe Schleife wie beim Drucken, nur ohne Markup - und bewusst
+     * dieselbe Quelle: der Katalog sagt, welche Gaenge es gibt. Eine zweite
+     * Liste hier liefe frueher oder spaeter auseinander.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    private static function speisekarteGefuellt(array $abschnitt, array $data): bool
+    {
+        foreach (array_keys(SectionRegistry::inputs('menu')) as $schluessel) {
+            if (trim(self::inhalt($abschnitt, $data, (string) $schluessel)) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Die Speisekarte.
+     *
+     * Kein eigener Motor: die Gaenge sind Eingaben des Katalogs wie jeder
+     * andere Text eines Abschnitts, und "nur was gefuellt ist" ist die Regel,
+     * nach der ohnehin jeder Abschnitt gedruckt wird. Deshalb steht hier auch
+     * keine Liste der Gaenge - der Katalog sagt, welche es gibt und in
+     * welcher Reihenfolge sie serviert werden.
+     *
+     * Das Zeichen waehlt niemand: eine Suppe ist eine Suppe. Es haengt an der
+     * Art im Katalog, nicht an einer Angabe des Paares - anders als beim
+     * Ablauf, wo dieselbe Uhrzeit alles Moegliche bedeuten kann.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    private static function speisekarte(array $abschnitt, array $data, string $locale): string
+    {
+        $out = '';
+
+        foreach (SectionRegistry::inputs('menu') as $schluessel => $feld) {
+            $wert = trim(self::inhalt($abschnitt, $data, (string) $schluessel));
+            if ($wert === '') {
+                continue;
+            }
+
+            $out .= '<div class="d-menu-zeile">';
+
+            $datei = SectionRegistry::iconFile((string) ($feld['icon'] ?? ''));
+            if ($datei !== '') {
+                $maske = "url('" . $datei . "')";
+                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
+                    . ';mask-image:' . $maske . '"></span>';
+            }
+
+            $etikett = (string) ($feld['label'][$locale] ?? $feld['label']['de'] ?? $schluessel);
+
+            $out .= '<span class="d-menu-art">' . e($etikett) . '</span>'
+                . '<span class="d-menu-wert">' . e($wert) . '</span></div>';
+        }
+
+        return $out;
+    }
+
     private static function galerie(array $data, string $id): string
     {
         $out = '';
