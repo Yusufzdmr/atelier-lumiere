@@ -5,6 +5,7 @@
  * @var string $locale
  * @var list<array<string,mixed>> $rows
  * @var list<array<string,mixed>> $drafts
+ * @var list<array<string,mixed>> $v2
  * @var int $total
  * @var string $csrf
  */
@@ -27,6 +28,63 @@ $eventNames = [
 ];
 ?>
 <div class="space-y-10">
+
+  <?php /*
+     Die zweite Fassung. Sie stand bisher in KEINER Liste des Panels: es gab
+     sie, aber man sah sie nur, wenn man ihre Adresse kannte.
+
+     Abschalten und nicht loeschen. Eine verschickte Adresse loescht man
+     nicht - wer sie loescht, gibt sie zur Wiederverwendung frei, und der
+     naechste Gast, der den alten Link oeffnet, landet auf einer fremden
+     Hochzeit. Ein Entwurf antwortet dem Gast wie eine Adresse, die es nicht
+     gibt: wer den Link hat, soll nicht denken, er muesse es spaeter noch
+     einmal versuchen.
+  */ ?>
+  <?php if ($v2 !== []) : ?>
+    <div>
+      <h2 class="font-display text-xl text-ink"><?= $de ? 'Einladungen (zweite Fassung)' : 'Davetiyeler (ikinci sürüm)' ?></h2>
+      <p class="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
+        <?= $de
+          ? 'Aus dem neuen Assistenten. Abgeschaltet heißt: der Link antwortet wie eine Adresse, die es nicht gibt.'
+          : 'Yeni sihirbazdan çıkanlar. Kapalı demek: bağlantı, olmayan bir adres gibi cevap verir.' ?>
+      </p>
+
+      <div class="mt-5 divide-y divide-sand-deep border-y border-sand-deep">
+        <?php foreach ($v2 as $ein) : ?>
+          <?php
+            $slug = (string) ($ein['slug'] ?? '');
+            $an   = (string) ($ein['status'] ?? 'published') !== 'draft';
+          ?>
+          <div class="flex flex-wrap items-center justify-between gap-4 py-3">
+            <div class="min-w-0">
+              <a class="text-sm text-ink underline decoration-sand-deep underline-offset-4"
+                 href="<?= e(I18n::sitePath('/v2/einladung/' . $slug, $locale)) ?>" target="_blank">/<?= e($slug) ?></a>
+              <div class="mt-1 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+                <?= e((string) ($ein['design_id'] ?? '')) ?>
+                · <?= e(Dates::short((string) ($ein['created_at'] ?? ''))) ?>
+                <?php if (!empty($ein['published_at'])) : ?>
+                  · <?= $de ? 'seit' : 'şu tarihten beri' ?> <?= e(Dates::short((string) $ein['published_at'])) ?>
+                <?php endif; ?>
+              </div>
+            </div>
+            <form method="post" class="flex items-center gap-3">
+              <?= $hidden ?>
+              <input type="hidden" name="was" value="v2-zustand">
+              <input type="hidden" name="slug" value="<?= e($slug) ?>">
+              <input type="hidden" name="zustand" value="<?= $an ? 'draft' : 'published' ?>">
+              <span class="text-[0.66rem] uppercase tracking-[0.16em] <?= $an ? 'text-ink' : 'text-muted' ?>">
+                <?= $an ? ($de ? 'im Netz' : 'yayında') : ($de ? 'abgeschaltet' : 'kapalı') ?>
+              </span>
+              <button class="border border-sand-deep px-4 py-2 text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-ink">
+                <?= $an ? ($de ? 'abschalten' : 'kapat') : ($de ? 'anschalten' : 'aç') ?>
+              </button>
+            </form>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <div>
     <h2 class="font-display text-xl text-ink"><?= $de ? 'Einladungen' : 'Davetiyeler' ?></h2>
     <p class="mt-2 max-w-3xl text-sm leading-relaxed text-muted">

@@ -765,6 +765,25 @@ final class InviteV2Controller
             return;
         }
 
+        /*
+         * Ein Entwurf ist nicht oeffentlich - und sieht fuer den Gast aus wie
+         * eine Adresse, die es nicht gibt.
+         *
+         * Absichtlich dieselbe Antwort wie bei einer unbekannten Adresse und
+         * nicht "diese Einladung ist gerade abgeschaltet": wer den Link
+         * bekommen hat, geht sonst davon aus, dass er es spaeter noch einmal
+         * versuchen soll - und wer ihn NICHT bekommen sollte, erfaehrt aus der
+         * Unterscheidung, dass es unter dieser Adresse etwas gibt.
+         *
+         * Der Zustand steht nicht im Sockel: er gehoert der Adresse, nicht dem
+         * Aussehen. Ein Schnappschuss friert die Vorlage ein, damit sie sich
+         * nicht mehr aendert - der Zustand soll sich aendern koennen.
+         */
+        if (!InvitationsV2::isPublic(InvitationsV2::status((string) ($params['slug'] ?? '')))) {
+            $this->nichtGefunden();
+            return;
+        }
+
         // Vor der Antwort vollstaendig, nicht danach: saveReply() muss wissen,
         // ob die Einladung ueberhaupt einen sichtbaren rsvp-Abschnitt zeigt -
         // dafuer braucht sie das fertige Dokument, nicht den rohen Schnappschuss.

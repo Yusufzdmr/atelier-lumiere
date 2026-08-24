@@ -10,6 +10,7 @@ use Atelier\Db;
 use Atelier\Guests;
 use Atelier\I18n;
 use Atelier\Invitations;
+use Atelier\InvitationsV2;
 use Atelier\Security;
 use Atelier\Themes;
 use Atelier\View;
@@ -37,6 +38,18 @@ final class InviteAdminController
             match (Security::clean($_POST['was'] ?? '', 20)) {
                 'loeschen'         => Invitations::delete(Security::clean($_POST['slug'] ?? '', 96)),
                 'entwurf-loeschen' => Invitations::deleteDraft(Security::clean($_POST['token'] ?? '', 64)),
+                /*
+                 * Eine Einladung der zweiten Fassung an- oder abschalten.
+                 *
+                 * Kein Loeschen daneben: eine verschickte Adresse loescht man
+                 * nicht, man schaltet sie ab. Wer sie loescht, gibt sie zur
+                 * Wiederverwendung frei - und der naechste Gast, der den alten
+                 * Link oeffnet, landet auf einer fremden Hochzeit.
+                 */
+                'v2-zustand'       => InvitationsV2::setStatus(
+                    Security::clean($_POST['slug'] ?? '', 96),
+                    Security::clean($_POST['zustand'] ?? '', 16)
+                ),
                 'gast-loeschen'    => Guests::delete(
                     Security::clean($_POST['slug'] ?? '', 96),
                     Security::clean($_POST['token'] ?? '', 96)
@@ -118,6 +131,9 @@ final class InviteAdminController
             'csrf'    => Security::csrf(),
             'rows'    => $rows,
             'drafts'  => Invitations::drafts(),
+            // Die zweite Fassung stand bisher in KEINER Liste des Panels: es
+            // gab sie, aber man sah sie nur, wenn man ihre Adresse kannte.
+            'v2'      => InvitationsV2::all(),
             'total'   => (int) (Db::one('SELECT COUNT(*) AS n FROM rsvps')['n'] ?? 0),
         ]);
     }

@@ -140,3 +140,24 @@ CREATE TABLE IF NOT EXISTS invitations_v2 (
   created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX invitations_v2_design_idx (design_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Entwurf oder veröffentlicht. Eine eigene Tabelle und keine neue Spalte:
+-- diese Datei besteht ausschließlich aus CREATE TABLE IF NOT EXISTS und wird
+-- von Hand eingespielt, also beliebig oft. Ein ALTER TABLE wäre die erste
+-- Zeile darin, die beim zweiten Mal scheitert — und der Server hat keine
+-- Migrationen.
+--
+-- KEINE Zeile heißt veröffentlicht. Jede Einladung, die es vor dieser Tabelle
+-- gab, hat ihren Link längst verteilt; ein Vorgabewert "Entwurf" hätte sie
+-- alle auf einen Schlag abgeschaltet.
+--
+-- published_at beantwortet "seit wann steht das im Netz" und wird beim ERSTEN
+-- Veröffentlichen gesetzt — kurz abschalten und wieder anschalten ändert es
+-- nicht.
+CREATE TABLE IF NOT EXISTS invite_status (
+  slug         VARCHAR(96) NOT NULL PRIMARY KEY,
+  status       VARCHAR(16) NOT NULL DEFAULT 'published',
+  published_at TIMESTAMP   NULL DEFAULT NULL,
+  updated_at   TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX invite_status_idx (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

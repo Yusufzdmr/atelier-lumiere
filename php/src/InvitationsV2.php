@@ -20,6 +20,97 @@ final class InvitationsV2
     }
 
     /**
+     * Entwurf oder veroeffentlicht.
+     *
+     * Bis hierher gab es einen Zustand: es gibt sie, also steht sie im Netz.
+     * Das reicht, solange jede Einladung sofort gilt - aber nicht, sobald
+     * eine abgesagte Hochzeit vom Netz soll, ein falscher Link
+     * zurueckgezogen werden muss, oder eines Tages die Bezahlung davorsteht.
+     *
+     * Der Zustand steht in einer EIGENEN Tabelle (invite_status) und nicht in
+     * einer neuen Spalte: schema.sql besteht ausschliesslich aus CREATE TABLE
+     * IF NOT EXISTS und wird von Hand eingespielt, also beliebig oft. Ein
+     * ALTER TABLE waere die erste Zeile darin, die beim zweiten Mal
+     * scheitert - und der Server hat keine Migrationen.
+     */
+    public const STATUSES = ['published', 'draft'];
+
+    /**
+     * Ein Wort, das man einem Gast gegenueber vertreten kann.
+     *
+     * Alles Unbekannte gilt als veroeffentlicht: ein Tippfehler oder ein Wort
+     * aus einer aelteren Fassung darf keine Einladung abschalten, die im Netz
+     * steht. Der Zweifel geht zugunsten des Gastes aus, der den Link schon
+     * hat.
+     */
+    public static function cleanStatus(string $roh): string
+    {
+        return $roh === 'draft' ? 'draft' : 'published';
+    }
+
+    /** Die einzige Frage, die der Renderer stellt. */
+    public static function isPublic(string $status): bool
+    {
+        return self::cleanStatus($status) !== 'draft';
+    }
+
+    /**
+     * Der Zustand einer Einladung. KEINE Zeile heisst veroeffentlicht.
+     *
+     * Jede Einladung, die es heute gibt, hat ihren Link laengst verteilt; ein
+     * Vorgabewert "Entwurf" haette sie alle auf einen Schlag abgeschaltet.
+     */
+    public static function status(string $slug): string
+    {
+        $zeile = Db::one('SELECT status FROM invite_status WHERE slug = ?', [$slug]);
+
+        return self::cleanStatus((string) ($zeile['status'] ?? ''));
+    }
+
+    /**
+     * Den Zustand setzen.
+     *
+     * published_at wird beim ERSTEN Veroeffentlichen gesetzt und danach nicht
+     * mehr angefasst: es beantwortet "seit wann steht das im Netz", und diese
+     * Antwort aendert sich nicht, wenn jemand die Einladung kurz abschaltet
+     * und wieder anschaltet.
+     */
+    public static function setStatus(string $slug, string $status): void
+    {
+        $status = self::cleanStatus($status);
+
+        Db::run(
+            'INSERT INTO invite_status (slug, status, published_at)
+                  VALUES (?, ?, IF(? = \'published\', CURRENT_TIMESTAMP, NULL))
+             ON DUPLICATE KEY UPDATE
+                  status = VALUES(status),
+                  published_at = IF(VALUES(status) = \'published\' AND published_at IS NULL,
+                                    CURRENT_TIMESTAMP, published_at)',
+            [$slug, $status, $status]
+        );
+    }
+
+    /**
+     * Alle Einladungen der zweiten Fassung, neueste zuerst.
+     *
+     * Mit ihrem Zustand in derselben Abfrage: eine Liste mit dreissig Zeilen
+     * waere sonst einunddreissig Abfragen. LEFT JOIN, weil die Zeile im
+     * Zustand fehlen darf - sie fehlt bei allem, was vor heute entstanden ist.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function all(): array
+    {
+        return Db::all(
+            'SELECT i.slug, i.design_id, i.created_at,
+                    COALESCE(s.status, \'published\') AS status, s.published_at
+               FROM invitations_v2 i
+          LEFT JOIN invite_status s ON s.slug = i.slug
+           ORDER BY i.created_at DESC'
+        );
+    }
+
+    /**
      * Frei in BEIDEN Tabellen.
      *
      * Das v2 in der Adresse faellt eines Tages weg. Dann muss
