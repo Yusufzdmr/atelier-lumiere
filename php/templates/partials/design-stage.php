@@ -264,12 +264,20 @@ use Atelier\Design;
              man sah den Sprung.
           */ ?>
           <?php /*
-             Fuellend und nicht einpassend: ein Rand um den Film herum waere
-             genau das Kaestchen, das hier nicht sein soll. object-cover
-             schneidet dafuer die Raender - bei einem hochkant gedrehten Film
-             auf einem hochkanten Telefon ist das wenig.
+             Ganz zu sehen und nicht formatfuellend.
+
+             Zuerst stand hier object-cover: der Film fuellte den Bildschirm
+             und wurde dafuer beschnitten. Auf dem Telefon war das kein
+             kleiner Schnitt - ein Telefon ist deutlich laenger als 9:16,
+             und der Film kam entsprechend vergroessert heraus. "Cok buyuk
+             video kucult."
+
+             Also contain: der Kasten bleibt der ganze Bildschirm, der Film
+             steht darin vollstaendig. Was oben und unten bleibt, traegt die
+             Grundfarbe der Vorlage - kein Kaestchen mit Rand, sondern ein
+             Film in seiner eigenen Groesse auf dunklem Grund.
           */ ?>
-          <video class="h-full w-full cursor-pointer object-cover" data-intro-film
+          <video class="h-full w-full cursor-pointer object-contain" data-intro-film
                  src="<?= e($introFilm) ?>"
                  <?= $introBild !== '' ? 'poster="' . e($introBild) . '"' : '' ?>
                  muted playsinline preload="auto"></video>
