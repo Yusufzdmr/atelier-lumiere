@@ -1151,8 +1151,12 @@ elle alınabilecekler:
 Motor ve panel hazır. Yapılmayanlar:
 - Süsleme konumunu **sürükleyerek** ayarlama (şu an sayıyla; sayı kesin, sürükleme hızlı)
 - AVIF (`imageavif` PHP 8.1+ ve libavif ister — ALL-INKL'de kontrol edilmeli; WebP zaten çalışıyor)
-- Panelde „bu temanın eski sürümüne bağlı N davetiye var“ sayacı ve toplu güncelleme
-  (tekil `refreshTheme()` hazır)
+- ~~Panelde „eski sürüme bağlı N davetiye var“ sayacı ve toplu güncelleme~~ —
+  **tasarımlar için yapıldı** (24.08.2026). Tasarım editörünün başlığında iki
+  sayı duruyor (taslak / yayında); taslaklar tek düğmeyle, yayındakiler ayrı bir
+  onay ekranından sonra tazeleniyor. Karar `InvitationsV2::outdated()` içinde ve
+  testli. **Eski tema motorunda hâlâ yok** (`Invitations::refreshTheme()` tekil
+  duruyor) — tema motoru yerini tasarımlara bıraktığı için bilerek yapılmadı.
 
 ### 2. ALL-INKL'e yayın — kod yüklendi, üç adım kaldı (17 Ağustos)
 
