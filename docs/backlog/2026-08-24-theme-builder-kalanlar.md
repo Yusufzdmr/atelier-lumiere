@@ -9,20 +9,19 @@ Commit'ler `8f6c3d5`…`3d66c6d`.
 
 ## 1 · Yeni bölüm tipleri
 
-Onaylandı, ama **hangileri olduğu Yusuf'a sorulacak** — bölümün adı ve neyi
-gösterdiği müşterinin gördüğü şey, yani onun kararı.
+`footer`, `gift`, `music` **yapıldı** (24.08.2026, commit `9b99236`). Yanında
+asıl iş şu oldu: müşterinin dolduracağı alanlar artık katalogda
+(`SectionRegistry::inputs`), dört ayrı yerde değil.
 
-- `footer` — kapanış sözü, hashtag. Ucuz: yeni bir tip + bir `variantCss`
-  bloğu, mevcut `text` tipine çok benziyor.
-- `gift` — hesap bilgisi / hediye notu. Ucuz, ama IBAN gibi bir alanın
-  müşteri tarafında düzenlenebilir olması gerekiyor (`sectionText` gibi
-  kimliğe bağlı bir alan yeter).
-- `music` — arka plan müziği. Orta: bir ses dosyası ve bir çalar; otomatik
-  çalma tarayıcılarda engelli, yani bir düğmeye bağlanmalı.
+Kalan tek tip:
+
 - `gallery` — **pahalı olan bu.** Müşterinin kendi fotoğraflarını yüklemesi
   gerekiyor: `invitations_v2` tarafında bir dosya deposu, `Media::store`
   üzerinden yükleme, boyut/adet sınırı, ve sihirbazda yeni bir adım.
-  Ayrı bir iş olarak planlanmalı, diğer üçüyle birlikte değil.
+  Ayrı bir iş olarak planlanmalı.
+
+Not: hangi tasarımın hangi bölümü taşıyacağı Yusuf'un kararı. Test sırasında
+`bild`'e eklenen üç deneme bölümü tekrar kaldırıldı.
 
 ## 2 · Yayın durumu (taslak / yayında)
 
