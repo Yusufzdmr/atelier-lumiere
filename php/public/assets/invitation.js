@@ -56,10 +56,29 @@
         // Der Film liegt schon da - sein erstes Bild IST das geschlossene
         // Kuvert. Hier ist nichts mehr einzublenden, nur zu starten.
 
-        // data-intro-ms bleibt die Obergrenze. Laedt der Film nicht - schlechtes
-        // Netz, Format vom Server nicht ausgeliefert -, haengt die Einladung
-        // sonst vor einem schwarzen Kasten fest.
-        var deckel = introMs > 0 ? introMs : 6000;
+        // Wie lange der Vorspann laeuft, bevor die Karte kommt. Drei Faelle,
+        // in dieser Reihenfolge:
+        //
+        //   1. Der Grafiker hat eine Zahl eingetragen. Sie gilt, auch wenn sie
+        //      kuerzer ist als der Film - genau dafuer ist das Feld da.
+        //   2. Keine Zahl, aber die Laenge des Films steht fest: der Film
+        //      laeuft aus. Das ist es, was im Panel neben dem Feld steht
+        //      ("leer = so lang wie der Film"), und bis heute stimmte es
+        //      nicht - der Notnagel schnitt jeden Film bei sechs Sekunden ab.
+        //   3. Keine Zahl und keine Laenge (Metadaten noch nicht da, Format
+        //      vom Server nicht ausgeliefert): der Notnagel. Ohne ihn haengt
+        //      die Einladung vor einem schwarzen Kasten fest.
+        //
+        // Die Obergrenze ist dieselbe wie im Panel. Ein versehentlich
+        // hochgeladener Film von einer Minute soll niemanden eine Minute lang
+        // warten lassen.
+        var GRENZE_MS = 20000;
+        var NOTFALL_MS = 6000;
+
+        var dauer = isFinite(introFilm.duration) ? Math.round(introFilm.duration * 1000) : 0;
+        var deckel = introMs > 0
+          ? introMs
+          : (dauer > 0 ? Math.min(dauer, GRENZE_MS) : NOTFALL_MS);
         var fertig = false;
         var schliessen = function () {
           if (fertig) return;
@@ -96,13 +115,10 @@
 
         introFilm.play().catch(schliessen);
 
-        // Die Karte wartet, bis der Film durch ist - hoechstens aber deckel.
-        // Die Laenge sagt der Film selbst; steht sie noch nicht fest (die
-        // Metadaten sind beim Klick nicht immer da), gilt der Deckel. Sonst
-        // saehe der Gast bei einem Vorspann von drei Sekunden sechs Sekunden
-        // lang nichts.
-        var dauer = isFinite(introFilm.duration) ? Math.round(introFilm.duration * 1000) : 0;
-        introMs = dauer > 0 ? Math.min(dauer, deckel) : deckel;
+        // Die Karte kommt, wenn der Vorspann durch ist - und "durch" ist genau
+        // der Deckel von oben. Gerechnet wurde er schon; hier steht nur noch,
+        // dass die Karte sich danach richtet.
+        introMs = deckel;
       } else if (!intro || still) {
         introMs = 0;
       }

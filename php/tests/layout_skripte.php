@@ -64,3 +64,27 @@ $js = (string) file_get_contents(__DIR__ . '/../public/assets/invitation.js');
 assert_contains($js, 'UEBERGANG_MS', 'invitation.js: die Dauer der Ueberblendung hat einen Namen');
 assert_contains($js, 'introBox.style.opacity', 'invitation.js: der Film blendet aus');
 assert_contains($js, 'introBox.style.pointerEvents', 'invitation.js: und nimmt waehrenddessen keine Klicks mehr an');
+
+/*
+ * Und ein leeres Feld heisst wirklich "so lang wie der Film".
+ *
+ * Im Panel steht an der Dauer: leer = so lang wie der Film. Das stimmte
+ * nicht. Ohne Zahl fiel der Deckel auf 6000 ms, und derselbe Deckel schnitt
+ * den Film ab - ein Film von zehn Sekunden endete nach sechs, und das Feld
+ * daneben behauptete das Gegenteil.
+ *
+ * Die 6000 waren als Notnagel gedacht und sind es weiterhin: laedt der Film
+ * nicht, haengt die Einladung sonst vor einem schwarzen Kasten. Nur soll ein
+ * Notnagel nicht auch dann greifen, wenn alles gut geht und die Laenge
+ * bekannt ist.
+ *
+ * Die Obergrenze bleibt, und sie ist dieselbe wie im Panel: zwanzig Sekunden.
+ * Ein versehentlich hochgeladener Film von einer Minute soll niemanden eine
+ * Minute lang warten lassen.
+ */
+
+assert_contains($js, 'NOTFALL_MS', 'invitation.js: der Notnagel hat einen Namen');
+assert_contains($js, 'GRENZE_MS', 'invitation.js: und die Obergrenze auch');
+assert_contains($js, 'Math.min(dauer, GRENZE_MS)', 'invitation.js: ohne Zahl gilt die Laenge des Films');
+assert_not_contains($js, 'introMs > 0 ? introMs : 6000',
+    'invitation.js: der Notnagel ist nicht mehr der Deckel fuer jeden Film');
