@@ -497,7 +497,9 @@ final class DesignSections
          * darunter traegt die Papierfarbe weiter. Wiederholt kaemen die
          * Goldecken alle paar hundert Pixel noch einmal.
          */
-        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);}'
+        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
+            . 'background-image:var(--d-sec-blatt,none);background-position:top center;'
+            . 'background-size:min(100%,42rem) 100%;background-repeat:no-repeat;}'
             /*
              * Das Blatt wiederholt sich nach unten - jede Laenge ein neues
              * Blatt, nicht ein gedehntes.
@@ -564,11 +566,18 @@ final class DesignSections
              * sie soll NICHT mit ausblenden, sonst faellt am Fuss jedes
              * Blattes die Seitenfarbe durch.
              */
-            . $scope . ' .d-sec::before{content:"";position:absolute;inset:0;z-index:0;'
-            . 'background-image:var(--d-sec-blatt,none);background-position:top center;'
-            . 'background-size:100% auto;background-repeat:no-repeat;pointer-events:none;'
-            . '-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 4.5rem),transparent);'
-            . 'mask-image:linear-gradient(to bottom,#000 calc(100% - 4.5rem),transparent);}'
+            /*
+             * Das Blatt liegt nicht mehr hier.
+             *
+             * Bis hierher zeichnete es JEDER Abschnitt neu, von seiner eigenen
+             * Oberkante an, und blendete es unten aus. Auf dem Telefon lief
+             * damit an jeder Abschnittsgrenze ein heller Streifen quer durch
+             * die Einladung: der obere Rand des Bildes, immer wieder.
+             *
+             * Es liegt jetzt einmal an der ganzen Flaeche (siehe oben) und
+             * wird auf deren Hoehe gezogen. Was bleibt, ist die Schicht fuer
+             * den Text - er soll ueber dem Blatt liegen, nicht darunter.
+             */
             // Ueber der Schicht, sonst laege der Text darunter.
             . $scope . ' .d-sec > *{position:relative;z-index:1;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -

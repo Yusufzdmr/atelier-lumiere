@@ -643,9 +643,28 @@ $blatt = DesignSections::css(
     '.d-x'
 );
 
-assert_contains($blatt, '.d-x .d-sec::before{', 'Blatt: es liegt in einer eigenen Schicht');
-assert_contains($blatt, 'background-image:var(--d-sec-blatt,none)', 'Blatt: das Bild haengt an der Schicht');
-assert_contains($blatt, 'mask-image:linear-gradient', 'Blatt: und blendet unten aus');
+/*
+ * Ein Blatt fuer die ganze Flaeche, nicht eines je Abschnitt.
+ *
+ * Bis hierher zeichnete JEDER Abschnitt das Blatt neu, von seiner eigenen
+ * Oberkante an, und blendete es unten aus. Auf dem Telefon sah man das
+ * Ergebnis sofort: an jeder Abschnittsgrenze lief ein heller Streifen quer
+ * durch die Einladung - der obere Rand des Bildes, immer wieder. Ayhan hat
+ * genau diese Streifen gruen eingekreist.
+ *
+ * Jetzt liegt das Blatt EINMAL ueber dem ganzen Bereich und wird auf dessen
+ * Hoehe gezogen. Damit kann es keine Naht mehr geben - es gibt nur noch eine
+ * Kante, und die ist der Anfang und das Ende der Einladung.
+ *
+ * Der Preis ist bekannt und angenommen: eine lange Einladung zieht das Bild
+ * in die Laenge. Die Alternative waere ein neunteiliges Bild (Ecken fest,
+ * Mitte gedehnt) - mehr Arbeit und eine Angabe je Bild, und dafuer ist es
+ * heute zu frueh.
+ */
+assert_not_contains($blatt, '.d-x .d-sec::before{', 'Blatt: kein Blatt mehr je Abschnitt');
+assert_contains($blatt, '.d-x.d-sec-flaeche{', 'Blatt: die Flaeche traegt es');
+assert_contains($blatt, 'background-image:var(--d-sec-blatt,none)', 'Blatt: und zwar als Bild');
+assert_contains($blatt, 'background-size:min(100%,42rem) 100%', 'Blatt: auf die volle Hoehe gezogen');
 assert_contains($blatt, '.d-x .d-sec > *{position:relative;z-index:1;}', 'Blatt: der Text liegt darueber');
 
 /*
