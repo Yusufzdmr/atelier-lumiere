@@ -593,7 +593,30 @@ final class DesignSections
             . $scope . ' .d-sec-form-row span{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;}'
             . $scope . ' .d-sec-form input[type=text],'
             . $scope . ' .d-sec-form input[type=number]{border:0;border-bottom:1px solid currentColor;background:transparent;padding:0.35rem 0;color:inherit;font:inherit;}'
-            . $scope . ' .d-sec-form button{justify-self:center;margin-top:0.5rem;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}';
+            . $scope . ' .d-sec-form button{justify-self:center;margin-top:0.5rem;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}'
+
+            /*
+             * Das Zeichen.
+             *
+             * Als MASKE und nicht als Bild: ein <img> traegt die Farben
+             * seiner Datei, und dann braeuchte jede Vorlage ihre eigene
+             * Kopie jedes Zeichens. Unter einer Maske liegt eine Flaeche in
+             * currentColor - also in der Farbe, die der Grafiker dem
+             * Abschnitt gegeben hat. Eine Datei, jede Farbe.
+             *
+             * Eingebettet wird die Zeichnung dabei NICHT. Das Haus zeigt
+             * SVG nur in <img> und nie im Markup; eine Maske holt die Datei
+             * wie ein Bild und laesst sie ebenso draussen. Die Richtlinie
+             * behandelt sie unter img-src, und das steht ohnehin auf self.
+             *
+             * Die Groesse haengt an der Schrift (em) und nicht an Pixeln:
+             * ein Zeichen neben einer Zeile soll mit ihr wachsen.
+             */
+            . $scope . ' .d-ikon{display:inline-block;width:1.15em;height:1.15em;'
+              . 'vertical-align:-0.15em;background-color:currentColor;'
+              . '-webkit-mask-position:center;mask-position:center;'
+              . '-webkit-mask-size:contain;mask-size:contain;'
+              . '-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;}';
     }
 
     /**

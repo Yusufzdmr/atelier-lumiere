@@ -384,6 +384,61 @@ final class SectionRegistry
         return self::GRUND;
     }
 
+    /**
+     * Die Zeichen: Kennung => Datei und Etikett.
+     *
+     * Ein Zeichen ist kein Bild, das jemand hochlaedt, sondern ein Eintrag
+     * hier. Die Kennung steht spaeter im Dokument einer Vorlage und in der
+     * Einladung eines Paares - sie ist damit dauerhaft und darf sich nicht
+     * mehr aendern. Die DATEI dahinter darf jederzeit gegen eine schoenere
+     * getauscht werden; das bricht nichts.
+     *
+     * Gefaerbt wird im Stilblock, nicht in der Datei: DesignSections legt sie
+     * als Maske ueber eine Flaeche in currentColor. Deshalb liegt hier eine
+     * einfarbige Zeichnung je Zeichen und nicht eine je Vorlage und Farbe.
+     *
+     * Herkunft: Lucide, ISC-Lizenz. Der Lizenztext liegt neben den Dateien in
+     * public/assets/icons/LICENSE.txt und muss dort bleiben.
+     */
+    private const ZEICHEN = [
+        'giris'      => ['file' => 'giris.svg',      'label' => ['de' => 'Empfang',    'tr' => 'Giriş']],
+        'nikah'      => ['file' => 'nikah.svg',      'label' => ['de' => 'Trauung',    'tr' => 'Nikâh']],
+        'dans'       => ['file' => 'dans.svg',       'label' => ['de' => 'Tanz',       'tr' => 'Dans']],
+        'yemek'      => ['file' => 'yemek.svg',      'label' => ['de' => 'Essen',      'tr' => 'Yemek']],
+        'meze'       => ['file' => 'meze.svg',       'label' => ['de' => 'Vorspeisen', 'tr' => 'Meze']],
+        'pasta'      => ['file' => 'pasta.svg',      'label' => ['de' => 'Torte',      'tr' => 'Pasta']],
+        'fotograf'   => ['file' => 'fotograf.svg',   'label' => ['de' => 'Fotos',      'tr' => 'Fotoğraf']],
+        'afterparty' => ['file' => 'afterparty.svg', 'label' => ['de' => 'Afterparty', 'tr' => 'After party']],
+        'dresscode'  => ['file' => 'dresscode.svg',  'label' => ['de' => 'Dresscode',  'tr' => 'Kıyafet']],
+        'konum'      => ['file' => 'konum.svg',      'label' => ['de' => 'Ort',        'tr' => 'Konum']],
+        'saat'       => ['file' => 'saat.svg',       'label' => ['de' => 'Uhrzeit',    'tr' => 'Saat']],
+        'hediye'     => ['file' => 'hediye.svg',     'label' => ['de' => 'Geschenk',   'tr' => 'Hediye']],
+        'muzik'      => ['file' => 'muzik.svg',      'label' => ['de' => 'Musik',      'tr' => 'Müzik']],
+    ];
+
+    /**
+     * Der ganze Katalog - fuer das Panel, das eine Liste zum Auswaehlen baut.
+     *
+     * @return array<string,array{file:string,label:array<string,string>}>
+     */
+    public static function icons(): array
+    {
+        return self::ZEICHEN;
+    }
+
+    /**
+     * Die Adresse eines Zeichens, oder nichts.
+     *
+     * Nichts und nicht ein Ersatzzeichen: ein Abschnitt ohne Zeichen soll
+     * keines zeigen, und eine Kennung, die es nicht gibt, ist dasselbe wie
+     * keine. Der Weg ueber den Katalog heisst auch, dass aus dem Dokument
+     * kein Pfad in die Seite gelangt - dort steht nur eine Kennung.
+     */
+    public static function iconFile(string $id): string
+    {
+        return isset(self::ZEICHEN[$id]) ? '/assets/icons/' . self::ZEICHEN[$id]['file'] : '';
+    }
+
     public static function has(string $type): bool
     {
         return isset(self::KATALOG[$type]);

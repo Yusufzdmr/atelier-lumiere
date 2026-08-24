@@ -111,3 +111,36 @@ assert_same('', $fremd['track'], 'Einstellungen: ein fremder Host faellt weg');
 
 $leer = SectionRegistry::completeSettings('music', []);
 assert_same('', $leer['track'], 'Einstellungen: ohne Angabe keine Tonspur');
+
+/* --- Der Katalog der Zeichen ---------------------------------------------
+ *
+ * Ein Zeichen ist kein Bild, das jemand hochlaedt, sondern ein Eintrag im
+ * Katalog: Kennung, Datei, Etikett. Die Kennung steht spaeter im Dokument
+ * einer Vorlage und in der Einladung eines Paares - sie darf sich also nicht
+ * mehr aendern, und der Test haelt sie fest.
+ *
+ * Gefaerbt wird nicht hier, sondern im Stilblock: die Datei liegt als Maske
+ * ueber einer Flaeche in currentColor. Deshalb steht in jeder Datei eine
+ * einfarbige Zeichnung und keine Palette - eine bunte SVG waere unter einer
+ * Maske ohnehin nur noch eine Silhouette.
+ */
+
+$zeichen = SectionRegistry::icons();
+
+assert_true($zeichen !== [], 'icons: der Katalog ist nicht leer');
+
+foreach ($zeichen as $kennung => $eintrag) {
+    assert_same(1, preg_match('/^[a-z][a-z0-9-]*$/', (string) $kennung),
+        'icons: die Kennung "' . $kennung . '" ist sauber');
+
+    $pfad = __DIR__ . '/../public/assets/icons/' . $eintrag['file'];
+    assert_true(is_file($pfad), 'icons: die Datei zu "' . $kennung . '" liegt da');
+
+    assert_true(($eintrag['label']['de'] ?? '') !== '', 'icons: "' . $kennung . '" hat ein deutsches Etikett');
+    assert_true(($eintrag['label']['tr'] ?? '') !== '', 'icons: "' . $kennung . '" hat ein tuerkisches Etikett');
+}
+
+// Der Weg von der Kennung zur Adresse - und was passiert, wenn es sie nicht gibt.
+assert_same('/assets/icons/pasta.svg', SectionRegistry::iconFile('pasta'), 'icons: die Adresse steht');
+assert_same('', SectionRegistry::iconFile('gibtesnicht'), 'icons: eine unbekannte Kennung faellt still');
+assert_same('', SectionRegistry::iconFile('../../config'), 'icons: und ein Ausbruchsversuch auch');

@@ -868,3 +868,12 @@ assert_same(array_keys($echt['permissions']), array_keys($leer['permissions']), 
 assert_same('', $leer['id'], 'leer: ohne Kennung');
 assert_same('', $leer['type'], 'leer: ohne Art');
 assert_same(false, $leer['enabled'], 'leer: und ausgeschaltet');
+
+/* --- Die Regel fuer die Zeichen steht einmal im Stilblock --- */
+
+$grund = DesignSections::css(sec_doc([['id' => 'ort', 'type' => 'location']]), '.d-x');
+
+assert_contains($grund, '.d-x .d-ikon{', 'css: die Grundregel des Zeichens steht');
+assert_contains($grund, 'background-color:currentColor', 'css: es nimmt die Farbe des Abschnitts');
+assert_contains($grund, 'mask-repeat:no-repeat', 'css: und liegt als Maske darueber');
+assert_same(1, substr_count($grund, '.d-x .d-ikon{'), 'css: und zwar genau einmal');
