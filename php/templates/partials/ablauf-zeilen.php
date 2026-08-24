@@ -14,6 +14,7 @@
  * ersten Mal hinschaut.
  */
 
+use Atelier\SectionRegistry;
 use function Atelier\e;
 ?>
 <?php
@@ -25,7 +26,8 @@ use function Atelier\e;
  */
 $progLetzteVoll = -1;
 for ($z = 0; $z < 8; $z++) {
-    if ($old('prog_time_' . $z) !== '' || $old('prog_title_' . $z) !== '') {
+    if ($old('prog_time_' . $z) !== '' || $old('prog_title_' . $z) !== ''
+        || $old('prog_icon_' . $z) !== '') {
         $progLetzteVoll = $z;
     }
 }
@@ -50,9 +52,31 @@ $progOffen = min(7, $progLetzteVoll + 1);
       </summary>
       <div class="wz-more-body">
   <?php endif; ?>
-  <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_1fr]">
+  <?php /*
+     Drei Felder statt zwei: Uhrzeit, Art, eigener Titel.
+
+     Die Art ist eine Liste und kein Textfeld - genau das ist der Punkt. Wer
+     "Torte" auswaehlt, bekommt das Zeichen dazu und muss nichts schreiben:
+     bleibt der Titel leer, druckt der Katalog seinen Vorschlag. Wer etwas
+     hineinschreibt, gewinnt - dieselbe Regel wie bei den Voreinstellungen
+     eines Abschnitts.
+
+     Die Etiketten sind die gedruckten Titel und nicht die Namen aus dem
+     Panel: das Paar waehlt "Tortenanschnitt", nicht "Torte".
+  */ ?>
+  <div class="mt-3 grid gap-3 sm:grid-cols-[5rem_10rem_1fr]">
     <input name="prog_time_<?= $z ?>" class="<?= $field ?>" maxlength="80"
            placeholder="<?= e($t('programTime')) ?>" value="<?= e($old('prog_time_' . $z)) ?>">
+
+    <select name="prog_icon_<?= $z ?>" class="<?= $field ?>">
+      <option value=""><?= e($locale === 'de' ? '— ohne Zeichen —' : '— no icon —') ?></option>
+      <?php foreach (SectionRegistry::icons() as $kennung => $eintrag) : ?>
+        <option value="<?= e((string) $kennung) ?>"
+                <?= $old('prog_icon_' . $z) === (string) $kennung ? 'selected' : '' ?>>
+          <?= e(SectionRegistry::iconTitle((string) $kennung, $locale)) ?></option>
+      <?php endforeach; ?>
+    </select>
+
     <input name="prog_title_<?= $z ?>" class="<?= $field ?>" maxlength="80"
            placeholder="<?= e($t('programTitle')) ?>" value="<?= e($old('prog_title_' . $z)) ?>">
   </div>

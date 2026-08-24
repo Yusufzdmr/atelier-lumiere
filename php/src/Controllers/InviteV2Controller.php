@@ -216,11 +216,21 @@ final class InviteV2Controller
 
         $zeilen = [];
         for ($z = 0; $z < 8; $z++) {
-            $titel = (string) ($values['prog_title_' . $z] ?? '');
-            if (trim($titel) === '') {
+            $titel   = (string) ($values['prog_title_' . $z] ?? '');
+            $zeichen = (string) ($values['prog_icon_' . $z] ?? '');
+
+            // Eine Zeile darf allein von ihrer Art leben - dann druckt der
+            // Katalog seinen Vorschlag. Ob es die Art gibt, entscheidet
+            // DesignSections::programRows(); hier wird nur eingesammelt.
+            if (trim($titel) === '' && $zeichen === '') {
                 continue;
             }
-            $zeilen[] = ['time' => (string) ($values['prog_time_' . $z] ?? ''), 'title' => $titel];
+
+            $zeilen[] = [
+                'time'  => (string) ($values['prog_time_' . $z] ?? ''),
+                'title' => $titel,
+                'icon'  => $zeichen,
+            ];
         }
         if ($zeilen !== []) {
             $daten['program'] = $zeilen;
@@ -445,13 +455,18 @@ final class InviteV2Controller
             if (in_array('program', $abschnitt['fields'], true)) {
                 $zeilen = [];
                 for ($z = 0; $z < 8; $z++) {
-                    $titel = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
-                    if ($titel === '') {
+                    $titel   = Security::clean($_POST['prog_title_' . $z] ?? '', DesignSections::PROGRAM_LEN);
+                    $zeichen = Security::clean($_POST['prog_icon_' . $z] ?? '', 32);
+
+                    // Wie in der Vorschau: die Art allein traegt eine Zeile.
+                    if ($titel === '' && $zeichen === '') {
                         continue;
                     }
+
                     $zeilen[] = [
                         'time'  => Security::clean($_POST['prog_time_' . $z] ?? '', DesignSections::PROGRAM_LEN),
                         'title' => $titel,
+                        'icon'  => $zeichen,
                     ];
                 }
                 if ($zeilen !== []) {

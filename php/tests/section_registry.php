@@ -144,3 +144,24 @@ foreach ($zeichen as $kennung => $eintrag) {
 assert_same('/assets/icons/pasta.svg', SectionRegistry::iconFile('pasta'), 'icons: die Adresse steht');
 assert_same('', SectionRegistry::iconFile('gibtesnicht'), 'icons: eine unbekannte Kennung faellt still');
 assert_same('', SectionRegistry::iconFile('../../config'), 'icons: und ein Ausbruchsversuch auch');
+
+/* --- Was ein Zeichen im Druck heisst -------------------------------------
+ *
+ * Das Etikett oben ist fuer das PANEL (de/tr - der Grafiker sucht in einer
+ * Liste). Auf der Einladung steht etwas anderes und in anderen Sprachen: die
+ * Seite spricht Deutsch und Englisch, und dort heisst "pasta" nicht "Torte",
+ * sondern "Tortenanschnitt" - eine Zeile im Ablauf, kein Listeneintrag.
+ *
+ * Vorgeschlagen, nicht vorgeschrieben: schreibt das Paar etwas, gewinnt das
+ * Paar. Dieselbe Regel wie bei den Voreinstellungen der Abschnitte.
+ */
+
+foreach (SectionRegistry::icons() as $kennung => $eintrag) {
+    assert_true(($eintrag['title']['de'] ?? '') !== '', 'icons: "' . $kennung . '" hat einen deutschen Vorschlag');
+    assert_true(($eintrag['title']['en'] ?? '') !== '', 'icons: "' . $kennung . '" hat einen englischen Vorschlag');
+}
+
+assert_same('Tortenanschnitt', SectionRegistry::iconTitle('pasta', 'de'), 'iconTitle: der deutsche Vorschlag');
+assert_same('Cutting the cake', SectionRegistry::iconTitle('pasta', 'en'), 'iconTitle: der englische');
+assert_same('Tortenanschnitt', SectionRegistry::iconTitle('pasta', 'tr'), 'iconTitle: eine fremde Sprache faellt auf Deutsch');
+assert_same('', SectionRegistry::iconTitle('gibtesnicht', 'de'), 'iconTitle: unbekannt bleibt leer');

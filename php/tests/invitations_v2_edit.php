@@ -274,8 +274,11 @@ $ersteRunde = $editSammleAngaben->invoke($editController, $editDarf);
  */
 assert_same(
     [
-        ['time' => '', 'title' => 'Nikah Toereni'],
-        ['time' => '19:30', 'title' => 'Abendessen'],
+        // Seit dem Zeitstrahl mit Zeichen traegt jede Zeile eine dritte
+        // Angabe. Wer keine Art gewaehlt hat, traegt sie leer - und damit
+        // steht hier, dass das Einsammeln sie nicht erfindet.
+        ['time' => '', 'title' => 'Nikah Toereni', 'icon' => ''],
+        ['time' => '19:30', 'title' => 'Abendessen', 'icon' => ''],
     ],
     $ersteRunde['program'],
     'sammleAngaben: die Zeile ohne Uhrzeit bleibt (mit leerer Uhrzeit), die Zeile ohne Titel faellt heraus - direkt am ersten Ergebnis geprueft, nicht erst ueber die Rundreise'

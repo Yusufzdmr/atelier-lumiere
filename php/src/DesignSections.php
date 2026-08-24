@@ -213,12 +213,28 @@ final class DesignSections
                 continue;
             }
             $titel = trim((string) ($zeile['title'] ?? ''));
-            if ($titel === '') {
+
+            /*
+             * Das Zeichen kommt aus dem Katalog, nicht aus den Daten: im
+             * Dokument steht eine Kennung, und was es nicht gibt, faellt still
+             * weg. So gelangt aus einer Einladung nie ein Pfad in die Seite.
+             */
+            $zeichen = (string) ($zeile['icon'] ?? '');
+            if (SectionRegistry::iconFile($zeichen) === '') {
+                $zeichen = '';
+            }
+
+            // Frueher hiess "ohne Titel" ohne Zeile. Jetzt darf eine Zeile auch
+            // allein vom Zeichen leben - dann steht der Vorschlag des Katalogs
+            // da. Ohne beides bleibt sie weg wie bisher.
+            if ($titel === '' && $zeichen === '') {
                 continue;
             }
+
             $out[] = [
                 'time'  => mb_substr(trim((string) ($zeile['time'] ?? '')), 0, self::PROGRAM_LEN),
                 'title' => mb_substr($titel, 0, self::PROGRAM_LEN),
+                'icon'  => $zeichen,
             ];
             if (count($out) >= self::PROGRAM_MAX) {
                 break;
@@ -796,7 +812,7 @@ final class DesignSections
                 'location'  => self::ort($data, $locale, $abschnitt['settings']),
                 'countdown' => self::countdown($data, $locale),
                 'family'    => self::familien($data),
-                'program'   => self::programm($data),
+                'program'   => self::programm($data, $locale),
                 'rsvp'      => self::formular($form, $locale),
                 'text'      => self::freitext($abschnitt, $data),
                 'footer'    => self::schluss($abschnitt, $data),
@@ -887,7 +903,7 @@ final class DesignSections
     }
 
     /** @param array<string,mixed> $data */
-    private static function programm(array $data): string
+    private static function programm(array $data, string $locale): string
     {
         // d-sec-plan und nicht d-sec-program: die <section> traegt bereits
         // d-sec-<typ>, also d-sec-program. Solange die Liste denselben Namen
@@ -898,7 +914,31 @@ final class DesignSections
         $out = '<dl class="d-sec-plan">';
 
         foreach (self::programRows($data) as $zeile) {
-            $out .= '<dt>' . e($zeile['time']) . '</dt><dd>' . e($zeile['title']) . '</dd>';
+            // Eigener Titel gewinnt, sonst der Vorschlag des Zeichens.
+            $titel = $zeile['title'] !== ''
+                ? $zeile['title']
+                : SectionRegistry::iconTitle($zeile['icon'], $locale);
+
+            $out .= '<dt>' . e($zeile['time']) . '</dt><dd>';
+
+            if ($zeile['icon'] !== '') {
+                /*
+                 * Die Adresse kommt aus dem Katalog und traegt weder
+                 * Anfuehrungszeichen noch Klammern - sie kann aus dem url()
+                 * nicht ausbrechen.
+                 *
+                 * Inline und nicht im Stilblock: welche Zeichen vorkommen, sagt
+                 * die EINLADUNG, und den Stilblock schreibt die VORLAGE. Die
+                 * Grundregel (Groesse, Farbe, Wiederholung) steht dort; hier
+                 * steht nur, welche Zeichnung es ist.
+                 */
+                $datei = SectionRegistry::iconFile($zeile['icon']);
+                $maske = "url('" . $datei . "')";
+                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
+                    . ';mask-image:' . $maske . '"></span> ';
+            }
+
+            $out .= e($titel) . '</dd>';
         }
 
         return $out . '</dl>';

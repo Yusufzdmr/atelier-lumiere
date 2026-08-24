@@ -401,19 +401,32 @@ final class SectionRegistry
      * public/assets/icons/LICENSE.txt und muss dort bleiben.
      */
     private const ZEICHEN = [
-        'giris'      => ['file' => 'giris.svg',      'label' => ['de' => 'Empfang',    'tr' => 'Giriş']],
-        'nikah'      => ['file' => 'nikah.svg',      'label' => ['de' => 'Trauung',    'tr' => 'Nikâh']],
-        'dans'       => ['file' => 'dans.svg',       'label' => ['de' => 'Tanz',       'tr' => 'Dans']],
-        'yemek'      => ['file' => 'yemek.svg',      'label' => ['de' => 'Essen',      'tr' => 'Yemek']],
-        'meze'       => ['file' => 'meze.svg',       'label' => ['de' => 'Vorspeisen', 'tr' => 'Meze']],
-        'pasta'      => ['file' => 'pasta.svg',      'label' => ['de' => 'Torte',      'tr' => 'Pasta']],
-        'fotograf'   => ['file' => 'fotograf.svg',   'label' => ['de' => 'Fotos',      'tr' => 'Fotoğraf']],
-        'afterparty' => ['file' => 'afterparty.svg', 'label' => ['de' => 'Afterparty', 'tr' => 'After party']],
-        'dresscode'  => ['file' => 'dresscode.svg',  'label' => ['de' => 'Dresscode',  'tr' => 'Kıyafet']],
-        'konum'      => ['file' => 'konum.svg',      'label' => ['de' => 'Ort',        'tr' => 'Konum']],
-        'saat'       => ['file' => 'saat.svg',       'label' => ['de' => 'Uhrzeit',    'tr' => 'Saat']],
-        'hediye'     => ['file' => 'hediye.svg',     'label' => ['de' => 'Geschenk',   'tr' => 'Hediye']],
-        'muzik'      => ['file' => 'muzik.svg',      'label' => ['de' => 'Musik',      'tr' => 'Müzik']],
+        'giris'      => ['file' => 'giris.svg',      'label' => ['de' => 'Empfang',    'tr' => 'Giriş'],
+                        'title' => ['de' => 'Empfang', 'en' => 'Reception']],
+        'nikah'      => ['file' => 'nikah.svg',      'label' => ['de' => 'Trauung',    'tr' => 'Nikâh'],
+                        'title' => ['de' => 'Trauung', 'en' => 'Ceremony']],
+        'dans'       => ['file' => 'dans.svg',       'label' => ['de' => 'Tanz',       'tr' => 'Dans'],
+                        'title' => ['de' => 'Tanz', 'en' => 'Dancing']],
+        'yemek'      => ['file' => 'yemek.svg',      'label' => ['de' => 'Essen',      'tr' => 'Yemek'],
+                        'title' => ['de' => 'Abendessen', 'en' => 'Dinner']],
+        'meze'       => ['file' => 'meze.svg',       'label' => ['de' => 'Vorspeisen', 'tr' => 'Meze'],
+                        'title' => ['de' => 'Vorspeisen', 'en' => 'Starters']],
+        'pasta'      => ['file' => 'pasta.svg',      'label' => ['de' => 'Torte',      'tr' => 'Pasta'],
+                        'title' => ['de' => 'Tortenanschnitt', 'en' => 'Cutting the cake']],
+        'fotograf'   => ['file' => 'fotograf.svg',   'label' => ['de' => 'Fotos',      'tr' => 'Fotoğraf'],
+                        'title' => ['de' => 'Fotos', 'en' => 'Photos']],
+        'afterparty' => ['file' => 'afterparty.svg', 'label' => ['de' => 'Afterparty', 'tr' => 'After party'],
+                        'title' => ['de' => 'Afterparty', 'en' => 'Afterparty']],
+        'dresscode'  => ['file' => 'dresscode.svg',  'label' => ['de' => 'Dresscode',  'tr' => 'Kıyafet'],
+                        'title' => ['de' => 'Dresscode', 'en' => 'Dress code']],
+        'konum'      => ['file' => 'konum.svg',      'label' => ['de' => 'Ort',        'tr' => 'Konum'],
+                        'title' => ['de' => 'Ort', 'en' => 'Venue']],
+        'saat'       => ['file' => 'saat.svg',       'label' => ['de' => 'Uhrzeit',    'tr' => 'Saat'],
+                        'title' => ['de' => 'Beginn', 'en' => 'Start']],
+        'hediye'     => ['file' => 'hediye.svg',     'label' => ['de' => 'Geschenk',   'tr' => 'Hediye'],
+                        'title' => ['de' => 'Geschenke', 'en' => 'Gifts']],
+        'muzik'      => ['file' => 'muzik.svg',      'label' => ['de' => 'Musik',      'tr' => 'Müzik'],
+                        'title' => ['de' => 'Musik', 'en' => 'Music']],
     ];
 
     /**
@@ -437,6 +450,27 @@ final class SectionRegistry
     public static function iconFile(string $id): string
     {
         return isset(self::ZEICHEN[$id]) ? '/assets/icons/' . self::ZEICHEN[$id]['file'] : '';
+    }
+
+    /**
+     * Was das Zeichen im Druck heisst - der Vorschlag fuer die Zeile.
+     *
+     * Das Etikett oben ist fuer das Panel (de/tr, der Grafiker sucht in
+     * einer Liste). Hier stehen die Sprachen der SEITE (de/en), und die
+     * Worte sind andere: in einer Liste heisst es "Torte", in einer Zeile
+     * des Ablaufs "Tortenanschnitt".
+     *
+     * Vorgeschlagen, nicht vorgeschrieben: schreibt das Paar etwas, gewinnt
+     * das Paar. Dieselbe Regel wie bei den Voreinstellungen der Abschnitte.
+     */
+    public static function iconTitle(string $id, string $locale): string
+    {
+        $eintrag = self::ZEICHEN[$id] ?? null;
+        if ($eintrag === null) {
+            return '';
+        }
+
+        return (string) ($eintrag['title'][$locale] ?? $eintrag['title']['de']);
     }
 
     public static function has(string $type): bool

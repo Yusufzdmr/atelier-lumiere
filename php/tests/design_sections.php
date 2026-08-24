@@ -877,3 +877,37 @@ assert_contains($grund, '.d-x .d-ikon{', 'css: die Grundregel des Zeichens steht
 assert_contains($grund, 'background-color:currentColor', 'css: es nimmt die Farbe des Abschnitts');
 assert_contains($grund, 'mask-repeat:no-repeat', 'css: und liegt als Maske darueber');
 assert_same(1, substr_count($grund, '.d-x .d-ikon{'), 'css: und zwar genau einmal');
+
+/* --- Eine Ablaufzeile darf ein Zeichen tragen ---------------------------- */
+
+$plan = DesignSections::programRows(['program' => [
+    ['time' => '21:00', 'icon' => 'pasta', 'title' => 'Pasta Kesimi'],
+    ['time' => '16:00', 'icon' => 'giris'],
+    ['time' => '17:00', 'icon' => 'gibtesnicht', 'title' => 'Etwas'],
+    ['time' => '18:00'],
+    ['time' => '19:00', 'title' => 'Ohne Zeichen'],
+]]);
+
+assert_same(4, count($plan), 'programRows: eine Zeile ohne Titel UND ohne Zeichen faellt weg');
+assert_same('pasta', $plan[0]['icon'], 'programRows: das Zeichen bleibt');
+assert_same('giris', $plan[1]['icon'], 'programRows: eine Zeile darf allein vom Zeichen leben');
+assert_same('', $plan[1]['title'], 'programRows: und traegt dann keinen eigenen Titel');
+assert_same('', $plan[2]['icon'], 'programRows: ein unbekanntes Zeichen faellt still weg');
+assert_same('', $plan[3]['icon'], 'programRows: ohne Angabe kein Zeichen');
+
+/* --- Und im Druck steht die Maske, dazu der Vorschlag --- */
+
+$gedruckt = DesignSections::html(
+    sec_doc([['id' => 'ablauf', 'type' => 'program', 'enabled' => true]]),
+    ['program' => [
+        ['time' => '21:00', 'icon' => 'pasta'],
+        ['time' => '22:00', 'icon' => 'dans', 'title' => 'Bizim dans'],
+    ]],
+    'de'
+);
+
+assert_contains($gedruckt, 'class="d-ikon"', 'html: die Zeile traegt ein Zeichen');
+assert_contains($gedruckt, "mask-image:url('/assets/icons/pasta.svg')", 'html: und zwar seine Datei');
+assert_contains($gedruckt, 'Tortenanschnitt', 'html: ohne eigenen Titel steht der Vorschlag da');
+assert_contains($gedruckt, 'Bizim dans', 'html: mit eigenem Titel gewinnt das Paar');
+assert_not_contains($gedruckt, 'Tanz</dd>', 'html: und der Vorschlag tritt zurueck');
