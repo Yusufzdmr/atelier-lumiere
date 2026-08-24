@@ -40,3 +40,27 @@ $http = (string) file_get_contents(__DIR__ . '/../src/Http.php');
 $frames = substr($http, strpos($http, '$frames = ['), 700);
 
 assert_contains($frames, "'self'", 'Http: die eigene Seite steht unter frame-src');
+
+/*
+ * Und der Film geht weich in die Karte ueber.
+ *
+ * Bis heute stand am Ende des Vorspanns eine Zeile: introBox.hidden = true.
+ * Der Film war damit in einem Bild weg. Das war richtig, solange der Film
+ * eigens dafuer gedreht war - beim Elysee-Film IST das letzte Bild das Blatt
+ * der Karte, und ein Schnitt zwischen zwei gleichen Bildern sieht niemand.
+ *
+ * Ayhans Filme sind das nicht: ruhige Schleifen, die auf Blumen enden. Der
+ * Schnitt zur Karte war zu sehen. Also blendet der Film aus, statt zu
+ * verschwinden - die Karte liegt bei card=none ohnehin schon darunter, und
+ * damit ist das Ausblenden selbst die Ueberblendung.
+ *
+ * Wieder ein Test am Dateitext, aus demselben Grund wie oben: die
+ * Eigenschaft, die halten muss, ist, dass das Ausblenden ueberhaupt
+ * stattfindet und die Dauer einen Namen hat.
+ */
+
+$js = (string) file_get_contents(__DIR__ . '/../public/assets/invitation.js');
+
+assert_contains($js, 'UEBERGANG_MS', 'invitation.js: die Dauer der Ueberblendung hat einen Namen');
+assert_contains($js, 'introBox.style.opacity', 'invitation.js: der Film blendet aus');
+assert_contains($js, 'introBox.style.pointerEvents', 'invitation.js: und nimmt waehrenddessen keine Klicks mehr an');

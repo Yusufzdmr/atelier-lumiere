@@ -12,6 +12,11 @@
   var envelope = document.querySelector("[data-envelope]");
   var music = document.querySelector("[data-music]");
 
+  // Wie lange der Vorspann in die Karte uebergeht. Kein Feld im Panel:
+  // das ist keine Gestaltung der Vorlage, sondern die Naht zwischen zwei
+  // Sachen - und eine Naht soll ueberall gleich lang sein.
+  var UEBERGANG_MS = 600;
+
   /* ---------------------------- Umschlag ---------------------------- */
   if (envelope) {
     // Sofort, nicht erst beim Oeffnen: solange das Kuvert zu ist, sind die
@@ -59,7 +64,30 @@
         var schliessen = function () {
           if (fertig) return;
           fertig = true;
-          introBox.hidden = true;
+
+          // Weich statt hart. Hier stand introBox.hidden = true, und der
+          // Film war in einem Bild weg. Das trug, solange sein letztes
+          // Bild das Blatt der Karte war - ein Schnitt zwischen zwei
+          // gleichen Bildern faellt niemandem auf. Ein Film, der auf
+          // Blumen endet, hat diese Naht nicht, und dann sieht man sie.
+          //
+          // Eingeblendet wird nichts: bei card=none liegt die Karte
+          // ohnehin schon darunter und wartet auf keine Bewegung. Also
+          // ist das Ausblenden des Films selbst die Ueberblendung.
+          //
+          // pointerEvents zuerst: waehrend der Ueberblendung liegt eine
+          // fast durchsichtige Flaeche ueber der Karte, und sie soll den
+          // Finger durchlassen, statt ihn zu schlucken.
+          introBox.style.pointerEvents = "none";
+          introBox.style.transition = "opacity " + UEBERGANG_MS + "ms ease";
+          introBox.style.opacity = "0";
+
+          // Danach wirklich weg. Eine durchsichtige Flaeche bleibt sonst
+          // im Baum stehen, und nicht jeder Browser laesst durch sie
+          // hindurch, nur weil man sie nicht sieht.
+          setTimeout(function () {
+            introBox.hidden = true;
+          }, UEBERGANG_MS);
         };
 
         introFilm.addEventListener("ended", schliessen, { once: true });
