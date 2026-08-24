@@ -1183,7 +1183,7 @@ Kalan üç adım, üçü de **sizin yapmanız gereken** (KAS arayüzü + sırlar
    `cd /www/htdocs/w0219c08/atelier && mysql -u KULLANICI -p VERITABANI < schema.sql`
    ve aynısı `data/inhalte.sql` ile
 2. **`config.php`** — `cp config.example.php config.php`, sonra `db_*`,
-   `admin_key` (hash olarak) ve `mail_to`. Ayrıntısı `YAYIN.md` 5. adımda
+   `admin_key` (hash olarak) ve `mail_to`. Ayrıntısı `YAYIN-VPS.md`de
 3. **Alan adı** → `/www/htdocs/w0219c08/atelier/public` klasörüne bakmalı.
    `atelier-lumiere.de` **henüz çözülmüyor** (kayıtlı değil ya da yönlenmemiş).
    Ayhan'ın hemen bakması için pratik yol: hesapta zaten duran

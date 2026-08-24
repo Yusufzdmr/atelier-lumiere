@@ -1,8 +1,50 @@
-# Yayına alma — kendi VPS'ine (geçici demo)
+# Yayına alma — VPS
 
-Bu, `YAYIN.md`'nin (ALL-INKL) yanına gelen ikinci hedef: müşterinin bakabilmesi
-için **kısa süreli** bir demo adresi. Asıl yayın hâlâ ALL-INKL; buradaki kurulum
-onun yerine geçmez, önüne geçer.
+Tek hedef bu. ALL-INKL 24.08.2026'da bırakıldı ve `YAYIN.md` silindi: o hesapta
+artık başka bir müşterinin sitesi duruyor, Atelier hiç orada olmadı. Bu belge
+bir zamanlar "geçici demo" diye başlıyordu — değil, asıl yayın burası.
+
+## Güncelleme (kısa yol)
+
+Kod zaten kuruluysa yeni sürüm şöyle gider. `config.php` ve
+`public/uploads/` arşivde **yok**, o yüzden üstüne açmak onlara dokunmaz:
+
+```bash
+# 1. Arsiv (config.php ve public/uploads icinde YOK)
+git archive --format=tar HEAD:php | gzip -9 > /tmp/atelier-php.tar.gz
+scp /tmp/atelier-php.tar.gz atelier-vps:/root/
+```
+
+Sunucuda, sirayla:
+
+```bash
+ssh atelier-vps
+set -e
+
+# 2. Yedek — uploads haric
+rsync -a --exclude "public/uploads" /var/www/atelier/ /var/www/atelier-yedek-$(date +%F-%H%M)/
+
+# 3. Ustune ac. Silmez, uzerine yazar: config.php ve uploads arsivde olmadigi
+#    icin onlara dokunulmaz.
+tar xzf /root/atelier-php.tar.gz -C /var/www/atelier
+chown -R www-data:www-data /var/www/atelier
+find /var/www/atelier -type d -exec chmod 750 {} +
+find /var/www/atelier -type f -exec chmod 640 {} +
+
+# 4. Sema. Bastan sona CREATE TABLE IF NOT EXISTS, yani her seferinde
+#    calistirilabilir — yeni tablolar da boyle geliyor.
+cd /var/www/atelier
+sudo -u www-data php bin/schema-anwenden.php
+
+# 5. Opcache'i tazele
+systemctl reload php8.3-fpm
+```
+
+Yedek `public/uploads` olmadan alınıyor: 80 MB müşteri fotoğrafını her seferinde
+kopyalamak diski doldurur, ve onlara zaten hiç dokunulmuyor.
+
+Şema her seferinde yeniden yükleniyor. Baştan sona `CREATE TABLE IF NOT EXISTS`
+olduğu için bu zararsız — ve yeni tablolar böyle geliyor.
 
 | | |
 |---|---|
