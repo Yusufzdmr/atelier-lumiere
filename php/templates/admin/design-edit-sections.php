@@ -298,6 +298,24 @@ use function Atelier\e;
         <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da kapak yolu' : 'oder Standbild-Pfad' ?>
           <input name="intro_poster" value="<?= e((string) $design['intro']['poster']) ?>"
                  class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+
+        <?php /*
+           Wie lange der Film laeuft, bevor die Karte kommt.
+
+           Bis heute stand hier gar nichts, und die zweite Fassung schickte
+           eine Null an die Buehne: das Skript nimmt dann die Laenge des Films
+           selbst und deckelt sie bei sechs Sekunden. Wer einen Film von zwoelf
+           Sekunden hinlegt, bekommt sechs - und kann daran nichts aendern.
+
+           Leer bleibt genau dieses Verhalten. Eine Zahl deckelt: drei
+           eingetragen heisst nach drei Sekunden kommt die Karte, egal wie
+           lang der Film ist.
+        */ ?>
+        <label class="<?= $label ?> mt-4 block">
+          <?= $tr ? 'süre (saniye, boş = filmin kendi boyu)' : 'Dauer (Sekunden, leer = so lang wie der Film)' ?>
+          <input name="intro_sekunden" type="number" step="0.1" min="0" max="20"
+                 value="<?= ((float) $design['intro']['seconds']) > 0 ? e((string) (float) $design['intro']['seconds']) : '' ?>"
+                 class="<?= $feld ?>"></label>
       </div>
     </div>
   </div>

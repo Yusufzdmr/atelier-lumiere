@@ -132,6 +132,22 @@ final class Design
         $doc['intro'] = [
             'video'  => self::safeSrc((string) ($intro['video'] ?? '')),
             'poster' => self::safeSrc((string) ($intro['poster'] ?? '')),
+            /*
+             * Wie lange der Film laeuft, bevor die Karte kommt.
+             *
+             * Null heisst "so lang wie der Film selbst" - das ist genau das
+             * bisherige Verhalten, also aendert sich an keiner Vorlage
+             * etwas, die nie etwas eingetragen hat. Eine Zahl deckelt ihn:
+             * wer einen Film von zwoelf Sekunden hinlegt und drei eintraegt,
+             * bekommt drei.
+             *
+             * In SEKUNDEN und nicht in Millisekunden. Der Grafiker denkt in
+             * Sekunden, das Feld steht in Sekunden, und umgerechnet wird
+             * genau einmal - dort, wo die Buehne das Attribut schreibt.
+             * Zwei Umrechnungen waeren zwei Stellen, an denen sich ein
+             * Faktor 1000 verstecken kann.
+             */
+            'seconds' => max(0.0, min(20.0, (float) ($intro['seconds'] ?? 0))),
         ];
 
         $doc['tags'] = array_values(array_filter(
@@ -1032,6 +1048,12 @@ final class Design
             if ($wert !== null) {
                 $doc['intro'][$teil] = $wert;
             }
+        }
+
+        // Leer abschicken ist erlaubt und heisst "wieder so lang wie der
+        // Film" - dieselbe Haltung wie beim Filmpfad daneben.
+        if (isset($post['intro_sekunden'])) {
+            $doc['intro']['seconds'] = (float) $post['intro_sekunden'];
         }
 
         // Leer abschicken ist erlaubt und heisst "wieder wie die Karte".

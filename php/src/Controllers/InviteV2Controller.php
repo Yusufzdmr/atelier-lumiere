@@ -819,7 +819,11 @@ final class InviteV2Controller
             'ratio'   => str_replace(':', ' / ', (string) $doc['canvas']['ratio']),
             'karteAn' => (string) $doc['animation']['card'],
             'tempo'   => (int) $doc['animation']['speed'],
-            'introMs' => 0,
+            // Sekunden im Dokument, Millisekunden auf der Buehne. Bei einer
+            // verschickten Einladung kommt der Wert aus dem eingefrorenen
+            // Sockel, nicht aus der lebenden Vorlage - sonst aenderte sich
+            // der Auftakt einer laengst verteilten Adresse.
+            'introMs' => (int) round(((float) ($doc['intro']['seconds'] ?? 0)) * 1000),
             'idle'    => (string) $doc['animation']['idle'],
             // Die Initialen stehen auf dem Siegel. Sie kommen aus den Daten
             // des Paares, nicht aus dem Dokument.

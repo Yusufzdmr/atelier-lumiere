@@ -147,3 +147,50 @@ $gf = Design::complete(['id' => 'x', 'sectionsBg' => 'https://beispiel.de/g.jpg'
 assert_same('', $gf['sectionsBg'], 'complete: fremder Host wird verworfen');
 
 assert_same('', Design::complete(['id' => 'x'])['sectionsBg'], 'complete: ohne Angabe leer - also wie die Karte');
+
+/*
+ * ------------------------------------------------------------------
+ * Wie lange der Oeffnungsfilm laeuft.
+ * ------------------------------------------------------------------
+ *
+ * Bis hierher stand in der zweiten Fassung eine Null: introMs => 0. Das
+ * Skript liest sie als "keine Angabe" und nimmt dann die Laenge des Films
+ * selbst, gedeckelt bei sechs Sekunden. Wer einen Film von zwoelf Sekunden
+ * hinlegt, bekommt also sechs - und kann daran nichts aendern.
+ *
+ * In Sekunden und nicht in Millisekunden: der Grafiker denkt in Sekunden,
+ * das Feld steht in Sekunden, und gerechnet wird genau einmal - dort, wo die
+ * Buehne das Attribut schreibt.
+ */
+
+$film = Design::complete(['id' => 'f', 'slug' => 'f', 'intro' => [
+    'video' => '/assets/vorlagen/film.mp4', 'seconds' => 3.5,
+]]);
+
+assert_same(3.5, $film['intro']['seconds'], 'intro: die Sekunden bleiben');
+
+// Null heisst weiterhin "so lang wie der Film". Das ist die Voreinstellung,
+// und sie ist genau das bisherige Verhalten - eine Vorlage, die nie etwas
+// eingetragen hat, aendert sich nicht.
+$ohne = Design::complete(['id' => 'f2', 'slug' => 'f2']);
+assert_same(0.0, $ohne['intro']['seconds'], 'intro: ohne Angabe null');
+
+// Geklemmt, nicht abgelehnt: eine Einladung soll nicht an einer Zahl scheitern.
+$viel = Design::complete(['id' => 'f3', 'slug' => 'f3', 'intro' => ['seconds' => 900]]);
+assert_same(20.0, $viel['intro']['seconds'], 'intro: zu lang wird geklemmt');
+
+$minus = Design::complete(['id' => 'f4', 'slug' => 'f4', 'intro' => ['seconds' => -3]]);
+assert_same(0.0, $minus['intro']['seconds'], 'intro: negativ wird null');
+
+$quatsch = Design::complete(['id' => 'f5', 'slug' => 'f5', 'intro' => ['seconds' => 'bald']]);
+assert_same(0.0, $quatsch['intro']['seconds'], 'intro: Unsinn wird null');
+
+/* --- Und aus dem Formular --- */
+
+$ausFormular = Design::fromPost($film, ['intro_sekunden' => '2.4']);
+assert_same(2.4, $ausFormular['intro']['seconds'], 'fromPost: die Sekunden kommen an');
+
+// Leer abschicken heisst "wieder so lang wie der Film" - dieselbe Haltung wie
+// beim Filmpfad selbst, den man auch leeren darf.
+$geleert = Design::fromPost($film, ['intro_sekunden' => '']);
+assert_same(0.0, $geleert['intro']['seconds'], 'fromPost: leer heisst so lang wie der Film');

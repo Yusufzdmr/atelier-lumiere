@@ -29,9 +29,18 @@ $intro = (string) $design['animation']['intro'];
 // Wie die Karte hereinkommt - beim Original steht das in data-animation.
 $karteAn = (string) $design['animation']['card'];
 $tempo = (int) $design['animation']['speed'];
-// Wie lange eine Auftaktszene laeuft. Die zweite Fassung hat noch keine
-// eigenen Szenen, also null - das Skript ueberspringt sie dann.
-$introMs = 0;
+/*
+ * Wie lange der Auftakt laeuft, in Millisekunden.
+ *
+ * Gezeichnete Szenen hat die zweite Fassung nicht - aber einen Film, und
+ * der hat seit heute eine eigene Dauer im Dokument. Null heisst weiterhin
+ * "so lang wie der Film selbst, hoechstens sechs Sekunden"; das entscheidet
+ * das Skript.
+ *
+ * Hier wird aus Sekunden Millisekunden - und nur hier. Im Dokument stehen
+ * Sekunden, weil der Grafiker in Sekunden denkt.
+ */
+$introMs = (int) round(((float) ($design['intro']['seconds'] ?? 0)) * 1000);
 // Die ruhige Dauerbewegung des Kuverts - dieselbe Klasse wie im Original.
 $idle = (string) $design['animation']['idle'];
 ?>
