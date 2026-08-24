@@ -22,3 +22,21 @@ foreach (['layout.php', 'admin/layout.php'] as $vorlage) {
     assert_contains($quelle, "\$meta['scripts']", $vorlage . ': liest die Skriptliste');
     assert_contains($quelle, '<script src="<?= e($script) ?>', $vorlage . ': und schreibt sie als Tag');
 }
+
+/*
+ * Und die Seite muss sich selbst einrahmen duerfen.
+ *
+ * Gefunden am 24.08.2026 an der lebenden Seite: im Panel blieb jeder Rahmen
+ * leer, der die Einladung zeigen sollte - Telefon, Tablet, Schreibtisch. Die
+ * Richtlinie zaehlte unter frame-src vier Videodienste auf und die eigene
+ * Adresse nicht.
+ *
+ * Leicht zu verwechseln, weil beide "self" sagen: frame-ancestors beantwortet
+ * "wer darf UNS einrahmen", frame-src "wen duerfen WIR einrahmen". Nur die
+ * zweite half.
+ */
+
+$http = (string) file_get_contents(__DIR__ . '/../src/Http.php');
+$frames = substr($http, strpos($http, '$frames = ['), 700);
+
+assert_contains($frames, "'self'", 'Http: die eigene Seite steht unter frame-src');

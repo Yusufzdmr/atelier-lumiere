@@ -78,6 +78,22 @@ final class Http
         // Karte auf der Kontaktseite genauso. Erlaubt sein müssen sie
         // trotzdem, sonst bleibt der Rahmen nach dem Klick leer.
         $frames = [
+            /*
+             * Die eigene Seite. Sie fehlte, und deshalb blieb im Panel jeder
+             * Rahmen leer, der die Einladung selbst zeigen sollte - Telefon,
+             * Tablet, Schreibtisch. Kein Fehler in der Konsole, den man sucht,
+             * sondern ein weisser Kasten.
+             *
+             * frame-ancestors 'self' steht weiter unten und beantwortet die
+             * ANDERE Frage: wer darf UNS einrahmen. Wer wir einrahmen duerfen,
+             * steht hier - die beiden werden leicht verwechselt, weil beide
+             * "self" sagen und nur eine davon half.
+             *
+             * Fremde Seiten stehen weiterhin nicht darin: die vier Hosts
+             * darunter sind Videodienste, die eine eingebettete Vorschau
+             * brauchen.
+             */
+            "'self'",
             'https://www.youtube-nocookie.com',
             'https://www.youtube.com',
             'https://player.vimeo.com',
