@@ -210,7 +210,20 @@ final class Design
             array_filter((array) $doc['layers'], 'is_array')
         ));
 
-        $doc['sections'] = array_values(array_filter((array) $doc['sections'], 'is_array'));
+        /*
+         * Die Abschnitte gehen durch dieselbe Tuer wie alles andere.
+         *
+         * Frueher stand hier nur ein Filter, und wer vollstaendige Abschnitte
+         * brauchte, musste DesignSections::complete() selbst rufen. Die
+         * oeffentliche Seite tat es - css(), visible() und html() rufen es
+         * jedes fuer sich. Das Panel tat es nicht, und ein Dokument, dessen
+         * Abschnitte aelter sind als das Feld style, warf dort eine Warnung
+         * mitten ins Formular. Die Warnung landete im Eingabefeld und beim
+         * naechsten Speichern als Farbmarke im Dokument.
+         *
+         * Eine Stelle statt sechs: wer liest, bekommt vollstaendige Abschnitte.
+         */
+        $doc = DesignSections::complete($doc);
 
         $animation = is_array($doc['animation']) ? $doc['animation'] : [];
         $doc['animation'] = [

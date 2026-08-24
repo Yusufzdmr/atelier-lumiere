@@ -194,3 +194,35 @@ assert_same(2.4, $ausFormular['intro']['seconds'], 'fromPost: die Sekunden komme
 // beim Filmpfad selbst, den man auch leeren darf.
 $geleert = Design::fromPost($film, ['intro_sekunden' => '']);
 assert_same(0.0, $geleert['intro']['seconds'], 'fromPost: leer heisst so lang wie der Film');
+
+/* --- Abschnitte kommen vollstaendig heraus ---------------------------------
+ *
+ * Ein Dokument, das aelter ist als die Felder, die heute an einem Abschnitt
+ * haengen: nur Kennung, Art, Titel, Rechte. Genau so lagen die Abschnitte der
+ * Vorlage "video" in der Datenbank.
+ *
+ * complete() hat sie bisher nur gefiltert und sonst durchgereicht. Wer danach
+ * $abschnitt['style']['color'] las - das Panel tut es -, bekam eine Warnung
+ * mitten ins Formular, und die Warnung landete im Feld: gespeichert wurde
+ * dann "br-bwarningb-undefined-array-key" als Farbmarke.
+ *
+ * Die oeffentliche Seite war nie betroffen, weil css(), visible() und html()
+ * jedes fuer sich DesignSections::complete() rufen. Genau das gehoert an die
+ * eine Stelle, durch die jedes Lesen geht.
+ */
+
+$alt = Design::complete(['id' => 'alt', 'slug' => 'alt', 'sections' => [
+    ['id' => 'ort', 'type' => 'location', 'title' => ['de' => 'Wo und wann'],
+     'enabled' => true, 'permissions' => ['edit' => true, 'hide' => true]],
+]]);
+
+$abschnitt = $alt['sections'][0];
+
+assert_same(true, isset($abschnitt['style']['color']), 'complete: Abschnitt hat eine Farbmarke');
+assert_same(true, isset($abschnitt['style']['font']), 'complete: Abschnitt hat eine Schriftmarke');
+assert_same(true, is_array($abschnitt['settings'] ?? null), 'complete: Abschnitt hat Einstellungen');
+assert_same(true, is_array($abschnitt['defaults'] ?? null), 'complete: Abschnitt hat Voreinstellungen');
+assert_same('default', $abschnitt['variant'] ?? '', 'complete: Abschnitt hat eine Ansicht');
+assert_same('Wo und wann', $abschnitt['title']['de'], 'complete: der Titel bleibt stehen');
+assert_same('', $abschnitt['title']['en'], 'complete: die zweite Sprache wird ergaenzt');
+assert_same(true, $abschnitt['permissions']['edit'], 'complete: die Rechte bleiben stehen');
