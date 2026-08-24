@@ -92,6 +92,11 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
            border:1px solid var(--color-sand-deep,#dccebc);}
   .b-zeile[data-aktiv]{border-color:var(--color-ink,#14110f);background:var(--color-sand,#ede4d8);}
   .b-zeile[data-weg]{opacity:0.4;}
+  /* Ziehbar: der Greifer sagt es, solange die Maus darauf steht. Auf dem
+     Telefon gibt es kein Ziehen - dort bleiben die Pfeile der einzige Weg,
+     und deshalb bleiben sie ueberall. */
+  .b-zeile[draggable="true"] .b-greifer{cursor:grab;}
+  .b-zeile[data-zieht]{opacity:0.5;outline:1px dashed var(--color-gold,#b08d57);}
   .b-greifer{flex:1;min-width:0;text-align:left;border:0;background:none;padding:0;
              cursor:pointer;color:var(--color-ink,#14110f);font:inherit;font-size:0.82rem;}
   .b-greifer small{display:block;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;

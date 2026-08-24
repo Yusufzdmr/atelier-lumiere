@@ -133,6 +133,9 @@
     });
   });
 
+  // Auch von aussen gebraucht: Rueckgaengig zieht beide Listen nach.
+  var stapleNeu = function () {};
+
   (function () {
     if (!liste || !reihe) return;
 
@@ -141,7 +144,7 @@
    * (Design::css schreibt index+1). Eine weggenommene Zeile zaehlt nicht mit -
    * sie steht auch nicht in der Reihe und ist nach dem Speichern fort.
    */
-  var stapleNeu = function () {
+  stapleNeu = function () {
     var kennungen = [];
 
     liste.querySelectorAll("[data-ebene]").forEach(function (zeile) {
@@ -630,5 +633,228 @@
     // halbe Kopie.
     markiere(zeileKopie);
     zeigeTafel("sec-" + neu);
+  });
+
+  /*
+   * Ziehen statt Klicken.
+   *
+   * Die Pfeile bleiben, und zwar nicht aus Bequemlichkeit: HTML5-Ziehen gibt
+   * es auf Telefonen nicht. Wer die Liste am Schreibtisch sortiert, zieht;
+   * wer sie unterwegs sortiert, tippt.
+   *
+   * Beim Ziehen wandert die Zeile sofort mit - man sieht, wo sie landet,
+   * bevor man loslaesst. Geschrieben wird die Reihe erst beim Loslassen: die
+   * Reihe ist die Wahrheit ueber Ordnung UND Bestand, und sie waehrend des
+   * Ziehens dutzendfach neu zu schreiben hiesse, dutzende Schritte in die
+   * Geschichte zu legen.
+   */
+  var ziehenErlauben = function (liste, merkmal, fertig) {
+    if (!liste) return;
+
+    var gezogen = null;
+
+    liste.querySelectorAll("[" + merkmal + "]").forEach(function (zeile) {
+      // Die Zeile "+ Abschnitt" bleibt, wo sie ist: sie ist kein Abschnitt,
+      // sondern der Platz, an dem einer entsteht.
+      if (zeile.hasAttribute("data-sec-neu")) return;
+
+      zeile.setAttribute("draggable", "true");
+
+      zeile.addEventListener("dragstart", function (ereignis) {
+        gezogen = zeile;
+        zeile.setAttribute("data-zieht", "");
+        // Ohne Nutzlast startet der Zug in manchen Browsern gar nicht.
+        if (ereignis.dataTransfer) {
+          ereignis.dataTransfer.effectAllowed = "move";
+          ereignis.dataTransfer.setData("text/plain", zeile.getAttribute(merkmal) || "");
+        }
+      });
+
+      zeile.addEventListener("dragend", function () {
+        zeile.removeAttribute("data-zieht");
+        gezogen = null;
+        fertig();
+      });
+
+      zeile.addEventListener("dragover", function (ereignis) {
+        if (!gezogen || gezogen === zeile) return;
+        ereignis.preventDefault();
+
+        // Vor oder hinter die Zeile, je nachdem, wo sie herkommt. Ohne diese
+        // Unterscheidung springt eine Zeile beim Ueberfahren hin und her.
+        var davor = gezogen.compareDocumentPosition(zeile) & Node.DOCUMENT_POSITION_FOLLOWING;
+        liste.insertBefore(gezogen, davor ? zeile.nextSibling : zeile);
+      });
+    });
+
+    liste.addEventListener("drop", function (ereignis) {
+      ereignis.preventDefault();
+    });
+  };
+
+  ziehenErlauben(secListe, "data-sec-zeile", reiheNeu);
+  ziehenErlauben(liste, "data-ebene", stapleNeu);
+
+  /*
+   * Rueckgaengig und Wiederherstellen.
+   *
+   * Der Zustand ist das ganze Formular, nach Feldnamen. Nicht nach Position:
+   * Verdoppeln legt Felder dazu, und eine Liste nach Position waere danach
+   * um eins verschoben - man haette beim Rueckgaengigmachen die Werte
+   * fremder Felder eingesetzt.
+   *
+   * Die beiden Reihen (Abschnitte, Ebenen) sind selbst Felder und fahren
+   * deshalb einfach mit. Sie sind die Wahrheit ueber Ordnung und Bestand -
+   * wer sie zurueckdreht, dreht auch die Listen zurueck, und genau das tut
+   * listeSyncen() danach.
+   */
+  var geschichte = [];
+  var kuenftig = [];
+  var haltAn = false;
+
+  var eingaben = function () {
+    return form.querySelectorAll("input[name], select[name], textarea[name]");
+  };
+
+  var zustand = function () {
+    var werte = {};
+
+    eingaben().forEach(function (feld) {
+      werte[feld.name] = (feld.type === "checkbox" || feld.type === "radio")
+        ? (feld.checked ? 1 : 0)
+        : feld.value;
+    });
+
+    return JSON.stringify(werte);
+  };
+
+  var listeSyncen = function (liste, merkmal, feld, knopfMerkmal) {
+    if (!liste || !feld) return;
+
+    var genannt = {};
+
+    feld.value.split(",").forEach(function (kennung) {
+      kennung = kennung.trim();
+      if (kennung === "") return;
+      genannt[kennung] = true;
+
+      var zeile = liste.querySelector("[" + merkmal + '="' + kennung + '"]');
+      // appendChild schiebt sie ans Ende - in der Reihenfolge der Reihe
+      // ergibt das genau die Reihe.
+      if (zeile) liste.appendChild(zeile);
+    });
+
+    liste.querySelectorAll("[" + merkmal + "]").forEach(function (zeile) {
+      var weg = !genannt[zeile.getAttribute(merkmal)];
+      var knopf = zeile.querySelector("[" + knopfMerkmal + "]");
+
+      if (weg) {
+        zeile.setAttribute("data-weg", "");
+      } else {
+        zeile.removeAttribute("data-weg");
+      }
+
+      if (knopf) {
+        knopf.textContent = knopf.getAttribute(weg ? "data-wort-zurueck" : "data-wort-weg");
+      }
+    });
+  };
+
+  var herstellen = function (roh) {
+    var werte = JSON.parse(roh);
+
+    haltAn = true;
+
+    eingaben().forEach(function (feld) {
+      if (!(feld.name in werte)) return;
+      if (feld.type === "checkbox" || feld.type === "radio") {
+        feld.checked = !!werte[feld.name];
+      } else {
+        feld.value = werte[feld.name];
+      }
+    });
+
+    listeSyncen(secListe, "data-sec-zeile", secReihe, "data-sec-weg");
+    listeSyncen(liste, "data-ebene", reihe, "data-ebene-weg");
+    stapleNeu();
+
+    // Die Vorschau folgt: sie haengt an Ereignissen, und ein gesetzter Wert
+    // loest keines aus.
+    form.querySelectorAll("[data-kasten]").forEach(function (f) {
+      f.dispatchEvent(new Event(f.type === "checkbox" || f.tagName === "SELECT" ? "change" : "input"));
+    });
+    form.querySelectorAll("[data-textfeld], [data-farbfeld]").forEach(function (f) {
+      f.dispatchEvent(new Event("input"));
+    });
+
+    haltAn = false;
+  };
+
+  var merken = function () {
+    if (haltAn) return;
+
+    var jetzt = zustand();
+    if (geschichte.length && geschichte[geschichte.length - 1] === jetzt) return;
+
+    geschichte.push(jetzt);
+    // Hundert Schritte reichen fuer eine Sitzung und halten den Speicher
+    // klein; wer weiter zurueck will, laedt die Seite neu.
+    if (geschichte.length > 100) geschichte.shift();
+    kuenftig.length = 0;
+  };
+
+  merken();
+
+  /*
+   * Nicht bei jedem Tastendruck. Ein Schieberegler feuert dutzende Male je
+   * Bewegung, und jeder davon waere ein eigener Schritt zurueck - man
+   * drueckte fuenfzigmal, um eine Bewegung rueckgaengig zu machen.
+   */
+  var wartend = null;
+  var spaeterMerken = function () {
+    if (wartend) clearTimeout(wartend);
+    wartend = setTimeout(merken, 450);
+  };
+
+  form.addEventListener("input", spaeterMerken);
+  form.addEventListener("change", merken);
+  form.addEventListener("click", function (ereignis) {
+    // Nach einem Knopf, der etwas verschoben oder weggenommen hat.
+    if (ereignis.target.closest("button[type=button]")) setTimeout(merken, 0);
+  });
+
+  var zurueck = function () {
+    if (geschichte.length < 2) return;
+    kuenftig.push(geschichte.pop());
+    herstellen(geschichte[geschichte.length - 1]);
+  };
+
+  var vor = function () {
+    if (!kuenftig.length) return;
+    var naechster = kuenftig.pop();
+    geschichte.push(naechster);
+    herstellen(naechster);
+  };
+
+  document.addEventListener("keydown", function (ereignis) {
+    if (!ereignis.ctrlKey && !ereignis.metaKey) return;
+
+    /*
+     * In einem Textfeld gehoert Strg+Z dem Browser. Sein Rueckgaengig kennt
+     * einzelne Buchstaben; unseres kennt nur ganze Zustaende, und es waere
+     * ein schlechter Tausch, ein getipptes Wort nur im Ganzen zurueckdrehen
+     * zu koennen.
+     */
+    var wo = document.activeElement;
+    if (wo && (wo.tagName === "INPUT" || wo.tagName === "TEXTAREA")) return;
+
+    var taste = ereignis.key.toLowerCase();
+    if (taste === "z" && !ereignis.shiftKey) {
+      ereignis.preventDefault();
+      zurueck();
+    } else if ((taste === "z" && ereignis.shiftKey) || taste === "y") {
+      ereignis.preventDefault();
+      vor();
+    }
   });
 })();
