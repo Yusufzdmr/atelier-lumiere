@@ -95,3 +95,19 @@ foreach (SectionRegistry::all() as $art => $eintrag) {
         }
     }
 }
+
+/* --- Ein Pfad als Einstellung: die Musik bringt ihre Tonspur mit --- */
+
+$ton = SectionRegistry::completeSettings('music', ['track' => '/uploads/designs/lied.mp3']);
+assert_same('/uploads/designs/lied.mp3', $ton['track'], 'Einstellungen: der Pfad kommt an');
+
+/*
+ * Ein fremder Host faellt weg - dieselbe Pruefung wie bei Bildern und Filmen.
+ * Eine Tonspur von woanders waere ein Hoerer, der mitschreibt, wer die
+ * Einladung geoeffnet hat.
+ */
+$fremd = SectionRegistry::completeSettings('music', ['track' => 'https://beispiel.de/lied.mp3']);
+assert_same('', $fremd['track'], 'Einstellungen: ein fremder Host faellt weg');
+
+$leer = SectionRegistry::completeSettings('music', []);
+assert_same('', $leer['track'], 'Einstellungen: ohne Angabe keine Tonspur');

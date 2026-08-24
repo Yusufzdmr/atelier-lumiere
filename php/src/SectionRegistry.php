@@ -139,6 +139,97 @@ final class SectionRegistry
                 'editorial' => ['de' => 'Editorial', 'tr' => 'Editoryal'],
             ],
             'settings' => [],
+            'inputs' => [
+                'text' => [
+                    'type'  => 'textarea',
+                    'max'   => 1200,
+                    // Drei Sprachen, weil der Assistent sie spricht - die
+                    // Einstellungen daneben sieht nur der Grafiker, und der
+                    // liest Deutsch oder Tuerkisch.
+                    'label' => ['de' => 'Euer Text', 'en' => 'Your text', 'tr' => 'Metniniz'],
+                ],
+            ],
+        ],
+
+        /*
+         * Der Schluss. Er zeigt etwas, das sonst nirgends steht - das
+         * Zeichen, unter dem die Gaeste ihre Bilder ablegen sollen. Ohne das
+         * waere er eine Gestalt des Textblocks und keine eigene Art.
+         */
+        'footer' => [
+            'variants' => [
+                'default' => ['de' => 'Schlicht', 'tr' => 'Sade'],
+                // Ein Haarstrich darueber: der Schluss soll sich vom
+                // Abschnitt darueber loesen, ohne laut zu werden.
+                'linie'   => ['de' => 'Mit Strich', 'tr' => 'Çizgili'],
+            ],
+            'settings' => [],
+            'inputs' => [
+                'text' => [
+                    'type'  => 'textarea',
+                    'max'   => 400,
+                    'label' => ['de' => 'Schlusswort', 'en' => 'Closing words', 'tr' => 'Kapanış sözü'],
+                ],
+                'hashtag' => [
+                    'type'  => 'text',
+                    'max'   => 60,
+                    'label' => ['de' => 'Hashtag (ohne #)', 'en' => 'Hashtag (without #)', 'tr' => 'Hashtag (# olmadan)'],
+                ],
+            ],
+        ],
+
+        /*
+         * Die Kontonummer. Sie ist der Grund, warum das eine eigene Art ist
+         * und keine Gestalt des Textblocks: eine IBAN will gelesen und
+         * abgeschrieben werden, also steht sie in eigenen Vierergruppen und
+         * nicht mitten im Fliesstext.
+         */
+        'gift' => [
+            'variants' => [
+                'default' => ['de' => 'Schlicht', 'tr' => 'Sade'],
+                'rahmen'  => ['de' => 'Im Rahmen', 'tr' => 'Çerçeveli'],
+            ],
+            'settings' => [],
+            'inputs' => [
+                'text' => [
+                    'type'  => 'textarea',
+                    'max'   => 600,
+                    'label' => ['de' => 'Worte dazu', 'en' => 'A few words', 'tr' => 'Açıklama'],
+                ],
+                'holder' => [
+                    'type'  => 'text',
+                    'max'   => 80,
+                    'label' => ['de' => 'Kontoinhaber', 'en' => 'Account holder', 'tr' => 'Hesap sahibi'],
+                ],
+                'iban' => [
+                    'type'  => 'text',
+                    'max'   => 40,
+                    'label' => ['de' => 'IBAN', 'en' => 'IBAN', 'tr' => 'IBAN'],
+                ],
+            ],
+        ],
+
+        /*
+         * Musik. Der Track gehoert dem Grafiker und nicht dem Paar - deshalb
+         * eine Einstellung und kein Eingabefeld: die Vorlage bringt ihren
+         * Klang mit, so wie sie ihre Schrift mitbringt.
+         *
+         * Ein Knopf und kein Selbststart. Browser blockieren Ton ohne
+         * Zutun, und selbst wenn nicht: eine Einladung, die von allein
+         * anfaengt zu spielen, wird im Buero geoeffnet und sofort geschlossen.
+         */
+        'music' => [
+            'variants' => [
+                'default' => ['de' => 'Kleiner Spieler', 'tr' => 'Küçük çalar'],
+            ],
+            'settings' => [
+                'track' => [
+                    'type'    => 'src',
+                    'default' => '',
+                    'label'   => ['de' => 'Tonspur (Pfad)', 'tr' => 'Ses dosyası (yol)'],
+                ],
+            ],
+            'inputs' => [],
         ],
     ];
 
@@ -232,6 +323,22 @@ final class SectionRegistry
     }
 
     /**
+     * Was das Paar in einen Abschnitt dieser Art schreibt.
+     *
+     * Getrennt von den Einstellungen, weil es einer anderen Person gehoert:
+     * Einstellungen dreht der Grafiker, Eingaben fuellt das Paar. Sie landen
+     * unter der KENNUNG des Abschnitts (data.sections.<id>.<schluessel>) und
+     * nicht unter einem festen Namen - ein Dokument kann zwei Textbloecke
+     * tragen, und ein fester Name waere fuer beide derselbe.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public static function inputs(string $type): array
+    {
+        return self::KATALOG[$type]['inputs'] ?? [];
+    }
+
+    /**
      * Die Einstellungen, die JEDE Art hat.
      *
      * Das Panel braucht die Trennung: die gemeinsamen stehen bei jeder Zeile,
@@ -320,6 +427,17 @@ final class SectionRegistry
                     (int) $schema['min'],
                     min((int) $schema['max'], $wert === null ? (int) $schema['default'] : (int) $wert)
                 ),
+                /*
+                 * Ein Pfad, und zwar einer aus dem eigenen Haus.
+                 *
+                 * Design::safeSrc wirft alles weg, was auf einen fremden Host
+                 * zeigt - dieselbe Pruefung wie bei Bildern, Filmen und dem
+                 * Blatt der Abschnitte. Eine Tonspur von einem fremden Server
+                 * waere ein Hoerer, der protokolliert, wer die Einladung
+                 * geoeffnet hat, und ein Link, der eines Tages ins Leere
+                 * fuehrt.
+                 */
+                'src'    => Design::safeSrc((string) ($wert ?? $schema['default'])),
                 default  => $schema['default'],
             };
         }

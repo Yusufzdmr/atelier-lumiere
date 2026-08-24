@@ -389,9 +389,21 @@ final class InviteV2Controller
             $werte['prog_title_' . $z] = is_string($zeile['title'] ?? null) ? $zeile['title'] : '';
         }
 
+        /*
+         * Alles, was unter einer Abschnittskennung steht, geht als
+         * sec_<schluessel>_<kennung> zurueck ins Formular. Frueher stand hier
+         * nur 'text' - ein Feld, das der Assistent seit heute auch anders
+         * nennen kann (hashtag, iban, holder), waere beim Zurueckkommen leer
+         * gewesen, und das Paar haette es ein zweites Mal getippt.
+         */
         foreach ((array) ($data['sections'] ?? []) as $sid => $eintrag) {
-            if (is_array($eintrag) && is_string($eintrag['text'] ?? null)) {
-                $werte['sec_text_' . (string) $sid] = $eintrag['text'];
+            if (!is_array($eintrag)) {
+                continue;
+            }
+            foreach ($eintrag as $schluessel => $wert) {
+                if (is_string($wert)) {
+                    $werte['sec_' . (string) $schluessel . '_' . (string) $sid] = $wert;
+                }
             }
         }
 
@@ -447,13 +459,21 @@ final class InviteV2Controller
                 }
             }
 
-            if (in_array('text', $abschnitt['fields'], true)) {
-                // Unter der Kennung, nicht unter einem festen Namen: zwei
-                // Textbloecke in einem Dokument wuerden sich sonst einen Platz
-                // teilen und der zweite den ersten ueberschreiben.
-                $text = Security::clean($_POST['sec_text_' . $sid] ?? '', 1200);
-                if ($text !== '') {
-                    $data['sections'][$sid]['text'] = $text;
+            /*
+             * Die eigenen Felder dieses Abschnitts - welche es sind, sagt der
+             * Katalog, und die Obergrenze steht dort ebenfalls. Zwei Listen
+             * mit denselben Grenzen laufen auseinander.
+             *
+             * Unter der Kennung, nicht unter einem festen Namen: zwei
+             * Textbloecke in einem Dokument wuerden sich sonst einen Platz
+             * teilen und der zweite den ersten ueberschreiben. Der Feldname
+             * ist deshalb sec_<schluessel>_<kennung> - fuer 'text' ergibt das
+             * genau den bisherigen Namen sec_text_<kennung>.
+             */
+            foreach ($abschnitt['inputs'] ?? [] as $schluessel => $feld) {
+                $wert = Security::clean($_POST['sec_' . $schluessel . '_' . $sid] ?? '', (int) $feld['max']);
+                if ($wert !== '') {
+                    $data['sections'][$sid][$schluessel] = $wert;
                 }
             }
         }

@@ -154,6 +154,19 @@ foreach ($katalog as $art => $eintrag) {
                 <input type="checkbox" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
                        <?= ($werte[$schluessel] ?? $s['default']) ? 'checked' : '' ?>>
                 <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
+            <?php elseif ((string) $s['type'] === 'src') : ?>
+              <?php /*
+                 Ein Pfad aus dem eigenen Haus. Hochladen kommt spaeter - bis
+                 dahin steht hier derselbe Weg wie beim Oeffnungsfilm, bevor
+                 er sein Feld bekam: die Datei liegt in /uploads, und ihr Pfad
+                 wird eingetragen. Design::safeSrc wirft alles weg, was
+                 woandershin zeigt.
+              */ ?>
+              <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+                <input class="<?= $feld ?> font-mono text-[0.78rem]"
+                       name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       value="<?= e((string) ($werte[$schluessel] ?? $s['default'])) ?>"
+                       placeholder="/uploads/designs/…"></label>
             <?php else : ?>
               <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
                 <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">

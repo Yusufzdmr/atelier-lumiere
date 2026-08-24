@@ -404,7 +404,7 @@ assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte b
  * ueberschreiben.
  */
 
-assert_same(6, count(DesignSections::TYPES), 'TYPES: sechs Arten, die sechste ist text');
+assert_same(9, count(DesignSections::TYPES), 'TYPES: neun Arten - sechs alte, dann Schluss, Geschenk, Musik');
 assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
 
 // Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer
@@ -661,4 +661,70 @@ assert_true(
 assert_true(
     !preg_match('/\.d-x \.d-sec\{[^}]*background-image/', $blatt),
     'Blatt: das Bild steht nicht mehr am Abschnitt selbst'
+);
+
+/*
+ * ------------------------------------------------------------------
+ * Die drei neuen Arten: Schluss, Geschenk, Musik.
+ * ------------------------------------------------------------------
+ */
+
+$dreiDoc = DesignSections::complete(sec_doc([
+    ['id' => 'schluss', 'type' => 'footer'],
+    ['id' => 'konto',   'type' => 'gift'],
+    ['id' => 'ton',     'type' => 'music', 'settings' => ['track' => '/uploads/designs/lied.mp3']],
+]));
+
+$dreiDaten = ['sections' => [
+    'schluss' => ['text' => "Danke, dass ihr da wart.\n\nBis bald.", 'hashtag' => '#sophiaundmax'],
+    'konto'   => ['text' => 'Wir freuen uns über einen Beitrag zur Reise.',
+                  'holder' => 'Sophia Weber', 'iban' => 'de89370400440532013000'],
+]];
+
+$dreiHtml = DesignSections::html($dreiDoc, $dreiDaten, 'de', '2026-01-01');
+
+/* --- Der Schluss: zwei Absaetze und das Zeichen --- */
+
+assert_contains($dreiHtml, 'd-sec-footer', 'Schluss: der Abschnitt wird gedruckt');
+assert_contains($dreiHtml, 'Danke, dass ihr da wart.', 'Schluss: der Text steht da');
+assert_contains($dreiHtml, 'Bis bald.', 'Schluss: die Leerzeile macht einen zweiten Absatz');
+
+/*
+ * Das Doppelkreuz schreibt der Renderer. Wer es selbst tippt, tippt es
+ * manchmal doppelt - und "##sophiaundmax" hat noch keine Bilder gefunden.
+ */
+assert_contains($dreiHtml, '<p class="d-sec-hashtag">#sophiaundmax</p>', 'Schluss: genau EIN Doppelkreuz');
+
+/* --- Das Geschenk: die Kontonummer in Vierergruppen --- */
+
+assert_contains($dreiHtml, 'Sophia Weber', 'Geschenk: der Inhaber steht da');
+assert_contains($dreiHtml, 'DE89 3704 0044 0532 0130 00', 'Geschenk: die IBAN steht in Vierergruppen');
+
+// Getippt wird sie, wie sie gerade kommt - gruppiert wird immer gleich.
+assert_same('DE89 3704 0044 0532 0130 00', DesignSections::ibanGruppen('de89 3704-0044 0532013000'),
+    'Geschenk: Leerzeichen und Striche des Tippenden zaehlen nicht');
+
+/* --- Die Musik: der eingebaute Spieler, ohne Selbststart --- */
+
+assert_contains($dreiHtml, '<audio class="d-sec-ton" controls preload="none" src="/uploads/designs/lied.mp3">',
+    'Musik: der Spieler steht da');
+assert_true(!str_contains($dreiHtml, 'autoplay'), 'Musik: und faengt nicht von allein an');
+
+/* --- Ohne Inhalt kein Abschnitt --- */
+
+$leerHtml = DesignSections::html($dreiDoc, [], 'de', '2026-01-01');
+
+assert_true(!str_contains($leerHtml, 'd-sec-footer'), 'Schluss: ohne Wort und ohne Zeichen kein Abschnitt');
+assert_true(!str_contains($leerHtml, 'd-sec-gift'), 'Geschenk: ohne Wunsch und ohne Konto kein Abschnitt');
+
+/*
+ * Die Musik bleibt: ihre Tonspur gehoert der VORLAGE und nicht dem Paar -
+ * sie ist also auch dann da, wenn das Paar nichts eingetragen hat.
+ */
+assert_contains($leerHtml, 'd-sec-music', 'Musik: die Tonspur der Vorlage traegt den Abschnitt allein');
+
+$ohneTon = DesignSections::complete(sec_doc([['id' => 'ton', 'type' => 'music']]));
+assert_true(
+    !str_contains(DesignSections::html($ohneTon, [], 'de', '2026-01-01'), 'd-sec-music'),
+    'Musik: ohne Tonspur kein Abschnitt'
 );

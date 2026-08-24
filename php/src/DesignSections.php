@@ -33,7 +33,12 @@ namespace Atelier;
 final class DesignSections
 {
     /** Welche Arten es gibt. Alles andere faellt beim Einlesen weg. */
-    public const TYPES = ['location', 'countdown', 'family', 'program', 'rsvp', 'text'];
+    public const TYPES = [
+        'location', 'countdown', 'family', 'program', 'rsvp', 'text',
+        // Angehaengt und nicht eingeschoben: die Reihenfolge steht in Tests,
+        // und ein Einschub verschoebe alles dahinter.
+        'footer', 'gift', 'music',
+    ];
 
     /** Wie viele Programmzeilen, und wie lang eine sein darf. */
     public const PROGRAM_MAX = 20;
@@ -217,6 +222,15 @@ final class DesignSections
             // nicht an einem festen Namen: ein Dokument kann mehrere
             // Textbloecke tragen, und zwei feste Namen waeren einer.
             'text'      => trim(self::sectionText($data, (string) $abschnitt['id'])) !== '',
+            // Der Schluss traegt zwei Dinge und braucht nur eines davon.
+            'footer'    => trim(self::sectionText($data, (string) $abschnitt['id'])) !== ''
+                        || trim(self::sectionValue($data, (string) $abschnitt['id'], 'hashtag')) !== '',
+            // Ohne Kontonummer bleibt der Wunsch, und der ist auch etwas.
+            'gift'      => trim(self::sectionText($data, (string) $abschnitt['id'])) !== ''
+                        || trim(self::sectionValue($data, (string) $abschnitt['id'], 'iban')) !== '',
+            // Die Tonspur gehoert der Vorlage, nicht dem Paar: ohne sie hat
+            // dieser Abschnitt nichts zu spielen und wird nicht gedruckt.
+            'music'     => trim((string) ($abschnitt['settings']['track'] ?? '')) !== '',
             default     => false,
         };
     }
@@ -443,6 +457,28 @@ final class DesignSections
             . 'letter-spacing:0.16em;text-transform:uppercase;}'
             . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
+            /*
+             * Das Zeichen fuer die Bilder. Gesperrt gesetzt, weil es
+             * abgeschrieben wird und nicht gelesen - dieselbe Ueberlegung wie
+             * bei der Kontonummer eine Zeile weiter.
+             */
+            . $scope . ' .d-sec-hashtag{margin-top:1.2rem;letter-spacing:0.1em;font-size:0.9rem;}'
+            /*
+             * Die Kontonummer. tabular-nums, damit die Vierergruppen
+             * untereinander stehen, wenn sie umbrechen; break-all, weil eine
+             * IBAN auf einem schmalen Telefon sonst aus dem Blatt laeuft -
+             * und eine halbe Kontonummer ist keine.
+             */
+            . $scope . ' .d-sec-konto{margin-top:1.2rem;display:grid;gap:0.25rem;}'
+            . $scope . ' .d-sec-inhaber{font-size:0.86rem;opacity:0.8;}'
+            . $scope . ' .d-sec-iban{font-variant-numeric:tabular-nums;letter-spacing:0.08em;'
+            . 'word-break:break-all;}'
+            /*
+             * Der Spieler ist der eingebaute des Browsers - er laesst sich
+             * kaum faerben, und das ist in Ordnung: er soll aussehen wie ein
+             * Spieler und nicht wie Schmuck.
+             */
+            . $scope . ' .d-sec-ton{display:block;margin:1.2rem auto 0;width:100%;max-width:20rem;}'
             // Als Block zentriert, innen ausgerichtet: die Uhrzeiten stehen
             // untereinander, sonst waere die Spalte eine Treppe.
             . $scope . ' .d-sec-plan{display:grid;grid-template-columns:auto auto;'
@@ -548,6 +584,27 @@ final class DesignSections
              * faengt jeder Absatz gross an und der Block sieht aus wie eine
              * Fibel.
              */
+            /*
+             * Ein kurzer Strich ueber dem Schluss. Er soll den letzten
+             * Abschnitt vom vorigen loesen, ohne laut zu werden - deshalb
+             * vier Zentimeter Mitte und keine Linie ueber die ganze Breite.
+             *
+             * Am ersten Kind, was immer das ist: mal steht dort eine
+             * Ueberschrift, mal gleich das Schlusswort.
+             */
+            'footer/linie' => $sel . ' > *:first-child{padding-top:1.8rem;}'
+                . $sel . ' > *:first-child::before{content:"";position:absolute;top:0;'
+                . 'left:50%;transform:translateX(-50%);width:4rem;height:1px;'
+                . 'background:currentColor;opacity:0.45;}',
+
+            /*
+             * Die Kontonummer in einem Rahmen: sie ist das einzige auf der
+             * Einladung, das jemand abschreiben soll, und ein Rahmen sagt
+             * genau das.
+             */
+            'gift/rahmen' => $sel . ' .d-sec-konto{border:1px solid currentColor;'
+                . 'padding:1rem 1.2rem;max-width:22rem;margin-inline:auto;}',
+
             'text/editorial' => $sel . ' .d-sec-absatz{text-align:left;max-width:26rem;'
                 . 'margin-inline:auto;line-height:1.9;}'
                 . $sel . ' .d-sec-absatz:first-of-type::first-letter{float:left;'
@@ -603,6 +660,11 @@ final class DesignSections
                 'program'   => self::programm($data),
                 'rsvp'      => self::formular($form, $locale),
                 'text'      => self::freitext($data, $id),
+                'footer'    => self::schluss($data, $id),
+                'gift'      => self::geschenk($data, $id),
+                // Als einzige Art liest sie ihre Einstellung und nicht die
+                // Daten des Paares - der Klang gehoert der Vorlage.
+                'music'     => self::musik($abschnitt),
                 default     => '',
             };
 
@@ -718,6 +780,28 @@ final class DesignSections
      */
     public static function sectionText(array $data, string $id): string
     {
+        return self::sectionValue($data, $id, 'text');
+    }
+
+    /**
+     * Ein Wert, den das Paar in DIESEN Abschnitt geschrieben hat.
+     *
+     * Unter der Kennung, nicht unter einem festen Namen: von Textbloecken
+     * kann ein Dokument beliebig viele tragen - "Dress Code" und "Anfahrt"
+     * sind dieselbe Art und muessten sich sonst einen Platz teilen.
+     *
+     * Welche Schluessel eine Art kennt, sagt SectionRegistry::inputs(). Hier
+     * wird nur nachgeschlagen; ein unbekannter Schluessel ist leer und kein
+     * Fehler.
+     *
+     * Jeder Schritt einzeln geprueft: fehlt einer, ist der Wert leer. Ein
+     * Dokument aus dem Panel soll sich nicht wegen eines fehlenden
+     * Schluessels nicht mehr oeffnen lassen.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function sectionValue(array $data, string $id, string $schluessel): string
+    {
         $alle = $data['sections'] ?? null;
         if (!is_array($alle)) {
             return '';
@@ -727,7 +811,9 @@ final class DesignSections
             return '';
         }
 
-        return (string) ($eintrag['text'] ?? '');
+        $wert = $eintrag[$schluessel] ?? '';
+
+        return is_scalar($wert) ? (string) $wert : '';
     }
 
     /**
@@ -756,6 +842,109 @@ final class DesignSections
         }
 
         return $out;
+    }
+
+    /**
+     * Der Schluss: ein letztes Wort und das Zeichen fuer die Bilder.
+     *
+     * Das Zeichen ist der Grund, warum das eine eigene Art ist und keine
+     * Gestalt des Textblocks - es steht sonst nirgends auf der Einladung.
+     *
+     * Das Doppelkreuz schreibt der Renderer, nicht das Paar: wer es selbst
+     * tippt, tippt es manchmal doppelt, und "##sophiaundmax" hat noch keine
+     * Bilder gefunden.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function schluss(array $data, string $id): string
+    {
+        $out = '';
+
+        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+            $out .= '<p class="d-sec-absatz">' . e($absatz) . '</p>';
+        }
+
+        $zeichen = trim(self::sectionValue($data, $id, 'hashtag'));
+        if ($zeichen !== '') {
+            $out .= '<p class="d-sec-hashtag">#' . e(ltrim($zeichen, '#')) . '</p>';
+        }
+
+        return $out;
+    }
+
+    /**
+     * Das Geschenk: ein Wunsch und eine Kontonummer.
+     *
+     * Die IBAN steht in Vierergruppen. Das ist der Grund fuer die eigene Art:
+     * eine Kontonummer will gelesen und abgeschrieben werden, und in einer
+     * Zeile Fliesstext gelingt das niemandem.
+     *
+     * Geprueft wird sie nicht. Eine Einladung ist kein Bankformular, und eine
+     * abgelehnte IBAN, die in Wahrheit richtig ist, kostet mehr als eine
+     * falsche, die dasteht - das Paar liest seine eigene Einladung.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function geschenk(array $data, string $id): string
+    {
+        $out = '';
+
+        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+            $out .= '<p class="d-sec-absatz">' . e($absatz) . '</p>';
+        }
+
+        $inhaber = trim(self::sectionValue($data, $id, 'holder'));
+        $iban    = trim(self::sectionValue($data, $id, 'iban'));
+
+        if ($iban === '') {
+            return $out;
+        }
+
+        $out .= '<p class="d-sec-konto">';
+        if ($inhaber !== '') {
+            $out .= '<span class="d-sec-inhaber">' . e($inhaber) . '</span>';
+        }
+
+        return $out . '<span class="d-sec-iban">' . e(self::ibanGruppen($iban)) . '</span></p>';
+    }
+
+    /**
+     * Eine Kontonummer in Vierergruppen, wie sie auf Papier steht.
+     *
+     * Leerzeichen und Bindestriche fallen weg, bevor neu gruppiert wird -
+     * sonst haengt die Gruppierung davon ab, wie jemand getippt hat.
+     */
+    public static function ibanGruppen(string $iban): string
+    {
+        $roh = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $iban));
+
+        return trim(chunk_split($roh, 4, ' '));
+    }
+
+    /**
+     * Musik: ein Spieler, kein Selbststart.
+     *
+     * Der Browser blockiert Ton ohne Zutun ohnehin - und selbst wenn nicht:
+     * eine Einladung, die von allein anfaengt zu spielen, wird im Buero
+     * geoeffnet und sofort wieder geschlossen.
+     *
+     * Der eingebaute Spieler des Browsers und kein eigener: ein eigener
+     * braeuchte ein Skript, und ohne dieses Skript bliebe ein Knopf stehen,
+     * der nichts tut. Der eingebaute funktioniert auch dann.
+     *
+     * preload="none": eine Tonspur ist ein paar Megabyte, und die meisten
+     * Gaeste tippen nie darauf.
+     *
+     * @param array<string,mixed> $abschnitt
+     */
+    private static function musik(array $abschnitt): string
+    {
+        $spur = Design::safeSrc((string) ($abschnitt['settings']['track'] ?? ''));
+        if ($spur === '') {
+            return '';
+        }
+
+        return '<audio class="d-sec-ton" controls preload="none" src="' . e($spur) . '"></audio>';
     }
 
     /**

@@ -120,6 +120,22 @@ final class DesignWizard
             if (!$abschnitt['enabled']) {
                 continue;
             }
+            /*
+             * Was das Paar in DIESEN Abschnitt schreibt, sagt der Katalog.
+             *
+             * Frueher stand hier ein match() mit einem Zweig je Art. Eine
+             * neue Art mit eigenem Feld hiess dann: hier ein Zweig, in der
+             * Vorlage des Assistenten ein if, im Controller noch eins, und
+             * beim Vorbelegen ein viertes. Wer eines davon vergass, bekam ein
+             * Feld, das sich fuellen aber nicht speichern liess.
+             *
+             * families und program bleiben Sonderfaelle: sie schreiben NICHT
+             * unter die Kennung des Abschnitts, sondern an feste Plaetze im
+             * Dokument (data.families, data.program) - von ihnen gibt es je
+             * einen, und die Karte bindet sie ueber ihre Namen.
+             */
+            $eingaben = SectionRegistry::inputs((string) $abschnitt['type']);
+
             $sections[(string) $abschnitt['id']] = [
                 'type'   => (string) $abschnitt['type'],
                 // Der Titel des Grafikers, nicht die interne Kennung - die
@@ -129,12 +145,11 @@ final class DesignWizard
                 'fields' => match ((string) $abschnitt['type']) {
                     'family'  => ['families'],
                     'program' => ['program'],
-                    // Der erste Typ, von dem ein Dokument mehrere tragen kann.
-                    // Der Assistent fragt deshalb je Abschnitt, nicht je Art -
-                    // die Kennung steht im Feldnamen (sec_text_<id>).
-                    'text'    => ['text'],
-                    default   => [],
+                    default   => array_keys($eingaben),
                 },
+                // Dasselbe noch einmal, aber mit Art, Obergrenze und Etikett:
+                // daraus baut der Assistent seine Eingabefelder.
+                'inputs' => $eingaben,
             ];
         }
 
