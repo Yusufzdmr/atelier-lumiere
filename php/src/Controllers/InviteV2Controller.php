@@ -247,7 +247,9 @@ final class InviteV2Controller
         // zeigte sie etwas, das die Einladung nicht drucken wird.
         $doc = $design;
         foreach ($doc['sections'] as $i => $abschnitt) {
-            if (isset($values['sec_hidden_' . $abschnitt['id']])) {
+            // Umgedreht seit der Frage im Assistenten: der Haken heisst
+            // sichtbar. Fehlt er, will das Paar den Abschnitt nicht.
+            if (!isset($values['sec_show_' . $abschnitt['id']])) {
                 $doc['sections'][$i]['enabled'] = false;
             }
         }
@@ -741,7 +743,8 @@ final class InviteV2Controller
         // Abschnitte: das Zu- und Abschalten geht ins Dokument, der Inhalt in
         // die Daten (siehe sammleAngaben). Dieselbe Trennung wie bei den Ebenen.
         foreach ($darf['sections'] as $sid => $abschnitt) {
-            if ($abschnitt['hide'] && isset($_POST['sec_hidden_' . $sid])) {
+            // Wie in der Vorschau: gesetzt heisst sichtbar.
+            if ($abschnitt['hide'] && !isset($_POST['sec_show_' . $sid])) {
                 $wahl['sections'][$sid] = ['hidden' => true];
             }
         }

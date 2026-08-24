@@ -482,8 +482,8 @@ if ($darfDesign) {
                 <label class="flex items-center justify-between gap-4 px-4 py-3 text-sm text-ink">
                   <span><?= e($secTitel) ?></span>
                   <span class="flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.16em] text-muted">
-                    <input type="checkbox" name="sec_hidden_<?= e((string) $sid) ?>" <?= $aus ? 'checked' : '' ?>>
-                    <?= e($t('sectionHide')) ?>
+                    <input type="checkbox" name="sec_show_<?= e((string) $sid) ?>" <?= $aus ? '' : 'checked' ?>>
+                    <?= e($t('sectionShow')) ?>
                   </span>
                 </label>
               <?php endforeach; ?>

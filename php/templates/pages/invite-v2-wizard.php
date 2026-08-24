@@ -347,7 +347,17 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
 
               <?php if ($abschnitt['hide']) : ?>
                 <label class="mt-3 flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" name="sec_hidden_<?= e($sid) ?>" <?= $anHaken('sec_hidden_' . $sid) ? 'checked' : '' ?>> <?= e($t('sectionHide')) ?>
+                  <?php /*
+                     Gefragt und nicht verneint. Hier stand "ausblenden" - ein Haken,
+                     den man setzt, damit etwas WEGgeht. Das Paar denkt aber nicht in
+                     Abschnitten, die es loswerden will, sondern in Sachen, die es
+                     zeigen moechte: "Davetiyede yemek menusu gosterilsin mi?"
+
+                     Der Haken ist damit umgedreht: gesetzt heisst sichtbar. Er steht
+                     vorangekreuzt, weil der Grafiker den Abschnitt in die Vorlage
+                     gelegt hat - wer ihn nicht will, nimmt den Haken weg.
+                  */ ?>
+                  <input type="checkbox" name="sec_show_<?= e($sid) ?>" <?= $anHaken('sec_hidden_' . $sid) ? '' : 'checked' ?>> <?= e($t('sectionShow')) ?>
                 </label>
               <?php endif; ?>
 

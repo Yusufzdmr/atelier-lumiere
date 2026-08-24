@@ -174,3 +174,24 @@ assert_contains($vorspann, '20 saniye', 'Vorspann-Hinweis: dafuer steht die echt
 assert_contains($js, 'scrollSperre', 'invitation.js: die Sperre hat einen Namen');
 assert_contains($js, 'scrollSperre(true)', 'invitation.js: sie greift, solange die Huelle liegt');
 assert_contains($js, 'scrollSperre(false)', 'invitation.js: und faellt, wenn die Karte kommt');
+
+/*
+ * Und gefragt wird, statt verneint.
+ *
+ * Der Haken hiess "ausblenden": man setzt ihn, damit etwas WEGgeht. Das Paar
+ * denkt aber nicht in Abschnitten, die es loswerden will, sondern in Sachen,
+ * die es zeigen moechte - "Davetiyede yemek menusu gosterilsin mi?".
+ *
+ * Umgedreht heisst: gesetzt ist sichtbar, und beide Lesestellen muessen
+ * mitgedreht sein. Bliebe eine auf dem alten Namen stehen, waere jeder
+ * Abschnitt, den niemand angefasst hat, plötzlich weg.
+ */
+foreach (['pages/invite-v2-wizard.php', 'pages/invite-v2-edit.php'] as $vorlage) {
+    $quelle = (string) file_get_contents(__DIR__ . '/../templates/' . $vorlage);
+    assert_contains($quelle, 'sec_show_', $vorlage . ': fragt nach dem Zeigen');
+    assert_not_contains($quelle, 'name="sec_hidden_', $vorlage . ': und nicht mehr nach dem Verstecken');
+}
+
+$steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/InviteV2Controller.php');
+assert_same(2, substr_count($steuer, "'sec_show_'"), 'Controller: beide Lesestellen sind mitgedreht');
+assert_not_contains($steuer, "'sec_hidden_'", 'Controller: der alte Name ist weg');
