@@ -692,8 +692,12 @@
     });
   };
 
-  ziehenErlauben(secListe, "data-sec-zeile", reiheNeu);
-  ziehenErlauben(liste, "data-ebene", stapleNeu);
+  // In eine Huelle gewickelt und nicht direkt uebergeben: reiheNeu wird weiter
+  // unten erweitert (es zieht dann auch den Rahmen nach). Wer die Funktion
+  // selbst uebergibt, haelt die alte fest und bemerkt es nie - das Ziehen
+  // wuerde als einziges den Rahmen nicht mitnehmen.
+  ziehenErlauben(secListe, "data-sec-zeile", function () { reiheNeu(); });
+  ziehenErlauben(liste, "data-ebene", function () { stapleNeu(); });
 
   /*
    * Rueckgaengig und Wiederherstellen.
@@ -856,5 +860,83 @@
       ereignis.preventDefault();
       vor();
     }
+  });
+
+  /*
+   * Die Reihenfolge im Rahmen mitziehen.
+   *
+   * Die Karte in der Mitte zeigt die KARTE - Ebenen, Farben, Schrift. Die
+   * Abschnitte stehen dort gar nicht, sie stehen unter der Karte auf der
+   * Seite. Wer also links einen Abschnitt verschiebt, sieht in der Mitte
+   * nichts, und das sah aus wie ein kaputter Editor.
+   *
+   * Der Rahmen daneben zeigt die ganze Seite - aber den GESPEICHERTEN Stand,
+   * denn er holt sie vom Server. Verschieben ohne Speichern kaeme dort also
+   * auch nicht an.
+   *
+   * Seit die Richtlinie die eigene Seite einrahmen laesst, liegt der Rahmen
+   * im selben Ursprung: sein Inhalt ist erreichbar. Also wird die Reihenfolge
+   * dort NACHGEZOGEN, statt auf das naechste Speichern zu warten.
+   *
+   * Nachgezogen und nicht neu gezeichnet: was der Server geschickt hat,
+   * bleibt stehen: dieselben Knoten, nur in anderer Reihenfolge. Ein
+   * Abschnitt, den es beim Laden des Rahmens noch nicht gab, ist dort nicht
+   * zu finden - er kommt beim naechsten Speichern dazu, und der Hinweis unter
+   * dem Rahmen sagt ohnehin, dass er den gespeicherten Stand zeigt.
+   */
+  var rahmenDokument = function () {
+    var kind = rahmen && rahmen.querySelector("iframe");
+    if (!kind || rahmen.hidden) return null;
+
+    try {
+      return kind.contentDocument;
+    } catch (fehler) {
+      // Sollte nicht vorkommen - gleicher Ursprung. Aber ein Editor, der an
+      // einer Ausnahme stehenbleibt, ist schlimmer als einer, der eine
+      // Kleinigkeit nicht kann.
+      return null;
+    }
+  };
+
+  var rahmenNachziehen = function () {
+    var doc = rahmenDokument();
+    if (!doc) return;
+
+    secListe.querySelectorAll("[data-sec-zeile]").forEach(function (zeile) {
+      var nummer = zeile.getAttribute("data-sec-zeile");
+      var kennung = form.querySelector('[data-sec-kennung="' + nummer + '"]');
+      if (!kennung || kennung.value.trim() === "") return;
+
+      var abschnitt = doc.querySelector(".d-sec-" + kennung.value.trim());
+      if (!abschnitt) return;
+
+      // Ans Ende schieben - in der Reihenfolge der Liste ergibt das die Liste.
+      abschnitt.parentNode.appendChild(abschnitt);
+
+      // Weggenommen oder Auge zu: hier nur ausblenden. Ob der Abschnitt beim
+      // Drucken wirklich wegfaellt, entscheidet der Server - das Auge ist
+      // eines von zwei Kriterien, das andere ist, ob ueberhaupt Inhalt da ist.
+      var auge = form.querySelector('[name="sec_on_' + nummer + '"]');
+      var weg = zeile.hasAttribute("data-weg") || (auge && !auge.checked);
+      abschnitt.style.display = weg ? "none" : "";
+    });
+  };
+
+  // An dieselben Stellen haengen, an denen die Reihe neu geschrieben wird.
+  var reiheVorher = reiheNeu;
+  reiheNeu = function () {
+    reiheVorher();
+    rahmenNachziehen();
+  };
+
+  secListe.addEventListener("change", rahmenNachziehen);
+  form.querySelectorAll("[data-ansicht]").forEach(function (knopf) {
+    knopf.addEventListener("click", function () {
+      // Der Rahmen entsteht beim ersten Klick; erst wenn er geladen hat, gibt
+      // es darin etwas zu ordnen.
+      var kind = rahmen.querySelector("iframe");
+      if (kind) kind.addEventListener("load", rahmenNachziehen, { once: true });
+      setTimeout(rahmenNachziehen, 60);
+    });
   });
 })();

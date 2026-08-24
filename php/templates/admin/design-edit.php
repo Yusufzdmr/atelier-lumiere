@@ -245,8 +245,8 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
 
         <p class="b-fein" style="margin-top:0.75rem;" data-ansicht-hinweis>
           <?= $tr
-            ? 'Renk, yazı, metin ve yerleşim anında değişir. Hareket ve görsel için kaydet.'
-            : 'Farbe, Schrift, Text und Anordnung ändern sich sofort. Bewegung und Bild brauchen ein Speichern.' ?>
+            ? 'Kart: renk, yazı, metin ve katman yerleşimi anında değişir. BÖLÜMLER kartta değil, sayfada — onları görmek için Telefon/Tablet/Masaüstü sekmesine geç.'
+            : 'Karte: Farbe, Schrift, Text und der Kasten einer Ebene ändern sich sofort. ABSCHNITTE stehen nicht auf der Karte, sondern auf der Seite — dafür auf Telefon/Tablet/Schreibtisch wechseln.' ?>
         </p>
       </div>
     </div>
