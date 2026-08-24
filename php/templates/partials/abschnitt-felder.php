@@ -37,6 +37,15 @@ $fotos = $fotos ?? [];
   <?php
     $feldName = 'sec_' . $schluessel . '_' . $sid;
     $etikett  = $feld['label'][$locale] ?? $feld['label']['de'] ?? $schluessel;
+    /*
+     * Frueher Eingegebenes gewinnt; steht dort nichts, kommt der Vorschlag
+     * der Vorlage ins Feld. So sitzt niemand vor einem leeren Kasten, und wer
+     * nichts aendert, bekommt genau das, was im Schaufenster stand.
+     */
+    $wert = $old($feldName);
+    if ($wert === '') {
+        $wert = (string) ($abschnitt['defaults'][$schluessel] ?? '');
+    }
   ?>
   <div class="mt-3">
     <label class="<?= $label ?>" for="sf-<?= e($sid . '-' . $schluessel) ?>"><?= e((string) $etikett) ?></label>
@@ -79,13 +88,13 @@ $fotos = $fotos ?? [];
     <?php elseif ((string) $feld['type'] === 'textarea') : ?>
       <textarea id="sf-<?= e($sid . '-' . $schluessel) ?>" name="<?= e($feldName) ?>" rows="4"
                 maxlength="<?= (int) $feld['max'] ?>"
-                class="<?= $field ?>"><?= e($old($feldName)) ?></textarea>
+                class="<?= $field ?>"><?= e($wert) ?></textarea>
       <p class="mt-2 text-[0.8rem] text-muted"><?= e($t('sectionTextNote')) ?></p>
 
     <?php else : ?>
       <input id="sf-<?= e($sid . '-' . $schluessel) ?>" name="<?= e($feldName) ?>"
              maxlength="<?= (int) $feld['max'] ?>"
-             class="<?= $field ?>" value="<?= e($old($feldName)) ?>">
+             class="<?= $field ?>" value="<?= e($wert) ?>">
     <?php endif; ?>
   </div>
 <?php endforeach; ?>

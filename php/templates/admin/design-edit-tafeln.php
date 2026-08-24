@@ -132,6 +132,43 @@ foreach ($katalog as $art => $eintrag) {
                  value="<?= e((string) $abschnitt['title']['en']) ?>"></label>
       </div>
 
+      <?php /*
+         Was in diesem Abschnitt STEHEN KOENNTE.
+
+         Der Titel gehoert der Vorlage, der Text dem Paar - das war die
+         Trennung, und sie war zu scharf: der Grafiker baute eine Ueberschrift
+         ueber nichts und sah im Schaufenster einen Platzhalter, den er nicht
+         aendern konnte.
+
+         Es bleibt eine Voreinstellung. Schreibt das Paar etwas, gewinnt das
+         Paar; laesst es das Feld leer, steht wieder das hier. Ein Wert, den
+         niemand ueberschreiben kann, waere ein fester Text - und dann braucht
+         der Abschnitt kein Recht "bearbeitbar" mehr.
+
+         Bilder haben keine Voreinstellung: die Fotos eines fremden Paares
+         stuenden sonst in jeder Einladung.
+      */ ?>
+      <?php $eingaben = SectionRegistry::inputs($art); ?>
+      <?php if ($eingaben !== []) : ?>
+        <div class="b-gruppe">
+          <span class="<?= $label ?>"><?= $tr ? 'varsayılan içerik' : 'Voreinstellung' ?></span>
+          <?php foreach ($eingaben as $schluessel => $s) : ?>
+            <?php if ((string) $s['type'] === 'photos') { continue; } ?>
+            <?php $vorgabe = (string) ($abschnitt['defaults'][$schluessel] ?? ''); ?>
+            <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? $s['label']['de'] ?? (string) $schluessel) ?>
+              <?php if ((string) $s['type'] === 'textarea') : ?>
+                <textarea class="<?= $feld ?>" rows="3"
+                          name="sec_def_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                          maxlength="<?= (int) $s['max'] ?>"><?= e($vorgabe) ?></textarea>
+              <?php else : ?>
+                <input class="<?= $feld ?>" name="sec_def_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       maxlength="<?= (int) $s['max'] ?>" value="<?= e($vorgabe) ?>">
+              <?php endif; ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
       <?php /* Was jede Art hat. */ ?>
       <?php foreach ($gemein as $schluessel => $s) : ?>
         <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>

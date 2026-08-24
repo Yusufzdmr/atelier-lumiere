@@ -1290,8 +1290,23 @@ final class Design
                 }
             }
 
+            /*
+             * Was der Grafiker vorschreibt. Welche Schluessel es gibt, sagt der
+             * Katalog - dieselbe Quelle wie bei den Einstellungen, und aus
+             * demselben Grund: ein Wert ohne Schema reist jahrelang im
+             * Dokument mit, ohne je etwas zu tun.
+             */
+            $vorgaben = [];
+            foreach (SectionRegistry::inputs($typ) as $schluessel => $feld) {
+                $name = 'sec_def_' . $schluessel . '_' . $i;
+                if (isset($post[$name])) {
+                    $vorgaben[$schluessel] = Security::clean($post[$name], (int) $feld['max']);
+                }
+            }
+
             $abschnitte[] = [
                 'id'      => Security::clean($post['sec_id_' . $i] ?? '', 64),
+                'defaults' => $vorgaben,
                 'type'    => $typ,
                 // Eine unbekannte Variante faellt in DesignSections::complete()
                 // auf die Voreinstellung zurueck - hier wird nur eingesammelt.

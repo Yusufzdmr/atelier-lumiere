@@ -97,6 +97,24 @@ final class DesignSections
                 // Was der Grafiker dreht, ohne dass es eine Variante wird.
                 // Der Katalog prueft: Fremdes faellt weg, Danebenliegendes
                 // faellt zurueck.
+                /*
+                 * Was der Grafiker schon hineingeschrieben hat.
+                 *
+                 * Der Titel gehoert der Vorlage, der Text dem Paar - das war
+                 * die Trennung, und sie war zu scharf: eine Vorlage soll
+                 * sagen duerfen, was in einem Abschnitt STEHEN KOENNTE.
+                 * Sonst baut der Grafiker eine Ueberschrift ueber nichts und
+                 * sieht im Schaufenster einen Platzhalter, den er nicht
+                 * aendern kann.
+                 *
+                 * Es bleibt eine Voreinstellung: schreibt das Paar etwas,
+                 * gewinnt das Paar. Ein Wert, den man nicht ueberschreiben
+                 * kann, waere ein fester Text und keine Voreinstellung.
+                 *
+                 * Nur Schluessel, die der Katalog fuer diese Art kennt -
+                 * derselbe Filter wie bei den Einstellungen.
+                 */
+                'defaults' => self::completeDefaults($type, $eintrag['defaults'] ?? null),
                 'settings' => SectionRegistry::completeSettings(
                     $type,
                     is_array($eintrag['settings'] ?? null) ? $eintrag['settings'] : []
@@ -221,13 +239,13 @@ final class DesignSections
             // Ohne Text keine Ueberschrift. Der Inhalt haengt an der Kennung,
             // nicht an einem festen Namen: ein Dokument kann mehrere
             // Textbloecke tragen, und zwei feste Namen waeren einer.
-            'text'      => trim(self::sectionText($data, (string) $abschnitt['id'])) !== '',
+            'text'      => trim(self::inhalt($abschnitt, $data, 'text')) !== '',
             // Der Schluss traegt zwei Dinge und braucht nur eines davon.
-            'footer'    => trim(self::sectionText($data, (string) $abschnitt['id'])) !== ''
-                        || trim(self::sectionValue($data, (string) $abschnitt['id'], 'hashtag')) !== '',
+            'footer'    => trim(self::inhalt($abschnitt, $data, 'text')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'hashtag')) !== '',
             // Ohne Kontonummer bleibt der Wunsch, und der ist auch etwas.
-            'gift'      => trim(self::sectionText($data, (string) $abschnitt['id'])) !== ''
-                        || trim(self::sectionValue($data, (string) $abschnitt['id'], 'iban')) !== '',
+            'gift'      => trim(self::inhalt($abschnitt, $data, 'text')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'iban')) !== '',
             // Die Tonspur gehoert der Vorlage, nicht dem Paar: ohne sie hat
             // dieser Abschnitt nichts zu spielen und wird nicht gedruckt.
             'music'     => trim((string) ($abschnitt['settings']['track'] ?? '')) !== '',
@@ -686,9 +704,9 @@ final class DesignSections
                 'family'    => self::familien($data),
                 'program'   => self::programm($data),
                 'rsvp'      => self::formular($form, $locale),
-                'text'      => self::freitext($data, $id),
-                'footer'    => self::schluss($data, $id),
-                'gift'      => self::geschenk($data, $id),
+                'text'      => self::freitext($abschnitt, $data),
+                'footer'    => self::schluss($abschnitt, $data),
+                'gift'      => self::geschenk($abschnitt, $data),
                 // Als einzige Art liest sie ihre Einstellung und nicht die
                 // Daten des Paares - der Klang gehoert der Vorlage.
                 'music'     => self::musik($abschnitt),
@@ -812,6 +830,53 @@ final class DesignSections
     }
 
     /**
+     * Die Voreinstellungen eines Abschnitts, geprueft.
+     *
+     * @param mixed $roh
+     * @return array<string,string>
+     */
+    public static function completeDefaults(string $type, mixed $roh): array
+    {
+        if (!is_array($roh)) {
+            return [];
+        }
+
+        $out = [];
+        foreach (SectionRegistry::inputs($type) as $schluessel => $feld) {
+            // Bilder haben keine Voreinstellung: eine Vorlage, die Fotos
+            // mitbringt, brauchte einen Ordner und einen Besitzer - und die
+            // Bilder eines fremden Paares stuenden dann in jeder Einladung.
+            if ((string) $feld['type'] === 'photos') {
+                continue;
+            }
+            $wert = $roh[$schluessel] ?? '';
+            if (is_scalar($wert) && trim((string) $wert) !== '') {
+                $out[$schluessel] = mb_substr((string) $wert, 0, (int) $feld['max']);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Was in diesem Abschnitt steht: erst das Paar, dann die Vorlage.
+     *
+     * Die Voreinstellung ist eine Voreinstellung und kein fester Text -
+     * schreibt das Paar etwas, gewinnt das Paar. Und leer geschrieben ist
+     * keine Wahl, sondern ein leeres Feld: dann steht wieder da, was die
+     * Vorlage vorgeschlagen hat.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    public static function inhalt(array $abschnitt, array $data, string $schluessel): string
+    {
+        $eigen = trim(self::sectionValue($data, (string) $abschnitt['id'], $schluessel));
+
+        return $eigen !== '' ? $eigen : (string) ($abschnitt['defaults'][$schluessel] ?? '');
+    }
+
+    /**
      * Die Bilder, die das Paar in DIESEN Abschnitt gelegt hat.
      *
      * Der erste Inhalt, der kein Text ist - deshalb ein eigener Griff und
@@ -892,11 +957,11 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
-    private static function freitext(array $data, string $id): string
+    private static function freitext(array $abschnitt, array $data): string
     {
         $out = '';
 
-        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+        foreach (paragraphs(self::inhalt($abschnitt, $data, 'text')) as $absatz) {
             // d-sec-absatz und nicht d-sec-text: die <section> traegt bereits
             // d-sec-<typ>, also d-sec-text. Eine Regel fuer die Absaetze
             // faerbte sonst auch den Kasten um - derselbe Grund, aus dem das
@@ -919,15 +984,15 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
-    private static function schluss(array $data, string $id): string
+    private static function schluss(array $abschnitt, array $data): string
     {
         $out = '';
 
-        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+        foreach (paragraphs(self::inhalt($abschnitt, $data, 'text')) as $absatz) {
             $out .= '<p class="d-sec-absatz">' . e($absatz) . '</p>';
         }
 
-        $zeichen = trim(self::sectionValue($data, $id, 'hashtag'));
+        $zeichen = trim(self::inhalt($abschnitt, $data, 'hashtag'));
         if ($zeichen !== '') {
             $out .= '<p class="d-sec-hashtag">#' . e(ltrim($zeichen, '#')) . '</p>';
         }
@@ -948,16 +1013,16 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
-    private static function geschenk(array $data, string $id): string
+    private static function geschenk(array $abschnitt, array $data): string
     {
         $out = '';
 
-        foreach (paragraphs(self::sectionText($data, $id)) as $absatz) {
+        foreach (paragraphs(self::inhalt($abschnitt, $data, 'text')) as $absatz) {
             $out .= '<p class="d-sec-absatz">' . e($absatz) . '</p>';
         }
 
-        $inhaber = trim(self::sectionValue($data, $id, 'holder'));
-        $iban    = trim(self::sectionValue($data, $id, 'iban'));
+        $inhaber = trim(self::inhalt($abschnitt, $data, 'holder'));
+        $iban    = trim(self::inhalt($abschnitt, $data, 'iban'));
 
         if ($iban === '') {
             return $out;

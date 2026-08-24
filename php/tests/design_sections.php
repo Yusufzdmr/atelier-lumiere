@@ -756,3 +756,40 @@ assert_true(
     !str_contains(DesignSections::html($galDoc, [], 'de', '2026-01-01'), 'd-sec-gallery'),
     'Galerie: ohne Bild kein Abschnitt'
 );
+
+/*
+ * --- Was die Vorlage vorschlaegt, und was das Paar daraus macht ---
+ *
+ * Der Titel gehoerte der Vorlage, der Text dem Paar. Zu scharf: der Grafiker
+ * baute eine Ueberschrift ueber nichts und sah im Schaufenster einen
+ * Platzhalter, den er nicht aendern konnte.
+ */
+
+$mitVorgabe = DesignSections::complete(sec_doc([
+    ['id' => 'wort', 'type' => 'text', 'defaults' => [
+        'text'       => 'Zieht euch an, wie ihr euch wohlfuehlt.',
+        'gibtesnicht' => 'faellt weg',
+    ]],
+]));
+
+assert_same('Zieht euch an, wie ihr euch wohlfuehlt.',
+    $mitVorgabe['sections'][0]['defaults']['text'], 'Vorgabe: sie steht im Dokument');
+assert_true(!array_key_exists('gibtesnicht', $mitVorgabe['sections'][0]['defaults']),
+    'Vorgabe: ein Schluessel, den die Art nicht kennt, faellt weg');
+
+// Ohne eigenen Text druckt die Vorlage ihren Vorschlag.
+assert_contains(DesignSections::html($mitVorgabe, [], 'de', '2026-01-01'),
+    'Zieht euch an', 'Vorgabe: ohne eigenen Text steht der Vorschlag da');
+
+// Mit eigenem Text gewinnt das Paar.
+$eigen = ['sections' => ['wort' => ['text' => 'Kommt, wie ihr seid.']]];
+$eigenHtml = DesignSections::html($mitVorgabe, $eigen, 'de', '2026-01-01');
+assert_contains($eigenHtml, 'Kommt, wie ihr seid.', 'Vorgabe: das Paar gewinnt');
+assert_true(!str_contains($eigenHtml, 'Zieht euch an'), 'Vorgabe: und der Vorschlag verschwindet');
+
+// Bilder bekommen keine Voreinstellung - die Fotos eines fremden Paares
+// stuenden sonst in jeder Einladung.
+$galVorgabe = DesignSections::complete(sec_doc([
+    ['id' => 'bilder', 'type' => 'gallery', 'defaults' => ['photos' => '/uploads/x.jpg']],
+]));
+assert_same([], $galVorgabe['sections'][0]['defaults'], 'Vorgabe: Bilder haben keine');

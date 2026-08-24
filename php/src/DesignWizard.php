@@ -150,6 +150,11 @@ final class DesignWizard
                 // Dasselbe noch einmal, aber mit Art, Obergrenze und Etikett:
                 // daraus baut der Assistent seine Eingabefelder.
                 'inputs' => $eingaben,
+                // Was die Vorlage vorschlaegt. Der Assistent legt es ins Feld,
+                // damit das Paar es ueberschreiben kann statt vor einem leeren
+                // Kasten zu sitzen - und wer nichts aendert, bekommt genau
+                // das, was im Schaufenster stand.
+                'defaults' => $abschnitt['defaults'] ?? [],
             ];
         }
 
