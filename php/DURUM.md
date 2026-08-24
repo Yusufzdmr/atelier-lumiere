@@ -1180,15 +1180,44 @@ Vitrinde her kartta vardı, panelde yoktu. Artık tasarım listesinde her kartta
 ve editörün başlığında "Davetiye oluştur" — sihirbaza `?design=<slug>` ile
 gidiyor, panele ayrı bir giriş yolu açılmadı.
 
+### Gece: kapanış kâğıdı, ve iki tane "görünmeyen" hata
+
+Ayhan: *"Son sayfa da ayrı eklensin. Baştaki sayfa çiçekler yukarda, son
+sayfada aşağıda."* Yanında çiçek demeti altta olan bir kâğıt.
+
+Tasarıma ikinci bir alan geldi: **`sectionsBgEnd`** — "Son sayfanın kâğıdı".
+Alanda artık iki katman var: arkada büyük kâğıt (tüm yüksekliğe yayılır,
+dokuyu taşır), önde ve altta kapanış kâğıdı (**kendi boyunda, gerilmeden,
+bir kez**). Çiçek demeti hiç gerilmiyor; doku gerilebilir çünkü şekli yok.
+
+Bununla **9 dilim (border-image) işine gerek kalmadı**: gerilmemesi gereken
+kısım artık kendi katmanında duruyor.
+
+**Görünmeyen hata 1.** Kâğıt bir kez alana konunca her bölüm onun *önünde*
+kalıyor — ve her bölüm kendi opak kâğıt rengini boyuyordu. Yani kâğıt oradaydı
+ve görünmüyordu. Koyu bir tasarımda anında belli oldu; açık renkli bir
+tasarımda aylarca fark edilmeyebilirdi. O renk, bölüm kendi kâğıdını çizip
+altını yumuşattığı dönemden kalmaydı; sebebi ortadan kalkmıştı. Artık rengi de
+kâğıdı da alan taşıyor. Eski kuralı tutan test tersine çevrildi.
+
+**Görünmeyen hata 2 (aynı gece, ters yönde).** Film tam ekran olurken
+`object-cover` kondu: doldurmak = kırpmak. Telefon 9:16'dan belirgin uzun
+olduğu için film epey yakınlaşıyordu — *"çok büyük video küçült"*. Artık
+`object-contain`: kutu yine tüm ekran, film bütün hâliyle içinde, üstte ve
+altta tasarımın zemin rengi. İki istek çelişmiyordu: "tam ekran" demek
+**kenarlı kutunun gitmesi** demekti, filmin kesilmesi değil.
+
+Ayhan'ın kapanış görseli canlıda `bild` tasarımına yüklendi (panelden değil —
+parola yazmadığım için dosya SSH ile konup alan doğrudan güncellendi; sonuç
+panelden yüklenmiş gibi görünüyor ve oradan değiştirilebilir).
+
+
 ### Bu turdan kalanlar
 
 - nginx `charset utf-8;` — Yusuf'un elinde; süzgeç bana `/etc/nginx`'e
   dokundurmuyor. Yalnız ham `.js` dosyasını doğrudan açınca görünen mojibake
   için; sayfanın içinde bozukluk yok (ölçüldü). Yedek:
   `/root/nginx-atelier-yedek-2026-08-24-1129`.
-- Ayhan'ın videoları panelden yüklenecek: editör → sağ kolon → "5b · Videolar"
-  (grup kapalı gelir) → Video yükle, süre alanı boş.
-- 9 dilim arka plan, uzun davetiyede gerilme rahatsız ederse.
 - Kart animasyonu + film birlikte: film bitiyor, kart 1.7 sn sonra geliyor,
   arada boş arka plan. Bugün hiçbir tasarımda bu ikili yok.
 - Bölüm arka planı üstünde yazı okunmuyorsa kimse söylemiyor: kart için
