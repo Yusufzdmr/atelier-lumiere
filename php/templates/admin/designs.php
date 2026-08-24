@@ -157,6 +157,21 @@ $meldungen = [
                class="border border-sand-deep px-3 py-2 text-muted transition-colors hover:text-ink">
               <?= $tr ? 'Önizle' : 'Ansehen' ?>
             </a>
+            <?php /*
+               Der kurze Weg zur Einladung. Im Schaufenster steht er an jeder
+               Karte, im Panel fehlte er - und wer eine Vorlage gerade gebaut
+               hat, will sie sofort ausprobieren, ohne den Umweg ueber die
+               oeffentliche Seite.
+
+               Dieselbe Adresse wie dort: der Assistent nimmt die Vorlage aus
+               ?design= und prueft sie selbst. Kein zweiter Einstieg, keine
+               zweite Pruefung.
+            */ ?>
+            <a href="<?= e(I18n::path('/v2/einladung', 'de') . '?design=' . rawurlencode((string) $design['slug'])) ?>"
+               target="_blank"
+               class="border border-gold px-3 py-2 text-gold transition-colors hover:bg-gold hover:text-cream">
+              <?= $tr ? 'Davetiye oluştur' : 'Einladung anlegen' ?>
+            </a>
           </div>
 
           <form method="post">

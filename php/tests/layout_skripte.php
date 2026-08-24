@@ -162,3 +162,15 @@ assert_not_contains($vorspann, '2–5 saniye', 'Vorspann-Hinweis: die alte Laeng
 assert_not_contains($vorspann, '2-5 s,', 'Vorspann-Hinweis: und auf Deutsch auch');
 assert_not_contains($vorspann, 'zarfın üzerinde bitmeli', 'Vorspann-Hinweis: das Schlussbild wird nicht mehr verlangt');
 assert_contains($vorspann, '20 saniye', 'Vorspann-Hinweis: dafuer steht die echte Obergrenze da');
+
+/*
+ * Und waehrend der Vorspann laeuft, bewegt sich die Seite nicht.
+ *
+ * Der Film liegt ueber der Buehne, die Seite darunter war beweglich: wer
+ * wischte, sah die Abschnitte, bevor die Karte da war - und der Vorspann
+ * verlor seinen Sinn. Aufgehoben wird die Sperre genau dann, wenn die Huelle
+ * aufgeht.
+ */
+assert_contains($js, 'scrollSperre', 'invitation.js: die Sperre hat einen Namen');
+assert_contains($js, 'scrollSperre(true)', 'invitation.js: sie greift, solange die Huelle liegt');
+assert_contains($js, 'scrollSperre(false)', 'invitation.js: und faellt, wenn die Karte kommt');

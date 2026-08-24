@@ -25,6 +25,29 @@
     // beim Freiwerden der Karte auf null zurueck, um dann einzublenden.
     document.documentElement.setAttribute("data-karte-frei", "false");
 
+    /*
+     * Solange die Huelle liegt, gibt es nichts zu scrollen.
+     *
+     * "Video bitmeden asagi kaydirip kartlari gormiyim." Genau das ging:
+     * der Film liegt UEBER der Buehne, aber die Seite darunter war
+     * beweglich - wer wischte, sah die Abschnitte, bevor die Karte
+     * ueberhaupt da war. Der Vorspann verlor damit seinen Sinn.
+     *
+     * Aufgehoben wird die Sperre genau dann, wenn die Huelle aufgeht -
+     * also wenn der Film durch ist. Danach gehoert das Scrollen wieder
+     * dem Gast.
+     *
+     * Auch am body und nicht nur am Wurzelelement: welches von beiden
+     * scrollt, entscheidet der Browser, und beide zu setzen ist billiger
+     * als es herauszufinden.
+     */
+    var scrollSperre = function (an) {
+      document.documentElement.style.overflow = an ? "hidden" : "";
+      document.body.style.overflow = an ? "hidden" : "";
+    };
+
+    scrollSperre(true);
+
     var open = envelope.querySelector("[data-envelope-open]");
     var kind = envelope.getAttribute("data-animation") || "seal";
 
@@ -135,6 +158,8 @@
       envelope.style.pointerEvents = "none";
       setTimeout(function () {
         envelope.setAttribute("data-open", "true");
+        // Der Film ist durch, die Karte kommt - ab hier darf gewischt werden.
+        scrollSperre(false);
       }, introMs);
 
       setTimeout(function () {

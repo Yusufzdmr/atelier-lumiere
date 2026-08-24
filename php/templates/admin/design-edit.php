@@ -165,6 +165,12 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
       <a href="<?= e(I18n::path('/v2/designs/' . $design['slug'], 'de')) ?>" target="_blank" class="b-knopf">
         <?= $tr ? 'Tam ekran' : 'Ganz ansehen' ?>
       </a>
+      <?php /* Derselbe kurze Weg wie in der Liste - hier, wo man gerade
+               gebaut hat, ist er am naechsten. */ ?>
+      <a href="<?= e(I18n::path('/v2/einladung', 'de') . '?design=' . rawurlencode((string) $design['slug'])) ?>"
+         target="_blank" class="b-knopf">
+        <?= $tr ? 'Davetiye oluştur' : 'Einladung anlegen' ?>
+      </a>
       <button class="b-speichern"><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
     </div>
   </div>
