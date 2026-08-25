@@ -49,6 +49,35 @@
     });
   });
 
+  // Die Groesse der Marke ist ein Faktor: das Feld zeigt Prozent, die
+  // Variable traegt das Verhaeltnis. Design::css() rechnet dieselbe Division.
+  form.querySelectorAll("[data-groessefeld]").forEach(function (feld) {
+    feld.addEventListener("input", function () {
+      var zahl = parseInt(feld.value, 10);
+      if (!isFinite(zahl) || zahl < 1) return;
+      vorschau.style.setProperty("--dfs-" + feld.getAttribute("data-groessefeld"), zahl / 100);
+    });
+  });
+
+  /*
+   * Die Groesse einer einzelnen Zeile. Dieselbe Rechnung wie in
+   * Design::css(): Zehntelprozent der Kartenbreite, mal dem Faktor der
+   * Marke. Der Faktor kommt aus der Variablen und nicht aus dem Feld daneben
+   * - so stimmt die Vorschau auch, wenn beides zugleich verstellt wird.
+   */
+  form.querySelectorAll("[data-schriftgroesse]").forEach(function (feld) {
+    feld.addEventListener("input", function () {
+      var ziel = vorschau.querySelector(".d-el-" + feld.getAttribute("data-schriftgroesse"));
+      var zahl = parseInt(feld.value, 10);
+      if (!ziel || !isFinite(zahl) || zahl < 1) return;
+      var marke = feld.getAttribute("data-schriftmarke");
+      var basis = (zahl / 10) + "cqw";
+      ziel.style.fontSize = marke
+        ? "calc(" + basis + " * var(--dfs-" + marke + ", 1))"
+        : basis;
+    });
+  });
+
   // Fester Text: der Knoten in der Vorschau traegt die Klasse d-el-<id>.
   form.querySelectorAll("[data-textfeld]").forEach(function (feld) {
     feld.addEventListener("input", function () {

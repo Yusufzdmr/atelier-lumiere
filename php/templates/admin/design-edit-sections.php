@@ -57,13 +57,23 @@ use function Atelier\e;
 <?= $auf($tr ? '3 · Yazı tipleri' : '3 · Schriften') ?>
   <?php foreach ($design['fonts'] as $marke => $eintrag) : ?>
     <div class="space-y-3 border-b border-sand-deep pb-4">
-      <div class="grid gap-4 sm:grid-cols-4">
+      <div class="grid gap-4 sm:grid-cols-5">
         <label class="<?= $label ?>"><?= e($marke) ?>
           <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>">
             <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
               <option value="<?= e($familie) ?>" <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
             <?php endforeach; ?>
           </select></label>
+        <?php /*
+          Die Groesse der Marke ist ein FAKTOR in Prozent, keine Punktzahl:
+          100 laesst alles, wie es ist, 120 macht jede Zeile dieser Schrift
+          eine Fuenftel groesser. Wie gross eine EINZELNE Zeile ist, steht
+          weiter unten bei der Anordnung - eine Ueberschrift und eine
+          Bildunterschrift teilen sich die Schrift, nicht die Groesse.
+        */ ?>
+        <label class="<?= $label ?>"><?= $tr ? 'büyüklük %' : 'Größe %' ?>
+          <input name="font_size_<?= e($marke) ?>" type="number" min="1" max="400"
+                 value="<?= (int) $eintrag['size'] ?>" class="<?= $feld ?>" data-groessefeld="<?= e($marke) ?>"></label>
         <label class="<?= $label ?>"><?= $tr ? 'ağırlık' : 'Gewicht' ?>
           <input name="font_weight_<?= e($marke) ?>" type="number" step="100" min="100" max="900"
                  value="<?= (int) $eintrag['weight'] ?>" class="<?= $feld ?>" data-gewichtfeld="<?= e($marke) ?>"></label>
@@ -498,6 +508,23 @@ use function Atelier\e;
                      class="<?= $klein ?>"
                      data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="<?= e($mass) ?>"></label>
           <?php endforeach; ?>
+
+          <?php if ($ebene['type'] === 'text') : ?>
+            <?php /*
+              Die Groesse DIESER Zeile - Zehntelprozent der Kartenbreite, wie
+              Design::css() sie schreibt. Bis hierher stand die Zahl im
+              Dokument und wurde gedruckt, war aber nirgends zu erreichen:
+              eine Ebene liess sich verschieben, drehen und faerben, nur nicht
+              groesser machen. Die Marke oben skaliert alles in ihrer Schrift
+              auf einmal, hier steht die einzelne Zeile.
+            */ ?>
+            <label class="<?= $label ?>"><?= $tr ? 'yazı büyüklüğü' : 'Schriftgröße' ?>
+              <input type="number" name="style_size_<?= e((string) $ebene['id']) ?>"
+                     value="<?= (int) $ebene['style']['size'] ?>" min="1" max="500"
+                     class="<?= $klein ?>"
+                     data-schriftgroesse="<?= e((string) $ebene['id']) ?>"
+                     data-schriftmarke="<?= e((string) $ebene['style']['font']) ?>"></label>
+          <?php endif; ?>
 
           <label class="<?= $label ?>"><?= $tr ? 'çapa' : 'Anker' ?>
             <select name="box_anchor_<?= e((string) $ebene['id']) ?>" class="<?= $klein ?>"

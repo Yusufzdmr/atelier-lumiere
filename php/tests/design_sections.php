@@ -994,6 +994,56 @@ $strahl = DesignSections::css(sec_doc([
 assert_contains($strahl, '.d-x .d-sec-plan .d-plan-rozet{', 'css: der Strahl kennt den Ring');
 assert_contains($strahl, 'border-radius:50%', 'css: und der Ring ist rund');
 
+/*
+ * Der Ring steht NEBEN der Linie, nicht auf ihr.
+ *
+ * Zweite fremde Einladung, zweite Anordnung: die Linie laeuft jetzt durch die
+ * Luecke zwischen Uhrzeit und Ring, der Ring steht frei davor. Damit faellt
+ * der Grund fuer seine Papierfuellung weg - er musste die Linie zudecken, und
+ * es gibt nichts mehr zuzudecken. Ein gefuellter Kreis auf einem gemusterten
+ * Blatt saehe aus wie ein Fleck.
+ */
+// Der Selektor der Gestalt nennt Art UND Gestalt - eine Regel unter dem
+// blossen ".d-sec-plan" stuende in der Grundregel und faerbte auch den
+// Ablauf ohne Strahl um.
+$vsel = '.d-x .d-sec-program.d-sec-v-zeitstrahl .d-sec-plan';
+
+assert_contains($strahl, '--d-plan-strahl:3.25em;', 'css: die Linie hat ihren eigenen Abstand');
+assert_contains($strahl, 'right:var(--d-plan-strahl);', 'css: und die Linie steht auf ihm');
+
+// Die ganze Regel des Rings, damit die fehlende Fuellung mitgeprueft ist:
+// er deckt nichts mehr zu, also traegt er auch kein Papier mehr.
+assert_contains(
+    $strahl,
+    $vsel . ' .d-plan-rozet{width:var(--d-plan-ring);height:var(--d-plan-ring);'
+        . 'margin-top:calc((var(--d-plan-kopf) - var(--d-plan-ring)) / 2);'
+        . 'border:1px solid currentColor;border-radius:50%;}',
+    'css: der Ring steht frei - ohne Papierfuellung und ohne eigene Ebene'
+);
+
+/*
+ * Der Punkt gehoert der Zeile OHNE Zeichen. Solange die Linie durch den Ring
+ * lief, deckte der Ring ihn mit zu; jetzt muss die Zeile mit Zeichen ihn
+ * selbst weglassen, sonst stuenden Punkt und Ring nebeneinander.
+ */
+assert_contains(
+    $strahl,
+    $vsel . ' dt:not(:has(.d-plan-rozet))::before{',
+    'css: den Punkt bekommt nur die Zeile ohne Zeichen'
+);
+assert_contains(
+    $strahl,
+    $vsel . ' dt:not(:has(.d-plan-rozet)){padding-right:calc(var(--d-plan-ring) + 1.3em);}',
+    'css: und sie haelt den Platz des Rings frei, damit die Uhrzeiten eine Spalte bleiben'
+);
+
+// Der Titel fuehrt die Zeile - Auszeichnungsschrift, nicht Fliesstext.
+assert_contains(
+    $strahl,
+    $vsel . ' .d-plan-titel{font-family:var(--df-display,inherit);font-size:1.45em;',
+    'css: der Titel steht gross und in der Auszeichnungsschrift'
+);
+
 /* --- Die Speisekarte -----------------------------------------------------
  *
  * "Davetiyede yemek menusu gosterilsin mi? Evet derse: Baslangic, Corba, Ana

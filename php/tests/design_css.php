@@ -194,6 +194,52 @@ assert_contains($sch, 'font-weight:var(--dfw-display);', 'css: die Elementregel 
 assert_contains($sch, 'letter-spacing:var(--dft-display);', 'css: die Elementregel liest die Laufweite');
 assert_contains($sch, 'line-height:var(--dfl-display);', 'css: die Elementregel liest die Zeilenhoehe');
 
+/* --- Die Groesse der Marke: ein Faktor ueber allem in ihrer Schrift -------
+ *
+ * Die vierte Angabe der Schriftmarke stand im Dokument, wurde aus dem
+ * Formular gelesen - und nirgends geschrieben. Im Panel gab es dafuer kein
+ * Feld, also war die Groesse die einzige Zahl der Typografie, an die niemand
+ * herankam. Sie ist ein FAKTOR: wie gross eine einzelne Zeile ist, sagt die
+ * Ebene, wie gross alles in dieser Schrift ist, sagt die Marke.
+ */
+
+assert_contains($sch, '--dfs-display:1;', 'css: die Groesse steht als Faktor in der Variablen');
+assert_contains(
+    $sch,
+    'font-size:calc(10cqw * var(--dfs-display, 1));',
+    'css: die Elementregel nimmt ihre eigene Groesse mal den Faktor der Marke'
+);
+
+$gross = Design::css([
+    'id'    => 'gr',
+    'fonts' => ['script' => ['family' => 'Great Vibes', 'size' => 125]],
+    'layers' => [['id' => 'a', 'type' => 'text', 'style' => ['font' => 'script', 'size' => 60]]],
+], '.d-gr');
+
+assert_contains($gross, '--dfs-script:1.25;', 'css: 125 Prozent werden zum Faktor 1.25');
+assert_contains($gross, 'font-size:calc(6cqw * var(--dfs-script, 1));', 'css: die Ebene behaelt ihre eigene Zahl');
+
+/*
+ * Ohne Marke bleibt die Zahl allein. Ein var() auf eine Variable, die es
+ * nicht gibt, machte das ganze calc() ungueltig - und dann fiele die Schrift
+ * still auf die geerbte Groesse zurueck.
+ */
+$ohne = Design::css([
+    'id'     => 'oh',
+    'layers' => [['id' => 'a', 'type' => 'text', 'style' => ['font' => '', 'size' => 40]]],
+], '.d-oh');
+
+assert_contains($ohne, 'font-size:4cqw;', 'css: ohne Marke steht die Groesse fuer sich');
+assert_not_contains($ohne, 'calc(', 'css: und ohne Marke wird gar nicht erst gerechnet');
+
+/* --- Die Namen duerfen umbrechen, wo bindValues() umbricht --- */
+
+assert_contains(
+    $sch,
+    '.d-sch .d-el[data-bind="couple_names"]{white-space:pre-line;}',
+    'css: die gebundenen Namen behalten ihre Zeilenumbrueche'
+);
+
 /* --- Video fuellt seine Flaeche wie ein Bild --- */
 
 $mitFilm = Design::css(['id' => 'x', 'layers' => [

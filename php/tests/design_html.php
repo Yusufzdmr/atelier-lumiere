@@ -67,7 +67,11 @@ $werte = Design::bindValues([
     'message' => 'Wir freuen uns', 'hashtag' => '#AyseMehmet',
 ], 'de');
 
-assert_same('Ayşe & Mehmet', $werte['couple_names'], 'bindValues: Namen werden verbunden');
+// Das Und steht auf einer eigenen Zeile - sonst haengt es sich beim Umbruch
+// hinten an den ersten Namen, und von Hand loesen laesst es sich nicht: die
+// Namen sind EIN gebundener Wert. Sichtbar wird der Umbruch nur unter der
+// Regel white-space:pre-line, die css() der gebundenen Ebene mitgibt.
+assert_same("Ayşe\n&\nMehmet", $werte['couple_names'], 'bindValues: das Und steht fuer sich');
 assert_same('Ayşe', $werte['bride_name'], 'bindValues: Braut');
 assert_same('Mehmet', $werte['groom_name'], 'bindValues: Braeutigam');
 assert_same('AM', $werte['initials'], 'bindValues: Initialen');

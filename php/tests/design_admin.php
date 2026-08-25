@@ -98,6 +98,39 @@ assert_same('632:490', $angriff['canvas']['ratio'], 'fromPost: canvas bleibt unb
 assert_same(6, $angriff['canvas']['safe'], 'fromPost: canvas safe bleibt unberuehrt');
 assert_same(1, count($angriff['layers']), 'fromPost: die Ebenenliste kommt nicht aus dem Formular');
 
+/* --- Die Groessen: eine je Ebene, eine je Marke ---------------------------
+ *
+ * Beide Zahlen gab es im Dokument, beide wurden gedruckt - nur hatte keine
+ * ein Feld im Panel. Ayhan konnte im Abschnitt "Schriften" Gewicht,
+ * Laufweite und Zeilenhoehe stellen und ausgerechnet die Groesse nicht.
+ *
+ * Sie tun Verschiedenes und muessen deshalb beide da sein: style_size sagt,
+ * wie gross DIESE Zeile ist, font_size, wie gross alles in dieser Schrift
+ * ist. Eine Ueberschrift und eine Bildunterschrift teilen sich die Marke,
+ * nicht die Groesse.
+ */
+
+$masse = Design::fromPost($basis, [
+    'style_size_gruss' => '260',
+    'font_size_display' => '125',
+]);
+
+assert_same(260, $masse['layers'][0]['style']['size'], 'fromPost: die Groesse der Ebene kommt an');
+assert_same(125, $masse['fonts']['display']['size'], 'fromPost: die Groesse der Marke kommt an');
+
+// Geklemmt wird nicht hier, sondern in complete() - zwei Stellen mit
+// denselben Grenzen laufen frueher oder spaeter auseinander.
+$wild = Design::fromPost($basis, ['style_size_gruss' => '9000', 'font_size_display' => '0']);
+
+assert_same(500, $wild['layers'][0]['style']['size'], 'fromPost: die Ebenengroesse wird geklemmt');
+assert_same(1, $wild['fonts']['display']['size'], 'fromPost: die Markengroesse wird geklemmt');
+
+// Ein Formular ohne die Felder laesst beide stehen.
+$stumm = Design::fromPost($masse, ['name_de' => 'Prüf']);
+
+assert_same(260, $stumm['layers'][0]['style']['size'], 'fromPost: ohne Feld bleibt die Ebenengroesse');
+assert_same(125, $stumm['fonts']['display']['size'], 'fromPost: ohne Feld bleibt die Markengroesse');
+
 /*
  * Die Grenze verschiebt sich: box und canvas bleiben der vierten Phase, die
  * Abschnitte kommen in der dritten herein. Frueher stand hier

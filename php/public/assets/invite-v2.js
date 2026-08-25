@@ -128,7 +128,10 @@
     // einen Samstag eingetippt hat. Die veroeffentlichte Einladung bekommt
     // den echten Wochentag vom Server und hat immer recht.
     var text = {
-      couple_names: [werte.bride, werte.groom].filter(Boolean).join(' & '),
+      // Die Umbrueche um das Und wie in Design::bindValues() - die Vorschau
+      // soll dasselbe zeigen wie die spaeter gedruckte Karte. Sichtbar werden
+      // sie durch white-space:pre-line auf der gebundenen Ebene.
+      couple_names: [werte.bride, werte.groom].filter(Boolean).join('\n&\n'),
       initials: (werte.bride || ' ').charAt(0) + (werte.groom || ' ').charAt(0),
       bride_name: werte.bride || '',
       groom_name: werte.groom || '',

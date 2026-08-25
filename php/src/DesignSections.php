@@ -751,44 +751,104 @@ final class DesignSections
              * auf der Linie, und was darunter steht, gehoert sichtbar dazu.
              */
             /*
-             * Der Ablauf als Strahl - jetzt mit dem Ring auf der Linie.
+             * Der Ablauf als Strahl - die Linie zwischen Uhrzeit und Ring.
              *
-             * Die Linie lag frueher am linken Rand der ganzen Liste, und auf
-             * ihr sass ein Punkt. Ayhan hat eine fremde Einladung geschickt
-             * und darin die Zeichen eingekreist: dort laeuft die Linie
-             * ZWISCHEN Uhrzeit und Text, und auf ihr sitzt ein Ring mit dem
-             * Zeichen darin.
+             * Die Linie lag frueher am linken Rand der ganzen Liste, dann
+             * mitten durch den Ring. Ayhan hat eine zweite fremde Einladung
+             * geschickt: dort laeuft die Linie NEBEN dem Ring, und der Ring
+             * steht frei davor. Das liest sich ruhiger - der Ring muss die
+             * Linie nicht mehr zudecken, also braucht er auch keine eigene
+             * Papierfarbe mehr und laesst das Blatt durchscheinen.
              *
-             * Also zwei Spalten und die Linie dazwischen. Sie wird nicht als
-             * Rand der Liste gezogen, sondern je Zeile hinter der Uhrzeit -
-             * nur so laeuft sie durch die Mitte des Rings, und nur so kann
-             * der Ring sie mit seiner eigenen Papierfarbe unterbrechen.
+             * Drei Groessen fuehren den Block, damit die Zahlen einander
+             * folgen statt sich zu widersprechen:
+             *   --d-plan-ring    der Durchmesser des Rings
+             *   --d-plan-strahl  der Abstand der Linie vom rechten Rand des
+             *                    <dt> - Ring plus halbe Luecke, also genau
+             *                    die Mitte zwischen Uhrzeit und Ring
+             *   --d-plan-kopf    die erste Zeile des Titels (Groesse mal
+             *                    Zeilenhoehe). Uhrzeit und Ring richten sich
+             *                    daran aus, nicht an der ganzen Zeile: sonst
+             *                    saesse der Ring bei einem dreizeiligen Satz
+             *                    in der Mitte des Absatzes.
              *
-             * Der Punkt bleibt fuer Zeilen ohne Zeichen. Ein leerer Ring auf
-             * der Linie saehe aus wie ein vergessenes Bild.
+             * Alles in em, weil die Groessen an der Schrift haengen und nicht
+             * an Pixeln - nur der senkrechte Rhythmus bleibt in rem, damit
+             * die Zeilen ueber verschieden grosse Abschnitte hinweg denselben
+             * Abstand halten.
              */
             'program/zeitstrahl' => $sel . ' .d-sec-plan{display:grid;'
+                . '--d-plan-ring:2.6em;--d-plan-strahl:3.25em;--d-plan-kopf:1.74em;'
                 . 'grid-template-columns:auto 1fr;column-gap:1.15rem;text-align:left;'
                 . 'max-width:26rem;margin-inline:auto;}'
                 . $sel . ' .d-sec-plan dt{position:relative;display:flex;align-items:flex-start;'
-                . 'justify-content:flex-end;gap:0.65rem;margin-top:1.5rem;font-weight:600;}'
-                . $sel . ' .d-sec-plan dd{margin:0;margin-top:1.5rem;}'
+                . 'justify-content:flex-end;gap:1.3em;margin-top:2.2rem;font-weight:600;}'
+                . $sel . ' .d-sec-plan dd{margin:0;margin-top:2.2rem;}'
                 . $sel . ' .d-sec-plan dt:first-of-type,'
                 . $sel . ' .d-sec-plan dd:first-of-type{margin-top:0;}'
-                // Die Linie: hinter der Uhrzeit, durch die Mitte des Rings,
-                // und ueber die Luecke hinaus zur naechsten Zeile.
+                // Die Uhrzeit bekommt die Zeilenhoehe des Titels: so steht sie
+                // auf derselben Hoehe wie dessen erste Zeile, ohne dass eine
+                // zweite Zahl dafuer erfunden werden muesste.
+                . $sel . ' .d-sec-plan .d-plan-zeit{line-height:var(--d-plan-kopf);}'
+                /*
+                 * Die Linie: in der Luecke zwischen Uhrzeit und Ring, und
+                 * ueber den Zeilenabstand hinaus zur naechsten Zeile.
+                 *
+                 * Sie haengt am <dt> und nicht am <dl>, weil die erste Spalte
+                 * mitwaechst: wie breit die Uhrzeiten sind, weiss nur das
+                 * Raster. Vom rechten Rand des <dt> aus gerechnet stimmt der
+                 * Abstand dagegen immer.
+                 *
+                 * Das <dt> wird vom Raster auf die volle Zeilenhoehe gedehnt
+                 * (kein align-self) - nur deshalb reicht die Linie von Zeile
+                 * zu Zeile, auch wenn der Satz daneben dreizeilig ist.
+                 */
                 . $sel . ' .d-sec-plan dt::after{content:"";position:absolute;'
-                . 'right:1.15em;top:-1.5rem;bottom:-1.5rem;width:1px;'
+                . 'right:var(--d-plan-strahl);top:-2.2rem;bottom:-2.2rem;width:1px;'
                 . 'background:currentColor;opacity:0.3;}'
-                // Der Punkt fuer Zeilen ohne Zeichen - an derselben Stelle.
-                . $sel . ' .d-sec-plan dt::before{content:"";position:absolute;'
-                . 'right:1.0em;top:0.95em;width:0.36rem;height:0.36rem;'
+                /*
+                 * Der Punkt fuer Zeilen OHNE Zeichen - auf der Linie. Ein
+                 * leerer Ring saehe aus wie ein vergessenes Bild; ein Punkt
+                 * markiert den Moment und genuegt.
+                 *
+                 * Solange die Linie durch den Ring lief, deckte der Ring den
+                 * Punkt mit zu und die Bedingung war unnoetig. Jetzt steht der
+                 * Ring daneben - also muss die Zeile mit Zeichen den Punkt
+                 * selbst weglassen, sonst stuende beides nebeneinander.
+                 *
+                 * Kennt ein Browser :has() nicht, faellt die Regel ganz weg:
+                 * dann bleibt die Linie an dieser Stelle unmarkiert. Das ist
+                 * die harmlosere Haelfte - ein Punkt zu viel neben jedem Ring
+                 * waere in JEDER Zeile zu sehen.
+                 */
+                /*
+                 * Und die Zeile ohne Zeichen haelt den Platz des Rings frei.
+                 * Ohne das ruecken ihre Ziffern an den rechten Rand des <dt>
+                 * (justify-content:flex-end) und stuenden als einzige RECHTS
+                 * der Linie - die Spalte der Uhrzeiten haette einen Knick.
+                 */
+                . $sel . ' .d-sec-plan dt:not(:has(.d-plan-rozet))'
+                . '{padding-right:calc(var(--d-plan-ring) + 1.3em);}'
+                . $sel . ' .d-sec-plan dt:not(:has(.d-plan-rozet))::before{content:"";position:absolute;'
+                . 'right:calc(var(--d-plan-strahl) - 0.18em);'
+                . 'top:calc((var(--d-plan-kopf) - 0.36em) / 2);'
+                . 'width:0.36em;height:0.36em;'
                 . 'border-radius:50%;background:currentColor;}'
-                // Der Ring deckt Linie und Punkt zu: eigene Flaeche, eigene
-                // Ebene. Ohne den Grund liefe die Linie quer durch das Zeichen.
-                . $sel . ' .d-sec-plan .d-plan-rozet{position:relative;z-index:1;'
-                . 'width:2.3em;height:2.3em;border:1px solid currentColor;'
-                . 'border-radius:50%;background:var(--d-paper,#faf7f2);}'
+                // Der Ring steht frei neben der Linie: keine Fuellung, kein
+                // z-index. Der negative Rand hebt ihn auf die Mitte der ersten
+                // Titelzeile - er ist hoeher als sie, also um die halbe
+                // Differenz nach oben.
+                . $sel . ' .d-sec-plan .d-plan-rozet{'
+                . 'width:var(--d-plan-ring);height:var(--d-plan-ring);'
+                . 'margin-top:calc((var(--d-plan-kopf) - var(--d-plan-ring)) / 2);'
+                . 'border:1px solid currentColor;border-radius:50%;}'
+                // Das Zeichen bekommt Luft im Ring: kleiner als die Grundregel,
+                // sonst fuellt es ihn aus und der Ring wirkt wie ein Rahmen.
+                . $sel . ' .d-sec-plan .d-plan-rozet .d-ikon{width:0.95em;height:0.95em;}'
+                // Der Titel fuehrt die Zeile: Auszeichnungsschrift und gross.
+                // Er ist das, was gelesen wird - die Uhrzeit ordnet nur ein.
+                . $sel . ' .d-sec-plan .d-plan-titel{font-family:var(--df-display,inherit);'
+                . 'font-size:1.45em;line-height:1.2;}'
                 . $sel . ' .d-sec-plan .d-plan-text{opacity:0.8;}',
 
             /*

@@ -401,6 +401,22 @@ final class Design
             $vars .= '--dfw-' . $key . ':' . (int) $entry['weight'] . ';';
             $vars .= '--dft-' . $key . ':' . ($entry['tracking'] / 100) . 'em;';
             $vars .= '--dfl-' . $key . ':' . ($entry['lineHeight'] / 100) . ';';
+            /*
+             * Die Groesse der Marke ist ein FAKTOR, keine Groesse.
+             *
+             * Wie gross eine einzelne Zeile ist, weiss nur die Ebene - eine
+             * Ueberschrift und eine Bildunterschrift koennen dieselbe
+             * Auszeichnungsschrift tragen und muessen trotzdem verschieden
+             * gross sein. Was der Marke gehoert, ist das Verhaeltnis: "alles
+             * in dieser Schrift eine Spur groesser". 100 heisst unveraendert,
+             * die Ebenen behalten also ihre Groessen.
+             *
+             * Bisher stand die Zahl zwar im Dokument und wurde aus dem
+             * Formular gelesen, aber nirgends geschrieben - sie war die
+             * einzige der vier Angaben ohne Wirkung. Genau die, nach der
+             * Ayhan im Panel gesucht hat.
+             */
+            $vars .= '--dfs-' . $key . ':' . ($entry['size'] / 100) . ';';
         }
         // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
         // Breite. Das gilt unabhaengig von Palette und Schriften – sonst
@@ -408,6 +424,18 @@ final class Design
         // fiele still auf den geerbten Wert zurueck (design_shape.php prueft
         // genau diesen Fall).
         $css .= $scope . '{container-type:inline-size;' . $vars . '}';
+
+        /*
+         * Die Namen duerfen umbrechen, wo bindValues() umbricht - und nur
+         * sie. pre-line laesst den Umbruch stehen, faltet aber alle anderen
+         * Leerraeume wie sonst auch zusammen; ein versehentliches Leerzeichen
+         * im Namensfeld bleibt also folgenlos.
+         *
+         * Am gebundenen Namen und nicht an einer Ebenen-Kennung: WELCHE Ebene
+         * die Namen traegt, entscheidet der Grafiker je Vorlage. Der Name der
+         * Bindung ist das einzige, was in allen gleich heisst.
+         */
+        $css .= $scope . ' .d-el[data-bind="couple_names"]{white-space:pre-line;}';
 
         $moves = [];
 
@@ -457,12 +485,23 @@ final class Design
                         . 'line-height:var(--dfl-' . $style['font'] . ');';
                 }
 
+                /*
+                 * Die Groesse: Prozent der Kartenbreite, nicht der geerbten
+                 * Groesse - sonst waechst die Karte und die Schrift bleibt
+                 * stehen. Mal dem Faktor der Marke, wo eine gesetzt ist: die
+                 * Ebene sagt, wie gross SIE ist, die Marke, wie gross alles
+                 * in ihrer Schrift ist. Ohne Marke bleibt die Zahl allein -
+                 * ein var() ohne Quelle machte das ganze calc() ungueltig.
+                 */
+                $groesse = ($style['size'] / 10) . 'cqw';
+                if ($style['font'] !== '' && isset($doc['fonts'][$style['font']])) {
+                    $groesse = 'calc(' . $groesse . ' * var(--dfs-' . $style['font'] . ', 1))';
+                }
+
                 $css .= $selector . '{'
                     . ($style['font'] !== '' ? 'font-family:var(--df-' . $style['font'] . ');' : '')
                     . ($style['color'] !== '' ? 'color:var(--d-' . $style['color'] . ');' : '')
-                    // Prozent der Kartenbreite, nicht der geerbten Groesse:
-                    // sonst waechst die Karte und die Schrift bleibt stehen.
-                    . 'font-size:' . ($style['size'] / 10) . 'cqw;'
+                    . 'font-size:' . $groesse . ';'
                     . 'text-align:' . $style['align'] . ';'
                     // Gewicht, Laufweite und Zeilenhoehe standen bisher in der
                     // Schriftmarke und wurden nie geschrieben - ein Drittel der
@@ -744,9 +783,24 @@ final class Design
         $groom = trim((string) ($data['groom'] ?? ''));
         $date  = trim((string) ($data['date'] ?? ''));
 
+        /*
+         * Das Und steht auf einer EIGENEN Zeile.
+         *
+         * Mit einem blossen Leerzeichen entscheidet der Umbruch, wo es
+         * landet, und auf einer hochkant stehenden Karte landet es immer
+         * hinten am ersten Namen: "Sophia &" / "Maximilian". Von Hand liess
+         * es sich nicht loesen - der Text ist EIN gebundener Wert, und ein
+         * Zeilenumbruch im Namensfeld waere ein Umbruch im Namen.
+         *
+         * Also echte Zeilenumbrueche im Wert. Sie wirken nur dort, wo die
+         * Regel in css() sie wirken laesst (white-space:pre-line auf der
+         * gebundenen Ebene); ueberall sonst faellt ein Umbruch im HTML auf
+         * ein Leerzeichen zusammen und die Namen lesen sich wie bisher.
+         * Deshalb braucht auch keine andere Stelle etwas davon zu wissen.
+         */
         $couple = $bride;
         if ($bride !== '' && $groom !== '') {
-            $couple = $bride . ' & ' . $groom;
+            $couple = $bride . "\n&\n" . $groom;
         } elseif ($bride === '') {
             $couple = $groom;
         }
@@ -1167,6 +1221,13 @@ final class Design
             }
             if (isset($post['box_anchor_' . $id])) {
                 $doc['layers'][$i]['box']['anchor'] = (string) $post['box_anchor_' . $id];
+            }
+
+            // Die Schriftgroesse gehoert zum Stil, nicht zum Kasten - sie
+            // steht im Formular aber daneben, weil sie dort gesucht wird.
+            // Geklemmt wird auch sie erst in completeElement().
+            if (isset($post['style_size_' . $id])) {
+                $doc['layers'][$i]['style']['size'] = (int) $post['style_size_' . $id];
             }
             // Die Spiegelungen sind Haken und werden wie die Rechte gelesen:
             // da heisst an, weg heisst aus. Das darf hier stehen, weil genau
