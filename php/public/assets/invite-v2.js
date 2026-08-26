@@ -161,8 +161,25 @@
     el.addEventListener('input', paint);
   });
   paint();
+})();
 
-  /* ---------------------------- Ortssuche ---------------------------- */
+/*
+ * Die Ortssuche - eigenstaendig, und zwar mit Absicht.
+ *
+ * Sie stand zuerst am Ende der Assistenten-Funktion darueber. Dort wird sie
+ * nie erreicht: dieselbe Funktion steigt vorher dreimal aus, wenn es kein
+ * [data-wizard] gibt, weniger als zwei Schritte, oder keine Vorschau. Auf dem
+ * BEARBEITEN-Bildschirm trifft alles drei zu - und das ist ausgerechnet die
+ * Seite, auf der ein Paar seine Adresse nachtraegt, weil auf der fertigen
+ * Einladung keine Karte stand.
+ *
+ * Deshalb ein eigener Block mit einer eigenen Bedingung: er braucht nur das
+ * Adressfeld und sonst nichts.
+ */
+(function () {
+  'use strict';
+
+/* ---------------------------- Ortssuche ---------------------------- */
 
   /*
    * Die Adresse wird gesucht, nicht geraten.
@@ -178,13 +195,13 @@
    * das man tippt wie bisher - und wer einen Ort eintraegt, den niemand
    * kennt, bekommt weiterhin eine Einladung, nur ohne Karte.
    */
-  var suchfeld = form.querySelector('[data-ortsuche]');
+  var suchfeld = document.querySelector('[data-ortsuche]');
   if (!suchfeld) return;
 
-  var liste  = form.querySelector('[data-ortliste]');
-  var notiz  = form.querySelector('[data-ortnotiz]');
-  var karte  = form.querySelector('[data-ortkarte]');
-  var saal   = form.querySelector('[data-live="venue"]');
+  var liste  = document.querySelector('[data-ortliste]');
+  var notiz  = document.querySelector('[data-ortnotiz]');
+  var karte  = document.querySelector('[data-ortkarte]');
+  var saal   = document.querySelector('[data-live="venue"]');
   var sprache = (document.documentElement.getAttribute('lang') || 'de').slice(0, 2);
 
   // Die Adresse des Suchendpunkts steht im Pfad der Seite: /de/... oder
@@ -226,7 +243,20 @@
                 + '&lng=' + encodeURIComponent(ort.lng) + '&s=' + encodeURIComponent(ort.sig);
       karte.hidden = false;
     }
-    paint();
+    /*
+     * Die Vorschau meldet sich selbst.
+     *
+     * paint() gehoert dem Assistenten und ist von hier aus nicht erreichbar -
+     * und soll es auch nicht sein: dieser Block laeuft auch auf dem
+     * Bearbeiten-Bildschirm, wo es gar keine Vorschau gibt. Ein input-
+     * Ereignis auf den geaenderten Feldern erreicht denselben Zuhoerer, den
+     * auch das Tippen erreicht.
+     */
+    setztSelbst = true;
+    [suchfeld, saal].forEach(function (feld) {
+      if (feld) feld.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    setztSelbst = false;
   }
 
   function zeigen(orte) {
@@ -262,7 +292,21 @@
   var wartet = null;
   var laeuft = null;
 
+  /*
+   * Waehrend wir selbst schreiben, sucht niemand.
+   *
+   * nehmen() traegt Adresse und Saal ein und meldet das mit einem
+   * input-Ereignis an die Vorschau. Dasselbe Ereignis erreicht aber auch den
+   * Zuhoerer hier - und der raeumt als Erstes die Karte weg, die nehmen()
+   * gerade aufgedeckt hat. Ergebnis: das Bild war geladen, sichtbar war es
+   * nie. Und eine zweite Suche nach der eben gewaehlten Adresse waere es
+   * obendrein gewesen.
+   */
+  var setztSelbst = false;
+
   suchfeld.addEventListener('input', function () {
+    if (setztSelbst) return;
+
     var q = suchfeld.value.trim();
 
     if (karte) karte.hidden = true;

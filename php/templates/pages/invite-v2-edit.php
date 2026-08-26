@@ -222,21 +222,10 @@ if ($darfDesign) {
     </ol>
 
     <fieldset data-step="0" class="space-y-8">
-      <div class="grid gap-7 sm:grid-cols-2">
-        <?php foreach ($choices['fields'] as $feld) : ?>
-          <div<?= $feld === 'message' ? ' class="sm:col-span-2"' : '' ?>>
-            <label class="<?= $label ?>" for="f-<?= e($feld) ?>"><?= e($fieldTitles[$feld]) ?></label>
-            <?php if ($feld === 'message') : ?>
-              <textarea id="f-<?= e($feld) ?>" name="<?= e($feld) ?>" rows="4" class="<?= $field ?>" data-live="<?= e($feld) ?>"><?= e($old($feld)) ?></textarea>
-            <?php else : ?>
-              <input id="f-<?= e($feld) ?>" name="<?= e($feld) ?>" class="<?= $field ?>"
-                     type="<?= e($inputTypes[$feld] ?? 'text') ?>"
-                     value="<?= e($old($feld)) ?>" data-live="<?= e($feld) ?>"
-                     <?= in_array($feld, ['bride', 'groom'], true) ? 'required' : '' ?>>
-            <?php endif; ?>
-          </div>
-        <?php endforeach; ?>
-      </div>
+      <?= \Atelier\View::partial('partials/angaben-felder', [
+              'choices' => $choices, 'fieldTitles' => $fieldTitles, 'inputTypes' => $inputTypes,
+              'old' => $old, 'label' => $label, 'field' => $field, 'locale' => $locale,
+          ]) ?>
 
       <?php foreach ($choices['sections'] as $sid => $abschnitt) : ?>
         <?php
