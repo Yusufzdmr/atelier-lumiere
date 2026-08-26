@@ -334,7 +334,12 @@ final class DesignSections
                         || trim(self::inhalt($abschnitt, $data, 'iban')) !== '',
             // Die Tonspur gehoert der Vorlage, nicht dem Paar: ohne sie hat
             // dieser Abschnitt nichts zu spielen und wird nicht gedruckt.
-            'music'     => trim((string) ($abschnitt['settings']['track'] ?? '')) !== '',
+            // Die Vorlage ODER das Paar. Frueher stand hier allein die Spur
+            // der Vorlage - ein Paar, das sein Lied hochlud, ohne dass der
+            // Grafiker eine Voreinstellung gesetzt hatte, bekam trotzdem
+            // keine Musik: die Datei lag auf der Platte und der Abschnitt
+            // wurde nie gedruckt.
+            'music'     => self::tonspur($abschnitt, $data) !== '',
             // Kein Bild, kein Abschnitt. Eine leere Galerie ist eine
             // Ueberschrift ueber nichts.
             'gallery'   => self::sectionPhotos($data, (string) $abschnitt['id']) !== [],
@@ -642,7 +647,24 @@ final class DesignSections
              * kaum faerben, und das ist in Ordnung: er soll aussehen wie ein
              * Spieler und nicht wie Schmuck.
              */
-            . $scope . ' .d-sec-ton{display:block;margin:1.2rem auto 0;width:100%;max-width:20rem;}'
+            /*
+             * Der Stummschalter der Hintergrundmusik.
+             *
+             * Fest am Fensterrand und nicht im Abschnitt: der Abschnitt
+             * selbst hat nichts zu zeigen (das Lied laeuft ja schon), und ein
+             * Knopf, der beim Weiterblaettern aus dem Bild rutscht, ist genau
+             * dann weg, wenn jemand ihn sucht - naemlich mitten in der
+             * Einladung.
+             *
+             * position:fixed schlaegt hier nicht fehl: er sitzt im
+             * Abschnittsbereich, und der traegt keine transform. Die Buehne
+             * darueber schon - deshalb steht der Ton nicht dort.
+             */
+            . $scope . ' .d-sec-ton-knopf{position:fixed;right:1.25rem;bottom:1.25rem;z-index:40;'
+              . 'display:flex;align-items:center;justify-content:center;width:3rem;height:3rem;'
+              . 'border:0;border-radius:9999px;cursor:pointer;font:inherit;font-size:1.1rem;'
+              . 'line-height:1;background:var(--d-accent,#b08d57);color:var(--d-paper,#faf7f2);'
+              . 'box-shadow:0 2px 10px rgba(0,0,0,0.28);}'
             /*
              * Die Bilder. Quadratisch beschnitten und nicht in ihrem eigenen
              * Format: acht Bilder aus acht Kameras haben acht Seitenverhaeltnisse,
@@ -964,6 +986,17 @@ final class DesignSections
                 . 'margin-top:1.1rem;opacity:0.85;}',
 
             /*
+             * Der sichtbare Spieler.
+             *
+             * Er steht bei seiner Gestalt und nicht in der Grundregel, seit
+             * die Voreinstellung der Hintergrund ist: die Grundregel gilt
+             * fuer beide Gestalten, und ein <audio>-Kasten, den die eine gar
+             * nicht druckt, waere eine Regel ohne Gegenstueck.
+             */
+            'music/spieler' => $sel . ' .d-sec-ton{display:block;margin:1.2rem auto 0;'
+                . 'width:100%;max-width:20rem;}',
+
+            /*
              * Das Formular bekommt eine Kante. Auf einem gemusterten Blatt
              * verliert es sie sonst und wirkt wie hingefallen.
              */
@@ -1073,7 +1106,7 @@ final class DesignSections
                 'gift'      => self::geschenk($abschnitt, $data),
                 // Als einzige Art liest sie ihre Einstellung und nicht die
                 // Daten des Paares - der Klang gehoert der Vorlage.
-                'music'     => self::musik($abschnitt),
+                'music'     => self::musik($abschnitt, $data, $locale),
                 'gallery'   => self::galerie($data, $id),
                 'menu'      => self::speisekarte($abschnitt, $data, $locale),
                 'dresscode' => self::kleiderordnung($abschnitt, $data),
@@ -1366,6 +1399,27 @@ final class DesignSections
         $eigen = trim(self::sectionValue($data, (string) $abschnitt['id'], $schluessel));
 
         return $eigen !== '' ? $eigen : (string) ($abschnitt['defaults'][$schluessel] ?? '');
+    }
+
+    /**
+     * Das Lied, das das Paar in DIESEN Abschnitt gelegt hat.
+     *
+     * Getrennt von inhalt(), weil hier kein Vorschlag der Vorlage
+     * einspringen darf: die Voreinstellung einer Tonspur steht in den
+     * EINSTELLUNGEN des Abschnitts und gehoert dem Grafiker (siehe
+     * tonspur()). Diese Auskunft ist "was hat das Paar hochgeladen" - und
+     * genau das braucht das Bearbeiten-Formular, um es zum Wegnehmen
+     * anzubieten.
+     *
+     * safeSrc wie bei den Bildern: der Pfad stammt aus dem eigenen Upload,
+     * steht seitdem aber in einem JSON-Feld, und was dort steht, ist beim
+     * Lesen wieder eine Behauptung.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function sectionTrack(array $data, string $id): string
+    {
+        return Design::safeSrc(trim(self::sectionValue($data, $id, 'track')));
     }
 
     /**
@@ -1687,14 +1741,64 @@ final class DesignSections
      *
      * @param array<string,mixed> $abschnitt
      */
-    private static function musik(array $abschnitt): string
+    private static function musik(array $abschnitt, array $data, string $locale): string
     {
-        $spur = Design::safeSrc((string) ($abschnitt['settings']['track'] ?? ''));
+        $spur = self::tonspur($abschnitt, $data);
         if ($spur === '') {
             return '';
         }
 
-        return '<audio class="d-sec-ton" controls preload="none" src="' . e($spur) . '"></audio>';
+        // Der sichtbare Spieler: fuer das Lied, das man bewusst anhoert.
+        if ((string) $abschnitt['variant'] === 'spieler') {
+            return '<audio class="d-sec-ton" controls preload="none" src="' . e($spur) . '"></audio>';
+        }
+
+        /*
+         * Im Hintergrund - und mit genau denselben Haken wie in der ersten
+         * Einladung: [data-music] und [data-music-toggle].
+         *
+         * Kein neues Skript. invitation.js liegt auf dieser Seite ohnehin
+         * (InviteV2Controller::show laedt es fuer den Umschlag) und kann
+         * beides schon: es startet den Ton in dem Moment, in dem jemand das
+         * Kuvert antippt, und schaltet ihn am Knopf stumm. Ein zweites
+         * Skript mit denselben zwei Aufgaben waere die Sorte Kopie, die ein
+         * halbes Jahr spaeter auseinanderlaeuft.
+         *
+         * Autoplay ohne Klick verbieten alle Browser, und zu Recht. Das
+         * Antippen des Umschlags IST der Klick - deshalb braucht diese
+         * Gestalt keinen Startknopf, nur einen zum Stummschalten.
+         *
+         * preload="none" ist nicht Sparsamkeit, sondern Anstand: ein Lied
+         * laedt sonst auf jedem Telefon mit, das die Einladung nur kurz
+         * aufmacht.
+         */
+        return '<audio data-music loop preload="none" src="' . e($spur) . '"></audio>'
+            . '<button type="button" data-music-toggle class="d-sec-ton-knopf"'
+            . ' aria-label="' . e($locale === 'de' ? 'Musik' : 'Music') . '">&#9834;</button>';
+    }
+
+    /**
+     * Welches Lied gespielt wird.
+     *
+     * Zwei Quellen, eine Rangfolge: das Paar gewinnt. Die Spur der Vorlage
+     * ist ein Vorschlag - sie klingt, wenn niemand etwas hochgeladen hat, und
+     * tritt zurueck, sobald ein eigenes Lied da ist. Andersherum waere die
+     * Vorlage staerker als das Paar, und das ist bei keinem anderen Feld so.
+     *
+     * Beide gehen durch safeSrc: ein Pfad auf einen fremden Server waere ein
+     * Zuhoerer, der mitschreibt, wer die Einladung aufgemacht hat - und ein
+     * Link, der eines Tages ins Leere zeigt.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @param array<string,mixed> $data
+     */
+    private static function tonspur(array $abschnitt, array $data): string
+    {
+        $eigenes = Design::safeSrc(trim(self::inhalt($abschnitt, $data, 'track')));
+
+        return $eigenes !== ''
+            ? $eigenes
+            : Design::safeSrc((string) ($abschnitt['settings']['track'] ?? ''));
     }
 
     /**

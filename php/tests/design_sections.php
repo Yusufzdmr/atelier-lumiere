@@ -732,11 +732,59 @@ assert_contains($dreiHtml, 'DE89 3704 0044 0532 0130 00', 'Geschenk: die IBAN st
 assert_same('DE89 3704 0044 0532 0130 00', DesignSections::ibanGruppen('de89 3704-0044 0532013000'),
     'Geschenk: Leerzeichen und Striche des Tippenden zaehlen nicht');
 
-/* --- Die Musik: der eingebaute Spieler, ohne Selbststart --- */
+/* --- Die Musik: im Hintergrund, ohne Selbststart --- */
 
-assert_contains($dreiHtml, '<audio class="d-sec-ton" controls preload="none" src="/uploads/designs/lied.mp3">',
-    'Musik: der Spieler steht da');
+/*
+ * Die Voreinstellung ist seit dem 26. August der Hintergrund und nicht mehr
+ * der sichtbare Spieler: ein <audio controls> mitten auf einer Einladung
+ * sieht aus wie ein hineingefallenes Bedienfeld, und niemand drueckt darauf.
+ *
+ * Die Haken heissen wie in der ersten Einladung, weil dasselbe Skript sie
+ * bedient (invitation.js): es startet den Ton beim Antippen des Umschlags -
+ * die Nutzeraktion, ohne die kein Browser Ton zulaesst - und schaltet ihn am
+ * Knopf stumm. Deshalb steht hier auch kein autoplay: es wuerde nichts tun
+ * ausser die Absicht zu verschleiern.
+ */
+assert_contains($dreiHtml, '<audio data-music loop preload="none" src="/uploads/designs/lied.mp3">',
+    'Musik: die Spur liegt unter der Seite');
+assert_contains($dreiHtml, 'data-music-toggle', 'Musik: und hat einen Stummschalter');
 assert_true(!str_contains($dreiHtml, 'autoplay'), 'Musik: und faengt nicht von allein an');
+
+// Die alte Gestalt gibt es weiter - der Grafiker waehlt sie ausdruecklich.
+$spielerHtml = DesignSections::html(
+    DesignSections::complete(sec_doc([
+        ['id' => 'ton', 'type' => 'music', 'variant' => 'spieler',
+         'settings' => ['track' => '/uploads/designs/lied.mp3']],
+    ])),
+    [],
+    'de'
+);
+assert_contains($spielerHtml, '<audio class="d-sec-ton" controls preload="none" src="/uploads/designs/lied.mp3">',
+    'Musik: die Gestalt "spieler" zeigt den Kasten');
+
+/*
+ * Und die Rangfolge: das Lied des Paares gewinnt gegen das der Vorlage.
+ * Andersherum waere die Vorlage staerker als das Paar, und das ist bei keinem
+ * anderen Feld so.
+ */
+$eigenesLied = DesignSections::html(
+    DesignSections::complete(sec_doc([
+        ['id' => 'ton', 'type' => 'music', 'settings' => ['track' => '/uploads/designs/lied.mp3']],
+    ])),
+    ['sections' => ['ton' => ['track' => '/uploads/einladungen/v2/paar/unseres.mp3']]],
+    'de'
+);
+assert_contains($eigenesLied, '/uploads/einladungen/v2/paar/unseres.mp3', 'Musik: das Lied des Paares gewinnt');
+assert_true(!str_contains($eigenesLied, 'designs/lied.mp3'), 'Musik: und die Spur der Vorlage tritt zurueck');
+
+// Ohne Vorlage, nur mit eigenem Lied: frueher fiel der Abschnitt hier weg,
+// weil hatInhalt allein die Einstellung der Vorlage las.
+$nurEigenes = DesignSections::html(
+    DesignSections::complete(sec_doc([['id' => 'ton', 'type' => 'music']])),
+    ['sections' => ['ton' => ['track' => '/uploads/einladungen/v2/paar/unseres.mp3']]],
+    'de'
+);
+assert_contains($nurEigenes, 'unseres.mp3', 'Musik: ein eigenes Lied allein traegt den Abschnitt');
 
 /* --- Ohne Inhalt kein Abschnitt --- */
 

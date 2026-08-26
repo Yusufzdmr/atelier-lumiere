@@ -348,16 +348,49 @@ final class SectionRegistry
          */
         'music' => [
             'variants' => [
-                'default' => ['de' => 'Kleiner Spieler', 'tr' => 'Küçük çalar'],
+                /*
+                 * Im Hintergrund, wie in der ersten Einladung.
+                 *
+                 * Hier stand "Kleiner Spieler" als einzige Gestalt: ein
+                 * <audio controls> mitten im Blatt. Auf einer Einladung sieht
+                 * das aus wie ein hineingefallenes Bedienfeld - und niemand
+                 * drueckt darauf. Der Ton gehoert unter die Seite, nicht in
+                 * sie.
+                 *
+                 * Gestartet wird beim Oeffnen des Umschlags: Browser lassen
+                 * Ton nur nach einer Nutzeraktion zu, und das Antippen des
+                 * Kuverts IST die Aktion. Deshalb hat diese Gestalt keinen
+                 * Startknopf, sondern nur einen zum Stummschalten - der
+                 * Start ist schon passiert.
+                 */
+                'default' => ['de' => 'Im Hintergrund', 'tr' => 'Arka planda'],
+                // Die alte Gestalt, fuer den Fall, dass ein Blatt einen
+                // sichtbaren Spieler tragen soll (ein Lied als Geschenk etwa,
+                // das man bewusst anhoert und nicht nebenbei).
+                'spieler' => ['de' => 'Kleiner Spieler', 'tr' => 'Küçük çalar'],
             ],
             'settings' => [
                 'track' => [
                     'type'    => 'src',
                     'default' => '',
-                    'label'   => ['de' => 'Tonspur (Pfad)', 'tr' => 'Ses dosyası (yol)'],
+                    'label'   => ['de' => 'Tonspur der Vorlage (Pfad)',
+                                  'tr' => 'Tasarımın ses dosyası (yol)'],
                 ],
             ],
-            'inputs' => [],
+            /*
+             * Und das Lied des Paares.
+             *
+             * Zwei Quellen fuer eine Tonspur, mit klarer Rangfolge: was das
+             * Paar hochlaedt, gewinnt (DesignSections::musik). Die Spur der
+             * Vorlage ist ein Vorschlag - sie steht da, wenn niemand etwas
+             * hochlaedt, und verschwindet hinter dem eigenen Lied, sobald
+             * eines da ist. Ein Paar, das seine Musik nicht hat, bekommt
+             * trotzdem keine stumme Einladung.
+             */
+            'inputs' => [
+                'track' => ['type' => 'audio', 'max' => 1,
+                    'label' => ['de' => 'Euer Lied', 'en' => 'Your song', 'tr' => 'Şarkınız']],
+            ],
         ],
     ];
 

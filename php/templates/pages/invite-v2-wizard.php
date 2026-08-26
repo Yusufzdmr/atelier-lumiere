@@ -383,6 +383,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <?= \Atelier\View::partial('partials/abschnitt-felder', [
                   'abschnitt' => $abschnitt, 'sid' => $sid, 'old' => $old, 't' => $t,
                   'label' => $label, 'field' => $field, 'locale' => $locale, 'fotos' => [],
+                  'ton' => '',
               ]) ?>
 
               <?php if (in_array('program', $abschnitt['fields'], true)) : ?>

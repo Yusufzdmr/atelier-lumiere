@@ -278,6 +278,7 @@ if ($darfDesign) {
               'abschnitt' => $abschnitt, 'sid' => (string) $sid, 'old' => $old, 't' => $t,
               'label' => $label, 'field' => $field, 'locale' => $locale,
               'fotos' => \Atelier\DesignSections::sectionPhotos($daten ?? [], (string) $sid),
+              'ton' => \Atelier\DesignSections::sectionTrack($daten ?? [], (string) $sid),
           ]) ?>
 
           <?php if (in_array('program', $abschnitt['fields'], true)) : ?>

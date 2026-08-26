@@ -1295,15 +1295,43 @@ demekti — `karteXpng` de cevap alırdı. İlk noktalı adres bunu ortaya çık
 `tests/section_ort_karte.php` — 36 kontrol, ikisi de uçlar: sihirbaz soruyor
 mu, bölüm görünüyor mu. Toplam 1437.
 
+### Aynı gün — arka planda müzik
+
+Müşteri: „davetiyeye arkada çalan müzikte eklemek istiyorum". Kararı: parça
+iki yerden gelebilir, **çiftinki kazanır**.
+
+- `music` bölümünün varsayılan gestalt'ı artık **`default` = arka planda**.
+  Eski `<audio controls>` görünümü `spieler` varyantı olarak duruyor. Bugüne
+  kadar hiçbir tasarımda `settings.track` dolu olmadığı için bu değişiklik
+  yayınlanmış hiçbir davetiyeyi bozmuyor (bölüm zaten hiç basılmıyordu).
+- Çift kendi şarkısını yüklüyor: katalogda yeni bir eingabe türü `audio`
+  (`inputs.track`), `abschnitt-felder.php`'de dosya alanı, kaydetme
+  `mitDateien()` içinde (`mitBildern` yeniden adlandırıldı — artık iki tür
+  dosya taşıyor). Eskisi diskten siliniyor, ama **yeni dosya yerleştikten
+  sonra**: yükleme başarısız olursa ikisi birden gitmesin.
+- `DesignSections::tonspur()` sıralamayı tek yerde tutuyor: çiftinki varsa o,
+  yoksa tasarımınki. `hatInhalt` de artık ikisine birden bakıyor — eskiden
+  sadece tasarımın ayarına bakıyordu, yani çift şarkısını yüklese bile bölüm
+  basılmıyordu.
+- **Yeni JS yok.** `invitation.js` davetiye sayfasında zaten yüklü (zarf için)
+  ve `[data-music]` + `[data-music-toggle]` işini biliyor: zarfa dokununca
+  başlatıyor, düğmeyle susturuyor. Tarayıcıda ölçüldü: açmadan önce
+  `paused=true`, zarftan sonra `false`, düğmeden sonra tekrar `true`.
+  Autoplay özniteliği yok — zaten çalışmazdı, sadece niyeti gizlerdi.
+
+**Grafikerin bilmesi gereken:** bölümün `edit` hakkı açık olmalı, yoksa
+sihirbaz „Euer Lied / Şarkınız" alanını hiç göstermiyor. Bu bütün bölümler
+için böyle (`edit` ana şalter), ama müzikte ilk kez fark ediliyor çünkü
+tasarımın kendi parçası olsa da çift ekranı boş kalıyor.
+
 ### Açık kalan
 
-- **Arka planda müzik (v2).** Bugün `music` bölümü var ama parça
-  **grafikerin** paneline yazdığı bir yol (`settings.track`, `type: src`) ve
-  `<audio controls>` olarak çıkıyor. Çift kendi parçasını yükleyemiyor,
-  arkada da çalmıyor. Davetiye 1'de ikisi de var (`Media::storeAudio`,
-  `musicFile`). Müşteri bunu v2'de istiyor.
 - Ayar `<select>`'leri seçenekleri çevirmiyor (`blatt`/`rechteck`/`aus` TR
   panelde de Almanca) — panelin tamamında böyle, `align`/`space` de öyle.
+- **Canlıda `site_url` yanlış:** `http://45.147.46.177` yazıyor ama site
+  `https://45-147-46-177.sslip.io` üzerinden geliyor. OG görseli, WhatsApp
+  önizlemesi ve PayPal dönüş adresleri yanlış host'a gidiyor olabilir.
+  `config.php` tek satır.
 
 ## Sıradaki oturum buradan başlasın
 

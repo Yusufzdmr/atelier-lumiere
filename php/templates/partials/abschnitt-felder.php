@@ -27,11 +27,13 @@
  * @var string $field
  * @var string $locale
  * @var list<string> $fotos             schon abgelegte Bilder (beim Anlegen leer)
+ * @var string $ton                     schon abgelegtes Lied (beim Anlegen leer)
  */
 
 use function Atelier\e;
 
 $fotos = $fotos ?? [];
+$ton   = (string) ($ton ?? '');
 ?>
 <?php foreach (($abschnitt['inputs'] ?? []) as $schluessel => $feld) : ?>
   <?php
@@ -82,6 +84,40 @@ $fotos = $fotos ?? [];
               </span>
             </label>
           <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+    <?php elseif ((string) $feld['type'] === 'audio') : ?>
+      <?php /*
+         Ein Lied, eine Datei. Kein multiple: eine Einladung spielt einen
+         Titel, und zwei angebotene Felder waeren die Frage "welches denn
+         jetzt".
+
+         accept ist eine Bequemlichkeit im Dateidialog und keine Pruefung -
+         die macht Media::storeAudio, und zwar am Dateiinhalt und nicht an
+         der Endung.
+
+         Steht schon eines da, wird es genannt und ist wegnehmbar. Ohne den
+         Haken waere die einzige Art, das Lied loszuwerden, ein anderes
+         hochzuladen - und wer gar keines mehr will, koennte es nie.
+      */ ?>
+      <input id="sf-<?= e($sid . '-' . $schluessel) ?>" type="file"
+             name="<?= e($feldName) ?>"
+             accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav"
+             class="<?= $field ?>">
+      <p class="mt-2 text-[0.8rem] text-muted">
+        <?= $locale === 'tr'
+            ? 'MP3, M4A, OGG veya WAV. Zarf açılınca arkada çalar.'
+            : 'MP3, M4A, OGG oder WAV. Spielt, sobald der Umschlag aufgeht.' ?>
+      </p>
+
+      <?php if ($ton !== '') : ?>
+        <div class="mt-3">
+          <audio controls preload="none" src="<?= e($ton) ?>" class="w-full max-w-sm"></audio>
+          <label class="mt-1 flex items-center gap-1 text-[0.66rem] text-muted">
+            <input type="checkbox" name="sec_ton_weg_<?= e($sid) ?>" value="1">
+            <?= $locale === 'tr' ? 'bu şarkıyı kaldır' : 'dieses Lied wegnehmen' ?>
+          </label>
         </div>
       <?php endif; ?>
 

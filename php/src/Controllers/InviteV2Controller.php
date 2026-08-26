@@ -520,21 +520,27 @@ final class InviteV2Controller
      * @return array{palette:array<string,string>,fonts:array<string,string>,layers:array<string,mixed>,sections:array<string,mixed>}
      */
     /**
-     * Die Bilder einer Galerie ablegen - und die weggenommenen loeschen.
+     * Die Dateien eines Abschnitts ablegen - und die weggenommenen loeschen.
+     *
+     * Bilder einer Galerie und das Lied des Paares. Beide gehen denselben Weg,
+     * deshalb stehen sie hier zusammen: eine zweite Methode mit derselben
+     * Schleife, demselben $alt und derselben Loeschregel waere eine Kopie,
+     * die irgendwann nur an einer Stelle korrigiert wird.
      *
      * Getrennt von sammleAngaben(), weil Dateien einen Ordner brauchen und
      * der Ordner die Adresse der Einladung ist. Beim Veroeffentlichen
      * entsteht der Slug AUS den Angaben (aus den Namen des Paares), existiert
-     * also erst danach: erst die Namen, dann die Adresse, dann die Bilder.
+     * also erst danach: erst die Namen, dann die Adresse, dann die Dateien.
      *
      * $alt sind die bisherigen Daten - beim Veroeffentlichen leer, beim
      * Bearbeiten die gespeicherten. Was darin steht und nicht abgewaehlt
-     * wurde, bleibt: ein Formular ohne neue Datei darf keine Galerie leeren.
+     * wurde, bleibt: ein Formular ohne neue Datei darf weder die Galerie
+     * leeren noch die Musik abschalten.
      *
-     * Ein abgewaehltes Bild wird von der Platte genommen und nicht nur aus
-     * der Liste: sonst bliebe es unter seiner Adresse oeffentlich abrufbar,
-     * obwohl die Einladung es nicht mehr zeigt. Dieselbe Ueberlegung wie beim
-     * ersetzten Foto einer Ebene.
+     * Weggenommenes wird von der Platte genommen und nicht nur aus den Daten:
+     * sonst bliebe es unter seiner Adresse oeffentlich abrufbar, obwohl die
+     * Einladung es nicht mehr zeigt. Dieselbe Ueberlegung wie beim ersetzten
+     * Foto einer Ebene.
      *
      * Die Obergrenze steht im Katalog und wird hier eingehalten, nicht nur im
      * Formular: das Formular kann jeder umgehen, der ein zweites Fenster
@@ -545,10 +551,52 @@ final class InviteV2Controller
      * @param array<string,mixed> $alt
      * @return array<string,mixed>
      */
-    private function mitBildern(array $data, array $darf, string $slug, array $alt): array
+    private function mitDateien(array $data, array $darf, string $slug, array $alt): array
     {
         foreach ($darf['sections'] as $sid => $abschnitt) {
             foreach ($abschnitt['inputs'] ?? [] as $schluessel => $feld) {
+                /*
+                 * Das Lied des Paares.
+                 *
+                 * Dieselbe Ueberlegung wie bei den Bildern, nur einer statt
+                 * acht: was da ist, bleibt, wenn diesmal keine Datei kommt -
+                 * ein Formular ohne neuen Upload darf die Musik nicht
+                 * loeschen. Weggenommen wird nur auf Ansage, und dann auch
+                 * von der Platte: sonst bliebe die Datei unter ihrer Adresse
+                 * abrufbar, obwohl die Einladung sie nicht mehr spielt.
+                 */
+                if ((string) $feld['type'] === 'audio') {
+                    $bisher = DesignSections::sectionTrack($alt, (string) $sid);
+
+                    $neu = Media::storeAudio(
+                        (array) ($_FILES['sec_' . $schluessel . '_' . $sid] ?? []),
+                        'einladungen/v2/' . $slug
+                    );
+
+                    if ($neu !== null) {
+                        // Das alte Lied geht, sobald das neue liegt - und
+                        // nicht davor: schlaegt der Upload fehl, ist sonst
+                        // beides weg.
+                        if ($bisher !== '') {
+                            Media::delete($bisher);
+                        }
+                        $data['sections'][$sid][$schluessel] = $neu;
+                        continue;
+                    }
+
+                    if ($bisher === '') {
+                        continue;
+                    }
+
+                    if (!empty($_POST['sec_ton_weg_' . $sid])) {
+                        Media::delete($bisher);
+                        continue;
+                    }
+
+                    $data['sections'][$sid][$schluessel] = $bisher;
+                    continue;
+                }
+
                 if ((string) $feld['type'] !== 'photos') {
                     continue;
                 }
@@ -821,7 +869,7 @@ final class InviteV2Controller
          * dort also noch gar nicht. Erst die Namen, dann die Adresse, dann die
          * Bilder.
          */
-        $data = $this->mitBildern($data, $darf, $slug, []);
+        $data = $this->mitDateien($data, $darf, $slug, []);
 
         /*
          * Der Schnappschuss ist die Vorlage, NICHT das Ergebnis.
@@ -1462,12 +1510,12 @@ final class InviteV2Controller
          * dieser Weg sie kennen muss.
          */
         /*
-         * Die Bilder VOR dem Wegnehmen der Inhaltsschluessel: mitBildern()
+         * Die Dateien VOR dem Wegnehmen der Inhaltsschluessel: mitDateien()
          * liest aus $alt, was schon da liegt, und behaelt es. Danach ist
          * $alt['sections'] fuer diesen Weg zwar weg, aber die Liste steht
          * dann bereits in $neueAngaben.
          */
-        $neueAngaben = $this->mitBildern($neueAngaben, $darf, $slug, $alt);
+        $neueAngaben = $this->mitDateien($neueAngaben, $darf, $slug, $alt);
 
         $neu = $alt;
         unset($neu['families'], $neu['program'], $neu['sections']);

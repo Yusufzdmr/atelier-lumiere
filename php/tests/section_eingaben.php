@@ -32,7 +32,7 @@ assert_same([], SectionRegistry::inputs('gibtesnicht'), 'Eingaben: eine unbekann
 
 foreach (array_keys(SectionRegistry::all()) as $art) {
     foreach (SectionRegistry::inputs($art) as $schluessel => $feld) {
-        assert_true(in_array($feld['type'], ['text', 'textarea', 'photos'], true),
+        assert_true(in_array($feld['type'], ['text', 'textarea', 'photos', 'audio'], true),
             'Eingaben: ' . $art . '.' . $schluessel . ' hat eine bekannte Art');
         assert_true(($feld['max'] ?? 0) > 0,
             'Eingaben: ' . $art . '.' . $schluessel . ' hat eine Obergrenze');
