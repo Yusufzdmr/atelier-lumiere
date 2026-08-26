@@ -255,11 +255,25 @@ final class OgImage
      */
     private static function vignette($image): void
     {
+        /*
+         * Von oben nach unten dunkler - und der Verlauf lief verkehrt herum.
+         *
+         * In GD heisst alpha 127 "durchsichtig" und 0 "deckend". Die alte
+         * Zeile begann am untersten Bildrand ($i = 0) bei 127, also
+         * durchsichtig, und wurde nach OBEN hin dunkler. Am oberen Rand des
+         * Bandes sprang die Deckkraft dann von 0 auf 55 Prozent: eine harte
+         * waagerechte Kante quer durch das Bild, genau bei 55 Prozent Hoehe.
+         * Auf einem Foto sah das aus wie ein Druckfehler, auf hellem Papier
+         * wie zwei aufeinandergeklebte Bilder.
+         *
+         * Jetzt ist es, was der Satz immer behauptet hat: unten am
+         * staerksten, nach oben auslaufend - und am Anfang des Bandes
+         * beruehrungslos, also ohne Kante.
+         */
         $band = (int) (self::HEIGHT * 0.45);
         for ($i = 0; $i < $band; $i++) {
             $y = self::HEIGHT - $i - 1;
-            // 0 bis 55 Prozent Deckkraft, unten am stärksten
-            $alpha = (int) round(127 - (127 * 0.55) * ($i / $band));
+            $alpha = (int) round(127 - (127 * 0.55) * (($band - $i) / $band));
             $black = imagecolorallocatealpha($image, 0, 0, 0, $alpha);
             imageline($image, 0, $y, self::WIDTH, $y, $black);
         }
