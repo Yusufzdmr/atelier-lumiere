@@ -161,4 +161,147 @@
     el.addEventListener('input', paint);
   });
   paint();
+
+  /* ---------------------------- Ortssuche ---------------------------- */
+
+  /*
+   * Die Adresse wird gesucht, nicht geraten.
+   *
+   * Vorher war das Adressfeld ein leeres Textfeld, und ob der Kartendienst
+   * die Anschrift kennt, stellte sich erst auf der fertigen Einladung
+   * heraus - dann naemlich, wenn keine Karte kam.
+   *
+   * Gefragt wird unser eigener Server (/v2/orte), nicht das Verzeichnis:
+   * sonst saehe ein Fremder jeden Tastendruck des Paares.
+   *
+   * Alles hier ist Zugabe. Faellt das Skript aus, bleibt ein Textfeld, in
+   * das man tippt wie bisher - und wer einen Ort eintraegt, den niemand
+   * kennt, bekommt weiterhin eine Einladung, nur ohne Karte.
+   */
+  var suchfeld = form.querySelector('[data-ortsuche]');
+  if (!suchfeld) return;
+
+  var liste  = form.querySelector('[data-ortliste]');
+  var notiz  = form.querySelector('[data-ortnotiz]');
+  var karte  = form.querySelector('[data-ortkarte]');
+  var saal   = form.querySelector('[data-live="venue"]');
+  var sprache = (document.documentElement.getAttribute('lang') || 'de').slice(0, 2);
+
+  // Die Adresse des Suchendpunkts steht im Pfad der Seite: /de/... oder
+  // /en/... - fest verdrahtet waere sie in einer Sprache falsch.
+  var sprachpfad = (location.pathname.match(/^\/[a-z]{2}(?=\/|$)/) || ['/de'])[0];
+  var suchPfad   = sprachpfad + '/v2/orte';
+  var kartePfad  = sprachpfad + '/v2/karte-vorschau.png';
+
+  var wort = {
+    suche:   sprache === 'en' ? 'Searching…'          : 'Suche…',
+    nichts:  sprache === 'en'
+      ? 'Not found. You can type the address anyway - then the invitation shows it without a map.'
+      : 'Nicht gefunden. Ihr könnt die Adresse trotzdem eintragen – dann steht sie ohne Karte auf der Einladung.',
+    fehler:  sprache === 'en' ? 'Search unavailable.' : 'Suche gerade nicht erreichbar.'
+  };
+
+  function sagen(text) {
+    if (!notiz) return;
+    notiz.textContent = text || '';
+    notiz.hidden = !text;
+  }
+
+  function zumachen() {
+    if (!liste) return;
+    liste.textContent = '';
+    liste.hidden = true;
+  }
+
+  function nehmen(ort) {
+    suchfeld.value = ort.address || '';
+    // Den Saalnamen nur setzen, wenn das Feld leer ist: wer ihn schon
+    // getippt hat, hat sich etwas dabei gedacht ("Bei Oma im Garten").
+    if (saal && !saal.value && ort.name) saal.value = ort.name;
+
+    zumachen();
+    sagen('');
+    if (karte && ort.sig) {
+      karte.src = kartePfad + '?lat=' + encodeURIComponent(ort.lat)
+                + '&lng=' + encodeURIComponent(ort.lng) + '&s=' + encodeURIComponent(ort.sig);
+      karte.hidden = false;
+    }
+    paint();
+  }
+
+  function zeigen(orte) {
+    if (!liste) return;
+    liste.textContent = '';
+
+    orte.forEach(function (ort) {
+      var li = document.createElement('li');
+      var knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.className = 'block w-full px-3 py-2 text-left text-sm hover:bg-sand';
+
+      var oben = document.createElement('span');
+      oben.className = 'block';
+      oben.textContent = ort.name || ort.address;
+      knopf.appendChild(oben);
+
+      if (ort.name && ort.address) {
+        var unten = document.createElement('span');
+        unten.className = 'block text-[0.72rem] text-muted';
+        unten.textContent = ort.address;
+        knopf.appendChild(unten);
+      }
+
+      knopf.addEventListener('click', function () { nehmen(ort); });
+      li.appendChild(knopf);
+      liste.appendChild(li);
+    });
+
+    liste.hidden = orte.length === 0;
+  }
+
+  var wartet = null;
+  var laeuft = null;
+
+  suchfeld.addEventListener('input', function () {
+    var q = suchfeld.value.trim();
+
+    if (karte) karte.hidden = true;
+    window.clearTimeout(wartet);
+
+    if (q.length < 3) { zumachen(); sagen(''); return; }
+
+    /*
+     * Erst warten, dann fragen. Bei jedem Tastendruck zu fragen waere ein
+     * Dutzend Anfragen fuer eine Adresse - an ein Verzeichnis, dessen
+     * Regeln genau das nicht wollen, und der Server bremst uns ohnehin.
+     */
+    wartet = window.setTimeout(function () {
+      sagen(wort.suche);
+
+      // Die vorige Anfrage abbrechen: sonst ueberholt eine langsame
+      // Antwort von vor drei Buchstaben die aktuelle.
+      if (laeuft) laeuft.abort();
+      laeuft = new AbortController();
+
+      window.fetch(suchPfad + '?q=' + encodeURIComponent(q), { signal: laeuft.signal })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var orte = (d && d.places) || [];
+          zeigen(orte);
+          sagen(orte.length ? '' : wort.nichts);
+        })
+        .catch(function (e) {
+          if (e && e.name === 'AbortError') return;
+          zumachen();
+          sagen(wort.fehler);
+        });
+    }, 450);
+  });
+
+  // Klick daneben macht die Liste zu - sonst steht sie ueber dem naechsten
+  // Feld und faengt dessen Klicks ab.
+  document.addEventListener('click', function (e) {
+    if (!liste) return;
+    if (e.target !== suchfeld && !liste.contains(e.target)) zumachen();
+  });
 })();

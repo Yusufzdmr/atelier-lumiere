@@ -1324,6 +1324,66 @@ sihirbaz „Euer Lied / Şarkınız" alanını hiç göstermiyor. Bu bütün bö
 için böyle (`edit` ana şalter), ama müzikte ilk kez fark ediliyor çünkü
 tasarımın kendi parçası olsa da çift ekranı boş kalıyor.
 
+### Aynı gün, devam — yükle düğmesi ve adres arama
+
+Müşteri iki şey daha söyledi: „Tasarımın ses dosyası (yol) — bilgisayardan
+müzik ekleyebileyim yükle butonu koy" ve „harita için konum girme falan
+müşteriye kolaylık sağlıcak şeyi yap".
+
+**Yükle düğmesi.** `src` türündeki ayarlar panelde sadece bir metin kutusuydu
+(„Hochladen kommt spaeter" diye bir not bile duruyordu) — dosyayı başka bir
+yolla `/uploads`'a koyup yolunu elle yazmak gerekiyordu. Blatt ve açılış filmi
+için bu yol panelde çoktan vardı (`sec_bg_datei`, `intro_datei`), sadece bu
+satır almamıştı. Artık **her `src` ayarı** dosya alanı alıyor; hangi dosya
+olduğunu katalogdaki yeni `kind` alanı söylüyor (`audio`/`video`/`bild`) —
+panel `accept`'i, controller da hangi denetimi kullanacağını (`storeAudio` mu
+`storeGraphic` mi) ondan okuyor. Tek yerde, tür başına bir dal değil. Yol
+kutusu altta duruyor: neyin geçerli olduğunu gösteriyor ve boşaltınca dosya
+kalkıyor — sadece dosya alanı olsaydı değiştirilebilir ama kaldırılamazdı.
+
+**Adres arama.** Sihirbazda adres alanı artık yazarken arıyor
+(`/{locale}/v2/orte`, JSON) ve altına seçilebilir bir liste koyuyor. Seçilince
+salon adı + tam adres yazılıyor ve **küçük bir önizleme haritası** çıkıyor.
+Listede çıkan her yerin haritası garanti var, çünkü arayan ile haritayı çizen
+aynı dizin.
+
+- Sorgu **bizim sunucumuzdan** geçiyor: doğrudan olsaydı dizin her misafiri ve
+  her tuş vuruşunu görürdü.
+- `maps_key` varsa Google Places tercih ediliyor (salonları adıyla biliyor),
+  yoksa Nominatim. Nominatim sokak ve yerleşim adını iyi buluyor, salon adını
+  çoğu zaman bulamıyor — „Stadthalle Günzburg" boş dönüyor, „Im Krautgarten
+  Thannhausen" buluyor. Google anahtarı girilirse bu düzelir.
+- Önizleme uç noktası **imzalı**: `StaticMap::sign()` koordinatı admin_key ile
+  tuzlayıp 16 haneye indiriyor, `karte-vorschau.png` imzasız koordinatı 404
+  yapıyor. İmzasız olsaydı herkese her koordinat için harita çizen ve her
+  seferinde 190 KB'ı diske yazan bir servis olurdu.
+- Beşinci haneye yuvarlanıyor (≈1 m): sayı adresten metin olarak geçip float
+  olarak dönüyor, yuvarlanmasa imza bir daha asla tutmazdı. Test bunu tutuyor.
+- Bulunamazsa artık **söylüyor**: „Nicht gefunden. Ihr könnt die Adresse
+  trotzdem eintragen – dann steht sie ohne Karte auf der Einladung." Eskiden
+  hiçbir şey demiyordu.
+- JS'siz: alan sıradan bir metin kutusu olarak kalıyor. Arama zorunluluk değil.
+
+**Ayrıca düzeltildi:** `Security::throttle()` `true` dönerse *sınır aşıldı*
+demek. İlk yazışta tersine kurulmuştu ve uç nokta ilk istekte 429 veriyordu.
+Diğer bütün çağıranlar (`Admin::login`, `GalleryController`) doğru kullanıyor,
+örnek oradaydı.
+
+### YouTube neden olmuyor
+
+Müşteri „ya da youtube linki" dedi. Arka plan müziği olarak **olmuyor**, iki
+ayrı sebeple:
+
+1. YouTube'un gömülü oynatıcısı bir iframe'dir ve davetiye açılır açılmaz
+   Google'a istek gider — sitenin „izinsizken sıfır dış istek" kuralını bozar.
+   Haritada tam da bu yüzden iframe kullanmadık.
+2. YouTube şartları oynatıcıyı gizleyerek yalnız sesi çalmayı ve sesi ayırıp
+   indirmeyi açıkça yasaklıyor. Oynatıcı görünür olmak zorunda.
+
+Yapılabilecek olan: davetiyeye **görünür bir video bölümü** (v1'de zaten iki
+tıklamalı YouTube/Vimeo var) — ama o arka plan müziği değil, izlenen bir şey.
+Ya da çift şarkıyı kendi indirip yüklüyor; artık yükleme alanı var.
+
 ### Açık kalan
 
 - Ayar `<select>`'leri seçenekleri çevirmiyor (`blatt`/`rechteck`/`aus` TR

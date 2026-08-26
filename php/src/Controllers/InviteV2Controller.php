@@ -955,6 +955,76 @@ final class InviteV2Controller
      * @param array<string,string> $params
      */
     /**
+     * Orte suchen - damit das Paar die Adresse nicht raten muss.
+     *
+     * Der Assistent fragt hier, waehrend jemand tippt, und bekommt eine Liste
+     * zum Anklicken zurueck. Was darin steht, hat garantiert eine Karte: es
+     * ist dasselbe Verzeichnis, das sie spaeter zeichnet.
+     *
+     * Gebremst, weil der Endpunkt offen ist: er nimmt ein Suchwort entgegen
+     * und fragt damit ein fremdes Verzeichnis, dessen Regeln Massenabfragen
+     * verbieten - zu Recht. 30 Anfragen in einer Minute reichen fuer jemanden,
+     * der einen Saal sucht, und nicht fuer jemanden, der das Verzeichnis
+     * durchgeht. Die Antwort ist dieselbe Bremse wie beim Anmelden.
+     *
+     * JSON und keine Seite: die Antwort geht an ein Skript, nicht an einen
+     * Leser. Ohne Skript bleibt das Adressfeld ein Textfeld wie bisher - die
+     * Suche ist eine Erleichterung und keine Voraussetzung.
+     */
+    public function places(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        // true heisst "Grenze ueberschritten" - wie bei jedem anderen
+        // Aufrufer (Admin::login, GalleryController, InviteController).
+        if (Security::throttle('orte', 30, 60)) {
+            http_response_code(429);
+            echo json_encode(['places' => [], 'error' => 'zu-schnell']);
+            exit;
+        }
+
+        $q = Security::clean((string) ($_GET['q'] ?? ''), 120);
+
+        echo json_encode(['places' => StaticMap::search($q)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * Die Kartenvorschau im Assistenten.
+     *
+     * Nur zu Koordinaten, die aus unserer eigenen Suche stammen: die
+     * Unterschrift beweist es (StaticMap::sign). Ohne sie waere das hier ein
+     * Dienst, der jedem zu beliebigen Koordinaten eine Karte rendert und
+     * 190 KB davon auf unserer Platte ablegt.
+     *
+     * Kein Slug, weil es die Einladung noch nicht gibt - das Paar steht
+     * gerade erst im Formular und will sehen, ob es den richtigen Ort
+     * erwischt hat.
+     */
+    public function previewMap(): void
+    {
+        $lat = (float) Security::clean((string) ($_GET['lat'] ?? ''), 24);
+        $lng = (float) Security::clean((string) ($_GET['lng'] ?? ''), 24);
+        $sig = Security::clean((string) ($_GET['s'] ?? ''), 32);
+
+        if (!StaticMap::verify($lat, $lng, $sig)) {
+            http_response_code(404);
+            exit;
+        }
+
+        $bild = StaticMap::forPoint($lat, $lng, 480, 360);
+        if ($bild === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        echo $bild;
+        exit;
+    }
+
+    /**
      * Dasselbe Bild fuer die Beispieleinladung.
      *
      * Ein eigener Endpunkt und kein Parameter: hier gibt es nichts zu waehlen

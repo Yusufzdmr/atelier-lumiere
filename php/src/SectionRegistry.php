@@ -372,9 +372,23 @@ final class SectionRegistry
             'settings' => [
                 'track' => [
                     'type'    => 'src',
+                    /*
+                     * Was fuer eine Datei das ist.
+                     *
+                     * "src" sagt nur "ein Pfad aus dem eigenen Haus" - es
+                     * sagt nicht, ob ein Bild, ein Film oder ein Lied
+                     * dahinter steht. Das Panel braucht es fuer das accept
+                     * des Dateifeldes, der Controller fuer die Frage, welche
+                     * Pruefung er nimmt: Media::storeAudio sieht in die
+                     * Datei und laesst nur echte Tonspuren durch.
+                     *
+                     * Ohne diese Zeile muesste eine der beiden Stellen raten,
+                     * und raten heisst hier: eine zweite Liste fuehren.
+                     */
+                    'kind'    => 'audio',
                     'default' => '',
-                    'label'   => ['de' => 'Tonspur der Vorlage (Pfad)',
-                                  'tr' => 'Tasarımın ses dosyası (yol)'],
+                    'label'   => ['de' => 'Tonspur der Vorlage',
+                                  'tr' => 'Tasarımın müziği'],
                 ],
             ],
             /*

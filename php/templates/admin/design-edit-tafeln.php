@@ -205,16 +205,46 @@ foreach ($katalog as $art => $eintrag) {
                 <?= e($s['label'][$sprache] ?? (string) $schluessel) ?></label>
             <?php elseif ((string) $s['type'] === 'src') : ?>
               <?php /*
-                 Ein Pfad aus dem eigenen Haus. Hochladen kommt spaeter - bis
-                 dahin steht hier derselbe Weg wie beim Oeffnungsfilm, bevor
-                 er sein Feld bekam: die Datei liegt in /uploads, und ihr Pfad
-                 wird eingetragen. Design::safeSrc wirft alles weg, was
-                 woandershin zeigt.
+                 Eine Datei aus dem eigenen Haus - und jetzt auch mit dem Weg
+                 dorthin.
+
+                 Hier stand lange nur ein Textfeld mit dem Hinweis "Hochladen
+                 kommt spaeter": die Datei musste anderswo in /uploads landen
+                 und ihr Pfad von Hand abgetippt werden. Fuer ein Blatt oder
+                 einen Film gab es diesen Weg im Panel laengst (sec_bg_datei,
+                 intro_datei) - nur diese Zeile hatte ihn nie bekommen, und
+                 damit war die Tonspur einer Vorlage praktisch unerreichbar.
+
+                 Das Pfadfeld bleibt darunter stehen: es zeigt, was gerade
+                 gilt, und leert man es, ist die Datei weg. Ein Dateifeld
+                 allein koennte nur ersetzen, nie entfernen.
+
+                 accept richtet sich nach 'kind' im Katalog - dieselbe
+                 Auskunft, mit der der Controller seine Pruefung waehlt.
               */ ?>
+              <?php
+                $art_ = (string) ($s['kind'] ?? '');
+                $accept_ = match ($art_) {
+                    'audio' => 'audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav',
+                    'video' => 'video/mp4,video/webm,video/quicktime',
+                    default => 'image/png,image/jpeg,image/webp,image/svg+xml',
+                };
+                $wert_ = (string) ($werte[$schluessel] ?? $s['default']);
+              ?>
               <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+                <input type="file" class="<?= $feld ?>"
+                       name="sec_setdatei_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       accept="<?= e($accept_) ?>"></label>
+
+              <?php if ($wert_ !== '' && $art_ === 'audio') : ?>
+                <audio class="mt-2 w-full" controls preload="none" src="<?= e($wert_) ?>"></audio>
+              <?php endif; ?>
+
+              <label class="<?= $label ?> mt-2 block">
+                <?= $tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt es)' ?>
                 <input class="<?= $feld ?> font-mono text-[0.78rem]"
                        name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
-                       value="<?= e((string) ($werte[$schluessel] ?? $s['default'])) ?>"
+                       value="<?= e($wert_) ?>"
                        placeholder="/uploads/designs/…"></label>
             <?php else : ?>
               <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>

@@ -236,7 +236,36 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                   <input id="f-<?= e($feld) ?>" name="<?= e($feld) ?>" class="<?= $field ?>"
                          type="<?= e($inputTypes[$feld] ?? 'text') ?>"
                          value="<?= e($old($feld)) ?>" data-live="<?= e($feld) ?>"
+                         <?= $feld === 'address' ? 'data-ortsuche autocomplete="off"' : '' ?>
                          <?= in_array($feld, ['bride', 'groom'], true) ? 'required' : '' ?>>
+                <?php endif; ?>
+
+                <?php if ($feld === 'address') : ?>
+                  <?php /*
+                     Die Adresse wird gesucht, nicht getippt.
+
+                     Vorher stand hier ein leeres Textfeld, und ob der
+                     Kartendienst die eingetippte Anschrift kennt, stellte
+                     sich erst auf der fertigen Einladung heraus - dann
+                     naemlich, wenn keine Karte kam. Das Paar hatte weder
+                     einen Hinweis noch eine zweite Chance.
+
+                     Jetzt fragt das Feld beim Tippen dasselbe Verzeichnis,
+                     das spaeter die Karte zeichnet, und legt die Treffer
+                     darunter. Was hier angeklickt wird, HAT eine Karte.
+
+                     Das Feld bleibt ein gewoehnliches Textfeld: ohne
+                     Skript tippt man weiter wie bisher, und wer einen Ort
+                     sucht, den das Verzeichnis nicht kennt, traegt ihn
+                     trotzdem ein. Die Liste ist eine Hilfe, keine Schranke.
+                  */ ?>
+                  <div class="relative">
+                    <ul data-ortliste hidden
+                        class="absolute z-20 mt-1 w-full border border-sand-deep bg-cream shadow-lg"></ul>
+                  </div>
+                  <p data-ortnotiz class="mt-2 text-[0.8rem] text-muted" hidden></p>
+                  <img data-ortkarte hidden alt=""
+                       class="mt-3 w-full max-w-[16rem] border border-sand-deep">
                 <?php endif; ?>
               </div>
             <?php endforeach; ?>

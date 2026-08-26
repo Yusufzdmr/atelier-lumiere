@@ -9,6 +9,7 @@ use Atelier\DesignVideos;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
 use Atelier\Media;
+use Atelier\SectionRegistry;
 use Atelier\Security;
 use Atelier\Themes;
 use Atelier\View;
@@ -487,6 +488,41 @@ final class DesignAdminController
         for ($i = 0; $i <= 39; $i++) {
             if (!isset($post['sec_type_' . $i])) {
                 continue;
+            }
+
+            /*
+             * Die Dateien der Einstellungen dieser Zeile.
+             *
+             * Welche es gibt, sagt der Katalog: jede Einstellung vom Typ
+             * "src" darf eine Datei bekommen, und 'kind' sagt, welche
+             * Pruefung sie besteht. Deshalb steht hier eine Schleife und kein
+             * Zweig je Feld - eine neue Vorlageneinstellung mit Datei ist ein
+             * Eintrag im Katalog und keine Zeile hier.
+             *
+             * Die Art kommt aus dem FORMULAR, nicht aus dem Dokument: wer die
+             * Art einer Zeile gerade eben umgestellt hat, soll die Datei
+             * dieser neuen Art hochladen duerfen.
+             */
+            foreach (SectionRegistry::settings((string) $post['sec_type_' . $i]) as $schluessel => $schema) {
+                if ((string) ($schema['type'] ?? '') !== 'src') {
+                    continue;
+                }
+
+                $datei = $_FILES['sec_setdatei_' . $schluessel . '_' . $i] ?? null;
+                if (!is_array($datei) || ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                // Jede Pruefung sieht in die Datei und nicht auf ihren Namen.
+                $pfad = match ((string) ($schema['kind'] ?? '')) {
+                    'audio' => Media::storeAudio($datei, 'designs'),
+                    'video' => Media::storeVideo($datei, 'designs'),
+                    default => Media::storeGraphic($datei, 'designs'),
+                };
+
+                if ($pfad !== null) {
+                    $post['sec_set_' . $schluessel . '_' . $i] = $pfad;
+                }
             }
 
             $blatt = $_FILES['sec_bg_datei_' . $i] ?? null;

@@ -112,6 +112,13 @@ $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new 
 // Der Assistent der zweiten Fassung. Die feste Adresse steht vor dem Muster
 // {slug} - sonst liest der Router "einladung" als Namen einer Einladung.
 $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new InviteV2Controller())->wizard()));
+// Ortssuche fuer den Assistenten. Antwortet mit JSON und nicht mit einer
+// Seite; ohne Skript bleibt das Adressfeld ein gewoehnliches Textfeld.
+$router->get('/{locale}/v2/orte', $page_(static fn (array $p) => (new InviteV2Controller())->places()));
+
+// Die Kartenvorschau im Assistenten. Nur zu unterschriebenen Koordinaten.
+$router->get('/{locale}/v2/karte-vorschau.png', $page_(static fn (array $p) => (new InviteV2Controller())->previewMap()));
+
 // Das Kartenbild der Beispieleinladung - fuer Schaufenster und Vorschau, die
 // keine gespeicherte Einladung haben, an der eine Adresse haengt.
 $router->get('/{locale}/v2/karte-beispiel.png', $page_(static fn (array $p) => (new InviteV2Controller())->demoMap()));
