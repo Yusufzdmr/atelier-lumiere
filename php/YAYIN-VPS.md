@@ -76,6 +76,42 @@ olduğu için bu zararsız — ve yeni tablolar böyle geliyor.
 
 ---
 
+## Gerçek alan adına geçiş (hazır, henüz çalıştırılmadı)
+
+Site 26.08.2026'dan beri `https://45-147-46-177.sslip.io` üzerinde ve o
+tarihte **indekse açıldı** (`config.php` → `noindex => false`). Bu geçici bir
+adres; gerçek alan adı gelince Google'ın burada öğrendiği ne varsa oraya
+taşınmalı, yoksa yeni alan adı **kendi kopyasıyla yarışır**.
+
+Sunucuda hazır duran betik bunu tek seferde yapıyor:
+
+```bash
+ssh atelier-vps
+/root/atelier-domain-umstellen.sh hochzeit-krumbach.de     # www ve https yazma
+```
+
+Sırasıyla:
+
+1. **DNS kontrolü.** Alan adı bu sunucuya bakmıyorsa hiçbir şeye dokunmadan
+   çıkıyor. Bu kontrol olmasa certbot ortada takılır ve site yarı kurulmuş
+   kalırdı.
+2. nginx yedeği + `config.php` yedeği → `/root/atelier-*-yedek-<tarih>`
+3. Yeni alan adı için **ayrı bir blok** (`sites-available/atelier-domain`),
+   önce yalnız 80. portta — certbot doğrulamasını orada yapıyor.
+4. `certbot --nginx -d <alan> -d www.<alan>` — **sadece yeni alan adıyla**.
+   Çıplak `certbot --nginx` gidonla.com'un sertifikalarına da karışır.
+5. Demo bloğu **301 yönlendirmeye** dönüşüyor: hem 443 hem 80, hem IP hem
+   sslip.io. 404 değil 301 — 404 birikeni çöpe atar.
+6. `config.php` → `site_url` yeni adres. Bu satır unutulursa davetiye
+   linkleri, OG görselleri, e-postalar ve PayPal dönüşleri eski adrese
+   bakmaya devam eder — ve o adres artık daireye yönlendiriyor.
+
+Her adımda `nginx -t`, hata varsa `set -e` ile duruyor. `gidonla.com`'a
+dokunulmuyor: onun bloğu kendi dosyasında ve kendi adıyla.
+
+Sonrasında Search Console'a yeni alan adını ekleyip site haritasını
+göndermek taşınmayı hızlandırıyor.
+
 ## 1. Önce SSH anahtarı — parolayı bir daha yazmamak için
 
 Kendi bilgisayarınızda (anahtarınız zaten varsa bu adımı atlayın):
