@@ -1224,6 +1224,87 @@ panelden yüklenmiş gibi görünüyor ve oradan değiştirilebilir).
   kontrast uyarısı var, bölümler için yok.
 
 
+## 26 Ağustos — kaybolan konum, yaprak içinde harita, dört haneli sayaç
+
+Müşteri WhatsApp'tan üç şey söyledi: „bu düğün Lokalisation olduğu yer bi
+acamadim", „ufaktan bir harita görülsün istiyorum", „Countdown da geri sayım
+olsun — gün saat dkk saniye davetiye 2 kısmında yok".
+
+### Konum neden hiç görünmedi
+
+25 Ağustos'ta yapılan üç davetiyenin (`mustafa-bahriye`, `medine-ayhan`,
+`test-2`) kaydında `venue` ve `address` **anahtarları yoktu** — boş değil,
+hiç yok. Sebebi iki ayrı yerde, ikisi de tek başına doğruydu:
+
+1. `DesignWizard::choices()` hangi alanları soracağını **kartın
+   katmanlarından** çıkarıyordu (`BIND_FIELDS`, yani kâğıdın üstünde ne
+   yazıyorsa o). `bild`, `film`, `video`, `25aug`, `23augtest` adresi kartta
+   göstermiyor → sihirbaz adresi hiç sormadı.
+2. `DesignSections::hatInhalt()` adres yoksa location bölümünü atıyordu —
+   sessizce, çünkü boş bir kutu daha kötü olurdu.
+
+İkisi birlikte: grafikerin dizdiği, çiftin dolduramadığı, kimsenin
+göremediği bir bölüm. `elysee`, `noir`, `sage` kurtulmuştu çünkü onların
+kartında adres var.
+
+**Düzeltme kalıcı, tasarım tasarım değil:** `SectionRegistry::needs()` her
+türün hangi sabit alanları istediğini söylüyor (location → venue+address,
+countdown → date), `choices()` bunları da soruyor. Yeni bir tasarım bu
+tuzağa bir daha kurulamaz. Ayrıca location artık **sadece salon adıyla da**
+görünüyor; harita ve yol tarifi için adres şart, ad tek başına bir cümledir.
+
+### Harita — kendi sunucumuzdan, yaprak içinde
+
+`src/StaticMap.php`: adres → Nominatim ile koordinat → OSM karolarını GD ile
+birleştir → messing renginde iğne → PNG. Diskte önbellek (`data/cache/karten`,
+`public/` dışında: yanındaki `geo-*.json` salonun koordinatını taşıyor ve
+uploads'un `.htaccess`'i sadece programları durduruyor).
+
+**iframe yok, bilerek.** Gömülü harita, davetiye açılır açılmaz misafirin
+tarayıcısını Google'a gönderirdi — izin sorulmadan. Sitenin tamamı
+„izinsizken sıfır dış istek" üzerine kurulu; en çok paylaşılan sayfa ilk
+sızıntı olamazdı. Tarayıcıda doğrulandı: `performance.getEntriesByType`
+yabancı host **sıfır**. Dışarı çıkan tek şey tıklama.
+
+Uç nokta slug'a bağlı (`/v2/einladung/{slug}/karte.png`), adrese değil:
+`?adres=…` biçimi, önümüzden geçen herkese bizim kimliğimizle harita çizen
+açık bir kapı olurdu. Vitrin ve önizleme için tek sabit adresi olan ikinci
+bir uç nokta var (`/v2/karte-beispiel.png`).
+
+Biçim `location` ayarı: `blatt` (yaprak, varsayılan) · `rechteck` · `aus`.
+Yaprak `border-radius:58% 0 58% 0` + akzent renginde saç teli çizgi. Kâğıt
+renginde ikinci bir halka denendi ve geri alındı: `bild`'in kâğıdı dokulu,
+düz `#12100E` halka fasung değil **leke** gibi duruyordu.
+
+`maps_key` varsa Google Static Maps tercih ediliyor — sunucuda bugün yok,
+yani normal yol OSM.
+
+### Sayaç
+
+`countdown` türüne `uhr` varyantı: gün · saat · dakika · saniye, saniyede
+bir. Eski „sadece gün" gestalt'ı duruyor — grafiker seçiyor, şablon karar
+vermiyor. Kelimeler yine sunucudan (`data-label` değil, doğrudan şablonda),
+saatsizse gece yarısına sayıyor, sekmeden dönünce `visibilitychange` ile
+kendini tazeliyor. Sadece gün gösteren gestalt hâlâ saatte bir çalışıyor:
+günde bir değişen sayı için saniyelik döngü telefonun pilidir.
+
+**Yan düzeltme:** `Router::add()` desendeki sabit kısmı artık `preg_quote`'dan
+geçiriyor. `karte.png` içindeki nokta ham hâlde „herhangi bir karakter"
+demekti — `karteXpng` de cevap alırdı. İlk noktalı adres bunu ortaya çıkardı.
+
+`tests/section_ort_karte.php` — 36 kontrol, ikisi de uçlar: sihirbaz soruyor
+mu, bölüm görünüyor mu. Toplam 1437.
+
+### Açık kalan
+
+- **Arka planda müzik (v2).** Bugün `music` bölümü var ama parça
+  **grafikerin** paneline yazdığı bir yol (`settings.track`, `type: src`) ve
+  `<audio controls>` olarak çıkıyor. Çift kendi parçasını yükleyemiyor,
+  arkada da çalmıyor. Davetiye 1'de ikisi de var (`Media::storeAudio`,
+  `musicFile`). Müşteri bunu v2'de istiyor.
+- Ayar `<select>`'leri seçenekleri çevirmiyor (`blatt`/`rechteck`/`aus` TR
+  panelde de Almanca) — panelin tamamında böyle, `align`/`space` de öyle.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

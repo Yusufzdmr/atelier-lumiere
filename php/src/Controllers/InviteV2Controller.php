@@ -14,6 +14,7 @@ use Atelier\InvitationsV2;
 use Atelier\Media;
 use Atelier\Security;
 use Atelier\Seo;
+use Atelier\StaticMap;
 use Atelier\View;
 
 /**
@@ -41,7 +42,7 @@ final class InviteV2Controller
         'date'    => '2027-09-12',
         'time'    => '18:00',
         'venue'   => 'Schloss Hohenstein',
-        'address' => 'Schlossstraße 1, 89312 Günzburg',
+        'address' => StaticMap::DEMO_ADDRESS,
         'message' => 'Wir heiraten und wünschen uns, dass ihr dabei seid.',
         'hashtag' => '#sophiaundmaximilian',
     ];
@@ -889,6 +890,71 @@ final class InviteV2Controller
      *
      * @param array<string,string> $params
      */
+    /**
+     * Das Kartenbild einer Einladung.
+     *
+     * Der Endpunkt haengt am Slug und nicht an einer Adresse im
+     * Fragezeichenteil. Das ist der ganze Unterschied zwischen einem Bild und
+     * einem offenen Tor: "?adresse=..." waere ein Dienst, der jedem
+     * Vorbeikommenden zu beliebigem Text eine Karte zeichnet - auf Rechnung
+     * des Kartendienstes und mit unserer Kennung. So gibt es Karten nur zu
+     * Adressen, die ohnehin schon in unserer Datenbank stehen.
+     *
+     * Kein Bild ist 404 und kein Platzhalter: der Abschnitt drumherum steht
+     * auch ohne Karte vollstaendig da (Name, Adresse, Route), und ein
+     * graues Ersatzbild saehe aus wie ein Fehler, den das Paar gemacht hat.
+     *
+     * @param array<string,string> $params
+     */
+    /**
+     * Dasselbe Bild fuer die Beispieleinladung.
+     *
+     * Ein eigener Endpunkt und kein Parameter: hier gibt es nichts zu waehlen
+     * - er kennt genau eine Adresse, die in unserem eigenen Quelltext steht.
+     * Damit bleibt die Regel von map() unangetastet, dass niemand von aussen
+     * bestimmt, zu welcher Anschrift wir eine Karte zeichnen lassen.
+     */
+    public function demoMap(): void
+    {
+        $bild = StaticMap::forAddress(StaticMap::DEMO_ADDRESS, 640, 480);
+        if ($bild === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=604800');
+        echo $bild;
+        exit;
+    }
+
+    public function map(array $params): void
+    {
+        $einladung = InvitationsV2::find($params['slug'] ?? '');
+        if ($einladung === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        $adresse = trim((string) ($einladung['data']['address'] ?? ''));
+        $bild = $adresse === '' ? null : StaticMap::forAddress($adresse, 640, 480);
+
+        if ($bild === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: image/png');
+        // Lange, aber nicht ewig: die Adresse einer Feier aendert sich selten
+        // und die Karte darunter nie schnell. Wer sie doch aendert, bekommt
+        // beim naechsten Tag ein neues Bild - der Cache auf der Platte
+        // (StaticMap) traegt denselben Schluessel wie die Adresse und ist
+        // beim Aendern ohnehin sofort ein anderer.
+        header('Cache-Control: public, max-age=86400');
+        echo $bild;
+        exit;
+    }
+
     public function show(array $params): void
     {
         $locale = I18n::locale();

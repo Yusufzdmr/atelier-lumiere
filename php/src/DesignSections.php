@@ -300,8 +300,16 @@ final class DesignSections
         $datum = trim((string) ($data['date'] ?? ''));
 
         return match ((string) $abschnitt['type']) {
-            // Ohne Adresse haette der Kartenlink kein Ziel.
-            'location'  => trim((string) ($data['address'] ?? '')) !== '',
+            // Der Saal allein traegt den Abschnitt auch.
+            //
+            // Frueher hing er allein an der Adresse - "ohne Adresse haette
+            // der Kartenlink kein Ziel". Das stellte den Link ueber die
+            // Aussage: "Wir feiern in der Villa Sonnenhof" ist eine
+            // vollstaendige Angabe, auch wenn die Strasse noch fehlt. Wer nur
+            // den Saal nennt, bekommt jetzt den Saal - und keine Karte, denn
+            // die braucht weiterhin eine Adresse (siehe ort()).
+            'location'  => trim((string) ($data['address'] ?? '')) !== ''
+                        || trim((string) ($data['venue'] ?? '')) !== '',
             // Ein vergangener Termin bekommt keinen Countdown; der Tag selbst
             // zaehlt noch, es wird ja bis zum Morgen gefeiert.
             'countdown' => $datum !== '' && $datum >= $heute,
@@ -715,6 +723,56 @@ final class DesignSections
             . $scope . ' .d-sec-plan .d-plan-rozet{display:inline-flex;'
               . 'align-items:center;justify-content:center;flex:none;}'
 
+            /*
+             * Das Kartenbild.
+             *
+             * Es steht zwischen Adresse und Routenknopf und gehoert zur
+             * Grundgestalt, nicht zu einer Variante: eine Karte, die nur in
+             * "Grosser Name" erschiene, waere eine Falle - der Grafiker
+             * schaltet sie ein und sieht nichts.
+             *
+             * Feste Hoehe und object-fit:cover, damit die Zeile beim Laden
+             * nicht springt: das Bild kommt vom eigenen Server, aber es
+             * kommt spaeter als der Text darum herum.
+             *
+             * Der Rahmen ist die Papierfarbe und kein Grau: das Bild ist ein
+             * Fremdkoerper aus einer anderen Welt, und die duenne helle
+             * Kante legt es auf das Blatt, statt es hineinzustanzen.
+             */
+            /*
+             * Die Karte im Blatt.
+             *
+             * Ein Kartenausschnitt ist ein Fremdkoerper: geradkantig,
+             * bunt, aus einer anderen Welt als das Papier darum herum. Die
+             * Blattform nimmt ihm die Ecken - zwei spitze, zwei runde, wie
+             * die Ranken, die auf diesen Vorlagen ohnehin an den Raendern
+             * stehen.
+             *
+             * Nur eine Linie, und die in der Akzentfarbe. Hier stand kurz
+             * ein zweiter Ring in der Papierfarbe, der das Blatt auf den
+             * Untergrund setzen sollte. Auf "bild" war das Papier aber eine
+             * Struktur und der Ring eine glatte Flaeche in #12100E - statt
+             * einer Fassung sah man einen flachen Fleck um das Blatt. Ein
+             * Untergrund mit Korn vertraegt keine einfarbige Umrandung in
+             * seiner eigenen Farbe.
+             *
+             * 4:3 und nicht 2:1: eine Blattform braucht Hoehe, sonst kappen
+             * die runden Ecken den halben Ausschnitt weg.
+             */
+            . $scope . ' .d-sec-map-bild{display:block;margin:1.4rem auto 0;'
+              . 'max-width:min(100%,22rem);line-height:0;overflow:hidden;}'
+            . $scope . ' .d-sec-map-bild img{display:block;width:100%;height:auto;'
+              . 'aspect-ratio:4 / 3;object-fit:cover;}'
+            . $scope . ' .d-sec-map-blatt{border-radius:58% 0 58% 0;'
+              . 'border:1px solid var(--d-accent,currentColor);}'
+            /*
+             * Das Rechteck bleibt, was es war: eine Karte mit einem
+             * Passepartout. Wer eine strenge Vorlage baut, will keine
+             * Blattform darin.
+             */
+            . $scope . ' .d-sec-map-rechteck{border:6px solid var(--d-paper,#faf7f2);'
+              . 'box-shadow:0 1px 0 rgba(0,0,0,0.18);}'
+
             . $scope . ' .d-ikon{display:inline-block;width:1.15em;height:1.15em;'
               . 'vertical-align:-0.15em;background-color:currentColor;'
               . '-webkit-mask-position:center;mask-position:center;'
@@ -885,6 +943,27 @@ final class DesignSections
                 . $sel . ' .d-sec-countdown{font-size:0.86rem;letter-spacing:0.1em;}',
 
             /*
+             * Die Uhr. Vier Felder in einer Reihe, mit einer festen
+             * Ziffernbreite: ohne tabular-nums springt die Zeile bei jedem
+             * Sekundenwechsel, weil eine 1 schmaler ist als eine 8.
+             *
+             * flex-wrap statt fester Spalten - auf einem schmalen Telefon
+             * rutschen Minuten und Sekunden in die zweite Zeile, statt dass
+             * vier Felder auf 320 px zusammengequetscht werden.
+             */
+            'countdown/uhr' => $sel . ' .d-sec-uhr{display:flex;flex-wrap:wrap;'
+                . 'justify-content:center;gap:0.4rem 1.6rem;}'
+                . $sel . ' .d-sec-uhr-feld{display:flex;flex-direction:column;'
+                . 'align-items:center;min-width:3.4rem;}'
+                . $sel . ' .d-sec-uhr-zahl{font-family:var(--df-display,inherit);'
+                . 'font-size:2.4rem;line-height:1.1;font-variant-numeric:tabular-nums;'
+                . 'font-feature-settings:"tnum";}'
+                . $sel . ' .d-sec-uhr-wort{font-size:0.6rem;letter-spacing:0.16em;'
+                . 'text-transform:uppercase;opacity:0.7;margin-top:0.2rem;}'
+                . $sel . ' .d-sec-countdown-datum{font-size:0.86rem;letter-spacing:0.1em;'
+                . 'margin-top:1.1rem;opacity:0.85;}',
+
+            /*
              * Das Formular bekommt eine Kante. Auf einem gemusterten Blatt
              * verliert es sie sonst und wirkt wie hingefallen.
              */
@@ -985,7 +1064,7 @@ final class DesignSections
 
             $out .= match ($typ) {
                 'location'  => self::ort($data, $locale, $abschnitt['settings']),
-                'countdown' => self::countdown($data, $locale),
+                'countdown' => self::countdown($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
                 'program'   => self::programm($data, $locale),
                 'rsvp'      => self::formular($form, $locale),
@@ -1020,7 +1099,65 @@ final class DesignSections
         if ($ort !== '') {
             $out .= '<p class="d-sec-venue">' . e($ort) . '</p>';
         }
-        $out .= '<p class="d-sec-address">' . e($adresse) . '</p>';
+        // Nur wenn sie da ist: seit hatInhalt auch den Saalnamen allein
+        // gelten laesst, kann die Strasse fehlen - ein leerer Absatz waere
+        // eine Zeile Luft ohne Grund.
+        if ($adresse !== '') {
+            $out .= '<p class="d-sec-address">' . e($adresse) . '</p>';
+        }
+
+        // Ohne Adresse gibt es weder etwas zu zeichnen noch etwas
+        // anzusteuern; der Saalname allein ist kein Ziel.
+        if ($adresse === '') {
+            return $out;
+        }
+
+        $route = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse);
+
+        /*
+         * Das Kartenbild.
+         *
+         * Ein Bild und kein iframe: eine eingebettete Karte holte sich der
+         * Browser des Gastes bei Google, und zwar beim Aufschlagen der
+         * Einladung - vor jeder Einwilligung. Hier laedt der Server das Bild
+         * (StaticMap), legt es ab und liefert es unter unserer eigenen
+         * Adresse aus. Nach draussen geht erst der Klick.
+         *
+         * Die Bildadresse haengt am Slug und nicht an der Adresse: sonst
+         * stuende die Anschrift des Paares in einer URL, und ein Endpunkt,
+         * der zu beliebigem Text eine Karte zeichnet, waere ein offenes Tor
+         * vor einem fremden Kartendienst.
+         *
+         * Kein Slug heisst Vorschau (Schaufenster, Panel): dort gibt es die
+         * Einladung noch nicht, also auch kein Bild - der Ort steht dann mit
+         * Namen, Adresse und Route da wie bisher.
+         */
+        $slug = trim((string) ($data['slug'] ?? ''));
+
+        /*
+         * Kein Slug heisst Vorschau: Schaufenster und Assistent zeichnen die
+         * Beispieleinladung, und die gibt es in der Datenbank nicht. Fuer sie
+         * gibt es einen eigenen Endpunkt zu genau einer Adresse - der des
+         * Beispiels. Ohne ihn faende der Grafiker die Karte erst auf der
+         * fertigen Einladung wieder und haette im Schaufenster den Eindruck,
+         * die Einstellung tue nichts.
+         */
+        $quelle = '';
+        if ($slug !== '') {
+            $quelle = I18n::path('/v2/einladung/' . rawurlencode($slug) . '/karte.png', $locale);
+        } elseif ($adresse === StaticMap::DEMO_ADDRESS) {
+            $quelle = I18n::path('/v2/karte-beispiel.png', $locale);
+        }
+
+        $form = (string) ($settings['karte'] ?? 'blatt');
+        if ($form !== 'aus' && $quelle !== '') {
+            $out .= '<a class="d-sec-map-bild d-sec-map-' . e($form) . '"'
+                . ' rel="noopener noreferrer" target="_blank" href="' . e($route) . '">'
+                . '<img src="' . e($quelle) . '"'
+                . ' width="640" height="480" loading="lazy" decoding="async"'
+                . ' alt="' . e($locale === 'de' ? 'Karte: ' . $adresse : 'Map: ' . $adresse) . '">'
+                . '</a>';
+        }
 
         // Der Link geht zur Routenplanung, nicht auf eine Karte: wer die
         // Adresse liest, will hinfahren.
@@ -1029,9 +1166,8 @@ final class DesignSections
         // nicht, fuehrt er ins Leere - und ein Link ins Leere ist schlimmer
         // als keiner. Die Adresse selbst steht in beiden Faellen da.
         if ($settings['map'] ?? true) {
-            $out .= '<a class="d-sec-map" rel="noopener noreferrer" target="_blank" href="'
-                . e('https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse))
-                . '">' . e($locale === 'de' ? 'Route planen' : 'Plan route') . '</a>';
+            $out .= '<a class="d-sec-map" rel="noopener noreferrer" target="_blank" href="' . e($route) . '">'
+                . e($locale === 'de' ? 'Route planen' : 'Plan route') . '</a>';
         }
 
         return $out;
@@ -1053,9 +1189,40 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
-    private static function countdown(array $data, string $locale): string
+    private static function countdown(array $data, string $locale, string $variant = 'default'): string
     {
         $datum = trim((string) ($data['date'] ?? ''));
+
+        /*
+         * Die Uhr-Gestalt: vier Felder, die das Skript im Sekundentakt
+         * fuellt. Auch hier steht kein Wort im JavaScript - der Server
+         * schreibt "Tage"/"Stunden" in die data-label, genau wie bei der
+         * einzelnen Zahl. Ohne Skript bleiben die Felder leer und das
+         * gedruckte Datum darunter traegt den Abschnitt allein.
+         *
+         * Die Uhrzeit reist mit, wenn es eine gibt: bis zum Beginn der Feier
+         * und nicht bis Mitternacht davor. Fehlt sie, faengt der Tag um
+         * Mitternacht an - dieselbe Annahme wie in Dates.
+         */
+        if ($variant === 'uhr') {
+            $zeit = trim((string) ($data['time'] ?? ''));
+            $ziel = $datum . ($zeit !== '' ? 'T' . $zeit : 'T00:00');
+
+            $felder = $locale === 'de'
+                ? ['days' => 'Tage', 'hours' => 'Stunden', 'minutes' => 'Minuten', 'seconds' => 'Sekunden']
+                : ['days' => 'days', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds'];
+
+            $out = '<div class="d-sec-uhr" data-countdown="' . e($ziel) . '">';
+            foreach ($felder as $schluessel => $wort) {
+                $out .= '<span class="d-sec-uhr-feld">'
+                    . '<span class="d-sec-uhr-zahl" data-countdown-' . e($schluessel) . '>&nbsp;</span>'
+                    . '<span class="d-sec-uhr-wort">' . e($wort) . '</span>'
+                    . '</span>';
+            }
+
+            return $out . '</div>'
+                . '<p class="d-sec-countdown-datum">' . e(Dates::long($datum, $locale)) . '</p>';
+        }
 
         return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'
             . '<span class="d-sec-days" data-countdown-days data-label="'

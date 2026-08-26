@@ -55,6 +55,10 @@ skills-lock.json
 php/config.php
 php/config.php.*
 php/data/export.json
+
+# Gerenderte Kartenbilder und die Koordinaten dazu. Cache, kein Quelltext:
+# er baut sich beim ersten Aufruf neu auf (src/StaticMap.php).
+php/data/cache/
 # Hochgeladene Bilder gehoeren dem Betrieb, nicht dem Repo.
 # Die Schutzregeln des Ordners muessen aber mit aufs Ziel.
 php/public/uploads/*

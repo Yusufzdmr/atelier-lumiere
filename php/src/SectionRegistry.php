@@ -88,6 +88,28 @@ final class SectionRegistry
                     'default' => true,
                     'label'   => ['de' => 'Link zur Route', 'tr' => 'Yol tarifi bağlantısı'],
                 ],
+                /*
+                 * Das Kartenbild. Es kommt von unserem Server, nicht aus
+                 * einem iframe - der Browser des Gastes spricht mit
+                 * niemandem sonst (siehe StaticMap). Deshalb darf es hier
+                 * an sein, ohne die Einwilligung zu beruehren.
+                 *
+                 * Eine Auswahl und kein Haken: die Form gehoert zur
+                 * Entscheidung. Ein Haken plus ein zweites Feld "Form" waeren
+                 * zwei Fragen fuer eine Sache, und die zweite stuende auch
+                 * dann da, wenn die erste sie gegenstandslos macht.
+                 *
+                 * "aus" bleibt noetig aus demselben Grund wie beim Link:
+                 * kennt der Kartendienst die Adresse nicht, bleibt das Bild
+                 * leer, und dann steht der Ort besser allein da. Ohne
+                 * Adresse - nur mit Saalnamen - erscheint es ohnehin nicht.
+                 */
+                'karte' => [
+                    'type'    => 'select',
+                    'options' => ['blatt', 'rechteck', 'aus'],
+                    'default' => 'blatt',
+                    'label'   => ['de' => 'Kleine Karte', 'tr' => 'Küçük harita'],
+                ],
             ],
         ],
         'countdown' => [
@@ -98,6 +120,20 @@ final class SectionRegistry
                 // das gedruckte Datum den Abschnitt allein - das muss auch in
                 // dieser Gestalt gelten.
                 'gross'   => ['de' => 'Grosse Zahl', 'tr' => 'Büyük sayı'],
+                /*
+                 * Vier Felder statt einer Zahl: Tage, Stunden, Minuten,
+                 * Sekunden - dieselbe Uhr, die die erste Einladung schon
+                 * hatte (public/assets/invitation.js).
+                 *
+                 * Hier stand bis heute nur die Tageszahl, mit der
+                 * Begruendung "eine Einladung ist kein Wecker". Das ist eine
+                 * Haltung und keine Regel: eine Einladung, die eine Woche
+                 * vorher aufgemacht wird, will genau das sein. Die ruhige
+                 * Gestalt bleibt als eigene Variante stehen - der Grafiker
+                 * waehlt, statt dass die Vorlage entscheidet.
+                 */
+                'uhr'     => ['de' => 'Tage · Stunden · Minuten · Sekunden',
+                              'tr' => 'Gün · saat · dakika · saniye'],
             ],
             'settings' => [],
         ],
@@ -428,6 +464,43 @@ final class SectionRegistry
     public static function inputs(string $type): array
     {
         return self::KATALOG[$type]['inputs'] ?? [];
+    }
+
+    /**
+     * Welche festen Angaben eine Art braucht, um ueberhaupt zu erscheinen.
+     *
+     * Nicht dasselbe wie inputs(): das sind eigene Felder unter der Kennung
+     * des Abschnitts. Hier stehen die Angaben aus dem Kopf der Einladung -
+     * Ort, Adresse, Datum -, die sich mehrere Abschnitte teilen.
+     *
+     * Warum es diese Liste gibt: der Assistent hat bis heute nur die Karte
+     * gefragt. Welche Felder er anbietet, kam aus den bind-Namen der Ebenen
+     * (DesignWizard::BIND_FIELDS) - also aus dem, was AUF dem Papier steht.
+     * Ein Design, dessen Karte keine Adresse zeigt, aber unter der Karte
+     * einen location-Abschnitt fuehrt, fragte deshalb nie nach der Adresse;
+     * DesignSections::hatInhalt() warf den Abschnitt beim Drucken dann
+     * stillschweigend weg. Fuer das Paar sah es aus, als fehlte der
+     * Abschnitt - kein Feld, kein Hinweis, keine leere Zeile. Genau so ist
+     * es den Vorlagen bild, film, video und 25aug ergangen.
+     *
+     * Ein Abschnitt sagt jetzt selbst, was er braucht, und der Assistent
+     * fragt danach. Die Liste steht hier und nicht im Assistenten, weil sie
+     * zur Art gehoert: eine neue Art mit eigenem Bedarf traegt ihn hier ein
+     * und ist ueberall versorgt.
+     *
+     * @return list<string>
+     */
+    public static function needs(string $type): array
+    {
+        return match ($type) {
+            // Der Saal traegt den Namen, die Strasse steht darunter - eines
+            // von beiden reicht dem Abschnitt (siehe hatInhalt), gefragt
+            // werden trotzdem beide: wer nur den Saal nennt, bekommt keine
+            // Karte, und das soll seine Entscheidung sein und kein Zufall.
+            'location'  => ['venue', 'address'],
+            'countdown' => ['date'],
+            default     => [],
+        };
     }
 
     /**

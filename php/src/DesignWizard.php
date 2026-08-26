@@ -64,6 +64,29 @@ final class DesignWizard
                 $felder[$feld] = true;
             }
         }
+
+        /*
+         * Nicht nur die Karte fragt.
+         *
+         * Bis hierher kamen die Felder allein aus den bind-Namen der Ebenen,
+         * also aus dem, was auf dem Papier steht. Unter der Karte stehen aber
+         * Abschnitte, die von denselben Angaben leben - der Ort und der
+         * Countdown -, und die stehen in keiner Ebene. Ein Design, dessen
+         * Karte die Adresse nicht zeigt, fragte deshalb nie danach, und der
+         * location-Abschnitt verschwand beim Drucken wortlos (hatInhalt).
+         *
+         * Nur eingeschaltete Abschnitte: nach einem abgeschalteten zu fragen
+         * hiesse, ein Feld zu fuellen, das visible() ohnehin wegwirft.
+         */
+        foreach (DesignSections::complete($doc)['sections'] as $abschnitt) {
+            if (!$abschnitt['enabled']) {
+                continue;
+            }
+            foreach (SectionRegistry::needs((string) $abschnitt['type']) as $feld) {
+                $felder[$feld] = true;
+            }
+        }
+
         // Nach FIELD_ORDER, nicht nach Fundort: sonst haengt die Reihenfolge
         // im Formular daran, wie der Grafiker die Ebenen sortiert hat.
         $fields = array_values(array_filter(self::FIELD_ORDER, static fn (string $f): bool => isset($felder[$f])));

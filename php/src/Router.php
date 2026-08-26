@@ -40,15 +40,25 @@ final class Router
 
     private function add(string $method, string $pattern, callable $handler): void
     {
+        /*
+         * Der feste Teil des Musters wird maskiert, der Platzhalter nicht.
+         *
+         * Bis hierher ging das Muster unveraendert in den Ausdruck. Solange
+         * jede Adresse aus Buchstaben und Schraegstrichen bestand, fiel das
+         * nicht auf - beim ersten Muster mit einem Punkt ("karte.png") schon:
+         * ein roher Punkt heisst im Ausdruck "irgendein Zeichen", und die
+         * Route haette auch auf "karteXpng" geantwortet.
+         */
         $keys = [];
-        $regex = preg_replace_callback(
-            '/\{([a-z_]+)\}/i',
-            static function (array $m) use (&$keys): string {
+        $regex = '';
+        foreach (preg_split('/(\{[a-z_]+\})/i', $pattern, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [] as $stueck) {
+            if (preg_match('/^\{([a-z_]+)\}$/i', $stueck, $m) === 1) {
                 $keys[] = $m[1];
-                return '([^/]+)';
-            },
-            $pattern
-        );
+                $regex .= '([^/]+)';
+                continue;
+            }
+            $regex .= preg_quote($stueck, '#');
+        }
 
         $this->routes[] = [
             'method'  => $method,

@@ -112,6 +112,15 @@ $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new 
 // Der Assistent der zweiten Fassung. Die feste Adresse steht vor dem Muster
 // {slug} - sonst liest der Router "einladung" als Namen einer Einladung.
 $router->any('/{locale}/v2/einladung', $page_(static fn (array $p) => (new InviteV2Controller())->wizard()));
+// Das Kartenbild der Beispieleinladung - fuer Schaufenster und Vorschau, die
+// keine gespeicherte Einladung haben, an der eine Adresse haengt.
+$router->get('/{locale}/v2/karte-beispiel.png', $page_(static fn (array $p) => (new InviteV2Controller())->demoMap()));
+
+// Das Kartenbild eines Ortes. VOR den Mustern mit {key}: "karte.png" waere
+// fuer ein {key}-Muster ein Schluessel wie jeder andere, und dann bekaeme die
+// Antwortenliste die Anfrage nach dem Bild.
+$router->get('/{locale}/v2/einladung/{slug}/karte.png', $page_(static fn (array $p) => (new InviteV2Controller())->map($p)));
+
 // Vor der Einladung selbst, wie /einladung/{slug}/verwalten im alten Motor.
 // Beide Muster sind verankert und {slug} matcht keinen Schraegstrich, also
 // koennen sie einander nicht fangen - die Reihenfolge steht hier fuer den

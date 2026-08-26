@@ -8,8 +8,9 @@ use Atelier\Config;
 use Atelier\Design;
 use Atelier\DesignSections;
 use Atelier\I18n;
-use Atelier\Seo;
 use Atelier\Security;
+use Atelier\Seo;
+use Atelier\StaticMap;
 use Atelier\View;
 
 /**
@@ -27,7 +28,7 @@ final class DesignController
         'date'    => '2027-09-12',
         'time'    => '18:00',
         'venue'   => 'Schloss Hohenstein',
-        'address' => 'Schlossstraße 1, 89312 Günzburg',
+        'address' => StaticMap::DEMO_ADDRESS,
         'message' => 'Wir heiraten und wünschen uns, dass ihr dabei seid.',
     ];
 
