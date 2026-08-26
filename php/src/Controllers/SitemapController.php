@@ -128,6 +128,19 @@ final class SitemapController
         foreach (I18n::LOCALES as $locale) {
             $zeilen[] = 'Disallow: /' . $locale . '/galerie/';
             $zeilen[] = 'Disallow: /' . $locale . '/einladung/';
+            /*
+             * Die zweite Fassung stand hier nicht - sie gab es noch nicht,
+             * als diese Liste entstand. Genau der Fehler, vor dem der
+             * Absatz darueber warnt, nur andersherum: dort waren zwei
+             * Adressen gesperrt, die es nicht mehr gab, hier fehlte eine,
+             * die es neu gibt.
+             *
+             * Aufgefallen ist es nie, weil die Einladungen selbst noindex
+             * tragen (InviteV2Controller::show) - aber das ist die zweite
+             * Reihe. Die erste ist diese Datei, und ein Verzeichnis mit den
+             * Adressen fremder Hochzeiten gehoert nicht in einen Index.
+             */
+            $zeilen[] = 'Disallow: /' . $locale . '/v2/einladung/';
         }
 
         $zeilen[] = '';
