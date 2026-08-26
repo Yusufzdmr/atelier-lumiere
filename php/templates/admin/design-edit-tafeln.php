@@ -153,7 +153,19 @@ foreach ($katalog as $art => $eintrag) {
         <div class="b-gruppe">
           <span class="<?= $label ?>"><?= $tr ? 'varsayılan içerik' : 'Voreinstellung' ?></span>
           <?php foreach ($eingaben as $schluessel => $s) : ?>
-            <?php if ((string) $s['type'] === 'photos') { continue; } ?>
+            <?php /*
+               Dateien haben keine Voreinstellung, die man tippen koennte.
+
+               Bei Bildern stand das schon hier; beim Lied fehlte es und das
+               Formular bot dem Grafiker ein Textfeld "Şarkınız" an. Was er
+               dort hineinschreibt, landet in defaults['track'] - und
+               DesignSections::inhalt() greift auf defaults zurueck, wenn das
+               Paar nichts hochgeladen hat. Ein getippter Satz waere damit
+               ein Dateipfad geworden. Die Voreinstellung einer Tonspur hat
+               ihren eigenen Platz: die Einstellung "Tasarımın ses dosyası"
+               weiter oben, die durch safeSrc geht.
+            */ ?>
+            <?php if (in_array((string) $s['type'], ['photos', 'audio'], true)) { continue; } ?>
             <?php $vorgabe = (string) ($abschnitt['defaults'][$schluessel] ?? ''); ?>
             <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? $s['label']['de'] ?? (string) $schluessel) ?>
               <?php if ((string) $s['type'] === 'textarea') : ?>
