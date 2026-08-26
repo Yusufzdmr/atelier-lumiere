@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Atelier\Controllers;
 
 use Atelier\Config;
+use Atelier\Dates;
 use Atelier\Design;
 use Atelier\DesignSections;
 use Atelier\DesignVideos;
@@ -12,6 +13,7 @@ use Atelier\DesignWizard;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
 use Atelier\Media;
+use Atelier\OgImage;
 use Atelier\Security;
 use Atelier\Seo;
 use Atelier\StaticMap;
@@ -955,6 +957,102 @@ final class InviteV2Controller
      * @param array<string,string> $params
      */
     /**
+     * Das Vorschaubild einer Einladung - was in WhatsApp ueber dem Link steht.
+     *
+     * Woraus: dem ersten Foto, das auf der Karte liegt. Nach personalize()
+     * steht dort schon das Bild des Paares, wenn es eines ausgetauscht hat -
+     * die Wahl ist zu diesem Zeitpunkt eingearbeitet. Findet sich keines,
+     * nimmt es das erste Bild einer Galerie; findet sich auch das nicht,
+     * bleibt es leer und die Einladung geht ohne Vorschaubild raus. Ein
+     * erfundenes Standbild waere schlimmer: es zeigte ein fremdes Paar.
+     *
+     * @param array<string,mixed> $doc
+     * @param array<string,mixed> $data
+     */
+    private function vorschauQuelle(array $doc, array $data): string
+    {
+        /*
+         * Erst das Foto des Paares.
+         *
+         * Woran man es erkennt: das Paar darf es austauschen
+         * (permissions.photo). Genau diese Flaeche ist im Assistenten "euer
+         * Bild" - nach personalize() steht dort schon das hochgeladene.
+         *
+         * Ohne diese Unterscheidung gewann das erste Bild in der Liste, und
+         * das ist bei den meisten Vorlagen das Blatt: die Vorschau zeigte
+         * dann quer zugeschnittenes Papier statt eines Gesichts.
+         */
+        $ausweich = '';
+        foreach ($doc['layers'] as $ebene) {
+            if (!in_array((string) ($ebene['type'] ?? ''), ['photo', 'image'], true)) {
+                continue;
+            }
+
+            $pfad = Design::safeSrc((string) ($ebene['src'] ?? ''));
+            if ($pfad === '') {
+                continue;
+            }
+
+            if (!empty($ebene['permissions']['photo'])) {
+                return $pfad;
+            }
+
+            // Das erste feste Bild merken, aber noch nicht nehmen.
+            if ($ausweich === '') {
+                $ausweich = $pfad;
+            }
+        }
+
+        // Dann die Galerie: auch das sind Bilder des Paares.
+        foreach ($doc['sections'] as $abschnitt) {
+            if ((string) ($abschnitt['type'] ?? '') !== 'gallery') {
+                continue;
+            }
+            foreach (DesignSections::sectionPhotos($data, (string) $abschnitt['id']) as $pfad) {
+                if ($pfad !== '') {
+                    return $pfad;
+                }
+            }
+        }
+
+        /*
+         * Zuletzt das Blatt der Vorlage. Es zeigt kein Paar, aber es zeigt,
+         * wie die Einladung aussieht - und das ist mehr als der graue Kasten,
+         * den WhatsApp ohne Bild hinstellt.
+         */
+        return $ausweich;
+    }
+
+    /**
+     * Die Zeile unter dem Titel: wann und wo.
+     *
+     * Sie ersetzt nichts, was auf der Karte steht - sie ist das, was jemand
+     * liest, BEVOR er die Einladung aufmacht. "12. September 2027 · Villa
+     * Sonnenhof" sagt in acht Woertern, worum es geht.
+     *
+     * @param array<string,mixed> $data
+     */
+    private function vorschauText(array $data, string $locale): string
+    {
+        $teile = [];
+
+        $datum = trim((string) ($data['date'] ?? ''));
+        if ($datum !== '') {
+            $teile[] = Dates::long($datum, $locale);
+        }
+
+        $ort = trim((string) ($data['venue'] ?? ''));
+        if ($ort === '') {
+            $ort = trim((string) ($data['address'] ?? ''));
+        }
+        if ($ort !== '') {
+            $teile[] = $ort;
+        }
+
+        return implode(' · ', $teile);
+    }
+
+    /**
      * Orte suchen - damit das Paar die Adresse nicht raten muss.
      *
      * Der Assistent fragt hier, waehrend jemand tippt, und bekommt eine Liste
@@ -1144,6 +1242,30 @@ final class InviteV2Controller
             'path'   => I18n::path('/v2/einladung/' . $einladung['slug'], $locale),
             'meta'   => Seo::forPage('einladung2', [
                 'title' => $namen !== '' ? $namen : I18n::t('invitation2.wizardTitle'),
+                /*
+                 * Was in WhatsApp ueber dem Link steht.
+                 *
+                 * Hier stand bis heute nichts, und Seo::forPage fuellte die
+                 * Luecken mit den Angaben der Seite "Einladung 2": leere
+                 * Beschreibung, kein Bild, und als Adresse der Wegweiser
+                 * /de/einladung2 statt der Einladung selbst. Geteilt sah eine
+                 * Einladung damit aus wie ein nackter Link - ausgerechnet die
+                 * Seite, die fast nur ueber WhatsApp weitergereicht wird.
+                 *
+                 * Die erste Fassung hat das alles laengst
+                 * (InviteController::show); es war nur nie mitgekommen.
+                 */
+                'description' => $this->vorschauText($einladung['data'], $locale),
+                'image'       => OgImage::forDocument(
+                    (string) $einladung['slug'],
+                    $this->vorschauQuelle($doc, $einladung['data']),
+                    (string) ($doc['palette']['paper']['value'] ?? $doc['palette']['bg']['value'] ?? '#faf7f2'),
+                    (string) ($doc['palette']['accentSoft']['value'] ?? $doc['palette']['accent']['value'] ?? '#b08d57')
+                ),
+                // Die Einladung selbst, nicht der Wegweiser: sonst zeigt jede
+                // geteilte Einladung auf dieselbe Sammelseite.
+                'canonical'   => Config::url() . I18n::path('/v2/einladung/' . rawurlencode((string) $einladung['slug']), $locale),
+                'ogType'      => 'article',
                 // Eine Einladung gehoert nicht in den Index. Der Link ist
                 // fuer die Gaeste, nicht fuer die Suche.
                 'noindex' => true,

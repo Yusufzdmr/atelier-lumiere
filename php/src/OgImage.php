@@ -44,11 +44,67 @@ final class OgImage
             return '';
         }
 
-        $slug = Invitations::slug((string) ($invitation['slug'] ?? ''));
+        $theme = Themes::complete(Themes::find((string) ($invitation['theme'] ?? '')) ?? []);
+
+        return self::erzeugen(
+            (string) ($invitation['slug'] ?? ''),
+            $source,
+            (string) $theme['paper'],
+            (string) $theme['accentSoft']
+        );
+    }
+
+    /**
+     * Dasselbe fuer die zweite Fassung.
+     *
+     * Sie hat kein Thema, sondern ein Dokument: die Farben stehen in seiner
+     * Palette, und das Foto liegt in einer seiner Ebenen. Deshalb nimmt dieser
+     * Weg beides fertig entgegen, statt es sich aus einer Datenform zu holen,
+     * die es hier zweimal gaebe.
+     *
+     * Der Kern darunter ist derselbe - Zuschnitt, Vignette, Rahmen, Cache.
+     * Eine zweite Bilderzeugung waere eine zweite Stelle, an der der Zuschnitt
+     * eines Tages anders ist als in der ersten Fassung.
+     */
+    public static function forDocument(string $slug, string $source, string $papier, string $rahmen): string
+    {
+        return $source === '' ? '' : self::erzeugen($slug, $source, $papier, $rahmen);
+    }
+
+    /**
+     * Bauen, ablegen, Adresse zurueckgeben - fuer beide Fassungen.
+     *
+     * Der Dateiname traegt den Streuwert der Quelle: taucht das Paar sein
+     * Foto aus, entsteht ein neuer Name und WhatsApp holt das Bild wirklich
+     * neu. Unter demselben Namen bliebe die alte Vorschau in jedem Cache der
+     * Welt stehen - und die Einladung zeigte monatelang das falsche Foto.
+     */
+    private static function erzeugen(string $slug, string $source, string $papier, string $rahmen): string
+    {
+        /*
+         * Zuerst die Frage, ob wir diese Datei ueberhaupt kennen.
+         *
+         * Sie stand frueher erst in build(), und wenn die fehlschlug, ging
+         * die ROHE Quelle als Rueckfallwert hinaus - "lieber das Originalfoto
+         * als nichts". Der Satz stimmt, der Weg nicht: er hat den
+         * Rueckfallwert ungeprueft durchgereicht. Ein Pfad, der auf einen
+         * fremden Server zeigt, stuende damit als og:image auf der Einladung
+         * und meldete jedem Gast, der sie in WhatsApp oeffnet, einen Besuch
+         * dort. In der ersten Fassung kam die Quelle immer aus den eigenen
+         * Daten, es fiel also nie auf - ein Loch bleibt es trotzdem.
+         *
+         * Jetzt wird einmal vorn geprueft. Danach ist der Rueckfallwert
+         * derselbe wie vorher, aber er ist eine Datei aus dem eigenen Haus.
+         */
+        if (self::file($source) === null) {
+            return '';
+        }
+
+        $slug = Invitations::slug($slug);
         $name = $slug . '-' . substr(md5($source), 0, 8) . '.jpg';
         $path = Media::dir(self::FOLDER) . '/' . $name;
 
-        if (!is_file($path) && !self::build($source, $invitation, $path)) {
+        if (!is_file($path) && !self::build($source, $papier, $rahmen, $path)) {
             // Kein GD, kein lesbares Foto: lieber das Originalfoto als nichts.
             return self::absolute($source);
         }
@@ -87,16 +143,36 @@ final class OgImage
         return $background !== '' ? $background : null;
     }
 
-    /** Aus einer öffentlichen Adresse den Pfad im Dateisystem machen. */
+    /**
+     * Aus einer oeffentlichen Adresse den Pfad im Dateisystem machen.
+     *
+     * Zwei Orte, nicht einer: die Fotos des Paares liegen in /uploads, die
+     * Bilder einer Vorlage in /assets. Bis heute stand hier nur der erste -
+     * und eine Einladung, deren Karte ein Vorlagenfoto zeigt, bekam deshalb
+     * gar kein gebautes Vorschaubild. Sie fiel auf das Originalfoto zurueck,
+     * waehrend die Seite daneben og:image:width 1200 und height 630
+     * behauptete. Ein Hochformat mit dieser Angabe schneidet WhatsApp
+     * irgendwo durch.
+     *
+     * Gepruefte Grenze und kein Praefixvergleich: realpath() loest ".." und
+     * Symlinks auf, und danach muss der Pfad noch immer unter public/ liegen.
+     * str_contains('..') haette "%2e%2e" oder einen Symlink nicht gesehen.
+     */
     private static function file(string $url): ?string
     {
-        $prefix = '/' . trim(Config::str('upload_dir', 'uploads'), '/') . '/';
-        if (!str_starts_with($url, $prefix) || str_contains($url, '..')) {
+        $upload = '/' . trim(Config::str('upload_dir', 'uploads'), '/') . '/';
+        if (!str_starts_with($url, $upload) && !str_starts_with($url, '/assets/')) {
             return null;
         }
 
-        $path = Media::dir() . '/' . substr($url, strlen($prefix));
-        return is_file($path) ? $path : null;
+        $wurzel = realpath(dirname(__DIR__) . '/public');
+        $pfad   = realpath(dirname(__DIR__) . '/public' . $url);
+
+        if ($wurzel === false || $pfad === false || !is_file($pfad)) {
+            return null;
+        }
+
+        return str_starts_with($pfad, $wurzel . DIRECTORY_SEPARATOR) ? $pfad : null;
     }
 
     private static function absolute(string $url): string
@@ -106,8 +182,16 @@ final class OgImage
 
     /* --------------------------------- Bauen -------------------------------- */
 
-    /** @param array<string,mixed> $invitation */
-    private static function build(string $source, array $invitation, string $target): bool
+    /**
+     * Zwei Farben und kein Thema.
+     *
+     * Frueher holte sich build() das Thema selbst aus der Einladung. Die
+     * zweite Fassung hat keines - sie hat ein Dokument mit einer Palette -,
+     * und ein zweiter Zweig hier waere eine zweite Stelle gewesen, an der
+     * jemand den Zuschnitt aendern kann. Gebraucht wurden ohnehin nur zwei
+     * Werte: der Grund und die Rahmenlinie.
+     */
+    private static function build(string $source, string $papier, string $rahmen, string $target): bool
     {
         $file = self::file($source);
         if ($file === null || !function_exists('imagecreatetruecolor')) {
@@ -132,8 +216,7 @@ final class OgImage
         }
 
         $canvas = imagecreatetruecolor(self::WIDTH, self::HEIGHT);
-        $theme = Themes::complete(Themes::find((string) ($invitation['theme'] ?? '')) ?? []);
-        self::fill($canvas, (string) $theme['paper']);
+        self::fill($canvas, $papier);
 
         [$width, $height] = $info;
         $scale = max(self::WIDTH / $width, self::HEIGHT / $height);
@@ -149,7 +232,7 @@ final class OgImage
         imagedestroy($photo);
 
         self::vignette($canvas);
-        self::frame($canvas, (string) $theme['accentSoft']);
+        self::frame($canvas, $rahmen);
 
         $ok = imagejpeg($canvas, $target, 82);
         imagedestroy($canvas);

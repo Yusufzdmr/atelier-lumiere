@@ -1384,6 +1384,53 @@ Yapılabilecek olan: davetiyeye **görünür bir video bölümü** (v1'de zaten 
 tıklamalı YouTube/Vimeo var) — ama o arka plan müziği değil, izlenen bir şey.
 Ya da çift şarkıyı kendi indirip yüklüyor; artık yükleme alanı var.
 
+### Aynı gün, son — WhatsApp önizlemesi (v2)
+
+`site_url` düzeltilirken görüldü: Davetiye 2 paylaşıldığında WhatsApp'ta
+çıplak bir link gibi duruyordu.
+
+```
+og:title       Mustafa & Bahriye        ✓
+og:description (boş)                     ✗
+og:url         /de/einladung2            ✗  davetiyenin kendi adresi değil
+og:image       (yok)                     ✗
+```
+
+`Seo::forPage` boş bırakılan alanları „Einladung 2" sayfasının verileriyle
+dolduruyordu — açıklama yok, görsel yok, adres olarak da genel sayfa. v1'de
+bunların hepsi vardı, v2'ye hiç taşınmamıştı.
+
+**Yapılan:** `OgImage` artık tema yerine **iki renk** alıyor (`build()`
+zaten sadece kâğıt ve çerçeve rengini kullanıyordu). v1 temayı çözüp
+çağırıyor, v2 dokümanın paletinden veriyor; kırpma, vinyet, çerçeve ve
+önbellek ikisi için de aynı kod. İkinci bir görsel üreticisi, kırpmanın bir
+gün iki sürümde farklı olması demekti.
+
+Önizleme kaynağı sırası: çiftin **değiştirebildiği** katman
+(`permissions.photo` — sihirbazda „sizin fotoğrafınız" olan yer) → galeri
+fotoğrafı → tasarımın sabit görseli. Bu ayrım olmadan listedeki ilk görsel
+kazanıyordu ve çoğu tasarımda o **kâğıdın kendisi**: önizleme yüz yerine
+enine kırpılmış kâğıt gösteriyordu.
+
+`og:description` = `30. August 2026 · Schloss Hohenstein`, `og:url` artık
+davetiyenin kendi adresi, `twitter:card` = `summary_large_image`.
+
+**İki hata daha çıktı, ikisi de eskiden beri duruyordu:**
+
+1. `OgImage::file()` yalnız `/uploads/` altını okuyordu. Kartında vitrin
+   görseli olan bir davetiye bu yüzden hiç görsel **üretemiyordu** — ham
+   dosyaya düşüyordu, ama sayfa yanında `og:image:width 1200` diyordu. Dikey
+   bir fotoğrafta WhatsApp onu ortadan keser. Artık `/assets/` de okunuyor ve
+   sınır `realpath` ile kontrol ediliyor (`str_contains('..')` bir symlink'i
+   ya da `%2e%2e`'yi görmezdi).
+2. Görsel üretilemediğinde **ham kaynak yolu** doğrudan `og:image`'e
+   yazılıyordu — „lieber das Originalfoto als nichts". Cümle doğru, yol
+   yanlıştı: kaynak denetlenmeden geçiyordu. Yabancı bir sunucuya işaret eden
+   bir yol, davetiyeyi WhatsApp'ta açan her misafiri oraya bildirirdi. v1'de
+   kaynak hep kendi verimizden geldiği için hiç fark edilmemişti. Artık
+   denetim başta: tanımadığımız dosya boş dönüyor. `tests/og_v2.php` bunu
+   dört kötü yolla tutuyor.
+
 ### Açık kalan
 
 - Ayar `<select>`'leri seçenekleri çevirmiyor (`blatt`/`rechteck`/`aus` TR
