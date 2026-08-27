@@ -1,7 +1,7 @@
 # Açık işler — 27.08.2026 (akşam)
 
 Bu dosya, 27 Ağustos oturumunun sonunda **bitmemiş** olanları taşır. Biten
-işler git geçmişinde duruyor (`e289ddf` → `4d9dee3`, 23 commit), tekrar
+işler git geçmişinde duruyor (`e289ddf` → `797ce1e`, 26 commit), tekrar
 anlatılmıyor.
 
 Öğleden sonraki hâline göre ne değişti: 1. madde çözüldü ve yayına alındı,
@@ -93,9 +93,9 @@ Yani istenirse önce ürün kararı gerekiyor: "arka plan müziği" mi, yoksa
 
 ---
 
-## 3 · Çerçevede sürüklemenin ikinci yarısı
+## 3 · Çerçevede sürüklemenin son iki parçası
 
-**Durum: yarısı bitti, yayında, ölçüldü.**
+**Durum: dört parçanın dördü de bitti, yayında, ölçüldü. İki küçük iş kaldı.**
 
 "Sürükle bırak hala diğer bölümlerde çalışmıyor … telefon tablet masaüstü
 kısmında falan da." Sebep basitti: bütün işaretçi bağları kart kutusundaydı
@@ -114,17 +114,21 @@ tek bir `pointerdown` yoktu — bozulmuş değildi, hiç yapılmamıştı.
 - Taşıma çalışıyor. Canlıda ölçülen: katman `washa`, x −16→−6, y −10→−2,
   ve iki kutuda birebir aynı.
 
-**Kalan — dört parça.**
+**Sonradan biten (3 ve 4).** Seçim çerçevesi artık kök başına bir tane ve
+kendi belgesinde doğuyor; ofset zinciri kökün ta kendisine kadar toplanıyor
+(kart katmanlarında üç seviye: `.d-el` → `.d-card` → `.d-stage-mitte` →
+`.d-stage`). Tutamak kuralları JS'te ikinci kez yazılmıyor, editörün derlenmiş
+stil bloğundan kopyalanıp `[data-design-preview]` → `[data-zieht-bereit]`
+çevriliyor — içlerinde `touch-action:none` de var, o olmadan çerçevede parmak
+sayfayı kaydırırdı. Canlıda ölçüldü: kurallar enjekte, 8 tutamak, seçim
+çerçevesi katmanla birebir örtüşüyor (51,101, 291×40).
+
+**Kalan — iki parça.**
 
 | # | Ne | Neden ayrı |
 |---|---|---|
-| 3 | Seçim çerçevesi + 8 tutamak iframe içinde çizilsin | `rahmenWahl` `vorschau`'ya ekleniyor; koordinatları o kutuya göre `offsetLeft`/`offsetTop`. Çerçeveye olduğu gibi konulsa yan sütunun genişliği kadar kayar. |
-| 4 | `.b-rahmen-wahl` / `.b-griff` stilleri iframe belgesine enjekte edilsin | O CSS `design-edit.php:210`'da; davetiye sayfasında yok, yani tutamaklar stilsiz çıkar. |
 | 5 | Sürüklemeden önce çerçevedeki zarf açılsın | Kart zarfın arkasında. `oeffneRahmen()` zaten var, bağlanması gerek. |
-| 6 | Çift tıkla metni yerinde düzenleme | `dblclick` hâlâ tek kutuda — `design-editor.js:1097`, kart kutusunda kalan tek olay bağı. |
-
-3 ve 4 birlikte anlamlı: ikisi olmadan çerçevede boyutlandırma yok, sadece
-taşıma var.
+| 6 | Çift tıkla metni yerinde düzenleme | `dblclick` hâlâ tek kutuda — kart kutusunda kalan tek olay bağı. |
 
 ---
 
