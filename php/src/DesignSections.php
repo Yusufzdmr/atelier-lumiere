@@ -1072,6 +1072,59 @@ final class DesignSections
      * @param array<string,mixed> $data
      * @param array<string,mixed> $form
      */
+    /**
+     * Das Blatt unter der Karte, auf dem die Abschnitte liegen.
+     *
+     * Stand bis heute zweimal wortgleich in zwei Vorlagen - design-preview
+     * und invite-v2-show - und beide Male dieselbe Suche: erst das eigene
+     * Blatt der Vorlage, und wenn es keins gibt, laeuft das Papier der Karte
+     * einfach weiter. Die lebende Vorschau im Editor waere die dritte
+     * Abschrift gewesen, und drei Abschriften einer Suche laufen
+     * auseinander, sobald jemand eine davon anfasst.
+     *
+     * Leerer Inhalt gibt leeren String: unter einer Karte ohne Abschnitte
+     * soll kein leeres Blatt haengen.
+     *
+     * @param array<string,mixed> $doc
+     */
+    public static function flaeche(array $doc, string $scope, string $inhalt, string $spalte = 'mx-auto max-w-2xl'): string
+    {
+        if ($inhalt === '') {
+            return '';
+        }
+
+        $papier = Design::safeSrc((string) ($doc['sectionsBg'] ?? ''));
+
+        foreach ($papier === '' ? (array) ($doc['layers'] ?? []) : [] as $ebene) {
+            if (in_array($ebene['type'], ['photo', 'image'], true)
+                && $ebene['spot'] === 'card' && (string) $ebene['src'] !== '') {
+                $papier = Design::safeSrc((string) $ebene['src']);
+                break;
+            }
+        }
+
+        // Zwei Variablen, eine style-Angabe: der Schluss ist freiwillig.
+        $schluss = Design::safeSrc((string) ($doc['sectionsBgEnd'] ?? ''));
+
+        $stil = '';
+        if ($papier !== '') {
+            $stil .= "--d-sec-blatt:url('" . e($papier) . "');";
+        }
+        if ($schluss !== '') {
+            $stil .= "--d-sec-blatt-end:url('" . e($schluss) . "');";
+        }
+
+        /*
+         * Zwei Kaesten, nicht einer: die Flaeche geht von Kante zu Kante,
+         * damit das Papier der Karte einfach weiterlaeuft; der Text darin
+         * bleibt in seiner Spalte.
+         */
+        return '<div class="' . e($scope) . ' d-sec-flaeche"'
+            . ($stil !== '' ? ' style="' . $stil . '"' : '') . '>'
+            . '<div class="d-sections ' . e($spalte) . '">' . $inhalt . '</div>'
+            . '</div>';
+    }
+
     public static function html(array $doc, array $data, string $locale, string $heute = '', array $form = []): string
     {
         $out = '';

@@ -34,6 +34,7 @@
 
 use function Atelier\e;
 use Atelier\Design;
+use Atelier\DesignSections;
 use Atelier\View;
 ?>
 <?= View::partial('partials/design-stage', [
@@ -71,31 +72,11 @@ use Atelier\View;
      Papier der Karte einfach weiterlaeuft; der Text darin bleibt in seiner
      Spalte. Dieselbe Anordnung wie im Schaufenster.
   */ ?>
-  <?php
-    /*
-     * Erst das eigene Feld, dann die Karte: der Grafiker kann unten ein
-     * anderes Blatt hinlegen, muss aber nicht. Leer heisst "wie die Karte".
-     */
-    $papier = Design::safeSrc((string) ($design['sectionsBg'] ?? ''));
-    foreach ($papier === '' ? $design['layers'] : [] as $ebene) {
-        if (in_array($ebene['type'], ['photo', 'image'], true)
-            && $ebene['spot'] === 'card' && (string) $ebene['src'] !== '') {
-            $papier = Design::safeSrc((string) $ebene['src']);
-            break;
-        }
-    }
-  ?>
-  <div class="<?= e($scope) ?> d-sec-flaeche"
-       <?php
-         // Zwei Variablen, eine style-Angabe: der Schluss ist freiwillig.
-         $schlussBlatt = Design::safeSrc((string) ($design['sectionsBgEnd'] ?? ''));
-         $stil = '';
-         if ($papier !== '') { $stil .= '--d-sec-blatt:url(\'' . e($papier) . '\');'; }
-         if ($schlussBlatt !== '') { $stil .= '--d-sec-blatt-end:url(\'' . e($schlussBlatt) . '\');'; }
-       ?>
-       <?= $stil !== '' ? 'style="' . $stil . '"' : '' ?>>
-    <div class="d-sections mx-auto max-w-2xl">
-      <?= $abschnitte ?>
-    </div>
-  </div>
+  <?php /*
+     Das Blatt und die Spalte darin baut DesignSections::flaeche - dieselbe
+     Stelle, aus der auch die lebende Vorschau im Panel ihre Flaeche holt.
+     Hier stand die Suche nach dem Papier bis heute abgeschrieben, einmal
+     hier und einmal in der Nachbarvorlage.
+  */ ?>
+  <?= DesignSections::flaeche($design, $scope, $abschnitte) ?>
 <?php endif; ?>

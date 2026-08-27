@@ -5,6 +5,7 @@ namespace Atelier\Controllers;
 
 use Atelier\Admin;
 use Atelier\Design;
+use Atelier\DesignSections;
 use Atelier\DesignVideos;
 use Atelier\I18n;
 use Atelier\InvitationsV2;
@@ -260,6 +261,74 @@ final class DesignAdminController
         Design::save($design);
 
         return 'ok=' . ($ziel === 'active' ? 'aktiv' : 'inaktiv');
+    }
+
+    /**
+     * Die Abschnitte, wie sie mit dem GERADE GETIPPTEN Formular aussaehen.
+     *
+     * Die Karte in der Mitte folgt jedem Tastendruck, weil sie aus
+     * CSS-Variablen und Inline-Kaesten besteht - das kann ein Skript. Die
+     * Abschnitte kann es nicht: sie sind gedrucktes Markup, je Art ein
+     * anderes. Wer im Panel einen Ablauf tippte, sah davon nichts, und das
+     * Blatt dahinter schon gar nicht.
+     *
+     * Gerendert wird deshalb weiter hier, nur ohne zu speichern. Ein zweiter
+     * Zeichner im Browser waere schneller und haette eine zweite Wahrheit -
+     * die laeuft mit dem naechsten Abschnittstyp auseinander, und dann zeigt
+     * die Vorschau etwas, das es draussen nicht gibt.
+     *
+     * Was dieser Weg NICHT tut, ist das Wichtigste an ihm: er speichert
+     * nicht. Ein Design::save hier waere ein zweiter Speicherpfad ohne
+     * Fassungspruefung - die Vorschau wuerde beim Tippen ueberschreiben, was
+     * ein anderer Tab gerade abgelegt hat. Das Token wird trotzdem geprueft:
+     * ein angemeldeter Weg, der fremde Formulare rendert, ist zwar harmlos,
+     * aber es gibt keinen Grund, ihn offen zu lassen.
+     *
+     * @param array<string,string> $params
+     */
+    public function vorschau(array $params): void
+    {
+        $locale = $params['locale'];
+        Admin::requireLogin($locale);
+
+        header('Content-Type: text/html; charset=utf-8');
+        // Eine Vorschau gehoert niemandem sonst und ueberlebt keinen Klick.
+        header('Cache-Control: no-store');
+
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            http_response_code(419);
+            return;
+        }
+
+        $design = Design::find(Security::clean($params['slug'] ?? '', 64));
+        if ($design === null) {
+            http_response_code(404);
+            return;
+        }
+
+        /*
+         * Ohne die hochgeladenen Bilder: Dateien schickt das Skript gar nicht
+         * mit (drei Megabyte je Tastendruck), und ohne Dateien ist
+         * mitHochgeladenenBildern() ohnehin ein Durchreicher, der aber
+         * schreiben duerfte. Hier wird nichts geschrieben.
+         */
+        $doc = Design::fromPost($design, $_POST);
+
+        $sel   = '.d-' . $doc['id'];
+        $daten = self::BEISPIEL + [
+            'families' => ['bride' => 'Familie Berger', 'groom' => 'Familie Lindqvist'],
+            'program'  => [
+                ['time' => '15:30', 'title' => $locale === 'de' ? 'Trauung' : 'Tören'],
+                ['time' => '17:00', 'title' => $locale === 'de' ? 'Empfang' : 'Karşılama'],
+                ['time' => '19:30', 'title' => 'Dinner'],
+            ],
+        ];
+
+        // Kein Formular in der Vorschau: die Zusage schickt hier niemand ab.
+        $abschnitte = DesignSections::html($doc, $daten, 'de', '', ['csrf' => '', 'sent' => false]);
+
+        echo '<style>' . DesignSections::css($doc, $sel) . '</style>'
+           . DesignSections::flaeche($doc, ltrim($sel, '.'), $abschnitte);
     }
 
     /**

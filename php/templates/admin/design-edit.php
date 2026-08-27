@@ -386,6 +386,28 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
         </div>
 
         <?php /*
+           Und darunter die Abschnitte - lebend.
+
+           Sie stehen nicht IN der Vorschau, sondern darunter: die Karte hat
+           einen festen Rahmen (Seitenverhaeltnis), die Abschnitte eine
+           variable Laenge. Genau dieselbe Anordnung wie auf der echten
+           Seite, wo die Buehne im Fluss steht und die Flaeche darunter
+           weiterlaeuft.
+
+           Der Kasten ist beim Laden leer und wird es bleiben, wenn kein
+           Skript laeuft - dann ist es wie bisher: die Karte lebt, die
+           Abschnitte stehen im Rahmen. Gefuellt wird er vom Server, nicht
+           hier: das Skript schickt das Formular an .../vorschau und legt die
+           Antwort hinein.
+
+           overflow-hidden, weil die Flaeche von Kante zu Kante geht und die
+           Spalte des Panels schmaler ist als eine Seite.
+        */ ?>
+        <div class="overflow-hidden border border-t-0 border-sand-deep"
+             data-live-abschnitte hidden
+             data-adresse="<?= e($p('/admin/designs/' . $design['slug'] . '/vorschau')) ?>"></div>
+
+        <?php /*
            Der Rahmen entsteht erst beim ersten Klick auf ein Geraet. Ein
            iframe im Markup laedt die Seite mit - samt Kuvertfilm - und zwar
            jedes Mal, wenn jemand den Editor oeffnet, auch wenn er ihn nie

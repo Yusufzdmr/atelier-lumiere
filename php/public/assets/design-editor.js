@@ -1468,6 +1468,99 @@
       zeigeAbschnitt(welche);
     });
 
+    /* --- Die Abschnitte unter der Karte, lebend ------------------------- */
+
+    /*
+     * Gerendert wird auf dem Server, nur ohne zu speichern.
+     *
+     * Die Karte folgt jedem Tastendruck, weil ein Skript CSS-Variablen und
+     * Inline-Kaesten setzen kann. Die Abschnitte kann es nicht: sie sind
+     * gedrucktes Markup, je Art ein anderes. Es hier ein zweites Mal zu
+     * schreiben waere schneller und haette eine zweite Wahrheit - und die
+     * laeuft mit dem naechsten Abschnittstyp auseinander.
+     *
+     * Also geht das Formular an .../vorschau und kommt als fertiges Stueck
+     * zurueck. Das kostet einen Weg zum Server; deshalb erst, wenn jemand
+     * aufhoert zu tippen.
+     */
+    var liveKasten = form.querySelector("[data-live-abschnitte]");
+    // Die Adresse traegt die Vorlage: Sprache und Kennung stehen dort, und
+    // sie hier ein zweites Mal zusammenzusetzen hiesse, den Router zweimal
+    // zu kennen.
+    var liveAdresse = liveKasten ? liveKasten.getAttribute("data-adresse") : "";
+
+    if (liveKasten && liveAdresse) {
+      var laeuft = null;
+      var nochmal = false;
+
+      /*
+       * Ohne Dateien.
+       *
+       * FormData nimmt sonst jede gewaehlte Datei mit - ein Blatt von drei
+       * Megabyte, bei jedem Halt im Tippen. Zu sehen waere davon ohnehin
+       * nichts Zusaetzliches: der kleine Kasten neben dem Feld zeigt die
+       * gewaehlte Datei schon, und in die grosse Vorschau kommt sie mit dem
+       * Speichern.
+       */
+      var formularOhneDateien = function () {
+        var daten = new FormData();
+
+        form.querySelectorAll("input, select, textarea").forEach(function (feld) {
+          var name = feld.getAttribute("name");
+          if (!name || feld.disabled) return;
+          if (feld.type === "file") return;
+          if ((feld.type === "checkbox" || feld.type === "radio") && !feld.checked) return;
+
+          daten.append(name, feld.value);
+        });
+
+        return daten;
+      };
+
+      var hole = function () {
+        if (laeuft) { nochmal = true; return; }
+        laeuft = true;
+
+        window.fetch(liveAdresse, {
+          method: "POST",
+          body: formularOhneDateien(),
+          credentials: "same-origin"
+        }).then(function (antwort) {
+          return antwort.ok ? antwort.text() : null;
+        }).then(function (stueck) {
+          /*
+           * null heisst: der Server hat nein gesagt (Token abgelaufen, Vorlage
+           * fort). Dann bleibt stehen, was zuletzt richtig war - eine leere
+           * Vorschau waere die schlechtere Auskunft.
+           */
+          if (stueck !== null) {
+            liveKasten.innerHTML = stueck;
+            liveKasten.hidden = stueck.trim() === "";
+          }
+        }).catch(function () {
+          // Netz weg: dasselbe wie oben, stehenlassen.
+        }).then(function () {
+          laeuft = false;
+          if (nochmal) { nochmal = false; hole(); }
+        });
+      };
+
+      var liveWartend = null;
+      var spaeterHolen = function () {
+        if (liveWartend) window.clearTimeout(liveWartend);
+        liveWartend = window.setTimeout(hole, 400);
+      };
+
+      form.addEventListener("input", spaeterHolen);
+      form.addEventListener("change", spaeterHolen);
+      // Nach einem Knopf: verschoben, verdoppelt, weggenommen.
+      form.addEventListener("click", function (ereignis) {
+        if (ereignis.target.closest("button[type=button]")) spaeterHolen();
+      });
+
+      hole();
+    }
+
     window.addEventListener("resize", function () {
       var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
       if (!aktiv || aktiv.getAttribute("data-ansicht") === "karte") return;

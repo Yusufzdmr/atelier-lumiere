@@ -182,6 +182,12 @@ $router->any('/{locale}/admin/kunden/{code}', $admin_(static fn (array $p) => (n
 $router->any('/{locale}/admin/einladungen', $admin_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/themen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->themes()));
 $router->any('/{locale}/admin/designs', $admin_(static fn (array $p) => (new DesignAdminController())->index($p['locale'])));
+/*
+ * Die lebende Vorschau der Abschnitte. Eigener Weg und nicht ein zweiter
+ * Zweig im Editor: sie rendert und speichert nicht, und diese Grenze soll
+ * man an der Adresse sehen koennen.
+ */
+$router->post('/{locale}/admin/designs/{slug}/vorschau', $admin_(static fn (array $p) => (new DesignAdminController())->vorschau($p)));
 $router->any('/{locale}/admin/designs/{slug}', $admin_(static fn (array $p) => (new DesignAdminController())->edit($p)));
 $router->any('/{locale}/admin/systemcheck', $admin_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
 $router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
