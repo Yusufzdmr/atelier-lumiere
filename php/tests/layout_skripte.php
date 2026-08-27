@@ -195,3 +195,24 @@ foreach (['pages/invite-v2-wizard.php', 'pages/invite-v2-edit.php'] as $vorlage)
 $steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/InviteV2Controller.php');
 assert_same(2, substr_count($steuer, "'sec_show_'"), 'Controller: beide Lesestellen sind mitgedreht');
 assert_not_contains($steuer, "'sec_hidden_'", 'Controller: der alte Name ist weg');
+
+/*
+ * Wer Abschnitte druckt, muss auch das Skript laden, das sie fuellt.
+ *
+ * Gefunden am 27.08.2026 an der lebenden Seite: unter /v2/designs/{thema}
+ * stand als Countdown nur "12. September 2027". Das Markup war richtig - der
+ * Server schreibt <span data-countdown-days> leer und ueberlaesst die Zahl
+ * dem Skript, genau wie auf der echten Einladung. Nur stand in der
+ * Skriptliste der Vitrine allein invitation.js, und so blieb die Spanne leer.
+ * Ein Countdown, der nicht zaehlt, ist ein gedrucktes Datum mit einer
+ * Ueberschrift darueber.
+ *
+ * Beide Seiten zeigen dieselben Abschnitte (DesignSections::render), also
+ * brauchen beide dasselbe Skript. Die Vitrine ist dabei die sichtbarere von
+ * beiden: sie ist es, die der Kunde beim Aussuchen sieht, und sie ist es,
+ * die im Panel im Rahmen steht.
+ */
+foreach (['DesignController.php', 'InviteV2Controller.php'] as $steuerung) {
+    $quelle = (string) file_get_contents(__DIR__ . '/../src/Controllers/' . $steuerung);
+    assert_contains($quelle, '/assets/invite-v2-countdown.js', $steuerung . ': laedt den Countdown');
+}

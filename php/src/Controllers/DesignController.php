@@ -172,7 +172,18 @@ final class DesignController
                 // keine Formen - es oeffnet ein Kuvert und laesst eine Karte
                 // aufsteigen. Das ist Verhalten des Betrachters, nicht Teil
                 // des Designs, und gehoert deshalb nicht ins Dokument.
-                'scripts'   => ['/assets/invitation.js'],
+                /*
+                 * Und der Countdown, weil diese Seite Abschnitte druckt.
+                 *
+                 * Der Server schreibt die Spanne leer und ueberlaesst die
+                 * Zahl dem Skript - auf der echten Einladung wie hier. Fehlte
+                 * es, stuende unter der Ueberschrift nur das Datum, und genau
+                 * so sah es aus: "Countdown / 12. September 2027". Kein
+                 * Fehler im Markup, sondern eine Zeile zu wenig in dieser
+                 * Liste. tests/layout_skripte.php haelt beide Seiten
+                 * zusammen.
+                 */
+                'scripts'   => ['/assets/invitation.js', '/assets/invite-v2-countdown.js'],
             ]),
             'design'   => $design,
             'scope'    => ltrim($scope, '.'),
