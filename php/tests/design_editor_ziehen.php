@@ -130,3 +130,183 @@ assert_contains($editor, 'data-zurueck', 'Editor: der Knopf zum Zurueckdrehen st
 assert_contains($editor, 'data-vor', 'Editor: und einer nach vorn');
 assert_contains($js, 'data-zurueck', 'Skript: haengt am selben Knopf');
 assert_contains($js, 'data-vor', 'Skript: und am anderen');
+
+/* --- Der Rahmen lebt mit ------------------------------------------------- */
+
+/*
+ * "Sürükle bırak hala diğer bölümlerde çalışmıyor ... telefon tablet
+ * masaüstü kısmında falan da."
+ *
+ * Zwei Kaesten zeigen dieselbe Karte: das Kaestchen in der Mitte, das jedem
+ * Tastendruck folgt, und der Rahmen daneben, der die ganze Seite zeigt.
+ * Geschrieben wurde bisher nur in den ersten - der Rahmen holte seine Seite
+ * vom Server und blieb deshalb beim GESPEICHERTEN Stand stehen. Wer aufs
+ * Telefon umschaltete, sah eine Karte, die sich nicht mehr ruehrte.
+ *
+ * Das ist KEIN zweiter Zeichner, und genau darauf kommt es an. Die Wahrheit
+ * ist das Formularfeld, die Rechnung steht in stelle(), und beide bleiben,
+ * wo sie sind. Was sich aendert, ist allein die Zahl der Stellen, an denen
+ * dasselbe Ergebnis abgelegt wird: bisher eine, jetzt jede, die gerade da
+ * ist. Eine Rechnung, eine Quelle der Wahrheit - unveraendert.
+ */
+
+// Die Naht zum Rahmen: er wird ueber sein Merkmal gefunden, und die Buehne
+// darin ueber die Klasse, die design-stage.php schreibt.
+assert_contains($js, 'var rahmenWurzeln', 'Skript: es findet die Wurzeln im Rahmen');
+assert_contains($js, '.d-stage', 'Skript: und zwar ueber ihren Namen');
+
+$buehne = (string) file_get_contents(__DIR__ . '/../templates/partials/design-stage.php');
+assert_contains($buehne, 'd-stage', 'Buehne: traegt denselben Namen - sonst greift die Suche ins Leere');
+
+/*
+ * Die Wurzeln. Es sind eine oder zwei, je nachdem ob der Rahmen offen ist -
+ * deshalb eine Funktion und keine Liste: der Rahmen entsteht erst beim
+ * ersten Klick auf ein Geraet, eine beim Laden gebaute Liste waere fuer
+ * immer einelementig.
+ */
+assert_contains($js, 'var wurzeln', 'Skript: es kennt mehr als eine Wurzel');
+assert_contains($js, 'var knotenAlle', 'Skript: und findet die Ebene in jeder');
+
+/*
+ * Die vier Variablenschreiber und die drei Knotensucher gehen ueber die
+ * Wurzeln. Gezaehlt und nicht nur gesucht: bliebe EINER von ihnen an der
+ * Vorschau haengen, waere der Rahmen bei genau einer Sorte Aenderung still -
+ * und das ist die Art Fehler, die man erst drei Wochen spaeter bemerkt.
+ */
+assert_same(0, substr_count($js, 'vorschau.style.setProperty'),
+    'Skript: keine Farbe, keine Schrift geht mehr nur in die Vorschau');
+// Genau einer bleibt: der in knoten(), gleich darunter begruendet. Text und
+// Schriftgroesse suchten bisher selbst und muessen mit - drei waren es.
+assert_same(1, substr_count($js, 'vorschau.querySelector(".d-el-"'),
+    'Skript: nur noch der einzelne Sucher schaut allein in die Vorschau');
+
+/*
+ * Der Rahmen um das Gewaehlte bleibt dagegen bei der Vorschau, und das ist
+ * kein Vergessen: seine Koordinaten sind offsetLeft/offsetTop IN der
+ * Vorschau. Auf den Rahmen gelegt saesse er um die Breite der Spalte
+ * daneben. Das Ziehen im Rahmen selbst ist ein eigener Schritt.
+ */
+assert_contains($js, 'var knoten = function (id) {', 'Skript: der einzelne Sucher bleibt');
+assert_contains($js, 'if (rahmenWahl.parentNode !== vorschau) vorschau.appendChild(rahmenWahl);',
+    'Skript: und der Wahlrahmen bleibt in der Vorschau');
+
+/*
+ * Und die Flaeche unter der Karte gehoert dazu.
+ *
+ * Design::css() legt die Marken der Vorlage unter den Geltungsbereich
+ * (Design.php: '--d-' . $key). Im Rahmen tragen diesen Bereich ZWEI Knoten:
+ * die Buehne mit der Karte und die Flaeche mit den Abschnitten darunter -
+ * DesignSections::flaeche() schreibt ihn ein zweites Mal.
+ *
+ * Nur auf die Buehne geschrieben faerbte sich im Rahmen die Karte um und die
+ * Abschnitte blieben stehen. Ein halber Schritt sieht schlimmer aus als gar
+ * keiner: bei einem stehengebliebenen Rahmen weiss man, woran man ist, bei
+ * einem halb umgefaerbten sucht man den Fehler in der Vorlage.
+ */
+assert_contains($js, '.d-sec-flaeche', 'Skript: die Flaeche unter der Karte ist die zweite Wurzel');
+
+$sectionsPhp = (string) file_get_contents(__DIR__ . '/../src/DesignSections.php');
+assert_contains($sectionsPhp, 'd-sec-flaeche', 'Abschnitte: tragen denselben Namen');
+assert_contains($sectionsPhp, "e(\$scope) . ' d-sec-flaeche",
+    'Abschnitte: und den Geltungsbereich davor - daran haengen die Marken');
+
+// Und sie liest sie auch: Papier und Schriftfarbe der Flaeche kommen aus
+// denselben Marken, die der Editor beim Tippen umschreibt.
+assert_contains($sectionsPhp, '.d-sec-flaeche{background-color:var(--d-paper',
+    'Abschnitte: die Flaeche liest die Marken der Vorlage');
+
+/* --- Und ziehen laesst er sich auch ------------------------------------- */
+
+/*
+ * Schritt zwei: der Rahmen folgt nicht nur, er laesst sich auch anfassen.
+ *
+ * Die Rechnung des Ziehens war dafuer schon fast frei: sie misst in PROZENT
+ * des Elternkastens (offsetParent) und nicht in Pixeln der Seite. Was im
+ * Rahmen passiert, passiert in dessen eigenem Koordinatensystem - das
+ * transform:scale, mit dem der Rahmen verkleinert wird, kuerzt sich dabei
+ * heraus. Es blieben genau drei Stellen, die an der Vorschau klebten.
+ *
+ * Erste Stelle: die Suche nach der Ebene unter dem Zeiger. Sie durchlief die
+ * Vorschau; jetzt bekommt sie die Wurzel gesagt, in der gesucht wird.
+ */
+assert_same(0, substr_count($js, 'vorschau.querySelectorAll(".d-el")'),
+    'Skript: die Ebene wird in der gefragten Wurzel gesucht, nicht immer in der Vorschau');
+assert_contains($js, 'var ebeneAn = function (wurzel,',
+    'Skript: die Suche nimmt die Wurzel entgegen');
+
+/*
+ * Zweite Stelle: die Bindung selbst. Sie haengt jetzt an einer Wurzel, die
+ * uebergeben wird - einmal an der Vorschau, einmal an der Buehne im Rahmen.
+ * Der Zeiger wird an genau dem Knoten gefangen, der das Ereignis bekommen
+ * hat: setPointerCapture ueber Dokumentgrenzen hinweg gibt es nicht.
+ */
+assert_contains($js, 'var haengeZiehen = function (wurzel)',
+    'Skript: das Ziehen laesst sich an eine Wurzel haengen');
+assert_contains($js, 'haengeZiehen(vorschau)',
+    'Skript: die Vorschau bekommt es wie bisher');
+assert_contains($js, 'wurzel.setPointerCapture',
+    'Skript: gefangen wird am Knoten, der das Ereignis bekam');
+
+/*
+ * Zweimal an dieselbe Buehne gehaengt hiesse: jedes Ziehen zaehlt doppelt,
+ * und die Ebene liefe mit doppelter Geschwindigkeit davon. Der Rahmen laedt
+ * bei jedem Wechsel des Geraets neu, also wird es oft versucht.
+ */
+assert_contains($js, 'data-zieht-bereit',
+    'Skript: eine Buehne wird nur einmal angehaengt');
+
+/*
+ * Dritte Stelle: der Rahmen um das Gewaehlte.
+ *
+ * zeichne() gab die Wahl auf, sobald der Knoten keinen offsetParent hatte -
+ * und das ist er auch, wenn nicht die EBENE weg ist, sondern das Kaestchen
+ * um sie herum: im Geraetemodus ist die Vorschau versteckt. Wer dort eine
+ * Ebene anfasste, verlor sie im selben Atemzug wieder, und die Zeile links
+ * blinkte einmal auf.
+ *
+ * Also wird unterschieden: eine versteckte VORSCHAU nimmt nur den Rahmen
+ * weg, eine verschwundene EBENE die Wahl.
+ */
+assert_contains($js, 'vorschau.hidden',
+    'Skript: eine versteckte Vorschau ist kein Grund, die Wahl aufzugeben');
+
+/* --- Im Geraetemodus steht der Rahmen oben ------------------------------- */
+
+/*
+ * "Telefon sekmesine gecince acilis filmi ekrana gelmiyor, onun yerine
+ * sayfanin altindaki bolumler goruluyor."
+ *
+ * Gemessen am 27.08.2026 auf dem Livesystem, an der Vorlage testyusuf1:
+ *
+ *   Kasten der lebenden Abschnitte   2677 px hoch, NICHT versteckt
+ *   Rahmen (Telefon, 390x741)        beginnt bei y = 2909
+ *   Fensterhoehe                      855
+ *   Rahmen im Bild                    nein
+ *
+ * Der Film war also die ganze Zeit da und richtig - im Rahmen gemessen:
+ * readyState 4, Kaplama sichtbar, elementFromPoint traf das VIDEO. Nur der
+ * Rahmen selbst stand knapp drei Bildschirme weiter unten, und oben stand
+ * das, was man statt seiner sah.
+ *
+ * Der Grund ist eine Reihenfolge im Markup: Karte, dann die lebenden
+ * Abschnitte, dann der Rahmen. Beim Umschalten auf ein Geraet verschwindet
+ * die KARTE (karte.hidden = true) und der Rahmen kommt - der Kasten
+ * dazwischen blieb stehen, rutschte nach oben und schob den Rahmen aus dem
+ * Bild.
+ *
+ * Nur der Kasten wird versteckt, nicht geleert: der Inhalt kostet einen Weg
+ * zum Server, und beim Zurueckschalten auf die Karte will man ihn sofort
+ * wieder sehen.
+ *
+ * Und die Entscheidung steht an EINER Stelle: das Nachladen (hole) setzte
+ * sie ebenfalls, und ein Wechsel des Geraets stoesst das Nachladen an - der
+ * Kasten waere 400 ms spaeter von selbst zurueckgekommen.
+ */
+assert_contains($js, 'var abschnitteZeigen', 'Skript: eine Stelle entscheidet ueber den Kasten');
+assert_same(0, substr_count($js, 'liveKasten.hidden = stueck.trim()'),
+    'Skript: das Nachladen entscheidet nicht mehr allein - sonst kaeme der Kasten zurueck');
+
+// Die Naht: der Kasten steht zwischen Karte und Rahmen, und genau das ist der
+// Grund. Wandert er im Markup, ist diese Regel hinfaellig.
+assert_contains($editor, 'data-live-abschnitte', 'Editor: der Kasten traegt sein Merkmal');
+assert_contains($js, 'data-live-abschnitte', 'Skript: und wird darueber gefunden');

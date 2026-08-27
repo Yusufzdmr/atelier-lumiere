@@ -237,6 +237,82 @@
     });
   });
 
+  /* ======================================================================
+   * Zwei Kaesten, dieselbe Karte.
+   *
+   * In der Mitte steht das Kaestchen, das jedem Tastendruck folgt. Daneben
+   * der Rahmen, der die ganze Seite zeigt - Karte UND Abschnitte - und sie
+   * sich vom Server holt. Geschrieben wurde bisher nur in den ersten, und
+   * deshalb blieb der Rahmen beim GESPEICHERTEN Stand stehen: wer aufs
+   * Telefon umschaltete, sah eine Karte, die sich nicht mehr ruehrte.
+   *
+   * "Surukle birak hala diger bolumlerde calismiyor ... telefon tablet
+   * masaustu kisminda falan da."
+   *
+   * Kein zweiter Zeichner, und darauf kommt alles an. Die Wahrheit bleibt das
+   * Formularfeld, die Rechnung bleibt in stelle() und in den Schreibern hier
+   * darunter. Was sich aendert, ist allein die Zahl der Stellen, an denen
+   * dasselbe Ergebnis abgelegt wird: bisher eine, jetzt jede, die gerade da
+   * ist. Eine Rechnung, eine Quelle der Wahrheit - unveraendert.
+   *
+   * Als Funktion und nicht als Liste: den Rahmen gibt es erst nach dem ersten
+   * Klick auf ein Geraet, und sein Dokument wird bei jedem Wechsel neu
+   * geladen. Eine beim Start gebaute Liste bliebe fuer immer einelementig.
+   * ==================================================================== */
+
+  var rahmenWurzeln = function () {
+    var kasten = document.querySelector("[data-ansicht-rahmen]");
+    if (!kasten || kasten.hidden) return [];
+
+    var kind = kasten.querySelector("iframe");
+    if (!kind) return [];
+
+    var doc;
+    // Gleicher Ursprung, also sollte das nie werfen. Aber ein Editor, der an
+    // einer Ausnahme stehenbleibt, ist schlimmer als einer, der eine
+    // Kleinigkeit nicht kann - dieselbe Ueberlegung wie in rahmenDokument().
+    try { doc = kind.contentDocument; } catch (fehler) { return []; }
+    if (!doc) return [];
+
+    /*
+     * ZWEI Knoten, nicht einer.
+     *
+     * Design::css() legt die Marken der Vorlage unter den Geltungsbereich,
+     * und den tragen im Rahmen beide: die Buehne mit der Karte
+     * (templates/partials/design-stage.php) und die Flaeche mit den
+     * Abschnitten darunter (DesignSections::flaeche). Nur auf die Buehne
+     * geschrieben faerbte sich die Karte um und die Abschnitte blieben
+     * stehen - ein halber Schritt sieht schlimmer aus als gar keiner: bei
+     * einem stehengebliebenen Rahmen weiss man, woran man ist, bei einem
+     * halb umgefaerbten sucht man den Fehler in der Vorlage.
+     *
+     * Werden die Namen dort umbenannt, greift diese Suche ins Leere und der
+     * Rahmen ist wieder still. Ein Test haelt beide Nahtstellen fest.
+     */
+    return Array.prototype.slice.call(doc.querySelectorAll(".d-stage, .d-sec-flaeche"));
+  };
+
+  var wurzeln = function () {
+    return [vorschau].concat(rahmenWurzeln());
+  };
+
+  // Die Marken der Vorlage: Farbe, Schriftfamilie, Gewicht, Groessenfaktor.
+  // Sie haengen am Geltungsbereich und fallen von dort auf alles darunter.
+  var setzeMarke = function (name, wert) {
+    wurzeln().forEach(function (w) { w.style.setProperty(name, wert); });
+  };
+
+  // Dieselbe Ebene in jeder Wurzel. Die Kennung steht in beiden Kaesten in
+  // derselben Klasse, weil beide dasselbe Server-Markup zeigen.
+  var knotenAlle = function (id) {
+    var treffer = [];
+    wurzeln().forEach(function (w) {
+      var el = w.querySelector(".d-el-" + id);
+      if (el) treffer.push(el);
+    });
+    return treffer;
+  };
+
   // Farbe: das Textfeld ist die Wahrheit, der Waehler schreibt hinein. So
   // ueberlebt ein rgba(), das der Waehler gar nicht darstellen kann.
   form.querySelectorAll("[data-farbfeld]").forEach(function (feld) {
@@ -244,7 +320,7 @@
     var waehler = form.querySelector('[data-farbwahl="' + marke + '"]');
 
     var male = function () {
-      vorschau.style.setProperty("--d-" + marke.toLowerCase(), feld.value.trim());
+      setzeMarke("--d-" + marke.toLowerCase(), feld.value.trim());
     };
 
     feld.addEventListener("input", function () {
@@ -263,13 +339,13 @@
   // Schriftfamilie und Gewicht gehen ueber die Variablen der Schriftmarke.
   form.querySelectorAll("[data-schriftfeld]").forEach(function (feld) {
     feld.addEventListener("change", function () {
-      vorschau.style.setProperty("--df-" + feld.getAttribute("data-schriftfeld"), '"' + feld.value + '"');
+      setzeMarke("--df-" + feld.getAttribute("data-schriftfeld"), '"' + feld.value + '"');
     });
   });
 
   form.querySelectorAll("[data-gewichtfeld]").forEach(function (feld) {
     feld.addEventListener("input", function () {
-      vorschau.style.setProperty("--dfw-" + feld.getAttribute("data-gewichtfeld"), feld.value);
+      setzeMarke("--dfw-" + feld.getAttribute("data-gewichtfeld"), feld.value);
     });
   });
 
@@ -279,7 +355,7 @@
     feld.addEventListener("input", function () {
       var zahl = parseInt(feld.value, 10);
       if (!isFinite(zahl) || zahl < 1) return;
-      vorschau.style.setProperty("--dfs-" + feld.getAttribute("data-groessefeld"), zahl / 100);
+      setzeMarke("--dfs-" + feld.getAttribute("data-groessefeld"), zahl / 100);
     });
   });
 
@@ -291,22 +367,24 @@
    */
   form.querySelectorAll("[data-schriftgroesse]").forEach(function (feld) {
     feld.addEventListener("input", function () {
-      var ziel = vorschau.querySelector(".d-el-" + feld.getAttribute("data-schriftgroesse"));
+      var ziele = knotenAlle(feld.getAttribute("data-schriftgroesse"));
       var zahl = parseInt(feld.value, 10);
-      if (!ziel || !isFinite(zahl) || zahl < 1) return;
+      if (!ziele.length || !isFinite(zahl) || zahl < 1) return;
       var marke = feld.getAttribute("data-schriftmarke");
       var basis = (zahl / 10) + "cqw";
-      ziel.style.fontSize = marke
+      var groesse = marke
         ? "calc(" + basis + " * var(--dfs-" + marke + ", 1))"
         : basis;
+      ziele.forEach(function (ziel) { ziel.style.fontSize = groesse; });
     });
   });
 
   // Fester Text: der Knoten in der Vorschau traegt die Klasse d-el-<id>.
   form.querySelectorAll("[data-textfeld]").forEach(function (feld) {
     feld.addEventListener("input", function () {
-      var ziel = vorschau.querySelector(".d-el-" + feld.getAttribute("data-textfeld"));
-      if (ziel) ziel.textContent = feld.value;
+      knotenAlle(feld.getAttribute("data-textfeld")).forEach(function (ziel) {
+        ziel.textContent = feld.value;
+      });
     });
   });
 
@@ -345,8 +423,11 @@
   };
 
   var stelle = function (id) {
-    var el = knoten(id);
-    if (!el) return;
+    // In jede Wurzel, nicht nur in die Vorschau: der Rahmen zeigt dieselbe
+    // Karte und soll denselben Schritt mitmachen. Die Rechnung darunter ist
+    // dieselbe geblieben - sie wird nur einmal gemacht und zweimal abgelegt.
+    var ziele = knotenAlle(id);
+    if (!ziele.length) return;
 
     var anker = wert(id, "anchor") || "topleft";
     var hoehe = zahl(id, "h");
@@ -354,29 +435,35 @@
     var sx    = wert(id, "flipx") ? "-1" : "1";
     var sy    = wert(id, "flipy") ? "-1" : "1";
 
+    // Erst rechnen, dann ablegen. Die Zahlen kommen aus dem Formular und sind
+    // fuer jede Wurzel dieselben - sie im Schleifenrumpf zu holen hiesse, sie
+    // je Kasten neu zu lesen und die Gelegenheit zu schaffen, dass zwei
+    // Kaesten verschiedene Antworten bekommen.
+    var x = zahl(id, "x") + "%";
+    var y = zahl(id, "y") + "%";
+    var breite = zahl(id, "w") + "%";
+    var hoeheStil = hoehe > 0 ? hoehe + "%" : "auto";
+    var deckkraft = String(zahl(id, "opacity") / 100);
+    var wandlung = "rotate(" + dreh + "deg)"
+      + (sx === "-1" || sy === "-1" ? " scale(" + sx + "," + sy + ")" : "");
+
     // Welche zwei Kanten geschrieben werden, sagt der Anker - und die andere
     // muss ausdruecklich auf auto, sonst bleibt die Regel aus dem Stilblock
     // stehen und die Ebene haengt an zwei Kanten gleichzeitig.
-    if (anker.indexOf("right") >= 0) {
-      el.style.left = "auto";
-      el.style.right = zahl(id, "x") + "%";
-    } else {
-      el.style.right = "auto";
-      el.style.left = zahl(id, "x") + "%";
-    }
-    if (anker.indexOf("bottom") === 0) {
-      el.style.top = "auto";
-      el.style.bottom = zahl(id, "y") + "%";
-    } else {
-      el.style.bottom = "auto";
-      el.style.top = zahl(id, "y") + "%";
-    }
+    var rechts = anker.indexOf("right") >= 0;
+    var unten  = anker.indexOf("bottom") === 0;
 
-    el.style.width = zahl(id, "w") + "%";
-    el.style.height = hoehe > 0 ? hoehe + "%" : "auto";
-    el.style.opacity = String(zahl(id, "opacity") / 100);
-    el.style.transform = "rotate(" + dreh + "deg)"
-      + (sx === "-1" || sy === "-1" ? " scale(" + sx + "," + sy + ")" : "");
+    ziele.forEach(function (el) {
+      el.style.left  = rechts ? "auto" : x;
+      el.style.right = rechts ? x : "auto";
+      el.style.top    = unten ? "auto" : y;
+      el.style.bottom = unten ? y : "auto";
+
+      el.style.width = breite;
+      el.style.height = hoeheStil;
+      el.style.opacity = deckkraft;
+      el.style.transform = wandlung;
+    });
   };
 
   form.querySelectorAll("[data-kasten]").forEach(function (feld) {
@@ -500,6 +587,24 @@
      */
     var zeichne = function () {
       if (!gewaehlt || !rahmenWahl) return;
+
+      /*
+       * Eine versteckte VORSCHAU ist kein Grund, die Wahl aufzugeben.
+       *
+       * Im Geraetemodus steht der Rahmen in der Mitte und das Kaestchen ist
+       * hidden - sein Knoten hat dann keinen offsetParent, genau wie eine
+       * weggenommene Ebene. Die Pruefung weiter unten konnte beides nicht
+       * unterscheiden und warf die Wahl weg: wer im Rahmen eine Ebene
+       * anfasste, verlor sie im selben Atemzug, und die Zeile links blinkte
+       * einmal auf.
+       *
+       * Also nur den Rahmen wegnehmen - zu zeichnen ist hier nichts, zu
+       * vergessen aber auch nichts.
+       */
+      if (vorschau.hidden) {
+        if (rahmenWahl.parentNode) rahmenWahl.parentNode.removeChild(rahmenWahl);
+        return;
+      }
 
       var el = knoten(gewaehlt);
       if (!el || el.style.display === "none" || el.hidden) {
@@ -647,7 +752,7 @@
       return x >= links - 4 && x <= rechts + 4 && y >= oben - 4 && y <= unten + 4;
     };
 
-    var ebeneAn = function (x, y) {
+    var ebeneAn = function (wurzel, x, y) {
       var sichtbar = null, sichtbarZ = -1;
       var kasten = null, kastenZ = -1;
 
@@ -656,7 +761,7 @@
        * Umsortieren ohne Speichern schreibt stapleNeu() den z-Index neu, und
        * dann stimmt das Markup nicht mehr mit dem ueberein, was oben liegt.
        */
-      vorschau.querySelectorAll(".d-el").forEach(function (el) {
+      wurzel.querySelectorAll(".d-el").forEach(function (el) {
         if (el.hidden || el.style.display === "none") return;
 
         var id = kennung(el);
@@ -680,7 +785,15 @@
 
     var zieht = null;
 
-    vorschau.addEventListener("pointerdown", function (ereignis) {
+    /*
+     * Die drei Haende fragen nicht mehr nach der Vorschau, sondern nach dem
+     * Knoten, an dem sie haengen (currentTarget). Damit sind sie an jeder
+     * Wurzel dieselben - und die Rechnung darunter musste dafuer nicht
+     * angefasst werden: sie misst ohnehin in Prozent des Elternkastens, und
+     * das transform:scale des Rahmens kuerzt sich dabei heraus.
+     */
+    var beimDruecken = function (ereignis) {
+      var wurzel = ereignis.currentTarget;
       if (ereignis.button !== 0) return;
 
       /*
@@ -692,7 +805,7 @@
       if (tippt) return;
 
       var griff = ereignis.target.closest("[data-griff]");
-      var el = griff ? knoten(gewaehlt) : ebeneAn(ereignis.clientX, ereignis.clientY);
+      var el = griff ? knoten(gewaehlt) : ebeneAn(wurzel, ereignis.clientX, ereignis.clientY);
 
       if (!el) {
         waehle(null);
@@ -746,12 +859,12 @@
         groesse: schriftFeld(id) ? parseInt(schriftFeld(id).value, 10) : 0
       };
 
-      vorschau.setPointerCapture(ereignis.pointerId);
-      vorschau.setAttribute("data-zieht", "");
+      wurzel.setPointerCapture(ereignis.pointerId);
+      wurzel.setAttribute("data-zieht", "");
       ereignis.preventDefault();
-    });
+    };
 
-    vorschau.addEventListener("pointermove", function (ereignis) {
+    var beimBewegen = function (ereignis) {
       if (!zieht) return;
 
       var id = zieht.id;
@@ -831,21 +944,59 @@
       }
 
       zeichne();
-    });
+    };
 
     var beende = function (ereignis) {
+      var wurzel = ereignis && ereignis.currentTarget;
       if (!zieht) return;
       zieht = null;
-      vorschau.removeAttribute("data-zieht");
+      if (wurzel) wurzel.removeAttribute("data-zieht");
 
-      if (ereignis && vorschau.hasPointerCapture && vorschau.hasPointerCapture(ereignis.pointerId)) {
-        vorschau.releasePointerCapture(ereignis.pointerId);
+      if (wurzel && wurzel.hasPointerCapture && wurzel.hasPointerCapture(ereignis.pointerId)) {
+        wurzel.releasePointerCapture(ereignis.pointerId);
       }
       zeichne();
     };
 
-    vorschau.addEventListener("pointerup", beende);
-    vorschau.addEventListener("pointercancel", beende);
+    /*
+     * Zweimal an dieselbe Buehne gehaengt hiesse: jedes Ziehen zaehlt doppelt
+     * und die Ebene liefe mit doppelter Geschwindigkeit davon. Der Rahmen
+     * laedt bei jedem Wechsel des Geraets neu, also wird es oft versucht -
+     * die Marke am Knoten selbst ueberlebt genau so lange wie er.
+     */
+    var haengeZiehen = function (wurzel) {
+      if (!wurzel || wurzel.hasAttribute("data-zieht-bereit")) return;
+      wurzel.setAttribute("data-zieht-bereit", "");
+
+      wurzel.addEventListener("pointerdown", beimDruecken);
+      wurzel.addEventListener("pointermove", beimBewegen);
+      wurzel.addEventListener("pointerup", beende);
+      wurzel.addEventListener("pointercancel", beende);
+    };
+
+    haengeZiehen(vorschau);
+
+    // Und die Buehne im Rahmen, sobald es eine gibt. rahmenWurzeln() liefert
+    // auch die Flaeche mit den Abschnitten - dort gibt es keine .d-el, das
+    // Anhaengen ist also folgenlos und eine Ausnahme waere nur eine Regel
+    // mehr, die stimmen muss.
+    var ziehenImRahmen = function () { rahmenWurzeln().forEach(haengeZiehen); };
+
+    /*
+     * Angehaengt wird beim Klick auf ein Geraet - denselben Weg nimmt weiter
+     * unten schon das Nachziehen der Reihenfolge. Zweimal, weil es zwei
+     * Faelle sind: beim ERSTEN Klick entsteht der Rahmen gerade erst und hat
+     * noch nichts geladen (dafuer das load-Ereignis), bei jedem weiteren
+     * steht er schon und laedt nicht neu (dafuer der kurze Aufschub).
+     */
+    document.querySelectorAll("[data-ansicht]").forEach(function (knopf) {
+      knopf.addEventListener("click", function () {
+        var kasten = document.querySelector("[data-ansicht-rahmen]");
+        var kind = kasten && kasten.querySelector("iframe");
+        if (kind) kind.addEventListener("load", ziehenImRahmen, { once: true });
+        window.setTimeout(ziehenImRahmen, 60);
+      });
+    });
 
     /* --- Den Text an Ort und Stelle schreiben ---------------------------- */
 
@@ -1403,6 +1554,43 @@
       seite: rahmen.getAttribute("data-wort-seite") || "Der Rahmen zeigt den gespeicherten Stand."
     };
 
+    /*
+     * Der Kasten der lebenden Abschnitte - und wann er im Weg steht.
+     *
+     * "Telefon sekmesine gecince acilis filmi ekrana gelmiyor, onun yerine
+     * sayfanin altindaki bolumler goruluyor."
+     *
+     * Gemessen am 27.08.2026 auf dem Livesystem an testyusuf1: der Kasten war
+     * 2677 Pixel hoch und nicht versteckt, der Rahmen begann daraufhin bei
+     * y = 2909 - bei 855 Pixeln Fensterhoehe. Der Film war die ganze Zeit da
+     * und richtig (im Rahmen gemessen: readyState 4, die Kaplama sichtbar,
+     * und der Zeigertest in ihrer Mitte traf das VIDEO). Nur stand der Rahmen
+     * knapp drei Bildschirme tiefer, und oben stand das, was man statt seiner
+     * sah.
+     *
+     * Der Grund ist die Reihenfolge im Markup: Karte, Abschnitte, Rahmen.
+     * Verschwindet die KARTE beim Umschalten, rutscht der Kasten nach oben
+     * und schiebt den Rahmen aus dem Bild.
+     *
+     * Im Geraetemodus braucht ihn ohnehin niemand: der Rahmen zeigt die ganze
+     * Seite, Abschnitte inbegriffen. Versteckt und nicht geleert - der Inhalt
+     * kostet einen Weg zum Server, und beim Zurueckschalten will man ihn
+     * sofort wieder sehen.
+     *
+     * Eine Stelle entscheidet, und zwar diese: hole() setzte es ebenfalls,
+     * und ein Wechsel des Geraets stoesst hole() an (die Geraeteknoepfe sind
+     * button[type=button] im Formular). Der Kasten waere 400 ms spaeter von
+     * selbst zurueckgekommen.
+     */
+    var abschnitteZeigen = function () {
+      if (!liveKasten) return;
+
+      var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
+      var imGeraet = !!aktiv && aktiv.getAttribute("data-ansicht") !== "karte";
+
+      liveKasten.hidden = imGeraet || liveKasten.innerHTML.trim() === "";
+    };
+
     var passeAn = function (breite) {
       var kind = rahmen.querySelector("iframe");
       if (!kind) return;
@@ -1427,12 +1615,14 @@
         if (welche === "karte") {
           karte.hidden = false;
           rahmen.hidden = true;
+          abschnitteZeigen();
           if (hinweisAnsicht) hinweisAnsicht.textContent = worte.karte;
           return;
         }
 
         karte.hidden = true;
         rahmen.hidden = false;
+        abschnitteZeigen();
 
         if (!rahmen.querySelector("iframe")) {
           var kind = document.createElement("iframe");
@@ -1710,7 +1900,7 @@
            */
           if (stueck !== null) {
             liveKasten.innerHTML = stueck;
-            liveKasten.hidden = stueck.trim() === "";
+            abschnitteZeigen();
             entwaffne();
           }
         }).catch(function () {
