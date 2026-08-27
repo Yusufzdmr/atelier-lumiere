@@ -181,14 +181,24 @@ assert_same(1, substr_count($js, 'vorschau.querySelector(".d-el-"'),
     'Skript: nur noch der einzelne Sucher schaut allein in die Vorschau');
 
 /*
- * Der Rahmen um das Gewaehlte bleibt dagegen bei der Vorschau, und das ist
- * kein Vergessen: seine Koordinaten sind offsetLeft/offsetTop IN der
- * Vorschau. Auf den Rahmen gelegt saesse er um die Breite der Spalte
- * daneben. Das Ziehen im Rahmen selbst ist ein eigener Schritt.
+ * Der einzelne Sucher bleibt: knoten() liefert die Ebene aus der Vorschau,
+ * und genau das wird an den Stellen gebraucht, die von der Vorschau reden.
+ * Wer die Ebene in einer bestimmten Wurzel braucht, nimmt knotenIn().
  */
 assert_contains($js, 'var knoten = function (id) {', 'Skript: der einzelne Sucher bleibt');
-assert_contains($js, 'if (rahmenWahl.parentNode !== vorschau) vorschau.appendChild(rahmenWahl);',
-    'Skript: und der Wahlrahmen bleibt in der Vorschau');
+
+/*
+ * Der Wahlrahmen lag bis Schritt drei nur in der Vorschau - im Geraetemodus
+ * also nirgends, und wer im Rahmen eine Ebene anfasste, sah nicht, was er
+ * anfasste. Jetzt hat jede Wurzel ihren eigenen, gebaut in ihrem eigenen
+ * Dokument, und keiner wird nebenher gemerkt: gesucht wird im DOM, weil der
+ * Rahmen beim Geraetewechsel neu laedt und ein gemerkter Knoten danach eine
+ * Leiche waere.
+ */
+assert_not_contains($js, 'var rahmenWahl',
+    'Skript: kein einzelner, nebenher gemerkter Wahlrahmen mehr');
+assert_contains($js, 'wurzel.appendChild(kasten);',
+    'Skript: jeder Wahlrahmen haengt in seiner eigenen Wurzel');
 
 /*
  * Und die Flaeche unter der Karte gehoert dazu.
@@ -267,8 +277,8 @@ assert_contains($js, 'data-zieht-bereit',
  * Also wird unterschieden: eine versteckte VORSCHAU nimmt nur den Rahmen
  * weg, eine verschwundene EBENE die Wahl.
  */
-assert_contains($js, 'vorschau.hidden',
-    'Skript: eine versteckte Vorschau ist kein Grund, die Wahl aufzugeben');
+assert_contains($js, 'var versatz',
+    'Skript: eine Wurzel, die sich nicht vermessen laesst, wird uebersprungen - nicht die Wahl weggeworfen');
 
 /* --- Im Geraetemodus steht der Rahmen oben ------------------------------- */
 
@@ -310,3 +320,71 @@ assert_same(0, substr_count($js, 'liveKasten.hidden = stueck.trim()'),
 // Grund. Wandert er im Markup, ist diese Regel hinfaellig.
 assert_contains($editor, 'data-live-abschnitte', 'Editor: der Kasten traegt sein Merkmal');
 assert_contains($js, 'data-live-abschnitte', 'Skript: und wird darueber gefunden');
+
+/* --- Und der Wahlrahmen liegt auch darin ---------------------------------- */
+
+/*
+ * Schritt drei und vier, zusammen: Griffe ohne Regeln waeren ein halber
+ * Schritt, und ein halber Schritt sieht schlimmer aus als gar keiner.
+ *
+ * Bis hierher gab es EINEN Wahlrahmen, er hing in der Vorschau, und seine
+ * Koordinaten waren offsetLeft/offsetTop in ihr. Im Rahmen ist beides falsch.
+ */
+
+/*
+ * Erstens: der Knoten muss IN dem Dokument entstehen, in dem er liegen soll.
+ * Ein div aus dem Editordokument laesst sich nicht in den Rahmen haengen -
+ * und selbst importiert haette es dort keine Regeln.
+ */
+assert_contains($js, 'var wahlrahmenFuer', 'Skript: je Wurzel ein Wahlrahmen');
+assert_contains($js, 'ownerDocument', 'Skript: gebaut im Dokument der Wurzel, nicht im eigenen');
+
+/*
+ * Zweitens: die Rechnung. In der Vorschau liegt eine Ebene EINEN Sprung unter
+ * dem Kasten (.d-el in einer Huelle, die inset-0 daraufliegt). Im Rahmen sind
+ * es drei: .d-el -> .d-card -> .d-stage-mitte -> .d-stage. Die alte Abkuerzung
+ * addierte genau einen und traefe dort um die halbe Buehne daneben.
+ */
+assert_contains($js, 'var versatz', 'Skript: der Versatz wird bis zur Wurzel aufaddiert');
+assert_same(0, substr_count($js, 'eltern === vorschau ? 0 : eltern.offsetLeft'),
+    'Skript: die Abkuerzung ueber genau einen Sprung ist fort');
+
+// Die Naht, an der die Rechnung haengt: diese drei Namen schreibt
+// design-stage.php. Wandert einer, misst der Wahlrahmen ins Leere.
+$buehne2 = (string) file_get_contents(__DIR__ . '/../templates/partials/design-stage.php');
+assert_contains($buehne2, 'd-stage-mitte', 'Buehne: die Mitte traegt ihren Namen');
+assert_contains($buehne2, 'd-card t-card relative', 'Buehne: und die Karte ist der Bezugskasten');
+
+/*
+ * Drittens: die Regeln der Griffe. Sie stehen im Stilblock des Editors
+ * (design-edit.php) und gelten dort; im Rahmen ist von ihnen nichts bekannt.
+ *
+ * Kopiert wird aus dem GEBAUTEN Blatt, nicht hier noch einmal geschrieben.
+ * Ein zweiter Satz Regeln im Skript waere eine zweite Wahrheit ueber das
+ * Aussehen der Griffe, und die laeuft beim naechsten Handgriff am Stilblock
+ * auseinander.
+ */
+assert_contains($js, 'styleSheets', 'Skript: die Regeln kommen aus dem Blatt des Editors');
+assert_contains($js, 'dok === document',
+    'Skript: und werden nicht ins eigene Dokument zurueckkopiert');
+assert_not_contains($js, '.b-griff{', 'Skript: und werden nicht ein zweites Mal aufgeschrieben');
+
+/*
+ * Dabei muss der Geltungsbereich mitwandern. Mehrere Regeln haengen an
+ * [data-design-preview] - den Kasten gibt es im Rahmen nicht. Die Marke, die
+ * es dort gibt, ist die aus Schritt zwei: data-zieht-bereit steht auf jeder
+ * Wurzel, an der das Ziehen haengt.
+ *
+ * Darunter ist eine, die nicht Zierde ist: .d-el{touch-action:none}. Ohne sie
+ * nimmt der Browser den Finger fuer sich und wischt die Seite, statt die
+ * Ebene zu ziehen - am Telefon waere der Rahmen dann wieder nur zum Ansehen.
+ */
+assert_contains($js, 'data-design-preview', 'Skript: es kennt den Kasten, dessen Regeln es umschreibt');
+assert_contains($editor, 'touch-action:none', 'Editor: die Ebenen geben den Finger nicht ab');
+
+/*
+ * Viertens: an einem Griff im Rahmen wird die Ebene IM RAHMEN gefasst.
+ * knoten() liefert die aus der Vorschau - im Geraetemodus ist die versteckt,
+ * und ein versteckter Knoten hat keine Groesse. Der Griff zoege ins Nichts.
+ */
+assert_contains($js, 'var knotenIn', 'Skript: die Ebene wird in der angefassten Wurzel gesucht');

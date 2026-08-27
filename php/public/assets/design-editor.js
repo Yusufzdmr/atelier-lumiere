@@ -411,6 +411,14 @@
     return vorschau.querySelector(".d-el-" + id);
   };
 
+  // Dieselbe Ebene, aber in der Wurzel, die gerade angefasst wird. An einem
+  // Griff im Rahmen ist knoten() die falsche Antwort: die liefert die aus der
+  // Vorschau, und die ist im Geraetemodus versteckt und ohne Groesse - der
+  // Griff zoege ins Nichts.
+  var knotenIn = function (wurzel, id) {
+    return wurzel.querySelector(".d-el-" + id);
+  };
+
   var wert = function (id, mass) {
     var feld = form.querySelector('[data-kasten="' + id + '"][data-mass="' + mass + '"]');
     if (!feld) return null;
@@ -552,19 +560,125 @@
     var GRIFFE = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
     var gewaehlt = null;
-    var rahmenWahl = null;
     var tippt = null;
 
-    var baueRahmen = function () {
-      var kasten = document.createElement("div");
+    /*
+     * Die Regeln der Griffe - kopiert, nicht neu geschrieben.
+     *
+     * Sie stehen im Stilblock des Editors (design-edit.php) und gelten dort.
+     * Im Dokument des Rahmens ist von ihnen nichts bekannt: ein Wahlrahmen,
+     * der dorthin gehaengt wird, waere ein unsichtbares div mit acht
+     * unsichtbaren Kindern.
+     *
+     * Geholt wird aus dem GEBAUTEN Blatt und nicht hier zweitgeschrieben. Ein
+     * zweiter Satz Regeln im Skript waere eine zweite Wahrheit ueber das
+     * Aussehen der Griffe, und die laeuft beim naechsten Handgriff am
+     * Stilblock auseinander - dieselbe Ueberlegung wie ueberall sonst hier.
+     *
+     * Der Geltungsbereich wandert mit: mehrere Regeln haengen an
+     * [data-design-preview], und den Kasten gibt es im Rahmen nicht. Die
+     * Marke, die es dort gibt, steht seit dem Anhaengen des Ziehens auf jeder
+     * Wurzel. Darunter ist eine Regel, die nicht Zierde ist:
+     * .d-el{touch-action:none}. Ohne sie nimmt der Browser den Finger fuer
+     * sich und wischt die Seite, statt die Ebene zu ziehen.
+     */
+    var griffRegeln = function () {
+      var aus = [];
+      var blaetter = document.styleSheets;
+
+      for (var i = 0; i < blaetter.length; i++) {
+        var regeln;
+        // Ein fremdes Blatt (CDN) laesst sich nicht lesen und wirft. Uns
+        // gehoert ohnehin nur das eigene.
+        try { regeln = blaetter[i].cssRules; } catch (fehler) { continue; }
+        if (!regeln) continue;
+
+        for (var j = 0; j < regeln.length; j++) {
+          var wahl = regeln[j].selectorText;
+          if (!wahl) continue;
+
+          if (wahl.indexOf(".b-rahmen-wahl") < 0 && wahl.indexOf(".b-griff") < 0
+              && wahl.indexOf("[data-design-preview]") < 0) continue;
+
+          aus.push(regeln[j].cssText.split("[data-design-preview]").join("[data-zieht-bereit]"));
+        }
+      }
+
+      return aus.join("\n");
+    };
+
+    var regelnHinein = function (dok) {
+      // Ins EIGENE Dokument nicht: dort stehen sie schon, und eine Kopie
+      // davon waere eine zweite Fassung derselben Regeln - genau das, was
+      // hier vermieden werden soll.
+      if (!dok || dok === document) return;
+      if (dok.querySelector("[data-griffregeln]")) return;
+
+      var blatt = dok.createElement("style");
+      blatt.setAttribute("data-griffregeln", "");
+      blatt.textContent = griffRegeln();
+      (dok.head || dok.documentElement).appendChild(blatt);
+    };
+
+    /*
+     * Je Wurzel ein Wahlrahmen, und jeder in seinem eigenen Dokument.
+     *
+     * Ein Knoten aus dem Editordokument laesst sich nicht in den Rahmen
+     * haengen; importiert haette er dort trotzdem keine Regeln. Also wird er
+     * dort gebaut, wo er liegen soll.
+     *
+     * Kein Gedaechtnis nebenher: gefunden wird er als Kind der Wurzel. Der
+     * Rahmen laedt neu, wenn jemand das Geraet wechselt - eine Liste von
+     * Knoten waere danach eine Liste von Leichen, das DOM dagegen stimmt
+     * immer.
+     */
+    var wahlrahmenFuer = function (wurzel) {
+      var vorhanden = wurzel.querySelector(".b-rahmen-wahl");
+      if (vorhanden) return vorhanden;
+
+      var dok = wurzel.ownerDocument;
+      regelnHinein(dok);
+
+      var kasten = dok.createElement("div");
       kasten.className = "b-rahmen-wahl";
+
       GRIFFE.forEach(function (g) {
-        var punkt = document.createElement("span");
+        var punkt = dok.createElement("span");
         punkt.className = "b-griff";
         punkt.setAttribute("data-griff", g);
         kasten.appendChild(punkt);
       });
+
+      wurzel.appendChild(kasten);
       return kasten;
+    };
+
+    /*
+     * Wie weit die Ebene von der Wurzel entfernt liegt - ueber ALLE Spruenge.
+     *
+     * In der Vorschau ist es einer: .d-el haengt in einer Huelle, die inset-0
+     * darauf liegt. Im Rahmen sind es drei - .d-el steht in .d-card, die in
+     * .d-stage-mitte, die in .d-stage. Die alte Fassung addierte genau einen
+     * Sprung und traefe dort um die halbe Buehne daneben.
+     *
+     * Erreicht der Weg die Wurzel nicht, ist der Kasten gerade nicht im Bild
+     * (versteckte Vorschau im Geraetemodus, weggenommene Ebene). Dann kommt
+     * null zurueck und der Aufrufer laesst diese Wurzel aus - was NICHT
+     * heisst, dass die Wahl verloren ist: sie kann in der anderen Wurzel
+     * sehr wohl zu sehen sein.
+     */
+    var versatz = function (el, wurzel) {
+      var x = el.offsetLeft;
+      var y = el.offsetTop;
+      var eltern = el.offsetParent;
+
+      while (eltern && eltern !== wurzel) {
+        x += eltern.offsetLeft;
+        y += eltern.offsetTop;
+        eltern = eltern.offsetParent;
+      }
+
+      return eltern === wurzel ? { x: x, y: y } : null;
     };
 
     /*
@@ -586,81 +700,82 @@
      * saesse rechts und zoege in die falsche Richtung.
      */
     var zeichne = function () {
-      if (!gewaehlt || !rahmenWahl) return;
+      if (!gewaehlt) return;
 
       /*
-       * Eine versteckte VORSCHAU ist kein Grund, die Wahl aufzugeben.
+       * In JEDE Wurzel, die den Knoten gerade zeigt.
        *
-       * Im Geraetemodus steht der Rahmen in der Mitte und das Kaestchen ist
-       * hidden - sein Knoten hat dann keinen offsetParent, genau wie eine
-       * weggenommene Ebene. Die Pruefung weiter unten konnte beides nicht
-       * unterscheiden und warf die Wahl weg: wer im Rahmen eine Ebene
-       * anfasste, verlor sie im selben Atemzug, und die Zeile links blinkte
-       * einmal auf.
+       * Bis hierher gab es einen Wahlrahmen in der Vorschau. Im Geraetemodus
+       * ist die versteckt - dort war also nichts zu sehen, und wer im Rahmen
+       * eine Ebene anfasste, sah nicht, was er anfasste.
        *
-       * Also nur den Rahmen wegnehmen - zu zeichnen ist hier nichts, zu
-       * vergessen aber auch nichts.
+       * Eine Wurzel, die sich nicht vermessen laesst, wird ausgelassen und
+       * nicht zum Anlass genommen, die Wahl wegzuwerfen: sie kann in der
+       * anderen sehr wohl zu sehen sein. Erst wenn KEINE sie zeigt, ist die
+       * Ebene wirklich fort (weggenommen, Auge zu) - dann geht auch die Wahl.
        */
-      if (vorschau.hidden) {
-        if (rahmenWahl.parentNode) rahmenWahl.parentNode.removeChild(rahmenWahl);
-        return;
-      }
+      var getroffen = 0;
 
-      var el = knoten(gewaehlt);
-      if (!el || el.style.display === "none" || el.hidden) {
-        waehle(null);
-        return;
-      }
+      wurzeln().forEach(function (wurzel) {
+        var el = wurzel.querySelector(".d-el-" + gewaehlt);
+        if (!el || el.hidden || el.style.display === "none") return;
 
-      var eltern = el.offsetParent;
-      if (!eltern) {
-        waehle(null);
-        return;
-      }
+        var wo = versatz(el, wurzel);
+        if (!wo) return;
 
-      if (rahmenWahl.parentNode !== vorschau) vorschau.appendChild(rahmenWahl);
+        getroffen += 1;
 
-      var links = el.offsetLeft + (eltern === vorschau ? 0 : eltern.offsetLeft);
-      var oben = el.offsetTop + (eltern === vorschau ? 0 : eltern.offsetTop);
+        var kasten = wahlrahmenFuer(wurzel);
 
-      rahmenWahl.style.left = links + "px";
-      rahmenWahl.style.top = oben + "px";
-      rahmenWahl.style.width = el.offsetWidth + "px";
-      rahmenWahl.style.height = el.offsetHeight + "px";
+        kasten.style.left = wo.x + "px";
+        kasten.style.top = wo.y + "px";
+        kasten.style.width = el.offsetWidth + "px";
+        kasten.style.height = el.offsetHeight + "px";
 
-      var dreh = zahl(gewaehlt, "rotate");
-      rahmenWahl.style.transform = dreh ? "rotate(" + dreh + "deg)" : "";
+        /*
+         * Gemessen mit offsetLeft/offsetWidth und nicht mit
+         * getBoundingClientRect: das eine ist die Groesse VOR der Drehung,
+         * das andere danach. Ein gedrehter Kasten haette sonst einen
+         * waagerechten Rahmen, der groesser ist als er selbst.
+         *
+         * Gespiegelt wird nicht mitgedreht: scale(-1) um die Mitte laesst den
+         * Kasten dort, wo er ist, und wuerde nur die Griffe vertauschen -
+         * "nw" saesse rechts und zoege in die falsche Richtung.
+         */
+        var dreh = zahl(gewaehlt, "rotate");
+        kasten.style.transform = dreh ? "rotate(" + dreh + "deg)" : "";
 
-      /*
-       * Duenne Ebenen: die Griffe nach AUSSEN.
-       *
-       * Innen an der Kante ist die richtige Stelle, solange der Kasten
-       * groesser ist als zwei Griffe. Eine Textzeile ist das oft nicht:
-       * gemessen an "Wir heiraten" mit 14 Pixel Hoehe lagen der obere Griff
-       * bei 0-10 und der untere bei 4-14 - sie ueberlappten, der spaeter
-       * gezeichnete gewann, und der obere war nicht mehr zu treffen. Man
-       * fasste oben an und zog unten.
-       *
-       * Also weichen sie bei duennen Kaesten nach draussen aus. Der Kasten
-       * bleibt, wo er ist; nur die Griffe ruecken auseinander.
-       */
-      if (el.offsetHeight < 24) {
-        rahmenWahl.setAttribute("data-eng", "");
-      } else {
-        rahmenWahl.removeAttribute("data-eng");
-      }
-      if (el.offsetWidth < 24) {
-        rahmenWahl.setAttribute("data-schmal", "");
-      } else {
-        rahmenWahl.removeAttribute("data-schmal");
-      }
+        /*
+         * Duenne Ebenen: die Griffe nach AUSSEN.
+         *
+         * Innen an der Kante ist die richtige Stelle, solange der Kasten
+         * groesser ist als zwei Griffe. Eine Textzeile ist das oft nicht:
+         * gemessen an "Wir heiraten" mit 14 Pixel Hoehe lagen der obere Griff
+         * bei 0-10 und der untere bei 4-14 - sie ueberlappten, der spaeter
+         * gezeichnete gewann, und der obere war nicht mehr zu treffen. Man
+         * fasste oben an und zog unten.
+         */
+        if (el.offsetHeight < 24) {
+          kasten.setAttribute("data-eng", "");
+        } else {
+          kasten.removeAttribute("data-eng");
+        }
+        if (el.offsetWidth < 24) {
+          kasten.setAttribute("data-schmal", "");
+        } else {
+          kasten.removeAttribute("data-schmal");
+        }
 
-      // An einem Text ziehen die Ecken die SCHRIFT - der Zeiger soll es sagen.
-      if (schriftFeld(gewaehlt)) {
-        rahmenWahl.setAttribute("data-schrift", "");
-      } else {
-        rahmenWahl.removeAttribute("data-schrift");
-      }
+        // An einem Text ziehen die Ecken die SCHRIFT - der Zeiger soll es sagen.
+        if (schriftFeld(gewaehlt)) {
+          kasten.setAttribute("data-schrift", "");
+        } else {
+          kasten.removeAttribute("data-schrift");
+        }
+      });
+
+      // Nirgends zu sehen heisst: es gibt sie nicht mehr.
+      if (getroffen === 0) waehle(null);
     };
 
     /*
@@ -682,13 +797,19 @@
       }
 
       if (id === null) {
-        if (rahmenWahl && rahmenWahl.parentNode) {
-          rahmenWahl.parentNode.removeChild(rahmenWahl);
-        }
+        /*
+         * Aus JEDER Wurzel, und ueber das DOM gesucht statt gemerkt: der
+         * Rahmen laedt neu, wenn jemand das Geraet wechselt, und ein
+         * gemerkter Knoten waere danach eine Leiche.
+         */
+        wurzeln().forEach(function (wurzel) {
+          wurzel.querySelectorAll(".b-rahmen-wahl").forEach(function (kasten) {
+            kasten.parentNode.removeChild(kasten);
+          });
+        });
         return;
       }
 
-      if (!rahmenWahl) rahmenWahl = baueRahmen();
       zeichne();
     };
 
@@ -805,7 +926,9 @@
       if (tippt) return;
 
       var griff = ereignis.target.closest("[data-griff]");
-      var el = griff ? knoten(gewaehlt) : ebeneAn(wurzel, ereignis.clientX, ereignis.clientY);
+      var el = griff
+        ? knotenIn(wurzel, gewaehlt)
+        : ebeneAn(wurzel, ereignis.clientX, ereignis.clientY);
 
       if (!el) {
         waehle(null);
