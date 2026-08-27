@@ -87,7 +87,21 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-spalte{min-width:0;}
   /* Die Karte laeuft mit, waehrend rechts gescrollt wird - sie ist der Grund,
      warum ueberhaupt jemand hier ist. */
-  @media (min-width:1120px){.b-buehne{position:sticky;top:5.5rem;}}
+  /* Und sie scrollt in sich selbst, statt die Seite lang zu machen.
+
+     Ohne diese Grenze wuchs die Seite mit der lebenden Vorschau von rund 1100
+     auf 4154 Pixel - gemessen an bild. Wer sich einen Abschnitt ansah, hatte
+     Liste und Tafel weit ueber sich, und der Editor war keine drei Spalten
+     mehr, sondern eine lange Rolle mit zwei leeren Raendern.
+
+     Jetzt ist die Mitte so hoch wie das Fenster und rollt darin. Die Seite
+     ist wieder so lang wie die Spalten daneben. */
+  @media (min-width:1120px){
+    .b-buehne{position:sticky;top:5.5rem;
+              max-height:calc(100vh - 7rem);max-height:calc(100dvh - 7rem);
+              overflow-y:auto;overscroll-behavior:contain;
+              padding-right:0.35rem;}
+  }
 
   /* Und seit der lebenden Vorschau laufen auch die beiden Randspalten mit.
 
