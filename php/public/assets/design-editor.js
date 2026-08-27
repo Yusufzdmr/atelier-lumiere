@@ -1095,6 +1095,14 @@
       wurzel.addEventListener("pointermove", beimBewegen);
       wurzel.addEventListener("pointerup", beende);
       wurzel.addEventListener("pointercancel", beende);
+
+      /*
+       * Der Doppelklick steht weiter unten - er braucht beginneTippen, und das
+       * steht dort. Ueber eine Huelle gebunden, damit beim ANHAENGEN noch
+       * nicht danach gefragt wird: gefragt wird erst beim Klick, und dann ist
+       * die Datei laengst durchgelaufen.
+       */
+      wurzel.addEventListener("dblclick", function (ereignis) { beimDoppelklick(ereignis); });
     };
 
     haengeZiehen(vorschau);
@@ -1154,9 +1162,17 @@
 
       // Alles gewaehlt: eine Textebene traegt ein Wort, ein Datum, einen
       // Namen - ueberschreiben ist der Normalfall, anhaengen die Ausnahme.
-      var auswahl = window.getSelection();
+      /*
+       * Im Dokument des KNOTENS, nicht im eigenen.
+       *
+       * Ein Range aus dem Editordokument ueber einen Knoten im Rahmen geht
+       * ueber eine Dokumentgrenze und markiert nichts; window.getSelection()
+       * des Editors weiss vom Rahmen ohnehin nichts. Dann stuende der
+       * Schreibzeiger nirgends und "alles gewaehlt" waere leer.
+       */
+      var auswahl = el.ownerDocument.defaultView.getSelection();
       if (auswahl) {
-        var bereich = document.createRange();
+        var bereich = el.ownerDocument.createRange();
         bereich.selectNodeContents(el);
         auswahl.removeAllRanges();
         auswahl.addRange(bereich);
@@ -1217,7 +1233,8 @@
       el.addEventListener("blur", aufBlur);
     };
 
-    vorschau.addEventListener("dblclick", function (ereignis) {
+    var beimDoppelklick = function (ereignis) {
+      var wurzel = ereignis.currentTarget;
       /*
        * NICHT ueber ereignis.target - das war der erste Versuch, und er hat
        * nie gegriffen.
@@ -1239,13 +1256,13 @@
       // Auf einem Griff wird gezogen, nicht geschrieben.
       if (ereignis.target.closest("[data-griff]")) return;
 
-      var el = knoten(gewaehlt);
+      var el = knotenIn(wurzel, gewaehlt);
       var f = el ? textFeld(gewaehlt) : null;
       if (!f) return;
 
       ereignis.preventDefault();
       beginneTippen(el, gewaehlt, f);
-    });
+    };
 
     /* --- Von der Liste aus waehlen, mit den Pfeilen schieben ------------- */
 
@@ -1714,6 +1731,37 @@
       liveKasten.hidden = imGeraet || liveKasten.innerHTML.trim() === "";
     };
 
+    /*
+     * Das Kuvert im Rahmen aufmachen, wenn jemand auf ein Geraet umschaltet.
+     *
+     * Gezogen werden konnte auch vorher - ebeneAn() sucht ueber die Rechtecke
+     * der Ebenen und fragt nicht, was darueber liegt. Zu SEHEN war nur
+     * nichts: die Karte steckt hinter dem Kuvert, und der Wahlrahmen lag auf
+     * einer geschlossenen Huelle. Man zog blind.
+     *
+     * Geklickt wird das Kuvert und nicht an fremden Inline-Stilen gedreht -
+     * oeffneRahmen() steht weiter unten und begruendet es dort: die Sperre
+     * hebt invitation.js selbst auf, wenn seine Choreografie durch ist. Von
+     * aussen daran zu drehen hiesse, dieselbe Sache an zwei Stellen zu
+     * entscheiden.
+     *
+     * Derselbe Weg, den die Abschnittswahl schon nimmt. Wer die geschlossene
+     * Huelle sehen will, nimmt "Ganz ansehen" - der Rahmen hier ist die
+     * Arbeitsflaeche.
+     */
+    var kuvertAuf = function () {
+      var kind = rahmen.querySelector("iframe");
+      if (!kind) return;
+
+      var doc;
+      try { doc = kind.contentDocument; } catch (fehler) { return; }
+      // Frisch gebaut traegt der Rahmen noch about:blank - dann ist hier
+      // nichts zu finden, und der Versuch sagt das von selbst.
+      if (!doc || !doc.querySelector("[data-envelope]")) return;
+
+      oeffneRahmen(doc, function () {});
+    };
+
     var passeAn = function (breite) {
       var kind = rahmen.querySelector("iframe");
       if (!kind) return;
@@ -1755,6 +1803,15 @@
         }
 
         passeAn(parseInt(welche, 10));
+
+        // Zweimal, weil es zwei Faelle sind: beim ERSTEN Klick entsteht der
+        // Rahmen gerade erst und hat noch nichts geladen (dafuer das
+        // load-Ereignis), bei jedem weiteren steht er schon und laedt nicht
+        // neu (dafuer der kurze Aufschub).
+        var frisch = rahmen.querySelector("iframe");
+        if (frisch) frisch.addEventListener("load", kuvertAuf, { once: true });
+        window.setTimeout(kuvertAuf, 60);
+
         if (hinweisAnsicht) hinweisAnsicht.textContent = worte.seite;
       });
     });

@@ -388,3 +388,47 @@ assert_contains($editor, 'touch-action:none', 'Editor: die Ebenen geben den Fing
  * und ein versteckter Knoten hat keine Groesse. Der Griff zoege ins Nichts.
  */
 assert_contains($js, 'var knotenIn', 'Skript: die Ebene wird in der angefassten Wurzel gesucht');
+
+/* --- Schritt fuenf und sechs: aufmachen und beschriften ------------------- */
+
+/*
+ * Fuenf: das Kuvert im Rahmen geht auf, wenn man auf ein Geraet umschaltet.
+ *
+ * Ziehen ging auch vorher - ebeneAn() sucht ueber die Rechtecke der Ebenen
+ * und fragt nicht, was darueber liegt. Zu SEHEN war nur nichts: die Karte
+ * steckt hinter dem Kuvert, und der Wahlrahmen lag auf einer geschlossenen
+ * Huelle. Man zog blind.
+ *
+ * Aufgemacht wird mit oeffneRahmen(), das es fuer die Abschnittswahl schon
+ * gibt - dort ist derselbe Satz begruendet: von aussen an fremden
+ * Inline-Stilen zu drehen hiesse, dieselbe Sache an zwei Stellen zu
+ * entscheiden. Geklickt wird das Kuvert, den Rest macht invitation.js.
+ */
+assert_contains($js, 'var oeffneRahmen', 'Skript: den Weg zum Aufmachen gibt es schon');
+assert_contains($js, 'kuvertAuf', 'Skript: und das Umschalten nimmt ihn auch');
+
+/*
+ * Sechs: der Doppelklick auf den Text gilt in jeder Wurzel.
+ *
+ * Er war die letzte Hand, die noch am Kasten in der Mitte hing. Im Rahmen
+ * liess sich damit nichts beschriften - man klickte doppelt, und es geschah
+ * nichts.
+ */
+assert_same(0, substr_count($js, 'vorschau.addEventListener("dblclick"'),
+    'Skript: der Doppelklick haengt nicht mehr nur am Kasten in der Mitte');
+assert_contains($js, 'wurzel.addEventListener("dblclick"',
+    'Skript: sondern an jeder Wurzel');
+
+/*
+ * Und er schreibt im richtigen Dokument.
+ *
+ * Auswahl und Range gehoeren dem Dokument, in dem der Knoten steht.
+ * document.createRange() im Editor auf einen Knoten IM RAHMEN angewandt ist
+ * ein Range ueber Dokumentgrenzen - der markiert nichts, und
+ * window.getSelection() des Editors weiss vom Rahmen ohnehin nichts. Dann
+ * stuende der Schreibzeiger nirgends und "alles gewaehlt" waere leer.
+ */
+assert_contains($js, 'ownerDocument.createRange',
+    'Skript: der Bereich entsteht im Dokument des Knotens');
+assert_contains($js, 'defaultView.getSelection',
+    'Skript: und die Auswahl gehoert demselben Fenster');
