@@ -347,7 +347,16 @@ use function Atelier\e;
         <?php if (($videos ?? []) !== []) : ?>
           <label class="<?= $label ?>"><?= $tr ? 'Yüklü videolardan seç' : 'Aus der Ablage wählen' ?>
             <select class="<?= $feld ?>" data-introwahl>
-              <option value=""><?= $tr ? '— seç —' : '— wählen —' ?></option>
+              <?php /*
+                 Die leere Zeile heisst "keiner" und nicht "waehlen".
+
+                 Sie stand als "— waehlen —" da und tat beim Anklicken nichts:
+                 wer den Film wieder loswerden wollte, musste den Pfad von Hand
+                 leeren, und darauf kommt niemand. Jetzt nimmt sie ihn weg -
+                 mitsamt Standbild, denn ein Standbild ohne Film ist ein erstes
+                 Bild fuer nichts.
+              */ ?>
+              <option value=""><?= $tr ? '— film yok —' : '— kein Film —' ?></option>
               <?php foreach ($videos as $film) : ?>
                 <option value="<?= e((string) $film['mp4']) ?>"
                         data-poster="<?= e((string) $film['poster']) ?>"
@@ -358,6 +367,16 @@ use function Atelier\e;
               <?php endforeach; ?>
             </select></label>
         <?php endif; ?>
+
+          <?php /*
+             Und ein Knopf daneben, der dasselbe tut.
+
+             "Kaldir koy" - die leere Zeile in der Liste findet nur, wer die
+             Liste aufklappt. Der Knopf steht offen da und nimmt beides weg,
+             Film und Standbild.
+          */ ?>
+          <button type="button" class="<?= $knopf ?? 'border border-sand-deep px-3 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-muted hover:text-ink' ?> mt-2"
+                  data-introweg><?= $tr ? 'Videoyu kaldır' : 'Film wegnehmen' ?></button>
 
         <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da video yükle' : 'oder Film hochladen' ?>
           <input type="file" name="intro_datei" accept="video/mp4,video/webm,video/quicktime" class="<?= $feld ?>"></label>

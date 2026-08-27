@@ -172,7 +172,22 @@ assert_contains($steuerV, "'videos'   => DesignVideos::all()", 'Controller: der 
 assert_contains($editorSec, 'data-introwahl', 'Editor: die Auswahl steht da');
 assert_contains($editorSec, 'data-poster', 'Editor: mit dem Standbild des Films');
 assert_contains($js, 'data-introwahl', 'Skript: haengt daran');
-assert_contains($js, 'schreibe("intro_poster"', 'Skript: und schreibt auch das Standbild');
+assert_contains($js, 'schreibeIntro("intro_poster"', 'Skript: und schreibt auch das Standbild');
+
+/*
+ * Und wieder wegnehmen.
+ *
+ * Der Weg dorthin war, den Pfad von Hand zu leeren - darauf kommt niemand:
+ * "kaldirmak istedigimde kaldir koy". Die leere Zeile in der Liste hiess
+ * "waehlen" und tat beim Anklicken gar nichts.
+ *
+ * Weggenommen wird BEIDES. Ein Standbild ohne Film ist ein erstes Bild fuer
+ * nichts - es bliebe im Dokument stehen und machte irgendwann mit fremdem
+ * Gesicht auf, wenn ein anderer Film dazukommt.
+ */
+assert_contains($editorSec, 'data-introweg', 'Editor: ein Knopf nimmt den Film weg');
+assert_contains($js, 'var introWeg', 'Skript: und die Hand dazu');
+assert_contains($js, 'schreibeIntro("intro_poster", "")', 'Skript: das Standbild geht mit');
 
 /*
  * Der Kasten haengt am Pfad, nicht nur am Dateifeld.

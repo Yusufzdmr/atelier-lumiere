@@ -193,23 +193,47 @@
    * ohne Grund zurueck - und ein Vorspann ohne Standbild ist besser als einer
    * mit einem fremden.
    */
+  var schreibeIntro = function (name, wert) {
+    var feld = form.querySelector('[name="' + name + '"]');
+    if (!feld) return;
+    feld.value = wert;
+    feld.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  /*
+   * Wegnehmen heisst: beides.
+   *
+   * Ein Standbild ohne Film ist ein erstes Bild fuer nichts - es stuende im
+   * Dokument und waere nirgends zu sehen, bis irgendwann ein anderer Film
+   * kommt und mit fremdem Gesicht aufmacht.
+   */
+  var introWeg = function () {
+    schreibeIntro("intro_video", "");
+    schreibeIntro("intro_poster", "");
+
+    var wahl = form.querySelector("[data-introwahl]");
+    if (wahl) wahl.selectedIndex = 0;
+  };
+
+  form.querySelectorAll("[data-introweg]").forEach(function (knopf) {
+    knopf.addEventListener("click", introWeg);
+  });
+
   form.querySelectorAll("[data-introwahl]").forEach(function (wahl) {
     wahl.addEventListener("change", function () {
       var film = wahl.value;
-      if (film === "") return;
+
+      // Die leere Zeile heisst "keiner" und nicht "nichts tun".
+      if (film === "") {
+        introWeg();
+        return;
+      }
 
       var gewaehlt = wahl.options[wahl.selectedIndex];
       var standbild = gewaehlt ? gewaehlt.getAttribute("data-poster") : "";
 
-      var schreibe = function (name, wert) {
-        var feld = form.querySelector('[name="' + name + '"]');
-        if (!feld) return;
-        feld.value = wert;
-        feld.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-
-      schreibe("intro_video", film);
-      if (standbild) schreibe("intro_poster", standbild);
+      schreibeIntro("intro_video", film);
+      if (standbild) schreibeIntro("intro_poster", standbild);
     });
   });
 
