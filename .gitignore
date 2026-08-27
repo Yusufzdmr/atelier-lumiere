@@ -49,6 +49,11 @@ scripts/.raw/
 # agent tooling
 .agents/
 .claude/
+# Arbeitsspuren des Werkzeugs, nicht der Vorlage: Fortschrittsnotizen,
+# Diffs vergangener Sitzungen, Zwischenstaende als HTML - drei Megabyte, die
+# beim naechsten Rechner ohnehin anders aussehen. Der Ordner sagt es selbst:
+# .superpowers/sdd/.gitignore enthaelt nur ein Sternchen.
+.superpowers/
 skills-lock.json
 
 # PHP-Fassung: lokale Konfiguration und Datenauszug
