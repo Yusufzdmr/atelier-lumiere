@@ -363,6 +363,76 @@
       zeichne();
     };
 
+    /* --- Welche Ebene liegt unter dem Zeiger? ---------------------------- */
+
+    /*
+     * Nicht die oberste - die ist oft nur ein Kasten.
+     *
+     * Gemessen an der Vorlage "bild": die Ueberschrift ist eine Textebene mit
+     * h=100, also ein Kasten ueber die ganze Karte, in dem oben eine einzige
+     * Zeile steht. Er lag ueber den Namen des Paares, ueber dem Datum, ueber
+     * allem. Wer die Namen anfasste, zog die Ueberschrift - weit oben,
+     * unbemerkt - und die Namen blieben stehen. Von aussen sah das aus, als
+     * taete das Ziehen gar nichts.
+     *
+     * Der Kasten ist also die falsche Frage. Gesucht wird, was zu SEHEN ist:
+     * bei Text die Zeilen selbst, bei Bild, Form und Film der Kasten - dort
+     * IST er das Sichtbare. Trifft nichts davon, bleibt es beim obersten
+     * Kasten: irgendetwas anzufassen ist besser als nichts, und ein leerer
+     * Textkasten will manchmal auch bewegt werden.
+     */
+    var sichtbarHier = function (el, x, y) {
+      // Bild, Form, Film: der Kasten ist die Zeichnung.
+      if (el.tagName !== "DIV") return true;
+
+      // Ein DIV ohne Text ist eine Form - auch da ist der Kasten alles.
+      if (el.textContent.trim() === "") return true;
+
+      var bereich = document.createRange();
+      bereich.selectNodeContents(el);
+
+      var zeilen = bereich.getClientRects();
+      for (var i = 0; i < zeilen.length; i++) {
+        var z = zeilen[i];
+        // Etwas Luft: eine Zeile trifft man am Rand der Buchstaben, nicht
+        // erst in ihrer Mitte.
+        if (x >= z.left - 4 && x <= z.right + 4 && y >= z.top - 4 && y <= z.bottom + 4) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    var ebeneAn = function (x, y) {
+      var sichtbar = null, sichtbarZ = -1;
+      var kasten = null, kastenZ = -1;
+
+      /*
+       * Die Stapelfolge zaehlt, nicht die Reihenfolge im Markup - beim
+       * Umsortieren ohne Speichern schreibt stapleNeu() den z-Index neu, und
+       * dann stimmt das Markup nicht mehr mit dem ueberein, was oben liegt.
+       */
+      vorschau.querySelectorAll(".d-el").forEach(function (el) {
+        if (el.hidden || el.style.display === "none") return;
+
+        var id = kennung(el);
+        if (!id || !kastenFeld(id, "x")) return;
+
+        var r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        if (x < r.left || x > r.right || y < r.top || y > r.bottom) return;
+
+        var z = parseInt(window.getComputedStyle(el).zIndex, 10);
+        if (!isFinite(z)) z = 0;
+
+        if (z >= kastenZ) { kasten = el; kastenZ = z; }
+        if (z >= sichtbarZ && sichtbarHier(el, x, y)) { sichtbar = el; sichtbarZ = z; }
+      });
+
+      return sichtbar || kasten;
+    };
+
     /* --- Anfassen und schieben ------------------------------------------ */
 
     var zieht = null;
@@ -379,7 +449,7 @@
       if (tippt) return;
 
       var griff = ereignis.target.closest("[data-griff]");
-      var el = griff ? knoten(gewaehlt) : ereignis.target.closest(".d-el");
+      var el = griff ? knoten(gewaehlt) : ebeneAn(ereignis.clientX, ereignis.clientY);
 
       if (!el) {
         waehle(null);

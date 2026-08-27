@@ -81,3 +81,23 @@ assert_not_contains($js, '-50, 150', 'Skript: und schreibt die Grenzen nicht sel
  * beiden.
  */
 assert_contains($js, 'isContentEditable', 'Skript: Strg+Z gehoert dem Browser, solange auf der Karte getippt wird');
+
+/*
+ * Angefasst wird, was man SIEHT - nicht der oberste Kasten.
+ *
+ * Gemessen am 27.08.2026 an der lebenden Vorlage "bild": die Ueberschrift ist
+ * eine Textebene mit h=100, also ein Kasten ueber die ganze Karte, in dem
+ * oben eine einzige Zeile steht. Sie lag damit ueber den Namen des Paares,
+ * ueber dem Datum, ueber allem. Wer die Namen anfasste und zog, verschob die
+ * Ueberschrift - weit oben, unbemerkt - und die Namen blieben stehen. Von
+ * aussen sah das aus, als taete das Ziehen gar nichts: "suerukle birak
+ * yapamiyorum".
+ *
+ * elementFromPoint beantwortet die falsche Frage ("welcher Kasten liegt
+ * hier"), und das Ziehen braucht die andere ("welche Ebene ist hier zu
+ * sehen"). Bei einer Textebene sind das die Zeilen selbst, und die kennt nur
+ * ein Range.
+ */
+assert_contains($js, 'getClientRects', 'Skript: fragt die Zeilen des Textes ab, nicht nur den Kasten');
+assert_contains($js, 'createRange', 'Skript: und zwar ueber einen Range');
+assert_not_contains($js, 'elementFromPoint', 'Skript: nicht ueber den obersten Kasten');
