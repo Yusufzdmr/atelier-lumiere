@@ -929,7 +929,75 @@ final class DesignSections
                 // Er ist das, was gelesen wird - die Uhrzeit ordnet nur ein.
                 . $sel . ' .d-sec-plan .d-plan-titel{font-family:var(--df-display,inherit);'
                 . 'font-size:1.45em;line-height:1.2;}'
-                . $sel . ' .d-sec-plan .d-plan-text{opacity:0.8;}',
+                . $sel . ' .d-sec-plan .d-plan-text{opacity:0.8;}'
+
+                /*
+                 * Die beiden Enden des Fadens.
+                 *
+                 * Der Faden haengt an JEDER Zeile und reicht 2.2rem ueber sie
+                 * hinaus, nach oben wie nach unten. In der Mitte ist das genau
+                 * richtig - so stossen die Stuecke auf den Zeilenkanten
+                 * aneinander und ergeben eine durchgehende Linie. An den Enden
+                 * ragt er ins Leere: oben ueber die erste Uhrzeit hinaus,
+                 * unten ein gutes Stueck unter die letzte Zeile. Auf dem
+                 * Telefon war das ein Strich, der neben der Weinflasche
+                 * auslief.
+                 *
+                 * Also endet er in den Ringen, zwischen denen er gespannt ist:
+                 * --d-plan-kopf ist die erste Titelzeile, die halbe Hoehe also
+                 * die Mitte des Rings. Dieselbe Zahl, an der auch der Ring
+                 * selbst haengt - keine zweite erfunden.
+                 *
+                 * Bei einer einzigen Zeile treffen beide Regeln dasselbe <dt>
+                 * und der Faden wird null hoch. Das ist richtig so: ein
+                 * einzelner Moment braucht keinen Faden zu irgendwohin.
+                 */
+                . $sel . ' .d-sec-plan dt:first-of-type::after{top:calc(var(--d-plan-kopf) / 2);}'
+                . $sel . ' .d-sec-plan dt:last-of-type::after{bottom:calc(100% - var(--d-plan-kopf) / 2);}'
+
+                /*
+                 * Und er zeichnet sich, waehrend gelesen wird.
+                 *
+                 * "Birde boyle cizgi olusa uzadikca olurmu" - und dazu "once
+                 * semboller gelse". Der Strahl stand bisher fertig da, bevor
+                 * die erste Zeile gelesen war.
+                 *
+                 * Kein neues Skript: invitation.js sucht ohnehin jedes .iv und
+                 * schreibt data-visible="true", sobald es im Bild steht. Die
+                 * Klasse setzt programm(), die Reihenfolge steht hier.
+                 *
+                 * Erst die Verschiebung abstellen. Die Grundregel von .iv
+                 * schiebt um 30px nach unten - fuer einen Absatz richtig, hier
+                 * falsch: an jedem <dt> haengt ein Stueck des Fadens, und die
+                 * Stuecke stossen auf den Zeilenkanten aneinander. Schoebe
+                 * jede Zeile fuer sich, waere der Faden waehrend des Scrollens
+                 * eine Leiter mit versetzten Sprossen. <dd> steht mit in der
+                 * Regel, obwohl dort kein Faden haengt: Uhrzeit und Satz einer
+                 * Zeile duerfen nicht verschieden weit wandern.
+                 */
+                . $sel . ' .d-sec-plan dt.iv,' . $sel . ' .d-sec-plan dd.iv{transform:none;}'
+
+                // Das Zeichen zuerst - es setzt sich, sobald die Zeile im Bild
+                // steht. Ohne eigene Verzoegerung: es IST der Anfang.
+                . $sel . ' .d-sec-plan dt.iv .d-plan-rozet{transform:scale(0.6);'
+                . 'transition:transform 0.5s cubic-bezier(.16,1,.3,1);}'
+                . $sel . ' .d-sec-plan dt.iv[data-visible=true] .d-plan-rozet{transform:none;}'
+
+                /*
+                 * Dann der Faden. transform-origin:top ist der ganze
+                 * Unterschied zwischen "er zieht sich zur naechsten Zeile" und
+                 * "er waechst aus seiner Mitte nach beiden Seiten
+                 * auseinander".
+                 *
+                 * Die 0.18s sind die Antwort auf "once semboller gelse": der
+                 * Faden setzt an, wenn der Ring steht.
+                 */
+                . $sel . ' .d-sec-plan dt.iv::after{transform:scaleY(0);transform-origin:top;'
+                . 'transition:transform 0.55s cubic-bezier(.16,1,.3,1) 0.18s;}'
+                . $sel . ' .d-sec-plan dt.iv[data-visible=true]::after{transform:none;}'
+
+                // Und zuletzt das Wort - es wartet Zeichen und Faden ab.
+                . $sel . ' .d-sec-plan dd.iv{transition-delay:0.38s;}',
 
             /*
              * Zwei Familien nebeneinander. Ohne eigenes Markup: die beiden
@@ -1154,7 +1222,7 @@ final class DesignSections
                 'location'  => self::ort($data, $locale, $abschnitt['settings']),
                 'countdown' => self::countdown($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
-                'program'   => self::programm($data, $locale),
+                'program'   => self::programm($data, $locale, (string) $abschnitt['variant']),
                 'rsvp'      => self::formular($form, $locale),
                 'text'      => self::freitext($abschnitt, $data),
                 'footer'    => self::schluss($abschnitt, $data),
@@ -1348,7 +1416,7 @@ final class DesignSections
     }
 
     /** @param array<string,mixed> $data */
-    private static function programm(array $data, string $locale): string
+    private static function programm(array $data, string $locale, string $variant = 'default'): string
     {
         // d-sec-plan und nicht d-sec-program: die <section> traegt bereits
         // d-sec-<typ>, also d-sec-program. Solange die Liste denselben Namen
@@ -1357,6 +1425,22 @@ final class DesignSections
         // ihrer Liste stand statt darueber. Genau dieselbe Falle, die bei
         // freitext() vermieden wurde und hier jahrelang zuschnappte.
         $out = '<dl class="d-sec-plan">';
+
+        /*
+         * Nur der Zeitstrahl haengt am Beobachter.
+         *
+         * invitation.js sucht jedes .iv auf der Seite und schreibt
+         * data-visible="true", sobald es im Bild steht (startReveals). Der
+         * Stilblock der Gestalt macht daraus die Reihenfolge: Zeichen, Faden,
+         * Wort. Ein zweites Skript mit derselben Aufgabe waere die Sorte
+         * Kopie, die ein halbes Jahr spaeter auseinanderlaeuft - dasselbe
+         * Argument wie bei der Musik weiter unten.
+         *
+         * Die zweispaltige Gestalt bekommt es NICHT: sie hat keine Linie, die
+         * sich ziehen koennte, und ein Ablauf, der beim Scrollen erst
+         * auftaucht, waere dort eine Verzoegerung ohne Grund.
+         */
+        $iv = $variant === 'zeitstrahl' ? ' class="iv"' : '';
 
         foreach (self::programRows($data) as $zeile) {
             // Eigener Titel gewinnt, sonst der Vorschlag des Zeichens.
@@ -1371,7 +1455,7 @@ final class DesignSections
              * Wahrheit - und der Zeitstrahl braucht das Zeichen dort, wo seine
              * Linie laeuft.
              */
-            $out .= '<dt><span class="d-plan-zeit">' . e($zeile['time']) . '</span>';
+            $out .= '<dt' . $iv . '><span class="d-plan-zeit">' . e($zeile['time']) . '</span>';
 
             if ($zeile['icon'] !== '') {
                 /*
@@ -1390,7 +1474,7 @@ final class DesignSections
                     . $maske . ';mask-image:' . $maske . '"></span></span>';
             }
 
-            $out .= '</dt><dd><span class="d-plan-titel">' . e($titel) . '</span>';
+            $out .= '</dt><dd' . $iv . '><span class="d-plan-titel">' . e($titel) . '</span>';
 
             // Kein leerer Absatz fuer eine Zeile ohne Satz.
             if ($zeile['text'] !== '') {

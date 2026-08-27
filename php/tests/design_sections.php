@@ -1092,6 +1092,129 @@ assert_contains(
     'css: der Titel steht gross und in der Auszeichnungsschrift'
 );
 
+/* --- Der Strahl zeichnet sich, waehrend man ihn liest --------------------
+ *
+ * "Birde boyle cizgi olusa uzadikca olurmu" - und dazu: "once semboller
+ * gelse". Der Strahl stand bisher fertig da, bevor der Gast die erste Zeile
+ * gelesen hatte. Jetzt kommt er Zeile fuer Zeile: das Zeichen setzt sich,
+ * der Faden zieht sich von ihm zur naechsten Zeile, und erst dann kommt das
+ * Wort dazu.
+ *
+ * KEIN neues Skript. invitation.js sucht ohnehin jedes .iv auf der Seite und
+ * schreibt data-visible="true", sobald es im Bild steht (startReveals, mit
+ * IntersectionObserver und einem Netz aus Scroll-Durchlaeufen darunter).
+ * Dieselbe Begruendung wie bei der Musik: ein zweites Skript mit derselben
+ * Aufgabe laeuft ein halbes Jahr spaeter auseinander.
+ *
+ * Der Reihenfolge wegen liegt die Choreografie an <dt> und <dd> getrennt:
+ * das Raster dehnt beide auf dieselbe Zeilenhoehe, sie kommen also im selben
+ * Moment ins Bild, und der Abstand zwischen Zeichen und Wort ist dann eine
+ * Zahl im Stilblock statt einer Wette auf das Scrollen.
+ */
+
+$strahlMarkup = DesignSections::html(
+    sec_doc([['id' => 'ablauf', 'type' => 'program', 'variant' => 'zeitstrahl']]),
+    ['program' => [
+        ['time' => '14:00', 'icon' => 'giris', 'title' => 'Ankommen', 'text' => 'Mit Aperitif.'],
+        ['time' => '15:00', 'icon' => 'nikah', 'title' => 'Trauung'],
+    ]],
+    'de'
+);
+
+assert_same(2, substr_count($strahlMarkup, '<dt class="iv">'),
+    'html: jede Zeile des Strahls haengt am Beobachter');
+assert_same(2, substr_count($strahlMarkup, '<dd class="iv">'),
+    'html: und ihr Wort ebenso');
+
+/*
+ * Die zweispaltige Gestalt bleibt, wie sie war. Sie hat keine Linie, die sich
+ * ziehen koennte, und ein Ablauf, der beim Scrollen erst auftaucht, waere
+ * dort nur eine Verzoegerung ohne Grund.
+ */
+$zweiSpalten = DesignSections::html(
+    sec_doc([['id' => 'ablauf', 'type' => 'program']]),
+    ['program' => [['time' => '14:00', 'title' => 'Ankommen']]],
+    'de'
+);
+
+assert_not_contains($zweiSpalten, 'class="iv"',
+    'html: die zweispaltige Gestalt bleibt ohne Beobachter');
+
+/*
+ * Erst die Verschiebung abstellen.
+ *
+ * Die Grundregel von .iv schiebt um 30px nach unten. Fuer einen Absatz ist das
+ * genau richtig; hier haengt an jedem <dt> ein Stueck der Linie, und die
+ * Stuecke stossen auf den Zeilenkanten aneinander. Schoebe jede Zeile fuer
+ * sich, waere der Faden waehrend des Scrollens eine Leiter mit versetzten
+ * Sprossen - er soll sich ziehen, nicht wackeln.
+ *
+ * Die Regel nennt auch <dd>, obwohl dort keine Linie haengt: Uhrzeit und Satz
+ * einer Zeile duerfen nicht verschieden weit wandern.
+ *
+ * Sie deckt nebenbei die Vorlagen mit ab, die ihre .iv seitlich schieben
+ * (.rv-side .iv:nth-child(odd)). Auf dieser Seite steht heute kein rv-*, aber
+ * <dt> und <dd> sind die ungeraden und geraden Kinder derselben <dl> - kaeme
+ * die Klasse je dazu, flogen Uhrzeiten und Saetze auseinander.
+ */
+assert_contains($strahl, $vsel . ' dt.iv,' . $vsel . ' dd.iv{transform:none;}',
+    'css: im Strahl schiebt keine Vorlage die Zeilen zur Seite');
+
+// Das Zeichen zuerst: es setzt sich, sobald die Zeile im Bild steht.
+assert_contains(
+    $strahl,
+    $vsel . ' dt.iv .d-plan-rozet{transform:scale(0.6);'
+        . 'transition:transform 0.5s cubic-bezier(.16,1,.3,1);}',
+    'css: das Zeichen kommt aus sich heraus'
+);
+assert_contains(
+    $strahl,
+    $vsel . ' dt.iv[data-visible=true] .d-plan-rozet{transform:none;}',
+    'css: und zwar erst, wenn die Zeile gesehen wird'
+);
+
+/*
+ * Dann der Faden - von oben nach unten, nicht aus der Mitte heraus:
+ * transform-origin:top ist der ganze Unterschied zwischen "er zieht sich zur
+ * naechsten Zeile" und "er waechst nach beiden Seiten auseinander".
+ *
+ * Die Verzoegerung ist die Antwort auf "once semboller gelse": der Faden
+ * setzt an, wenn das Zeichen steht.
+ */
+assert_contains(
+    $strahl,
+    $vsel . ' dt.iv::after{transform:scaleY(0);transform-origin:top;'
+        . 'transition:transform 0.55s cubic-bezier(.16,1,.3,1) 0.18s;}',
+    'css: der Faden zieht sich von oben nach unten, nach dem Zeichen'
+);
+assert_contains(
+    $strahl,
+    $vsel . ' dt.iv[data-visible=true]::after{transform:none;}',
+    'css: und auch er wartet, bis die Zeile im Bild steht'
+);
+
+// Und zuletzt das Wort.
+assert_contains($strahl, $vsel . ' dd.iv{transition-delay:0.38s;}',
+    'css: das Wort kommt nach Zeichen und Faden');
+
+/*
+ * Die beiden Enden.
+ *
+ * Der Faden haengt an JEDER Zeile und reicht 2.2rem ueber sie hinaus - nach
+ * oben wie nach unten. In der Mitte ist das genau richtig, die Stuecke stossen
+ * aneinander. An den Enden ragt er ins Leere: oben ueber die erste Uhrzeit
+ * hinaus, unten ein ganzes Stueck unter die letzte Zeile. Auf dem Telefon war
+ * das ein Strich, der neben der Weinflasche auslief.
+ *
+ * Solange der Faden einfach dastand, war das ein Schoenheitsfehler. Jetzt, wo
+ * er sich ZIEHT, waere es der letzte Zug - ins Nichts. Also endet er in den
+ * Ringen, zwischen denen er gespannt ist.
+ */
+assert_contains($strahl, $vsel . ' dt:first-of-type::after{top:calc(var(--d-plan-kopf) / 2);}',
+    'css: oben faengt der Faden im ersten Ring an');
+assert_contains($strahl, $vsel . ' dt:last-of-type::after{bottom:calc(100% - var(--d-plan-kopf) / 2);}',
+    'css: und unten hoert er im letzten auf');
+
 /* --- Die Speisekarte -----------------------------------------------------
  *
  * "Davetiyede yemek menusu gosterilsin mi? Evet derse: Baslangic, Corba, Ana
