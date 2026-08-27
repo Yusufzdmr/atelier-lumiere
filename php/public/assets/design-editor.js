@@ -392,16 +392,35 @@
       bereich.selectNodeContents(el);
 
       var zeilen = bereich.getClientRects();
+      if (!zeilen.length) return true;
+
+      /*
+       * Die Zeilen zu EINEM Kasten zusammenfassen, nicht einzeln pruefen.
+       *
+       * Einzeln geprueft faellt der Zwischenraum zwischen den Zeilen heraus,
+       * und der ist bei einer Schauschrift breiter als die Zeile selbst:
+       * gemessen an den Namen des Paares - drei Zeilen, "Sophia / & /
+       * Maximilian" - lag ein Griff zwischen zwei Zeilen daneben und fasste
+       * den Hintergrund. Wer einen Namen anfassen will, zielt auf den Block,
+       * nicht auf eine Zeile.
+       *
+       * Bei einer einzelnen Zeile ist der Zusammenschluss die Zeile selbst -
+       * genau das, was die Ueberschrift von ihrem karten-hohen Kasten
+       * unterscheidet.
+       */
+      var links = Infinity, rechts = -Infinity, oben = Infinity, unten = -Infinity;
+
       for (var i = 0; i < zeilen.length; i++) {
         var z = zeilen[i];
-        // Etwas Luft: eine Zeile trifft man am Rand der Buchstaben, nicht
-        // erst in ihrer Mitte.
-        if (x >= z.left - 4 && x <= z.right + 4 && y >= z.top - 4 && y <= z.bottom + 4) {
-          return true;
-        }
+        if (z.left < links) links = z.left;
+        if (z.right > rechts) rechts = z.right;
+        if (z.top < oben) oben = z.top;
+        if (z.bottom > unten) unten = z.bottom;
       }
 
-      return false;
+      // Etwas Luft: eine Zeile trifft man am Rand der Buchstaben, nicht erst
+      // in ihrer Mitte.
+      return x >= links - 4 && x <= rechts + 4 && y >= oben - 4 && y <= unten + 4;
     };
 
     var ebeneAn = function (x, y) {
@@ -1653,6 +1672,30 @@
     haltAn = false;
   };
 
+  /*
+   * Die beiden Knoepfe unten im Balken.
+   *
+   * Strg+Z gibt es am Telefon nicht, und dort wird es mehr gebraucht als am
+   * Schreibtisch: wer ausprobiert, verstellt auch mal etwas, das gut war -
+   * und ohne Weg zurueck probiert man beim naechsten Mal nicht mehr.
+   *
+   * Sie zeigen auch, OB es einen Weg gibt: ein Knopf, der nichts tut, ist
+   * schlimmer als keiner, weil man ihn zweimal drueckt und dann der Seite
+   * nicht mehr traut. Gesperrt starten sie ohnehin - so verspricht die
+   * Vorlage nichts, was ohne Skript niemand einloest.
+   *
+   * Sie stehen VOR merken(), nicht bei zurueck/vor: merken() laeuft einmal
+   * beim Laden und stellt die Knoepfe mit - waere knoepfeStellen dann noch
+   * nicht zugewiesen, bliebe der ganze Editor an dieser einen Zeile stehen.
+   */
+  var knopfZurueck = form.querySelector("[data-zurueck]");
+  var knopfVor = form.querySelector("[data-vor]");
+
+  var knoepfeStellen = function () {
+    if (knopfZurueck) knopfZurueck.disabled = geschichte.length < 2;
+    if (knopfVor) knopfVor.disabled = kuenftig.length === 0;
+  };
+
   var merken = function () {
     if (haltAn) return;
 
@@ -1664,6 +1707,11 @@
     // klein; wer weiter zurueck will, laedt die Seite neu.
     if (geschichte.length > 100) geschichte.shift();
     kuenftig.length = 0;
+
+    // Erst ab dem zweiten Zustand gibt es etwas zurueckzudrehen, und ein
+    // neuer Schritt wirft den Weg nach vorn weg - beides steht den Knoepfen
+    // an, sobald es passiert.
+    knoepfeStellen();
   };
 
   merken();
@@ -1690,6 +1738,7 @@
     if (geschichte.length < 2) return;
     kuenftig.push(geschichte.pop());
     herstellen(geschichte[geschichte.length - 1]);
+    knoepfeStellen();
   };
 
   var vor = function () {
@@ -1697,7 +1746,11 @@
     var naechster = kuenftig.pop();
     geschichte.push(naechster);
     herstellen(naechster);
+    knoepfeStellen();
   };
+
+  if (knopfZurueck) knopfZurueck.addEventListener("click", zurueck);
+  if (knopfVor) knopfVor.addEventListener("click", vor);
 
   document.addEventListener("keydown", function (ereignis) {
     if (!ereignis.ctrlKey && !ereignis.metaKey) return;

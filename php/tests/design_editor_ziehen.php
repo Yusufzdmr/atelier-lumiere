@@ -101,3 +101,32 @@ assert_contains($js, 'isContentEditable', 'Skript: Strg+Z gehoert dem Browser, s
 assert_contains($js, 'getClientRects', 'Skript: fragt die Zeilen des Textes ab, nicht nur den Kasten');
 assert_contains($js, 'createRange', 'Skript: und zwar ueber einen Range');
 assert_not_contains($js, 'elementFromPoint', 'Skript: nicht ueber den obersten Kasten');
+
+/* --- Am Telefon ---------------------------------------------------------- */
+
+/*
+ * Ziehen mit dem Finger.
+ *
+ * Die Zeigerereignisse kennen den Finger von sich aus - aber der Browser
+ * nimmt ihn zuerst fuer sich: eine Wischbewegung auf der Karte scrollt die
+ * Seite, und das Ziehen kommt nie an. Am 27.08.2026 stand in der ganzen
+ * Editorseite kein einziges touch-action, und damit war die Karte am Telefon
+ * nur zum Ansehen da.
+ */
+assert_contains($editor, 'touch-action', 'Editor: die Karte gibt den Finger nicht an die Seite ab');
+
+/*
+ * Und ein Knopf zum Zurueckdrehen.
+ *
+ * Strg+Z gibt es am Telefon nicht. Gebraucht wird es dort aber mehr als am
+ * Schreibtisch: "test ederken deniyorum yani degistiriyorum bakiyorum ne
+ * degisti diye ... insan guzel olan bir seyi bozabiliyor". Wer probiert, muss
+ * zurueckkonnen, sonst probiert er nicht.
+ *
+ * Die Knoepfe stehen im festen Balken unten, bei Speichern - dort, wo der
+ * Daumen ohnehin liegt, und nicht oben in der Kopfzeile.
+ */
+assert_contains($editor, 'data-zurueck', 'Editor: der Knopf zum Zurueckdrehen steht da');
+assert_contains($editor, 'data-vor', 'Editor: und einer nach vorn');
+assert_contains($js, 'data-zurueck', 'Skript: haengt am selben Knopf');
+assert_contains($js, 'data-vor', 'Skript: und am anderen');

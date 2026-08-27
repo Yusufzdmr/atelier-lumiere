@@ -152,7 +152,20 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
      Warum als eigene Regeln und nicht als Tailwind: siehe Kopf dieser Datei -
      style.css ist fertig gebaut, eine erfundene Klasse taete schweigend
      nichts. */
-  [data-design-preview] .d-el{cursor:move;}
+  /* Der Finger gehoert der Karte, nicht der Seite.
+
+     Ohne touch-action nimmt der Browser eine Wischbewegung fuer sich und
+     scrollt - das Ziehen kommt am Telefon nie an. Nur auf den Ebenen und den
+     Griffen, nicht auf der ganzen Vorschau: neben der Karte soll die Seite
+     weiter scrollen, sonst sitzt man am Telefon in der Vorschau fest. */
+  [data-design-preview] .d-el{cursor:move;touch-action:none;}
+  .b-griff{touch-action:none;}
+  /* Ein Finger ist breiter als zehn Pixel. Die Griffe bleiben so gross, wie
+     sie aussehen - nur ihr Fangbereich waechst, und zwar ausschliesslich
+     dort, wo mit dem Finger gezielt wird. */
+  @media (pointer: coarse) {
+    .b-griff::before{content:"";position:absolute;inset:-12px;}
+  }
   [data-design-preview][data-zieht]{user-select:none;}
   [data-design-preview][data-zieht] .d-el{cursor:grabbing;}
   [data-design-preview] .d-el[contenteditable]{cursor:text;outline:1px dashed var(--color-gold,#b08d57);}
@@ -206,6 +219,9 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
                cursor:pointer;padding:0.75rem 1.6rem;font-size:0.66rem;letter-spacing:0.2em;
                text-transform:uppercase;}
   .b-speichern:hover{background:var(--color-gold,#b08d57);}
+  .b-schritte{display:flex;gap:0.35rem;}
+  .b-schritte .b-knopf{padding:0.55rem 0.7rem;}
+  .b-schritte .b-knopf[disabled]{opacity:0.35;cursor:default;}
   .b-meldung{border-left:2px solid var(--color-gold,#b08d57);padding:0.75rem 1rem;font-size:0.86rem;
              margin-bottom:1rem;}
   .b-meldung-fehler{border-left-color:#b91c1c;color:#b91c1c;}
@@ -423,6 +439,27 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
 
   <div class="b-fuss">
     <button class="b-speichern"><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
+    <?php /*
+       Zurueck und vor.
+
+       Strg+Z gibt es am Telefon nicht, und gebraucht wird es dort mehr als am
+       Schreibtisch: wer ausprobiert, verstellt auch mal etwas, das gut war.
+       Ohne Weg zurueck probiert man nicht mehr - und Ausprobieren ist genau
+       das, wofuer diese Seite da ist.
+
+       Hier unten und nicht oben in der Kopfzeile: der Balken ist fest, und
+       der Daumen liegt ohnehin neben Speichern.
+
+       type="button", sonst schickt der Knopf das Formular ab - er steht mitten
+       darin. Ohne Skript bleiben beide gesperrt, statt etwas zu versprechen,
+       das sie dann nicht halten.
+    */ ?>
+    <span class="b-schritte">
+      <button type="button" class="b-knopf" data-zurueck disabled
+              title="<?= $tr ? 'Geri al (Ctrl+Z)' : 'Zurück (Strg+Z)' ?>">↶ <?= $tr ? 'Geri al' : 'Zurück' ?></button>
+      <button type="button" class="b-knopf" data-vor disabled
+              title="<?= $tr ? 'İleri al (Ctrl+Shift+Z)' : 'Vor (Strg+Umschalt+Z)' ?>">↷ <?= $tr ? 'İleri' : 'Vor' ?></button>
+    </span>
     <span class="b-fein" data-sec-hinweis>
       <?= $tr ? 'Soldan bir bölüm seç, ayarları sağda açılır.' : 'Links einen Abschnitt wählen - seine Einstellungen stehen dann rechts.' ?>
     </span>
