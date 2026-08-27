@@ -339,7 +339,16 @@ final class DesignSections
             // Grafiker eine Voreinstellung gesetzt hatte, bekam trotzdem
             // keine Musik: die Datei lag auf der Platte und der Abschnitt
             // wurde nie gedruckt.
-            'music'     => self::tonspur($abschnitt, $data) !== '',
+            /*
+             * Zwei Quellen, je nach Gestalt: die Gestalt "einbetten" bringt
+             * keine Tonspur mit, sondern eine Adresse. Nur nach der Tonspur
+             * zu fragen hiesse, dass ein eingebettetes Lied nie gedruckt
+             * wird - dieselbe Falle wie oben beim Lied des Paares, nur eine
+             * Gestalt weiter.
+             */
+            'music'     => (string) $abschnitt['variant'] === 'einbetten'
+                ? Design::safeEinbettung((string) ($abschnitt['settings']['embed'] ?? '')) !== ''
+                : self::tonspur($abschnitt, $data) !== '',
             // Kein Bild, kein Abschnitt. Eine leere Galerie ist eine
             // Ueberschrift ueber nichts.
             'gallery'   => self::sectionPhotos($data, (string) $abschnitt['id']) !== [],
@@ -1065,6 +1074,35 @@ final class DesignSections
              */
             'music/spieler' => $sel . ' .d-sec-ton{display:block;margin:1.2rem auto 0;'
                 . 'width:100%;max-width:20rem;}',
+
+            /*
+             * Der Platzhalter der Einbettung - und spaeter der Rahmen selbst.
+             *
+             * Beide teilen sich dasselbe Seitenverhaeltnis, damit im Moment
+             * des Klicks nichts springt: der Knopf steht in einem Kasten von
+             * 16:9, und der Rahmen, den invitation.js hineinlegt, fuellt genau
+             * ihn aus. Ohne das wuechse die Seite unter dem Finger, und was
+             * darunter stand, waere weg.
+             *
+             * Die Farben kommen aus den Marken der Vorlage - ein Kasten in
+             * YouTube-Rot mitten auf einer Einladung waere ein Fremdkoerper.
+             * Der Hinweis steht klein darunter und nicht im Knopf: er ist
+             * eine Auskunft, keine Aufforderung.
+             */
+            'music/einbetten' => $sel . ' .d-sec-einbettung{display:flex;'
+                . 'flex-direction:column;align-items:center;justify-content:center;gap:0.9rem;'
+                . 'margin:1.2rem auto 0;width:100%;max-width:32rem;aspect-ratio:16 / 9;'
+                . 'border:1px solid currentColor;padding:1.2rem;}'
+                . $sel . ' .d-sec-einbettung iframe{display:block;width:100%;height:100%;border:0;}'
+                // Traegt der Kasten den Rahmen, faellt sein eigener Rand weg -
+                // sonst stuende ein Strich um das Video.
+                . $sel . ' .d-sec-einbettung[data-geladen]{border:0;padding:0;display:block;}'
+                . $sel . ' .d-sec-einbettung-knopf{cursor:pointer;font:inherit;'
+                . 'border:1px solid currentColor;background:transparent;color:inherit;'
+                . 'padding:0.6rem 1.6rem;font-size:0.72rem;letter-spacing:0.16em;'
+                . 'text-transform:uppercase;}'
+                . $sel . ' .d-sec-einbettung-hinweis{font-size:0.72rem;opacity:0.75;'
+                . 'max-width:24rem;line-height:1.5;}',
 
             /*
              * Das Formular bekommt eine Kante. Auf einem gemusterten Blatt
@@ -1895,6 +1933,49 @@ final class DesignSections
      */
     private static function musik(array $abschnitt, array $data, string $locale): string
     {
+        /*
+         * Ein Lied von auswaerts - und die Zwei-Klick-Loesung.
+         *
+         * Hier steht VOR dem Antippen kein Rahmen, und das ist der ganze
+         * Punkt: ein iframe im Markup waere ein Aufruf zu YouTube, den kein
+         * Gast erlaubt hat. Stattdessen liegt nur die Adresse bereit; den
+         * Rahmen baut invitation.js, wenn jemand den Knopf drueckt.
+         *
+         * Damit braucht es auch keine dritte Kategorie im Einwilligungsbanner:
+         * der Klick IST die Einwilligung, und zwar fuer genau diesen einen
+         * Rahmen. Eine Kategorie mehr hiesse ein Absatz mehr in der
+         * Datenschutzerklaerung, den jemand pflegen muss.
+         *
+         * Der Hinweis steht daneben und nicht im Kleingedruckten: wer tippt,
+         * soll vorher wissen, wohin er sich verbindet.
+         */
+        if ((string) $abschnitt['variant'] === 'einbetten') {
+            // Aus dem eigenen Feld, nicht aus der Tonspur: dort steht ein Pfad
+            // aus dem eigenen Haus, hier eine fremde Adresse. Beim Speichern
+            // ist sie schon durch safeEinbettung gegangen; hier noch einmal,
+            // weil ein Dokument auch aus einer aelteren Fassung kommen kann.
+            $rahmen = Design::safeEinbettung((string) ($abschnitt['settings']['embed'] ?? ''));
+
+            // Keine erkannte Adresse, kein Kasten. Ein Knopf, der nichts
+            // laden kann, ist schlimmer als gar keiner.
+            if ($rahmen === '') {
+                return '';
+            }
+
+            $de = $locale === 'de';
+
+            return '<div class="d-sec-einbettung" data-einbettung="' . e($rahmen) . '">'
+                . '<button type="button" class="d-sec-einbettung-knopf" data-einbettung-start>'
+                . e($de ? 'Lied auf YouTube abspielen' : 'Play the song on YouTube')
+                . '</button>'
+                . '<span class="d-sec-einbettung-hinweis">'
+                . e($de
+                    ? 'Beim Antippen wird ein Video von YouTube geladen. Dabei werden Daten an YouTube übertragen.'
+                    : 'Tapping loads a video from YouTube. Data is transferred to YouTube in the process.')
+                . '</span>'
+                . '</div>';
+        }
+
         $spur = self::tonspur($abschnitt, $data);
         if ($spur === '') {
             return '';

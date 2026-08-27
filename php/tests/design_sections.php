@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Atelier\Design;
 use Atelier\DesignSections;
+use Atelier\SectionRegistry;
 
 /*
  * Abschnitte sind das, was unter der Karte steht: Ort, Countdown, Familien,
@@ -1309,3 +1311,164 @@ assert_true($uhrAn !== false, 'uhr: die Felder werden gedruckt');
 assert_true($datumAn < $uhrAn, 'uhr: das Datum steht VOR den Feldern');
 assert_contains($uhr, 'data-countdown-seconds', 'uhr: die Sekunden haben ihr Feld');
 assert_contains($uhr, 'T18:00', 'uhr: die Uhrzeit reist mit');
+
+/* --- Ein Lied von auswaerts: die Zwei-Klick-Loesung ---------------------- */
+
+/*
+ * "Muzigi youtube veya spotify ile gomme."
+ *
+ * Zuerst die Sache, die KEINE Gestaltungsfrage ist: "Hintergrundmusik, aber
+ * von YouTube" gibt es nicht. Die Gestalt music/default haengt den Ton an das
+ * Oeffnen des Kuverts und laesst ihn unter der Seite laufen; ein YouTube-
+ * Rahmen kann weder das eine noch das andere. Was eingebettet wird, ist
+ * darum immer ein SICHTBARER Spieler, den der Gast antippt.
+ *
+ * Und die zweite Sache, die keine Frage ist: bis zu diesem Antippen darf
+ * kein einziger Aufruf zu YouTube gehen. Deshalb die Zwei-Klick-Loesung -
+ * an der Stelle steht ein Platzhalter, der den Anbieter nennt, und erst der
+ * Klick holt den Rahmen. Das ist zugleich die Einwilligung fuer genau
+ * diesen einen Rahmen, und es kommt ohne eine dritte Kategorie im Banner
+ * aus: keine Kategorie heisst kein neuer Text in der
+ * Datenschutzerklaerung, den jemand pflegen muesste.
+ */
+
+/* --- Die Adresse: eine Weisse Liste, keine schwarze --------------------- */
+
+/*
+ * Erkannt werden die drei Schreibweisen, die Menschen aus der Adresszeile
+ * kopieren. Alles andere faellt weg - auch andere Anbieter, auch andere
+ * Seiten von YouTube selbst. Eine weisse Liste, weil das Feld ein Textfeld
+ * ist: was auch immer jemand hineinschreibt, heraus kommt entweder eine
+ * bekannte Einbettungsadresse oder gar nichts.
+ */
+$einb = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ';
+
+assert_same($einb, Design::safeEinbettung('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    'Einbettung: die uebliche Adresse aus der Adresszeile');
+assert_same($einb, Design::safeEinbettung('https://youtu.be/dQw4w9WgXcQ'),
+    'Einbettung: die kurze Form');
+assert_same($einb, Design::safeEinbettung('https://www.youtube.com/embed/dQw4w9WgXcQ'),
+    'Einbettung: die schon fertige Form');
+assert_same($einb, Design::safeEinbettung('https://m.youtube.com/watch?v=dQw4w9WgXcQ'),
+    'Einbettung: die vom Telefon');
+
+// Nocookie und nicht youtube.com: dieselbe Haltung wie ueberall sonst hier,
+// und der Rahmen steht in Http.php ohnehin schon auf der Liste.
+assert_true(str_contains($einb, 'youtube-nocookie'), 'Einbettung: ueber die cookiefreie Adresse');
+
+// Anhaengsel interessieren nicht - die Kennung ist alles, was gebraucht wird.
+assert_same($einb, Design::safeEinbettung('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s&list=PLxyz'),
+    'Einbettung: Anhaengsel fallen weg');
+
+/*
+ * Und sie frisst ihre eigene Ausgabe.
+ *
+ * Das ist keine Spielerei, sondern Bedingung: geprueft wird ZWEIMAL - einmal
+ * beim Speichern (SectionRegistry) und einmal beim Drucken (musik). Was in der
+ * Vorlage liegt, ist also schon die fertige Einbettungsadresse. Erkennt die
+ * Pruefung die nicht wieder, faellt der Abschnitt beim zweiten Mal weg und
+ * niemand sieht, warum.
+ */
+assert_same($einb, Design::safeEinbettung($einb),
+    'Einbettung: die fertige Adresse geht unveraendert wieder durch');
+
+assert_same('', Design::safeEinbettung(''), 'Einbettung: leer bleibt leer');
+assert_same('', Design::safeEinbettung('https://vimeo.com/12345'),
+    'Einbettung: ein anderer Anbieter faellt weg, solange er nicht ausdruecklich dazugehoert');
+assert_same('', Design::safeEinbettung('https://open.spotify.com/track/xyz'),
+    'Einbettung: Spotify auch - es spielt Nichtangemeldeten nur 30 Sekunden vor');
+assert_same('', Design::safeEinbettung('http://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    'Einbettung: http faellt weg wie ueberall');
+assert_same('', Design::safeEinbettung('javascript:alert(1)'), 'Einbettung: ein Skript erst recht');
+assert_same('', Design::safeEinbettung('https://www.youtube.com/watch?v=zu-kurz'),
+    'Einbettung: eine Kennung, die keine ist');
+assert_same('', Design::safeEinbettung('https://www.youtube.com/'),
+    'Einbettung: ohne Kennung gibt es nichts einzubetten');
+// Die Kennung geht ins Markup - sie darf aus dem Attribut nicht ausbrechen.
+assert_same('', Design::safeEinbettung('https://www.youtube.com/watch?v=abc"onload=x'),
+    'Einbettung: was aus dem Attribut ausbrechen koennte, faellt weg');
+
+/* --- Die Gestalt ------------------------------------------------------- */
+
+$katalog = SectionRegistry::all();
+assert_true(isset($katalog['music']['variants']['einbetten']),
+    'Katalog: die dritte Gestalt der Musik steht da');
+
+$eingebettet = DesignSections::html(
+    sec_doc([['id' => 'ton', 'type' => 'music', 'variant' => 'einbetten',
+              'settings' => ['embed' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']]]),
+    [],
+    'de'
+);
+
+/*
+ * Vor dem Klick KEIN Rahmen. Das ist der ganze Punkt der Sache: stuende hier
+ * schon ein iframe, waere die Einbettung genau das, was sie nicht sein soll -
+ * ein Aufruf zu YouTube, den niemand erlaubt hat.
+ */
+assert_not_contains($eingebettet, '<iframe', 'Einbettung: vor dem Klick steht kein Rahmen im Markup');
+assert_contains($eingebettet, 'data-einbettung="' . $einb . '"',
+    'Einbettung: die Adresse liegt bereit, geladen wird sie erst auf Klick');
+assert_contains($eingebettet, 'd-sec-einbettung', 'Einbettung: der Platzhalter hat seinen Namen');
+
+// Der Gast soll wissen, wohin er sich verbindet, BEVOR er tippt.
+assert_contains($eingebettet, 'YouTube', 'Einbettung: der Anbieter wird genannt');
+
+// Ohne brauchbare Adresse gar nichts - kein leerer Kasten mit Knopf.
+assert_same('', DesignSections::html(
+    sec_doc([['id' => 'ton', 'type' => 'music', 'variant' => 'einbetten',
+              'settings' => ['embed' => 'https://vimeo.com/12345']]]),
+    [], 'de'
+), 'Einbettung: ohne erkannte Adresse faellt der Abschnitt ganz weg');
+
+/* --- Die anderen zwei Gestalten bleiben, wie sie waren ------------------- */
+
+$hintergrund = DesignSections::html(
+    sec_doc([['id' => 'ton', 'type' => 'music',
+              'settings' => ['track' => '/uploads/designs/lied.mp3']]]),
+    [], 'de'
+);
+assert_contains($hintergrund, 'data-music', 'Musik: der Hintergrund bleibt unangetastet');
+assert_not_contains($hintergrund, 'd-sec-einbettung', 'Musik: und wird nicht zur Einbettung');
+
+/* --- Und der Klick, der den Rahmen holt --------------------------------- */
+
+/*
+ * Kein neues Skript: invitation.js liegt auf dieser Seite ohnehin, und es ist
+ * dieselbe Begruendung wie bei der Musik darunter - ein zweites Skript mit
+ * einer einzigen Aufgabe laeuft ein halbes Jahr spaeter auseinander.
+ *
+ * Der Vertrag ist schmal: der Knopf heisst data-einbettung-start, die Adresse
+ * steht am Kasten in data-einbettung. Wird eines davon umbenannt, bleibt die
+ * Seite fehlerfrei und lautlos kaputt - man tippt, und nichts laedt.
+ */
+$einbJs = (string) file_get_contents(__DIR__ . '/../public/assets/invitation.js');
+
+assert_contains($einbJs, 'data-einbettung-start', 'Skript: es haengt am Knopf');
+assert_contains($einbJs, 'data-einbettung', 'Skript: und liest die Adresse vom Kasten');
+assert_contains($einbJs, 'createElement("iframe")', 'Skript: der Rahmen entsteht erst hier');
+
+// Nach dem Klick darf gespielt werden - der Klick IST die Nutzeraktion, auf
+// die die Browser bestehen. Ohne autoplay muesste der Gast zweimal tippen.
+assert_contains($einbJs, 'autoplay=1', 'Skript: nach dem Klick laeuft es los');
+
+// Der Kasten sagt, dass er geladen hat - daran haengt die Regel, die seinen
+// eigenen Rand wegnimmt (sonst stuende ein Strich um das Video).
+assert_contains($einbJs, 'data-geladen', 'Skript: der Kasten merkt sich, dass er voll ist');
+
+// Die Adresse wird NICHT aus dem Attribut zusammengebaut, sondern gesetzt:
+// sie kam durch safeEinbettung und ist eine bekannte Einbettungsadresse.
+assert_contains($einbJs, 'allowfullscreen', 'Skript: und der Rahmen darf gross');
+
+/*
+ * Und im Panel ist es ein Textfeld.
+ *
+ * Die Tafel entscheidet nach der ART der Einstellung: bool wird ein Haken,
+ * src wird ein Dateifeld, und alles Uebrige wird eine Auswahlliste ueber
+ * 'options'. Eine Einbettungsadresse hat keine options - sie waere in die
+ * letzte Schublade gefallen und als LEERE Liste erschienen. Kein Fehler, kein
+ * Hinweis, nur ein Feld, in das man nichts eintragen kann.
+ */
+$tafeln = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-tafeln.php');
+assert_contains($tafeln, "=== 'einbettung'", 'Tafel: die Einbettung hat einen eigenen Zweig');
+assert_contains($tafeln, 'youtube.com/watch', 'Tafel: und sagt mit einem Beispiel, was hineingehoert');

@@ -368,6 +368,21 @@ final class SectionRegistry
                 // sichtbaren Spieler tragen soll (ein Lied als Geschenk etwa,
                 // das man bewusst anhoert und nicht nebenbei).
                 'spieler' => ['de' => 'Kleiner Spieler', 'tr' => 'Küçük çalar'],
+                /*
+                 * Ein Lied von auswaerts, als Rahmen.
+                 *
+                 * "Muzigi youtube veya spotify ile gomme." Es ist bewusst
+                 * eine dritte Gestalt und keine Erweiterung der ersten:
+                 * "Hintergrundmusik, aber von YouTube" gibt es nicht. Der
+                 * Hintergrund haengt am Oeffnen des Kuverts und laeuft unter
+                 * der Seite; ein fremder Rahmen kann weder das eine noch das
+                 * andere. Wer einbettet, bekommt einen sichtbaren Spieler -
+                 * und der Gast tippt ihn an.
+                 *
+                 * Ins selbe Feld wie sonst die Tonspur: was hineingehoert,
+                 * sagt die Gestalt, nicht ein zweites Feld daneben.
+                 */
+                'einbetten' => ['de' => 'YouTube einbetten', 'tr' => 'YouTube olarak göm'],
             ],
             'settings' => [
                 'track' => [
@@ -389,6 +404,25 @@ final class SectionRegistry
                     'default' => '',
                     'label'   => ['de' => 'Tonspur der Vorlage',
                                   'tr' => 'Tasarımın müziği'],
+                ],
+                /*
+                 * Und die Adresse fuer die Gestalt "YouTube einbetten".
+                 *
+                 * Ein eigenes Feld und nicht dasselbe wie oben: dort steht
+                 * ein Pfad aus dem eigenen Haus, hier eine fremde Adresse.
+                 * Beides in ein Feld zu legen hiesse, die Pruefung des einen
+                 * fuer den anderen aufzuweichen - und die Pruefung ist hier
+                 * das Einzige, was zwischen dem Textfeld und dem Markup
+                 * steht.
+                 *
+                 * Gelesen wird es nur von der einen Gestalt. Die anderen
+                 * beiden sehen es nicht, und ein leeres Feld kostet nichts.
+                 */
+                'embed' => [
+                    'type'    => 'einbettung',
+                    'default' => '',
+                    'label'   => ['de' => 'YouTube-Adresse (nur für "YouTube einbetten")',
+                                  'tr' => 'YouTube adresi (yalnız "YouTube olarak göm" için)'],
                 ],
             ],
             /*
@@ -749,6 +783,21 @@ final class SectionRegistry
                  * fuehrt.
                  */
                 'src'    => Design::safeSrc((string) ($wert ?? $schema['default'])),
+                /*
+                 * Ein Lied von auswaerts - als Rahmen, nicht als Datei.
+                 *
+                 * Warum nicht 'src': dort darf nichts Fremdes stehen, und das
+                 * ist richtig so. Eine Einbettung IST aber fremd; das Feld
+                 * sagt es in seiner Art, statt die Regel des anderen Feldes
+                 * aufzuweichen.
+                 *
+                 * Geprueft wird beim SPEICHERN und nicht erst beim Drucken:
+                 * was in der Vorlage liegt, ist dann schon eine bekannte
+                 * Einbettungsadresse und nichts anderes. Wer spaeter etwas
+                 * anderes daraus machen will, muss an safeEinbettung vorbei -
+                 * und dort kommt nur heraus, was neu zusammengesetzt wurde.
+                 */
+                'einbettung' => Design::safeEinbettung((string) ($wert ?? $schema['default'])),
                 default  => $schema['default'],
             };
         }

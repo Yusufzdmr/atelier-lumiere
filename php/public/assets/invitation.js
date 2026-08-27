@@ -373,6 +373,64 @@
     setInterval(tick, 1000);
   });
 
+  /* ------------------ Ein Lied von auswaerts, auf Klick ------------------ */
+
+  /*
+   * Die Zwei-Klick-Loesung.
+   *
+   * Im Markup steht kein Rahmen, nur die Adresse und ein Knopf. Erst das
+   * Antippen holt YouTube - vorher geht kein einziger Aufruf dorthin, und der
+   * Gast hat vorher gelesen, was passiert (der Hinweis steht neben dem Knopf,
+   * DesignSections::musik druckt ihn).
+   *
+   * Damit braucht es keine dritte Kategorie im Einwilligungsbanner: der Klick
+   * ist die Einwilligung, und zwar fuer genau diesen einen Rahmen.
+   *
+   * Kein neues Skript - dieselbe Begruendung wie beim Hintergrundton weiter
+   * unten: ein zweites Skript mit einer einzigen Aufgabe laeuft ein halbes
+   * Jahr spaeter auseinander.
+   */
+  document.addEventListener("click", function (ereignis) {
+    var knopf = ereignis.target.closest
+      ? ereignis.target.closest("[data-einbettung-start]")
+      : null;
+    if (!knopf) return;
+
+    var kasten = knopf.closest("[data-einbettung]");
+    if (!kasten || kasten.hasAttribute("data-geladen")) return;
+
+    var adresse = kasten.getAttribute("data-einbettung");
+    if (!adresse) return;
+
+    var rahmen = document.createElement("iframe");
+
+    /*
+     * autoplay=1, weil der Klick GERADE stattgefunden hat - das ist die
+     * Nutzeraktion, auf der die Browser bestehen. Ohne sie muesste der Gast
+     * zweimal tippen: einmal fuer den Rahmen und einmal fuer das Lied.
+     *
+     * Die Adresse wird nicht zusammengebaut, sondern gesetzt: sie ist durch
+     * Design::safeEinbettung gegangen und aus einer geprueften Kennung NEU
+     * entstanden.
+     */
+    rahmen.src = adresse + (adresse.indexOf("?") >= 0 ? "&" : "?") + "autoplay=1";
+    rahmen.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+    rahmen.setAttribute("allowfullscreen", "");
+    rahmen.setAttribute("title", knopf.textContent.trim());
+
+    // Erst die Marke, dann der Tausch: an ihr haengt die Regel, die dem
+    // Kasten seinen eigenen Rand nimmt - sonst stuende ein Strich um das
+    // Video.
+    kasten.setAttribute("data-geladen", "");
+
+    // Leeren ueber textContent und nicht ueber innerHTML: hier steht zwar nur
+    // eine leere Zeichenkette, aber innerHTML ist die Stelle, an der spaeter
+    // jemand etwas anderes hineinschreibt. Was nie dasteht, wird auch nicht
+    // versehentlich benutzt.
+    kasten.textContent = "";
+    kasten.appendChild(rahmen);
+  });
+
   /* ------------------------------ Musik ------------------------------ */
   var toggle = document.querySelector("[data-music-toggle]");
   if (toggle && music) {

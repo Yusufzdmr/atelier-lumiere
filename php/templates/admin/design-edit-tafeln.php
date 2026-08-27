@@ -274,6 +274,29 @@ foreach ($katalog as $art => $eintrag) {
                        name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
                        value="<?= e($wert_) ?>"
                        placeholder="<?= $art_ === 'audio' ? 'https://… veya /uploads/designs/…' : '/uploads/designs/…' ?>"></label>
+            <?php elseif ((string) $s['type'] === 'einbettung') : ?>
+              <?php /*
+                 Ein Textfeld, kein Dateifeld und keine Liste.
+
+                 Die letzte Schublade unten baut eine Auswahl ueber
+                 $s['options'] - eine Adresse hat keine, sie waere dort als
+                 LEERE Liste erschienen: kein Fehler, kein Hinweis, nur ein
+                 Feld, in das sich nichts eintragen laesst.
+
+                 Das Beispiel steht als placeholder und nicht in der
+                 Beschriftung: es sagt in einer Zeile, was hineingehoert, und
+                 verschwindet, sobald jemand etwas schreibt.
+
+                 Geprueft wird beim Speichern (Design::safeEinbettung). Wer
+                 hier etwas anderes hineinschreibt, bekommt ein leeres Feld
+                 zurueck - und der Abschnitt faellt weg, statt einen Knopf zu
+                 zeigen, der nichts laden kann.
+              */ ?>
+              <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
+                <input class="<?= $feld ?> font-mono text-[0.78rem]"
+                       name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       value="<?= e((string) ($werte[$schluessel] ?? $s['default'])) ?>"
+                       placeholder="https://www.youtube.com/watch?v=…"></label>
             <?php else : ?>
               <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
                 <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">

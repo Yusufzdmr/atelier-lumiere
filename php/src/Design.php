@@ -789,6 +789,84 @@ final class Design
      * src-Attribut, also faellt alles weg, was ein Anfuehrungszeichen, einen
      * Winkel oder Steuerzeichen traegt.
      */
+    /**
+     * Ein Lied von auswaerts, als Rahmen - aber erst nach einem Klick.
+     *
+     * "Muzigi youtube veya spotify ile gomme." Zwei Sachen daran sind keine
+     * Gestaltungsfrage, sondern stehen fest:
+     *
+     * Erstens gibt es "Hintergrundmusik, aber von YouTube" nicht. Die Gestalt
+     * music/default haengt den Ton an das Oeffnen des Kuverts und laesst ihn
+     * unter der Seite laufen; ein fremder Rahmen kann weder das eine noch das
+     * andere. Was eingebettet wird, ist immer ein SICHTBARER Spieler.
+     *
+     * Zweitens darf bis zum Antippen kein Aufruf zu YouTube gehen. Diese
+     * Methode liefert deshalb nur die ADRESSE; den Rahmen baut erst der Klick
+     * (Zwei-Klick-Loesung, siehe DesignSections::musik).
+     *
+     * Eine weisse Liste und keine schwarze: das Feld ist ein Textfeld, in das
+     * jemand alles schreiben kann. Erkannt werden die drei Schreibweisen, die
+     * man aus der Adresszeile kopiert; heraus kommt entweder eine bekannte
+     * Einbettungsadresse oder gar nichts. Die Kennung wird dabei nicht
+     * durchgereicht, sondern NEU zusammengesetzt - so kann aus ihr nichts
+     * mitkommen, was im Attribut Aerger macht.
+     *
+     * Ueber youtube-nocookie.com, wie ueberall hier: Http.php fuehrt die
+     * Adresse ohnehin schon in frame-src.
+     *
+     * Spotify fehlt mit Absicht: eingebettet spielt es Nichtangemeldeten nur
+     * dreissig Sekunden vor, und die meisten Gaeste sind nicht angemeldet.
+     * Ein halbes Lied ist schlechter als ein Link.
+     *
+     * @return string leer, wenn nichts Bekanntes erkannt wurde
+     */
+    public static function safeEinbettung(string $src): string
+    {
+        $src = trim($src);
+        if ($src === '' || !str_starts_with($src, 'https://')) {
+            return '';
+        }
+
+        $teile = parse_url($src);
+        if ($teile === false || !isset($teile['host'])) {
+            return '';
+        }
+
+        $host = strtolower($teile['host']);
+        $weg  = (string) ($teile['path'] ?? '');
+        $kennung = '';
+
+        if ($host === 'youtu.be') {
+            $kennung = ltrim($weg, '/');
+        } elseif (in_array($host, [
+            'youtube.com', 'www.youtube.com', 'm.youtube.com',
+            /*
+             * Die eigene Ausgabe gehoert dazu, und das ist keine Spielerei.
+             *
+             * Geprueft wird ZWEIMAL: einmal beim Speichern (SectionRegistry
+             * legt schon die fertige Adresse ab) und einmal beim Drucken.
+             * Erkennt die zweite Pruefung die erste nicht wieder, faellt der
+             * Abschnitt still weg - und niemand sieht, warum.
+             */
+            'youtube-nocookie.com', 'www.youtube-nocookie.com',
+        ], true)) {
+            if (str_starts_with($weg, '/embed/')) {
+                $kennung = substr($weg, strlen('/embed/'));
+            } else {
+                parse_str((string) ($teile['query'] ?? ''), $fragen);
+                $kennung = (string) ($fragen['v'] ?? '');
+            }
+        }
+
+        // Elf Zeichen aus genau diesem Vorrat - so sieht eine YouTube-Kennung
+        // aus, und nur so darf sie ins Attribut.
+        if (preg_match('~^[A-Za-z0-9_-]{11}$~', $kennung) !== 1) {
+            return '';
+        }
+
+        return 'https://www.youtube-nocookie.com/embed/' . $kennung;
+    }
+
     public static function safeAudio(string $src): string
     {
         $src = trim($src);
