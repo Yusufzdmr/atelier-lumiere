@@ -63,10 +63,24 @@ kaplama görünür, işaretçi testi VIDEO döndürüyordu. Sadece çerçevenin 
 üç ekran aşağıdaydı. "Ölçümle görüntü çelişiyor" denen şey buydu — ölçülen
 şey çerçevenin **içi**, görülen şey çerçevenin **dışıydı**.
 
-Düzeltme `abschnitteZeigen()` (`design-editor.js`): kararı tek yere topluyor.
-Tek yer olması şart, çünkü cihaz düğmeleri formda `button[type=button]` ve
-tıklama canlı önizlemenin yeniden çekilmesini de tetikliyor — iki yerde
-karar verilseydi kutu 400 ms sonra kendiliğinden geri gelirdi.
+**İlk düzeltme yanlıştı ve aynı akşam geri alındı.** Kutuyu cihaz görünümünde
+gizlemek çerçeveyi ekrana getirdi, ama aynı anda **kaydedilmemiş bir bölüm
+değişikliğinin görülebildiği tek yeri** de ortadan kaldırdı: çerçeve sayfayı
+sunucudan alıyor, ondan haberi yok. Sağdan bir bölümün hizasını değiştiren
+hiçbir şey göremez oldu — "sağdaki özelliklerden değiştiriyorum ama hiçbir şey
+olmuyor".
+
+Hata kutunun varlığı değil, **yeri**ymiş: kartla çerçevenin arasında duruyordu.
+Çerçeve öne alınınca kimseyi itmiyor ve ikisi de görünüyor — **kart, çerçeve,
+bölümler**. Gizleme tamamen kalktı; kutu yine yalnızca gösterilecek bir şey
+olup olmadığına bakıyor.
+
+Canlıda ölçülen (düzeltmeden sonra): çerçeve y=292 ve ekranda, bölümler kutusu
+y=1022'de ve görünür; bir bölümün hizası değiştirilince kutunun içeriği
+değişiyor (6801 → 6841 bayt), geri alınınca aynen dönüyor.
+
+Ders: belirtiyi değil sebebi düzelt. Skriptte bir fonksiyon yerine markup'ta
+bir satır yeterdi, ve o satır yan hasar üretmezdi.
 
 ---
 
