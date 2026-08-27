@@ -163,6 +163,8 @@ final class DesignAdminController
             'name'    => ['de' => $name, 'en' => $name],
             'status'  => 'draft',
             'version' => 1,
+            // Ganz vorn: wer gerade etwas angelegt hat, sucht es oben.
+            'sort'    => Design::sortVorn(),
         ]));
 
         return 'ok=angelegt';
@@ -182,6 +184,7 @@ final class DesignAdminController
         }
 
         $neu = Design::copy($quelle, $name, ['de' => $name, 'en' => $name]);
+        $neu['sort'] = Design::sortVorn();
 
         if ($neu['id'] === '' || Design::findById($neu['id']) !== null) {
             return 'fehler=belegt';
@@ -231,6 +234,7 @@ final class DesignAdminController
             return 'fehler=belegt';
         }
 
+        $neu['sort'] = Design::sortVorn();
         Design::save($neu);
 
         // Wie viele Ecken hat die Basis, und wie viele bringt das Thema mit?

@@ -104,3 +104,21 @@ assert_contains($steuer, "'photo', 'video', 'image', 'text', 'shape'", 'Controll
  */
 assert_contains($steuer, "'x' => 10, 'y' => 45, 'w' => 80", 'Controller: ein neuer Text ist eine Zeile, keine Flaeche');
 assert_not_contains($steuer, "'neue_ebene_schnitt'] ?? 'voll');\n        \$box = match", 'Controller: der Zuschnitt gilt nur noch fuer Flaechen');
+
+/*
+ * Neu angelegtes steht vorn.
+ *
+ * Alle Vorlagen tragen von Haus aus sort=0, und dann entscheidet der Slug -
+ * eine neue hiess "testyusuf" und landete zwischen "test2" und "video". Wer
+ * gerade etwas angelegt hat, sucht es aber nicht im Alphabet: "yeni actigim
+ * tasarim ilk siraya gecsin".
+ *
+ * Eine kleiner als die kleinste, und zwar auf allen drei Wegen ins Leben -
+ * leer, kopiert, aus einem Thema. Zwei davon zu bedienen und den dritten zu
+ * vergessen waere schlimmer als keiner: dann haengt es davon ab, wie man
+ * angefangen hat.
+ */
+assert_contains($modell, 'public static function sortVorn', 'Design: kennt die Nummer fuer ganz vorn');
+assert_contains($modell, 'MIN(sort)', 'Design: und holt sie aus der kleinsten');
+assert_same(3, substr_count($steuer, 'Design::sortVorn()'),
+    'Controller: alle drei Wege ins Leben setzen die neue Vorlage nach vorn');

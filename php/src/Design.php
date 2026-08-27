@@ -1594,6 +1594,29 @@ final class Design
      * Auffrischen auf eine neuere Fassung - es gibt keine mehr. Deshalb
      * nennt die Rueckfrage im Panel ihre Zahl, bevor jemand drueckt.
      */
+    /*
+     * Die Nummer, mit der eine neue Vorlage ganz vorn steht.
+     *
+     * Alle Vorlagen tragen von Haus aus sort=0, und dann entscheidet der
+     * Slug - eine neue hiess also "testyusuf" und landete zwischen "test2" und
+     * "video". Wer gerade etwas angelegt hat, sucht es aber nicht im Alphabet,
+     * sondern oben: "yeni actigim tasarim ilk siraya gecsin".
+     *
+     * Eine kleiner als die kleinste. Die Reihenfolge der uebrigen bleibt
+     * dabei unangetastet - es wird nichts umnummeriert, nur davorgesetzt.
+     *
+     * Achtung, das gilt auch fuer das Schaufenster: die Liste dort nimmt
+     * dieselbe Reihenfolge. Eine neue Vorlage steht aber als Entwurf da und
+     * ist dort ohnehin erst zu sehen, wenn sie jemand veroeffentlicht.
+     */
+    public static function sortVorn(): int
+    {
+        $row = Db::one('SELECT MIN(sort) AS kleinste FROM designs');
+        $kleinste = $row['kleinste'] ?? null;
+
+        return $kleinste === null ? 0 : ((int) $kleinste) - 1;
+    }
+
     public static function delete(string $id): void
     {
         Db::run('DELETE FROM designs WHERE id = ?', [$id]);
