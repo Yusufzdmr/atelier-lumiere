@@ -582,6 +582,50 @@
      * .d-el{touch-action:none}. Ohne sie nimmt der Browser den Finger fuer
      * sich und wischt die Seite, statt die Ebene zu ziehen.
      */
+    /*
+     * Rekursiv, und das ist kein Selbstzweck.
+     *
+     * Der erste Wurf sammelte ueber selectorText und uebersprang alles ohne
+     * einen. Eine @media-Gruppe hat keinen - und darunter lag ausgerechnet
+     * die Regel, die den Griffen am FINGER ihren Fangbereich gibt:
+     * @media (pointer: coarse) macht aus zehn Pixeln vierunddreissig. Ohne
+     * sie ist ein Griff im Rahmen am Telefon zehn Pixel gross; zu treffen
+     * ist das nicht, und von aussen sieht es aus, als taete das Ziehen dort
+     * nichts.
+     *
+     * Die Bedingung wird mitkopiert und nicht nur ihr Inhalt: ohne sie gaelte
+     * die Vergroesserung auch mit der Maus, und dann laege ueber jedem Griff
+     * ein unsichtbarer Kasten von 34 Pixeln, der den Nachbarn verdeckt.
+     */
+    var sammle = function (regeln, aus) {
+      for (var j = 0; j < regeln.length; j++) {
+        var regel = regeln[j];
+
+        // Eine Gruppe (@media, @supports): hineinsehen, und nur wenn darin
+        // etwas Passendes steht, die Gruppe samt Bedingung mitnehmen.
+        if (!regel.selectorText && regel.cssRules) {
+          var innen = [];
+          sammle(regel.cssRules, innen);
+
+          if (innen.length) {
+            // Alles vor der ersten Klammer ist die Bedingung - so bleibt es
+            // richtig, egal ob @media oder @supports.
+            var bedingung = regel.cssText.split("{")[0];
+            aus.push(bedingung + "{" + innen.join("\n") + "}");
+          }
+          continue;
+        }
+
+        var wahl = regel.selectorText;
+        if (!wahl) continue;
+
+        if (wahl.indexOf(".b-rahmen-wahl") < 0 && wahl.indexOf(".b-griff") < 0
+            && wahl.indexOf("[data-design-preview]") < 0) continue;
+
+        aus.push(regel.cssText.split("[data-design-preview]").join("[data-zieht-bereit]"));
+      }
+    };
+
     var griffRegeln = function () {
       var aus = [];
       var blaetter = document.styleSheets;
@@ -593,15 +637,7 @@
         try { regeln = blaetter[i].cssRules; } catch (fehler) { continue; }
         if (!regeln) continue;
 
-        for (var j = 0; j < regeln.length; j++) {
-          var wahl = regeln[j].selectorText;
-          if (!wahl) continue;
-
-          if (wahl.indexOf(".b-rahmen-wahl") < 0 && wahl.indexOf(".b-griff") < 0
-              && wahl.indexOf("[data-design-preview]") < 0) continue;
-
-          aus.push(regeln[j].cssText.split("[data-design-preview]").join("[data-zieht-bereit]"));
-        }
+        sammle(regeln, aus);
       }
 
       return aus.join("\n");
@@ -1496,6 +1532,113 @@
 
     secReihe.value = nummern.join(",");
   };
+
+  /*
+   * Die Reihenfolge mit der Hand.
+   *
+   * "Surukle birak duzenleme editorunden bahsediyorum, asagidaki kartlarda
+   * calismiyor." Bisher ging sie nur ueber die Pfeile: bei sieben Zeilen ist
+   * das Klicken, und eine Zeile von unten nach oben sind sechs Klicks.
+   *
+   * KEINE zweite Sortierlogik. Geschoben wird der Knoten, und danach schreibt
+   * dieselbe reiheNeu() dieselbe Reihe ins versteckte Feld wie bei den
+   * Pfeilen - inklusive allem, was sich weiter unten daran gehaengt hat (der
+   * Rahmen zieht die Reihenfolge nach). Die Pfeile bleiben: am Telefon nimmt
+   * der Finger die Liste zum Scrollen, und dort sind sie der Weg.
+   *
+   * Angefasst wird am Greifer - dem Knopf, der den Namen traegt. Er heisst
+   * schon so, und er ist die einzige grosse Flaeche der Zeile, die nicht
+   * schon eine andere Aufgabe hat (Auge, Pfeile, Verdoppeln, Wegnehmen).
+   */
+  var SCHWELLE = 6;   // Pixel, ab denen aus einem Klick ein Ziehen wird
+  var ziehtZeile = null;
+
+  secListe.addEventListener("pointerdown", function (ereignis) {
+    if (ereignis.button !== 0) return;
+
+    var griff = ereignis.target.closest("[data-sec-waehl]");
+    if (!griff) return;
+
+    var zeile = griff.closest("[data-sec-zeile]");
+    // Die Zeile "+ Abschnitt" ist keine Zeile, die eine Stelle hat.
+    if (!zeile || zeile.hasAttribute("data-sec-neu")) return;
+
+    ziehtZeile = { zeile: zeile, y0: ereignis.clientY, aktiv: false };
+  });
+
+  secListe.addEventListener("pointermove", function (ereignis) {
+    if (!ziehtZeile) return;
+
+    /*
+     * Erst ab der Schwelle ist es ein Ziehen. Ohne sie waere jeder Klick auf
+     * eine Zeile schon eine Bewegung um ein, zwei Pixel, und die Zeile
+     * spraenge beim blossen Auswaehlen umher.
+     */
+    if (!ziehtZeile.aktiv) {
+      if (Math.abs(ereignis.clientY - ziehtZeile.y0) < SCHWELLE) return;
+
+      ziehtZeile.aktiv = true;
+      ziehtZeile.zeile.setAttribute("data-zieht", "");
+      if (secListe.setPointerCapture) secListe.setPointerCapture(ereignis.pointerId);
+    }
+
+    // Welche Zeile liegt unter dem Zeiger? Ueber die Rechtecke und nicht
+    // ueber den obersten Knoten: der ist beim Ziehen die geschobene Zeile.
+    var unter = null;
+    secListe.querySelectorAll("[data-sec-zeile]").forEach(function (z) {
+      if (z === ziehtZeile.zeile || z.hasAttribute("data-sec-neu")) return;
+
+      var r = z.getBoundingClientRect();
+      if (ereignis.clientY >= r.top && ereignis.clientY <= r.bottom) unter = z;
+    });
+    if (!unter) return;
+
+    // Ueber der Mitte davor, darunter dahinter - so kippt die Zeile erst,
+    // wenn der Zeiger die andere Haelfte erreicht, und nicht schon am Rand.
+    var kasten = unter.getBoundingClientRect();
+    var dahinter = ereignis.clientY > kasten.top + kasten.height / 2;
+
+    secListe.insertBefore(ziehtZeile.zeile, dahinter ? unter.nextSibling : unter);
+  });
+
+  var zeileFertig = function (ereignis) {
+    if (!ziehtZeile) return;
+
+    var war = ziehtZeile.aktiv;
+    ziehtZeile.zeile.removeAttribute("data-zieht");
+    ziehtZeile = null;
+
+    if (secListe.hasPointerCapture && secListe.hasPointerCapture(ereignis.pointerId)) {
+      secListe.releasePointerCapture(ereignis.pointerId);
+    }
+
+    if (!war) return;
+
+    reiheNeu();
+
+    /*
+     * Den Klick danach schlucken. Das Loslassen loest sonst den Klick auf dem
+     * Greifer aus, der Abschnitt wird ausgewaehlt und die Mitte springt auf
+     * ein Geraet - man wollte nur umsortieren.
+     *
+     * Mit Uhr dahinter: kommt gar kein Klick (weil ausserhalb losgelassen
+     * wurde), muss der Horcher trotzdem wieder weg, sonst verschluckt er den
+     * naechsten echten.
+     */
+    var schluck = function (e2) {
+      e2.stopPropagation();
+      e2.preventDefault();
+      secListe.removeEventListener("click", schluck, true);
+    };
+
+    secListe.addEventListener("click", schluck, true);
+    window.setTimeout(function () {
+      secListe.removeEventListener("click", schluck, true);
+    }, 300);
+  };
+
+  secListe.addEventListener("pointerup", zeileFertig);
+  secListe.addEventListener("pointercancel", zeileFertig);
 
   secListe.addEventListener("click", function (ereignis) {
     var knopf = ereignis.target.closest("button");

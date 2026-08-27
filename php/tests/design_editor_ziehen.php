@@ -454,3 +454,57 @@ assert_contains($js, 'ownerDocument.createRange',
     'Skript: der Bereich entsteht im Dokument des Knotens');
 assert_contains($js, 'defaultView.getSelection',
     'Skript: und die Auswahl gehoert demselben Fenster');
+
+/*
+ * Und die Regeln in einer @media-Gruppe muessen mit.
+ *
+ * Der erste Wurf sammelte ueber selectorText - eine @media-Gruppe hat keinen,
+ * sie wurde also stillschweigend uebersprungen. Darunter lag ausgerechnet
+ * die Regel, die den Griffen am FINGER ihren Fangbereich gibt:
+ * @media (pointer: coarse) macht aus zehn Pixeln vierunddreissig. Ohne sie
+ * ist ein Griff im Rahmen am Telefon zehn Pixel gross - zu treffen ist das
+ * nicht, und von aussen sieht es aus, als taete das Ziehen dort nichts.
+ *
+ * Die Bedingung gehoert mitkopiert, nicht nur ihr Inhalt: ohne sie gaelte die
+ * Vergroesserung auch mit der Maus, und dann laege ueber jedem Griff ein
+ * unsichtbarer Kasten von 34 Pixeln, der den Nachbargriff verdeckt.
+ */
+assert_contains($js, 'cssRules', 'Skript: es sieht auch in Gruppen hinein');
+assert_contains($editor, '@media (pointer: coarse)', 'Editor: die Regel fuer den Finger steht da');
+assert_contains($js, 'var sammle', 'Skript: gesammelt wird rekursiv, damit Gruppen nicht durchfallen');
+
+/* --- Die Abschnittsliste laesst sich schieben --------------------------- */
+
+/*
+ * "Surukle birak duzenleme editorunden bahsediyorum, asagidaki kartlarda
+ * calismiyor."
+ *
+ * Die Reihenfolge der Abschnitte ging bisher nur ueber die Pfeile. Bei sieben
+ * Zeilen ist das Klicken; bei einer Zeile, die von unten nach oben soll, ist
+ * es sechsmal Klicken.
+ *
+ * KEINE zweite Sortierlogik: geschoben wird der Knoten, und danach schreibt
+ * dieselbe reiheNeu() dieselbe Reihe ins versteckte Feld wie bei den Pfeilen.
+ * Die Pfeile bleiben - am Telefon nimmt der Finger die Liste zum Scrollen,
+ * und dort sind sie der Weg.
+ */
+assert_contains($js, 'var ziehtZeile', 'Skript: die Liste kennt ein Ziehen');
+assert_contains($js, 'data-sec-waehl', 'Skript: angefasst wird am Greifer der Zeile');
+
+/*
+ * Erst ab einer Schwelle ist es ein Ziehen. Ohne sie waere jeder Klick auf
+ * eine Zeile schon eine Bewegung um ein, zwei Pixel - und die Zeile spraenge
+ * beim blossen Auswaehlen umher.
+ */
+assert_contains($js, 'SCHWELLE', 'Skript: ein Klick ist noch kein Ziehen');
+
+/*
+ * Und nach einem echten Ziehen wird der folgende Klick geschluckt: sonst
+ * waehlt das Loslassen den Abschnitt aus und die Mitte springt auf ein
+ * Geraet - man wollte nur umsortieren.
+ */
+assert_contains($js, 'var schluck', 'Skript: der Klick nach dem Ziehen faellt weg');
+
+// Dieselbe Hand wie die Pfeile, nicht eine zweite daneben.
+assert_contains($js, 'reiheNeu();', 'Skript: die Reihe schreibt weiterhin reiheNeu');
+assert_contains($editor, '[data-sec-zeile][data-zieht]', 'Editor: die geschobene Zeile sieht man ihr an');

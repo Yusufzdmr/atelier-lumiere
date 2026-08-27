@@ -132,6 +132,14 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
            border:1px solid var(--color-sand-deep,#dccebc);}
   .b-zeile[data-aktiv]{border-color:var(--color-ink,#14110f);background:var(--color-sand,#ede4d8);}
   .b-zeile[data-weg]{opacity:0.4;}
+  /* Die Zeile, die gerade geschoben wird. Angehoben und nicht eingefaerbt:
+     eine Farbe hiesse hier schon etwas anderes (aktiv, weggenommen), und die
+     Liste soll waehrend des Schiebens lesbar bleiben. */
+  .b-zeile[data-sec-zeile][data-zieht]{border-color:var(--color-gold,#b08d57);
+           box-shadow:0 6px 14px -6px rgba(0,0,0,.35);cursor:grabbing;}
+  /* Der Greifer sagt mit dem Zeiger, dass er einer ist. */
+  .b-zeile [data-sec-waehl]{cursor:grab;}
+  .b-zeile[data-zieht] [data-sec-waehl]{cursor:grabbing;}
   /* Ziehbar: der Greifer sagt es, solange die Maus darauf steht. Auf dem
      Telefon gibt es kein Ziehen - dort bleiben die Pfeile der einzige Weg,
      und deshalb bleiben sie ueberall. */
