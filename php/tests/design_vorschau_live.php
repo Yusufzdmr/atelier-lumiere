@@ -82,3 +82,18 @@ $bis = strpos($steuer, "\n    }", (int) $von);
 $koerper = substr($steuer, (int) $von, (int) $bis - (int) $von);
 assert_not_contains($koerper, 'Design::save', 'Vorschau: speichert nichts');
 assert_contains($koerper, 'Security::checkCsrf', 'Vorschau: prueft das Token trotzdem');
+
+/*
+ * Und die Vorschau darf das Formular nicht vergiften.
+ *
+ * Der Abschnitt "Zusage" bringt ein echtes Formular mit, samt csrf-Feld. Der
+ * Kasten liegt IM Formular des Editors - damit stand das Feld ein zweites
+ * Mal darin, leer, weil die Vorschau kein Token vergibt. PHP nimmt bei zwei
+ * gleichen Namen den letzten: gemessen am 27.08.2026 an der lebenden Seite
+ * kam 419 zurueck, und dasselbe waere beim Speichern passiert. Ein Kasten,
+ * der nur zeigen sollte, haette den Knopf daneben unbrauchbar gemacht.
+ *
+ * Gesperrte Felder werden nicht abgeschickt - der Name ist damit wieder
+ * einmalig, und in eine Vorschau tippt ohnehin niemand.
+ */
+assert_contains($js, 'el.disabled = true', 'Skript: legt die Felder der Vorschau still');

@@ -1517,6 +1517,27 @@
         return daten;
       };
 
+      /*
+       * Die Felder in der Vorschau stilllegen - und das ist keine Kosmetik.
+       *
+       * Der Abschnitt "Zusage" bringt ein echtes Formular mit, samt eigenem
+       * csrf-Feld. Der Kasten liegt IM Formular des Editors, und damit stand
+       * dieses Feld plötzlich ein zweites Mal darin - leer, weil die Vorschau
+       * kein Token vergibt. PHP nimmt bei zwei gleichen Namen den LETZTEN:
+       * das echte Token war weg, und zwar nicht nur fuer die naechste
+       * Vorschau (419), sondern auch fuer das Speichern. Ein Kasten, der nur
+       * zeigen sollte, haette den Knopf daneben unbrauchbar gemacht.
+       *
+       * Gesperrte Felder werden nicht abgeschickt - damit ist der Name wieder
+       * einmalig. Und richtig ist es ohnehin: in eine Vorschau tippt man
+       * nicht, sie zeigt, wie es beim Gast aussieht.
+       */
+      var entwaffne = function () {
+        liveKasten.querySelectorAll("input, select, textarea, button").forEach(function (el) {
+          el.disabled = true;
+        });
+      };
+
       var hole = function () {
         if (laeuft) { nochmal = true; return; }
         laeuft = true;
@@ -1536,6 +1557,7 @@
           if (stueck !== null) {
             liveKasten.innerHTML = stueck;
             liveKasten.hidden = stueck.trim() === "";
+            entwaffne();
           }
         }).catch(function () {
           // Netz weg: dasselbe wie oben, stehenlassen.
