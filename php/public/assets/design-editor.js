@@ -1993,14 +1993,23 @@
     };
 
     var zeigeAbschnitt = function (nummer) {
-      var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
-
-      if (!aktiv || aktiv.getAttribute("data-ansicht") === "karte") {
-        // Telefon zuerst: Einladungen werden auf Telefonen geoeffnet.
-        var telefon = form.querySelector('[data-ansicht="390"]');
-        if (telefon) telefon.click();
-      }
-
+      /*
+       * Die Mitte bleibt, wo sie ist.
+       *
+       * "Orta sutun oldugu yerde kalsin." Hier sprang sie auf das Telefon,
+       * sobald man links einen Abschnitt anklickte. Der Gedanke dahinter war
+       * richtig: ein Abschnitt steht nicht auf der Karte, also zeig ihn dort,
+       * wo er steht.
+       *
+       * Nur ist die Voraussetzung inzwischen weg. Seit die lebenden
+       * Abschnitte UNTER der Karte stehen, ist der Abschnitt in der
+       * Kartenansicht ohnehin zu sehen - der Sprung nahm einem seither nur
+       * die Ansicht weg, in der man gerade gearbeitet hat.
+       *
+       * Steht schon ein Geraet in der Mitte, bleibt alles wie gehabt: der
+       * Rahmen rollt zum Abschnitt und umrandet ihn kurz. Nur angefangen
+       * wird das nicht mehr von hier aus.
+       */
       var kennung = form.querySelector('[data-sec-kennung="' + nummer + '"]');
       var name = kennung ? kennung.value.trim() : "";
       if (name === "") return;

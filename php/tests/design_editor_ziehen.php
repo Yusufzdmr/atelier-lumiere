@@ -508,3 +508,23 @@ assert_contains($js, 'var schluck', 'Skript: der Klick nach dem Ziehen faellt we
 // Dieselbe Hand wie die Pfeile, nicht eine zweite daneben.
 assert_contains($js, 'reiheNeu();', 'Skript: die Reihe schreibt weiterhin reiheNeu');
 assert_contains($editor, '[data-sec-zeile][data-zieht]', 'Editor: die geschobene Zeile sieht man ihr an');
+
+/* --- Die Mitte bleibt, wo sie ist --------------------------------------- */
+
+/*
+ * "Orta sutun oldugu yerde kalsin."
+ *
+ * Ein Klick auf einen Abschnitt links sprang die Mitte auf das Telefon. Der
+ * Gedanke dahinter war richtig - ein Abschnitt steht nicht auf der Karte,
+ * also zeig ihn dort, wo er steht. Nur ist die Voraussetzung inzwischen weg:
+ * seit die lebenden Abschnitte UNTER der Karte stehen, ist der Abschnitt in
+ * der Kartenansicht ohnehin zu sehen. Der Sprung nimmt einem seither nur die
+ * Ansicht weg, in der man gerade gearbeitet hat.
+ *
+ * Steht schon ein Geraet in der Mitte, bleibt alles wie gehabt: der Rahmen
+ * rollt zum Abschnitt und umrandet ihn kurz.
+ */
+assert_not_contains($js, '// Telefon zuerst: Einladungen werden auf Telefonen geoeffnet.',
+    'Skript: die Mitte springt nicht mehr von selbst auf das Telefon');
+assert_contains($js, 'bleibt, wo sie ist',
+    'Skript: und sagt, warum sie stehenbleibt');
