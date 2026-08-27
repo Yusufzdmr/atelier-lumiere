@@ -6,7 +6,7 @@ anlatılmıyor.
 
 Öğleden sonraki hâline göre ne değişti: 1. madde çözüldü ve yayına alındı
 (geriye tek bir gözle bakma kaldı), 3. madde bütünüyle bitti. 2. madde olduğu
-gibi duruyor — ve tek gerçek açık iş o.
+gibi duruyor değil: o da bitti. Geriye tek bir gözle bakma kaldı.
 
 ---
 
@@ -84,26 +84,44 @@ bir satır yeterdi, ve o satır yan hasar üretmezdi.
 
 ---
 
-## 2 · Müziği YouTube/Spotify ile gömme
+## 2 · Müziği YouTube ile gömme — bitti
 
-Değişmedi.
+**Durum: yayında ve ölçüldü.** Ama iki şey burada karar olarak duruyor, çünkü
+sonradan "neden böyle?" diye sorulacak cinsten.
 
-**Durum.** Doğrudan adresle müzik **çalışıyor**: `Design::safeAudio()` yerel
-yolların yanı sıra `https://` adreslerini kabul ediyor (yalnız https — davetiye
-https üzerinden çalışıyor, http bir kaynağı tarayıcı "karışık içerik" diye
-reddeder ve ses sessizce çalmaz). Panelde ses alanının etiketi bunu söylüyor.
+**"Arka planda çalan YouTube müziği" diye bir şey yok.** `music/default` sesi
+kuvertin açılışına bağlar ve sayfanın altında çalar; yabancı bir çerçeve ne
+birini ne ötekini yapabilir. Gömülen şey zorunlu olarak **görünür bir çalar**
+olur ve davetli ona dokunur. Bu bir tasarım tercihi değildi.
 
-**Yapılmayan.** YouTube/Spotify gömme. Bilerek: bu bir alan değil, ayrı bir iş.
+**İki tıklama yöntemi.** Markup'ta iframe yok — yalnız adres, bir düğme ve
+dokununca ne olacağını söyleyen bir cümle. Çerçeveyi tıklama anında
+`invitation.js` kuruyor. Yani davetli dokunana kadar YouTube'a **tek istek
+gitmiyor**, ve dokunma o tek çerçeve için bilgilendirilmiş onay sayılıyor.
 
-- iframe gerekir, `Http.php` içindeki `frame-src` politikasına eklenmeli
-- çerez onayı (`consent.js`) kapsamına girer — üçüncü taraf içerik
-- tarayıcıların otomatik başlatma kısıtları
-- **ve en önemlisi:** davetiyenin arka planda çalan müziği bu gömülülerle
-  çalışmıyor. `music/default` biçimi sesi sayfanın altına koyar ve kuvert
-  açılınca başlatır; bir YouTube iframe'i bunu yapamaz.
+Bu sayede çerez bandına üçüncü bir kategori eklemek gerekmedi. Bir kategori,
+gizlilik metninde birinin bakması gereken bir paragraf demektir; iki tıklama
+yöntemi aynı korumayı o yük olmadan veriyor. (İlk önerim üçüncü kategoriydi;
+bu yöntemi düşününce vazgeçtim.)
 
-Yani istenirse önce ürün kararı gerekiyor: "arka plan müziği" mi, yoksa
-"tıklayıp dinlenen bir gömülü çalar" mı.
+**Adres beyaz listeden geçiyor** (`Design::safeEinbettung`): adres çubuğundan
+kopyalanan dört yazım tanınıyor, kimlik **yeniden kuruluyor** — geçirilmiyor.
+Çıkan ya bilinen bir nocookie adresi ya hiç. İki kez doğrulanıyor (kaydederken
+ve basarken), o yüzden fonksiyon **kendi çıktısını da tanımak zorunda**;
+tanımasaydı bölüm ikinci geçişte sessizce düşerdi. Bir test bunu tutuyor.
+
+**Ayrı bir alan**, tonspur'unki değil: orada yerel bir yol durur, ve dış adres
+sığdırmak için o kuralı gevşetmek yanlış yönde olurdu.
+
+**Spotify bilerek yok.** Gömülü Spotify oturum açmamış dinleyiciye şarkının
+yalnız 30 saniyesini çalar, ve davetlilerin çoğu oturum açmamış olacak. Yarım
+şarkı, bir bağlantıdan kötüdür. İstenirse `safeEinbettung`'a ikinci bir
+sağlayıcı olarak eklenebilir — CSP'ye `https://open.spotify.com` eklemek de
+gerekir.
+
+Canlıda ölçülen: kaydedilen değer zaten nocookie adresi; markup'ta iframe yok;
+tıklamadan sonra 1 iframe, host `www.youtube-nocookie.com`, `autoplay=1`,
+`allowfullscreen`.
 
 ---
 
