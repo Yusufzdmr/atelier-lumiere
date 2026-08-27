@@ -47,6 +47,8 @@ $meldungen = [
     'belegt'    => $tr ? 'Bu adla bir tasarım zaten var.' : 'Unter diesem Namen gibt es schon eine Vorlage.',
     'csrf'      => $tr ? 'Oturum düştü, sayfayı tazele.' : 'Die Sitzung ist abgelaufen, bitte neu laden.',
     'geloescht' => $tr ? 'Tasarım silindi.' : 'Die Vorlage ist gelöscht.',
+    'angelegt'  => $tr ? 'Boş tasarım oluşturuldu — düzenlemeye başlayabilirsin.'
+                       : 'Leere Vorlage angelegt - jetzt kann sie gebaut werden.',
     'unbekannt' => $tr ? 'Tanınmayan işlem.' : 'Unbekannte Aktion.',
 ];
 ?>
@@ -68,6 +70,39 @@ $meldungen = [
   <?php if ($fehler !== '' && isset($meldungen[$fehler])) : ?>
     <p class="border-l-2 border-red-700 px-4 py-3 text-sm text-red-700"><?= e($meldungen[$fehler]) ?></p>
   <?php endif; ?>
+
+  <?php /*
+     Von vorn anfangen.
+
+     Bis heute ging beides nur von etwas Bestehendem aus - aus einem Thema
+     ueber die Anordnung einer vorhandenen Vorlage, oder als Kopie. Das hatte
+     seinen Grund: der Editor konnte keine Textebene anlegen, eine leere Karte
+     waere also ein Blatt gewesen, auf das man nichts schreiben kann.
+
+     Seit der Editor Text- und Formebenen anlegt und jeder Kasten sich ziehen
+     laesst, ist der Grund weg.
+  */ ?>
+  <details class="border border-sand-deep">
+    <summary class="cursor-pointer p-5 <?= $label ?>">
+      <?= $tr ? 'Boş tasarımla sıfırdan başla' : 'Leere Vorlage - von vorn anfangen' ?>
+    </summary>
+    <form method="post" class="flex flex-wrap items-end gap-4 border-t border-sand-deep p-5">
+      <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+      <input type="hidden" name="was" value="leer">
+      <label class="<?= $label ?>">
+        <?= $tr ? 'Ad' : 'Name' ?>
+        <input name="neuer_name" class="mt-1 block border border-sand-deep bg-transparent px-3 py-2 text-sm text-ink">
+      </label>
+      <button class="bg-ink px-5 py-2.5 text-[0.66rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
+        <?= $tr ? 'Oluştur' : 'Anlegen' ?>
+      </button>
+      <p class="w-full text-[0.78rem] leading-relaxed text-muted">
+        <?= $tr
+          ? 'Katmansız, taslak olarak başlar. Düzenleyicide "Yeni katman" ile yazı, görsel ve şekil ekler, yerlerini kartın üstünde sürükleyerek verirsin.'
+          : 'Ohne Ebenen, als Entwurf. Im Editor legst du unter „Neue Ebene" Text, Bild und Form an und gibst ihnen den Platz mit der Hand auf der Karte.' ?>
+      </p>
+    </form>
+  </details>
 
   <details class="border border-sand-deep">
     <summary class="cursor-pointer p-5 <?= $label ?>">

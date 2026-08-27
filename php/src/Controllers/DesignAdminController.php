@@ -103,6 +103,9 @@ final class DesignAdminController
         if ($was === 'temadan') {
             $this->zurueck($locale, $this->ausThema());
         }
+        if ($was === 'leer') {
+            $this->zurueck($locale, $this->leer());
+        }
         if ($was === 'loeschen') {
             $this->zurueck($locale, $this->loeschen());
         }
@@ -124,6 +127,45 @@ final class DesignAdminController
     {
         header('Location: ' . I18n::path('/admin/designs', $locale) . ($query !== '' ? '?' . $query : ''), true, 303);
         exit;
+    }
+
+    /*
+     * Eine Vorlage von vorn - ohne Ebenen, ohne Abschnitte.
+     *
+     * Bis heute ging beides nur von etwas Bestehendem aus: aus einem Thema
+     * ueber die Anordnung einer vorhandenen Vorlage, oder als Kopie. Das hatte
+     * einen Grund - die Textebenen wurden am gerenderten Original gemessen und
+     * stehen in keinem Thema, also haette eine leere Karte kein Wort getragen.
+     *
+     * Der Grund ist weg: seit derselben Sitzung legt der Editor auch Text- und
+     * Formebenen an, und der Kasten jeder Ebene laesst sich ziehen. Eine leere
+     * Vorlage ist damit ein Anfang und keine Sackgasse mehr.
+     *
+     * Sie beginnt als Entwurf. Was Design::complete() nicht kennt, fuellt es
+     * mit seinen Vorgaben - Seitenverhaeltnis, Palette, Schriften; erfunden
+     * wird hier nichts.
+     */
+    private function leer(): string
+    {
+        $name = Security::clean($_POST['neuer_name'] ?? '', 60);
+        if ($name === '') {
+            return 'fehler=name';
+        }
+
+        $kennung = Design::key($name);
+        if ($kennung === '' || Design::findById($kennung) !== null) {
+            return 'fehler=belegt';
+        }
+
+        Design::save(Design::complete([
+            'id'      => $kennung,
+            'slug'    => $kennung,
+            'name'    => ['de' => $name, 'en' => $name],
+            'status'  => 'draft',
+            'version' => 1,
+        ]));
+
+        return 'ok=angelegt';
     }
 
     /** Eine vorhandene Vorlage als neuer Entwurf. */
@@ -416,7 +458,7 @@ final class DesignAdminController
      * @param array<string,mixed> $post
      * @return array<string,mixed>
      */
-    private function mitNeuerBildebene(array $doc, array $post): array
+    private function mitNeuerEbene(array $doc, array $post): array
     {
         $name = Security::clean($post['neue_ebene_label'] ?? '', 60);
         if ($name === '') {
@@ -434,26 +476,61 @@ final class DesignAdminController
             $id = $basis . '-' . $n;
         }
 
-        $schnitt = (string) ($post['neue_ebene_schnitt'] ?? 'voll');
-        $box = match ($schnitt) {
-            'oben'  => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 50],
-            'unten' => ['x' => 0, 'y' => 50, 'w' => 100, 'h' => 50],
-            default => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 100],
+        $art = (string) ($post['neue_ebene_typ'] ?? 'photo');
+        if (!in_array($art, ['photo', 'video', 'image', 'text', 'shape'], true)) {
+            $art = 'photo';
+        }
+
+        $schrift = $art === 'text' || $art === 'shape';
+
+        /*
+         * Der Zuschnitt gilt nur fuer das, was eine Flaeche ist.
+         *
+         * Eine Textebene ueber die ganze Karte waere genau der Kasten, an dem
+         * das Ziehen im August gescheitert ist: unsichtbar, kartenhoch, und er
+         * faengt jeden Klick ab. Ein neuer Text beginnt deshalb als schmale
+         * Zeile in der Mitte, mit auto-Hoehe - dort steht er, dort sieht man
+         * ihn, und von dort zieht man ihn hin, wo er hin soll.
+         */
+        $box = $schrift
+            ? ['x' => 10, 'y' => 45, 'w' => 80, 'h' => $art === 'shape' ? 10 : 0]
+            : match ((string) ($post['neue_ebene_schnitt'] ?? 'voll')) {
+                'oben'  => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 50],
+                'unten' => ['x' => 0, 'y' => 50, 'w' => 100, 'h' => 50],
+                default => ['x' => 0, 'y' => 0,  'w' => 100, 'h' => 100],
+            };
+
+        /*
+         * Die Rechte je nach Art. photo gibt dem Paar ein Feld zum Hochladen -
+         * bei einem Text oder einer Form waere es ein Feld ohne Gegenstueck.
+         * Ein Schmuckbild des Grafikers (image) gehoert ihm und nicht dem Paar.
+         */
+        $rechte = match ($art) {
+            'photo', 'video' => ['edit' => true, 'photo' => true, 'hide' => true],
+            'text'           => ['edit' => true, 'text' => true],
+            default          => ['edit' => true],
         };
 
         $ebene = Design::completeElement([
             'id'    => $id,
             'label' => $name,
-            'type'  => ($post['neue_ebene_typ'] ?? 'photo') === 'video' ? 'video' : 'photo',
+            'type'  => $art,
             'spot'  => (string) ($post['neue_ebene_spot'] ?? 'card'),
             'box'   => $box + ['anchor' => 'topleft'],
-            // Genau die drei, um die es geht: bearbeitbar ist der Hauptschalter,
-            // photo gibt das Feld zum Hochladen, hide laesst das Paar die Ebene
-            // wieder loswerden, wenn es doch kein Bild will.
-            'permissions' => ['edit' => true, 'photo' => true, 'hide' => true],
+            /*
+             * Der erste Satz. Ohne ihn haette die Ebene keinen Knoten -
+             * Design::html laesst eine Textebene ohne Text ganz weg, und dann
+             * waere sie angelegt und trotzdem nicht zu sehen.
+             */
+            'text'  => $art === 'text'
+                ? (static function (string $wort): array {
+                    return ['de' => $wort, 'en' => $wort];
+                })(Security::clean($post['neue_ebene_text'] ?? '', 200) ?: $name)
+                : ['de' => '', 'en' => ''],
+            'permissions' => $rechte,
         ]);
 
-        $start = $_FILES['neue_ebene_bild'] ?? null;
+        $start = $schrift ? null : ($_FILES['neue_ebene_bild'] ?? null);
         if (is_array($start) && ((int) ($start['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
             $pfad = $ebene['type'] === 'video'
                 ? Media::storeVideo($start, 'designs')
@@ -715,7 +792,7 @@ final class DesignAdminController
         }
 
         $doc = Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST));
-        $doc = $this->mitNeuerBildebene($doc, $_POST);
+        $doc = $this->mitNeuerEbene($doc, $_POST);
 
         /*
          * Ein Startsatz, falls jemand einen der Knoepfe gedrueckt hat.

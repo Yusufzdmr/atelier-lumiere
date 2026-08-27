@@ -72,3 +72,35 @@ assert_contains($liste, 'value="loeschen"', 'Liste: jede Zeile hat den Knopf');
 assert_contains($steuer, 'frage=loeschen', 'Controller: fragt erst nach, statt gleich zu loeschen');
 assert_contains($liste, "=== 'loeschen'", 'Liste: und zeigt die Frage an derselben Kachel');
 assert_contains($liste, 'bestaetigt', 'Liste: die Bestaetigung ist ein zweiter Schritt');
+
+/* --- Von vorn anfangen --------------------------------------------------- */
+
+/*
+ * Es gab keinen Weg, eine Vorlage von vorn zu beginnen - nur aus einem Thema
+ * ueber eine vorhandene Anordnung, oder als Kopie: "yeni tema
+ * olusturamiyorum, temadan yeni tasarim yapiliyor sadece".
+ *
+ * Der Grund dafuer war echt und stand im Editor: er konnte Ebenen nur in zwei
+ * Arten anlegen, Bild und Video. Eine leere Vorlage waere ein Blatt gewesen,
+ * auf das man kein Wort schreiben kann - deshalb ging alles von etwas
+ * Bestehendem aus, denn die Textebenen kamen mit der Anordnung mit.
+ *
+ * Beides gehoert zusammen: die leere Vorlage ist erst dann ein Anfang und
+ * keine Sackgasse, wenn der Editor auch Text anlegt.
+ */
+$editorSec = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-sections.php');
+
+assert_contains($liste, "value=\"leer\"", 'Liste: der Weg von vorn steht da');
+assert_contains($steuer, 'private function leer', 'Controller: und legt eine leere Vorlage an');
+assert_contains($editorSec, 'value="text"', 'Editor: eine Textebene laesst sich anlegen');
+assert_contains($editorSec, 'neue_ebene_text', 'Editor: mit ihrem ersten Satz');
+assert_contains($steuer, "'photo', 'video', 'image', 'text', 'shape'", 'Controller: fuenf Arten statt zweier');
+
+/*
+ * Und der neue Text beginnt NICHT ueber die ganze Karte. Genau so ein Kasten -
+ * unsichtbar, kartenhoch - hat das Ziehen unbrauchbar gemacht, bis die
+ * Trefferpruefung auf das Sichtbare umgestellt wurde. Ihn hier neu zu
+ * erzeugen waere derselbe Fehler noch einmal.
+ */
+assert_contains($steuer, "'x' => 10, 'y' => 45, 'w' => 80", 'Controller: ein neuer Text ist eine Zeile, keine Flaeche');
+assert_not_contains($steuer, "'neue_ebene_schnitt'] ?? 'voll');\n        \$box = match", 'Controller: der Zuschnitt gilt nur noch fuer Flaechen');

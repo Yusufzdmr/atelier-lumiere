@@ -178,16 +178,43 @@ use function Atelier\e;
     <div class="<?= $label ?>"><?= $tr ? 'Yeni görsel/video katmanı' : 'Neue Bild- oder Videoebene' ?></div>
     <p class="mt-2 text-[0.78rem] leading-relaxed text-muted">
       <?= $tr
-        ? 'Adı yazıp kaydedersen katman eklenir ve müşterinin sihirbazında kendi görselini yükleyebileceği bir alan olarak çıkar. En alta, her şeyin arkasına konur. Boş bırakırsan hiçbir şey olmaz.'
-        : 'Trägst du einen Namen ein und speicherst, entsteht die Ebene - und im Assistenten des Paares ein Feld, in das es sein eigenes Bild lädt. Sie kommt nach ganz hinten, unter alles andere. Leer gelassen passiert nichts.' ?>
+        ? 'Adı yazıp kaydedersen katman eklenir. Yazı ortada bir satır olarak başlar, görsel/video ise en alta her şeyin arkasına konur — sonra kartın üstünde sürükleyerek yerini verirsin. Boş bırakırsan hiçbir şey olmaz.'
+        : 'Trägst du einen Namen ein und speicherst, entsteht die Ebene. Ein Text beginnt als Zeile in der Mitte, ein Bild oder Video ganz hinten unter allem - den Platz gibst du danach auf der Karte, mit der Hand. Leer gelassen passiert nichts.' ?>
     </p>
 
     <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <?php /*
+         Fuenf Arten statt zweier.
+
+         Bis hierher konnte der Editor nur Flaechen anlegen - Bild und Video -,
+         und eine Vorlage ohne Textebene liess sich deshalb nicht beschriften.
+         Genau daran scheiterte auch die leere Vorlage: sie waere ein Blatt
+         gewesen, auf das man nichts schreiben kann.
+
+         photo gehoert dem PAAR (es bekommt ein Feld zum Hochladen), image dem
+         Grafiker. Der Unterschied steht in den Rechten weiter unten, nicht im
+         Aussehen.
+      */ ?>
       <label class="<?= $label ?>"><?= $tr ? 'Ne' : 'Was' ?>
         <select name="neue_ebene_typ" class="<?= $feld ?>">
-          <option value="photo"><?= $tr ? 'Görsel' : 'Bild' ?></option>
+          <option value="text"><?= $tr ? 'Yazı' : 'Text' ?></option>
+          <option value="photo"><?= $tr ? 'Görsel (müşteri yükler)' : 'Bild (das Paar lädt es)' ?></option>
+          <option value="image"><?= $tr ? 'Süsleme görseli' : 'Schmuckbild' ?></option>
+          <option value="shape"><?= $tr ? 'Şekil (renkli kutu)' : 'Form (farbiger Kasten)' ?></option>
           <option value="video"><?= $tr ? 'Video' : 'Video' ?></option>
         </select></label>
+
+      <?php /*
+         Der erste Satz einer Textebene.
+
+         Er muss stehen: Design::html laesst eine Textebene ohne Text ganz weg,
+         und dann waere sie angelegt und trotzdem nirgends zu sehen. Bleibt das
+         Feld leer, nimmt sie ihren Namen - besser ein Platzhalter, den man
+         ueberschreibt, als eine Ebene, die es nur in der Liste gibt.
+      */ ?>
+      <label class="<?= $label ?>"><?= $tr ? 'Yazının kendisi (yalnızca yazı için)' : 'Der Text selbst (nur bei Text)' ?>
+        <input name="neue_ebene_text" value="" maxlength="200" class="<?= $feld ?>"
+               placeholder="<?= $tr ? 'ör. Düğünümüze bekliyoruz' : 'z. B. Wir heiraten' ?>"></label>
 
       <label class="<?= $label ?>"><?= $tr ? 'Adı (müşteri bunu görür)' : 'Name (das Paar liest ihn)' ?>
         <input name="neue_ebene_label" value="" maxlength="60" class="<?= $feld ?>"
