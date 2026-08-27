@@ -102,6 +102,9 @@ final class DesignAdminController
         if ($was === 'temadan') {
             $this->zurueck($locale, $this->ausThema());
         }
+        if ($was === 'loeschen') {
+            $this->zurueck($locale, $this->loeschen());
+        }
         if ($was === 'durum') {
             $this->zurueck($locale, $this->durum());
         }
@@ -201,6 +204,37 @@ final class DesignAdminController
             return 'ok=uebernommen_ohne_kunst';
         }
         return count($pfade) < $ecken ? 'ok=uebernommen_teilweise' : 'ok=uebernommen';
+    }
+
+    /*
+     * Eine Vorlage wegnehmen - in zwei Schritten.
+     *
+     * Der erste Klick fragt nur, der zweite loescht. Und die Frage nennt eine
+     * Zahl: wie viele Einladungen an dieser Vorlage haengen. Sie ueberleben
+     * das Loeschen - jede traegt eine eingefrorene Kopie -, aber sie lassen
+     * sich danach nicht mehr auffrischen. Das gehoert vor den Klick und nicht
+     * danach.
+     *
+     * Gezaehlt wird hier und nicht im Formular geglaubt, genau wie bei den
+     * Hinweisen in durum(): was das Formular mitbringt, kann alt sein.
+     */
+    private function loeschen(): string
+    {
+        $design = Design::findById(Security::clean($_POST['quelle'] ?? '', 64));
+        if ($design === null) {
+            return 'fehler=quelle';
+        }
+
+        $id = (string) $design['id'];
+
+        if (!isset($_POST['bestaetigt'])) {
+            return 'frage=loeschen&id=' . rawurlencode($id)
+                 . '&n=' . count(InvitationsV2::byDesign($id));
+        }
+
+        Design::delete($id);
+
+        return 'ok=geloescht';
     }
 
     /** Aktiv/inaktiv. Hinweise halten nicht auf, aber sie werden gesagt. */

@@ -1581,6 +1581,24 @@ final class Design
         return $karte;
     }
 
+    /*
+     * Eine Vorlage endgueltig wegnehmen.
+     *
+     * Ohne diesen Weg wuchs die Liste nur: aktiv/inaktiv nimmt eine Vorlage
+     * aus dem Schaufenster, aber nicht aus dem Panel, und wer ausprobiert,
+     * legt Probevorlagen an.
+     *
+     * Die Einladungen daran bleiben stehen und werden weiter angezeigt: jede
+     * traegt in design_snapshot eine eingefrorene Kopie der Vorlage, und
+     * genau dafuer ist sie da. Was danach nicht mehr geht, ist das
+     * Auffrischen auf eine neuere Fassung - es gibt keine mehr. Deshalb
+     * nennt die Rueckfrage im Panel ihre Zahl, bevor jemand drueckt.
+     */
+    public static function delete(string $id): void
+    {
+        Db::run('DELETE FROM designs WHERE id = ?', [$id]);
+    }
+
     public static function save(array $doc): void
     {
         $doc = self::complete($doc);
