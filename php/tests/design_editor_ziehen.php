@@ -312,9 +312,31 @@ assert_contains($js, 'var versatz',
  * sie ebenfalls, und ein Wechsel des Geraets stoesst das Nachladen an - der
  * Kasten waere 400 ms spaeter von selbst zurueckgekommen.
  */
-assert_contains($js, 'var abschnitteZeigen', 'Skript: eine Stelle entscheidet ueber den Kasten');
-assert_same(0, substr_count($js, 'liveKasten.hidden = stueck.trim()'),
-    'Skript: das Nachladen entscheidet nicht mehr allein - sonst kaeme der Kasten zurueck');
+/*
+ * KORREKTUR vom selben Abend.
+ *
+ * Der erste Versuch versteckte den Kasten im Geraetemodus. Das brachte den
+ * Rahmen ins Bild - und nahm zugleich die einzige Stelle weg, an der eine
+ * ungespeicherte Aenderung an einem ABSCHNITT zu sehen war: der Rahmen holt
+ * seine Seite vom Server und weiss von ihr nichts. Wer rechts die
+ * Ausrichtung eines Abschnitts umstellte, sah daraufhin gar nichts mehr.
+ * "Sagdaki ozelliklerden degistiriyorum ama hicbir sey olmuyor."
+ *
+ * Der Fehler war nie das Dasein des Kastens, sondern seine STELLE: er stand
+ * zwischen Karte und Rahmen. Faellt die Karte weg, rutscht er nach oben und
+ * schiebt den Rahmen hinaus. Steht der Rahmen davor, stoert er niemanden -
+ * und beide sind zu sehen.
+ *
+ * Also: Karte, Rahmen, Abschnitte. Und kein Verstecken mehr.
+ */
+assert_true(
+    strpos($editor, 'data-ansicht-rahmen') < strpos($editor, 'data-live-abschnitte'),
+    'Editor: der Rahmen steht VOR dem Kasten der lebenden Abschnitte'
+);
+assert_not_contains($js, 'var abschnitteZeigen',
+    'Skript: der Kasten wird nicht mehr versteckt - die Reihenfolge genuegt');
+assert_contains($js, 'liveKasten.hidden = stueck.trim()',
+    'Skript: er haengt wieder allein daran, ob es etwas zu zeigen gibt');
 
 // Die Naht: der Kasten steht zwischen Karte und Rahmen, und genau das ist der
 // Grund. Wandert er im Markup, ist diese Regel hinfaellig.

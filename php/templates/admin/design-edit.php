@@ -457,8 +457,29 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
           </div>
         </div>
 
+
+        <?php /*
+           Der Rahmen entsteht erst beim ersten Klick auf ein Geraet. Ein
+           iframe im Markup laedt die Seite mit - samt Kuvertfilm - und zwar
+           jedes Mal, wenn jemand den Editor oeffnet, auch wenn er ihn nie
+           ansieht.
+        */ ?>
+        <div class="b-rahmen" data-ansicht-rahmen hidden
+             data-adresse="<?= e(I18n::path('/v2/designs/' . $design['slug'], 'de')) ?>"
+             data-wort-seite="<?= $tr
+                ? 'Bu çerçeve KAYDEDİLMİŞ hâli gösterir — sayfanın kendisini sunucudan alır. Değişikliği görmek için önce kaydet.'
+                : 'Der Rahmen zeigt den GESPEICHERTEN Stand - er holt die Seite vom Server. Erst speichern, dann sieht man die Änderung.' ?>"></div>
+
         <?php /*
            Und darunter die Abschnitte - lebend.
+
+           UNTER dem Rahmen und nicht davor, und das ist der Kern: der Kasten
+           stand einmal zwischen Karte und Rahmen. Faellt die Karte im
+           Geraetemodus weg, rutscht er nach oben und schiebt den Rahmen aus
+           dem Bild - drei Bildschirme weit, gemessen. Ihn dort zu VERSTECKEN
+           war der erste Versuch und nahm zugleich die einzige Stelle weg, an
+           der eine ungespeicherte Aenderung an einem Abschnitt zu sehen ist:
+           der Rahmen holt seine Seite vom Server und weiss von ihr nichts.
 
            Sie stehen nicht IN der Vorschau, sondern darunter: die Karte hat
            einen festen Rahmen (Seitenverhaeltnis), die Abschnitte eine
@@ -478,18 +499,6 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
         <div class="overflow-hidden border border-t-0 border-sand-deep"
              data-live-abschnitte hidden
              data-adresse="<?= e($p('/admin/designs/' . $design['slug'] . '/vorschau')) ?>"></div>
-
-        <?php /*
-           Der Rahmen entsteht erst beim ersten Klick auf ein Geraet. Ein
-           iframe im Markup laedt die Seite mit - samt Kuvertfilm - und zwar
-           jedes Mal, wenn jemand den Editor oeffnet, auch wenn er ihn nie
-           ansieht.
-        */ ?>
-        <div class="b-rahmen" data-ansicht-rahmen hidden
-             data-adresse="<?= e(I18n::path('/v2/designs/' . $design['slug'], 'de')) ?>"
-             data-wort-seite="<?= $tr
-                ? 'Bu çerçeve KAYDEDİLMİŞ hâli gösterir — sayfanın kendisini sunucudan alır. Değişikliği görmek için önce kaydet.'
-                : 'Der Rahmen zeigt den GESPEICHERTEN Stand - er holt die Seite vom Server. Erst speichern, dann sieht man die Änderung.' ?>"></div>
 
         <?php /*
            Die Karte ist anfassbar, und das sieht man ihr nicht an - deshalb

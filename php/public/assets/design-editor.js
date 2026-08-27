@@ -1694,74 +1694,6 @@
       seite: rahmen.getAttribute("data-wort-seite") || "Der Rahmen zeigt den gespeicherten Stand."
     };
 
-    /*
-     * Der Kasten der lebenden Abschnitte - und wann er im Weg steht.
-     *
-     * "Telefon sekmesine gecince acilis filmi ekrana gelmiyor, onun yerine
-     * sayfanin altindaki bolumler goruluyor."
-     *
-     * Gemessen am 27.08.2026 auf dem Livesystem an testyusuf1: der Kasten war
-     * 2677 Pixel hoch und nicht versteckt, der Rahmen begann daraufhin bei
-     * y = 2909 - bei 855 Pixeln Fensterhoehe. Der Film war die ganze Zeit da
-     * und richtig (im Rahmen gemessen: readyState 4, die Kaplama sichtbar,
-     * und der Zeigertest in ihrer Mitte traf das VIDEO). Nur stand der Rahmen
-     * knapp drei Bildschirme tiefer, und oben stand das, was man statt seiner
-     * sah.
-     *
-     * Der Grund ist die Reihenfolge im Markup: Karte, Abschnitte, Rahmen.
-     * Verschwindet die KARTE beim Umschalten, rutscht der Kasten nach oben
-     * und schiebt den Rahmen aus dem Bild.
-     *
-     * Im Geraetemodus braucht ihn ohnehin niemand: der Rahmen zeigt die ganze
-     * Seite, Abschnitte inbegriffen. Versteckt und nicht geleert - der Inhalt
-     * kostet einen Weg zum Server, und beim Zurueckschalten will man ihn
-     * sofort wieder sehen.
-     *
-     * Eine Stelle entscheidet, und zwar diese: hole() setzte es ebenfalls,
-     * und ein Wechsel des Geraets stoesst hole() an (die Geraeteknoepfe sind
-     * button[type=button] im Formular). Der Kasten waere 400 ms spaeter von
-     * selbst zurueckgekommen.
-     */
-    var abschnitteZeigen = function () {
-      if (!liveKasten) return;
-
-      var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
-      var imGeraet = !!aktiv && aktiv.getAttribute("data-ansicht") !== "karte";
-
-      liveKasten.hidden = imGeraet || liveKasten.innerHTML.trim() === "";
-    };
-
-    /*
-     * Das Kuvert im Rahmen aufmachen, wenn jemand auf ein Geraet umschaltet.
-     *
-     * Gezogen werden konnte auch vorher - ebeneAn() sucht ueber die Rechtecke
-     * der Ebenen und fragt nicht, was darueber liegt. Zu SEHEN war nur
-     * nichts: die Karte steckt hinter dem Kuvert, und der Wahlrahmen lag auf
-     * einer geschlossenen Huelle. Man zog blind.
-     *
-     * Geklickt wird das Kuvert und nicht an fremden Inline-Stilen gedreht -
-     * oeffneRahmen() steht weiter unten und begruendet es dort: die Sperre
-     * hebt invitation.js selbst auf, wenn seine Choreografie durch ist. Von
-     * aussen daran zu drehen hiesse, dieselbe Sache an zwei Stellen zu
-     * entscheiden.
-     *
-     * Derselbe Weg, den die Abschnittswahl schon nimmt. Wer die geschlossene
-     * Huelle sehen will, nimmt "Ganz ansehen" - der Rahmen hier ist die
-     * Arbeitsflaeche.
-     */
-    var kuvertAuf = function () {
-      var kind = rahmen.querySelector("iframe");
-      if (!kind) return;
-
-      var doc;
-      try { doc = kind.contentDocument; } catch (fehler) { return; }
-      // Frisch gebaut traegt der Rahmen noch about:blank - dann ist hier
-      // nichts zu finden, und der Versuch sagt das von selbst.
-      if (!doc || !doc.querySelector("[data-envelope]")) return;
-
-      oeffneRahmen(doc, function () {});
-    };
-
     var passeAn = function (breite) {
       var kind = rahmen.querySelector("iframe");
       if (!kind) return;
@@ -1786,14 +1718,12 @@
         if (welche === "karte") {
           karte.hidden = false;
           rahmen.hidden = true;
-          abschnitteZeigen();
           if (hinweisAnsicht) hinweisAnsicht.textContent = worte.karte;
           return;
         }
 
         karte.hidden = true;
         rahmen.hidden = false;
-        abschnitteZeigen();
 
         if (!rahmen.querySelector("iframe")) {
           var kind = document.createElement("iframe");
@@ -2080,7 +2010,7 @@
            */
           if (stueck !== null) {
             liveKasten.innerHTML = stueck;
-            abschnitteZeigen();
+            liveKasten.hidden = stueck.trim() === "";
             entwaffne();
           }
         }).catch(function () {
