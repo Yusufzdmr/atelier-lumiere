@@ -46,7 +46,11 @@ $meldungen = [
     'name'      => $tr ? 'Ad boş olamaz.' : 'Der Name darf nicht leer sein.',
     'belegt'    => $tr ? 'Bu adla bir tasarım zaten var.' : 'Unter diesem Namen gibt es schon eine Vorlage.',
     'csrf'      => $tr ? 'Oturum düştü, sayfayı tazele.' : 'Die Sitzung ist abgelaufen, bitte neu laden.',
-    'geloescht' => $tr ? 'Tasarım silindi.' : 'Die Vorlage ist gelöscht.',
+    'geloescht' => $tr
+        ? 'Tasarım silindi.' . ((int) ($_GET['n'] ?? 0) > 0
+            ? ' ' . (int) $_GET['n'] . ' davetiye onu kullanıyordu — çalışmaya devam ederler, ama artık yeni sürüme geçirilemezler.' : '')
+        : 'Die Vorlage ist gelöscht.' . ((int) ($_GET['n'] ?? 0) > 0
+            ? ' ' . (int) $_GET['n'] . ' Einladungen hingen daran - sie laufen weiter, lassen sich aber nicht mehr auffrischen.' : ''),
     'angelegt'  => $tr ? 'Boş tasarım oluşturuldu — düzenlemeye başlayabilirsin.'
                        : 'Leere Vorlage angelegt - jetzt kann sie gebaut werden.',
     'unbekannt' => $tr ? 'Tanınmayan işlem.' : 'Unbekannte Aktion.',
@@ -248,16 +252,17 @@ $meldungen = [
           </form>
 
           <?php /*
-             Wegnehmen, in zwei Schritten.
+             Wegnehmen, in einem Schritt.
 
-             Der erste Klick fragt nur - und die Frage steht dann hier, an
-             derselben Kachel, mit der Zahl der Einladungen daran. Dasselbe
-             Muster wie beim Veroeffentlichen mit Hinweisen: keine
-             Browserabfrage, sondern eine Zeile, die man lesen kann.
+             Erst fragte der Knopf nach und nannte dabei die Zahl der
+             Einladungen an dieser Vorlage. Ausdruecklich abbestellt: "sil
+             dedigimde direkt silsin, emin misin diye sormasin". Die Zahl
+             steht jetzt in der Meldung DANACH - sie aendert nichts an der
+             Entscheidung, sie sagt, was gerade passiert ist.
 
-             Der Knopf traegt keine Warnfarbe. Er steht am Ende der Reihe,
-             unauffaellig - wer ihn sucht, findet ihn; wer nicht, stolpert
-             nicht darueber.
+             Der Knopf traegt keine Warnfarbe und steht am Ende der Reihe:
+             wer ihn sucht, findet ihn; wer nicht, stolpert nicht darueber.
+             Das ist jetzt die einzige Bremse, und das ist so gewollt.
           */ ?>
           <form method="post">
             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
@@ -267,30 +272,6 @@ $meldungen = [
               <?= $tr ? 'Sil' : 'Löschen' ?>
             </button>
           </form>
-
-          <?php if ((string) ($_GET['frage'] ?? '') === 'loeschen' && (string) ($_GET['id'] ?? '') === $id) : ?>
-            <?php $anzahl = (int) ($_GET['n'] ?? 0); ?>
-            <form method="post" class="space-y-2 border-l-2 border-gold p-3">
-              <p class="text-sm text-ink">
-                <?php if ($anzahl > 0) : ?>
-                  <?= $tr
-                    ? $anzahl . ' davetiye bu tasarımı kullanıyor. Silinirse çalışmaya devam ederler (her biri kendi dondurulmuş kopyasını taşır), ama bir daha yeni sürüme geçirilemezler. Yine de silinsin mi?'
-                    : $anzahl . ' Einladungen hängen an dieser Vorlage. Sie laufen weiter (jede trägt ihre eingefrorene Kopie), lassen sich danach aber nicht mehr auffrischen. Trotzdem löschen?' ?>
-                <?php else : ?>
-                  <?= $tr
-                    ? 'Bu tasarımı kullanan davetiye yok. Silinsin mi? Geri alınamaz.'
-                    : 'Keine Einladung hängt an dieser Vorlage. Wirklich löschen? Das lässt sich nicht zurücknehmen.' ?>
-                <?php endif; ?>
-              </p>
-              <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-              <input type="hidden" name="was" value="loeschen">
-              <input type="hidden" name="quelle" value="<?= e($id) ?>">
-              <input type="hidden" name="bestaetigt" value="1">
-              <button class="bg-ink px-4 py-2 text-[0.62rem] uppercase tracking-[0.16em] text-cream transition-colors hover:bg-gold">
-                <?= $tr ? 'Evet, sil' : 'Ja, löschen' ?>
-              </button>
-            </form>
-          <?php endif; ?>
         </div>
       </div>
     <?php endforeach; ?>

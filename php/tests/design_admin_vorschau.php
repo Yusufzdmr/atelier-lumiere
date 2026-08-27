@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Atelier\Design;
+
 /*
  * Was hochgeladen ist, muss man sehen.
  *
@@ -69,9 +71,20 @@ assert_contains($modell, 'DELETE FROM designs', 'Design: kann eine Vorlage wirkl
 assert_contains($steuer, "'loeschen'", 'Controller: kennt die Aktion');
 assert_contains($steuer, 'byDesign', 'Controller: zaehlt die Einladungen daran');
 assert_contains($liste, 'value="loeschen"', 'Liste: jede Zeile hat den Knopf');
-assert_contains($steuer, 'frage=loeschen', 'Controller: fragt erst nach, statt gleich zu loeschen');
-assert_contains($liste, "=== 'loeschen'", 'Liste: und zeigt die Frage an derselben Kachel');
-assert_contains($liste, 'bestaetigt', 'Liste: die Bestaetigung ist ein zweiter Schritt');
+/*
+ * Und zwar in EINEM Schritt.
+ *
+ * Erst fragte der Knopf nach und nannte die Zahl der Einladungen daran.
+ * Ausdruecklich abbestellt: "sil dedigimde direkt silsin, emin misin diye
+ * sormasin". Die Zahl wandert in die Meldung danach - sie aendert nichts an
+ * der Entscheidung, sie sagt, was gerade passiert ist.
+ *
+ * Der Test haelt fest, dass die Rueckfrage wirklich weg ist: eine, die nur im
+ * Controller noch stuende, waere ein Weg, der nie erreicht wird - und beim
+ * naechsten Lesen eine Luege ueber das Verhalten.
+ */
+assert_not_contains($steuer, 'frage=loeschen', 'Controller: fragt nicht mehr nach');
+assert_contains($steuer, "'ok=geloescht&n='", 'Controller: nennt die Zahl hinterher');
 
 /* --- Von vorn anfangen --------------------------------------------------- */
 
@@ -122,3 +135,21 @@ assert_contains($modell, 'public static function sortVorn', 'Design: kennt die N
 assert_contains($modell, 'MIN(sort)', 'Design: und holt sie aus der kleinsten');
 assert_same(3, substr_count($steuer, 'Design::sortVorn()'),
     'Controller: alle drei Wege ins Leben setzen die neue Vorlage nach vorn');
+
+/*
+ * Ein Lied darf von auswaerts kommen - als einziges.
+ *
+ * "Linkle yukleme yapabilelim muzik." safeSrc laesst nur zu, was wir selbst
+ * vergeben (/uploads, /assets); fuer Bild und Film ist das richtig, sie
+ * gehoeren zur Vorlage. Ein Lied liegt oft schon irgendwo.
+ *
+ * Nur https, und nicht aus Formalismus: die Einladung laeuft ueber https, und
+ * ein Lied ueber http verweigert der Browser als gemischten Inhalt - der Ton
+ * bliebe stumm, ohne dass jemand sagen koennte, warum.
+ */
+assert_same('/uploads/designs/lied.mp3', Design::safeAudio('/uploads/designs/lied.mp3'), 'Ton: das eigene Haus');
+assert_same('https://cdn.example.com/l.mp3', Design::safeAudio('https://cdn.example.com/l.mp3'), 'Ton: eine fremde https-Adresse');
+assert_same('', Design::safeAudio('http://cdn.example.com/l.mp3'), 'Ton: http faellt weg');
+assert_same('', Design::safeAudio('javascript:alert(1)'), 'Ton: ein Skript erst recht');
+assert_same('', Design::safeAudio('https://x.test/a b.mp3'), 'Ton: Leerzeichen faellt weg');
+assert_same('', Design::safeSrc('https://cdn.example.com/bild.webp'), 'Bild: bleibt beim eigenen Haus');

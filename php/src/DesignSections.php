@@ -1862,11 +1862,14 @@ final class DesignSections
      */
     private static function tonspur(array $abschnitt, array $data): string
     {
-        $eigenes = Design::safeSrc(trim(self::inhalt($abschnitt, $data, 'track')));
+        // safeAudio statt safeSrc: ein Lied darf auch von auswaerts kommen,
+        // solange es ueber https kommt. Bilder und Filme duerfen das nicht -
+        // sie gehoeren zur Vorlage.
+        $eigenes = Design::safeAudio(trim(self::inhalt($abschnitt, $data, 'track')));
 
         return $eigenes !== ''
             ? $eigenes
-            : Design::safeSrc((string) ($abschnitt['settings']['track'] ?? ''));
+            : Design::safeAudio((string) ($abschnitt['settings']['track'] ?? ''));
     }
 
     /**

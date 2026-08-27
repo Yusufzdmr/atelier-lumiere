@@ -252,12 +252,28 @@ foreach ($katalog as $art => $eintrag) {
                        <?= $wert_ !== '' ? 'src="' . e($wert_) . '"' : '' ?>></audio>
               <?php endif; ?>
 
+              <?php /*
+                 Bei Ton darf auch eine fremde Adresse stehen.
+
+                 Ein Lied liegt oft schon irgendwo, und es erst herunter- und
+                 wieder hochzuladen ist ein Umweg ohne Gewinn. Nur https -
+                 die Einladung laeuft ueber https, und ein Lied ueber http
+                 wuerde der Browser als gemischten Inhalt verweigern: der Ton
+                 bliebe stumm, ohne dass jemand sagen koennte, warum.
+                 Design::safeAudio haelt diese Grenze.
+
+                 Bild und Film bleiben beim eigenen Haus - sie gehoeren zur
+                 Vorlage, und eine fremde Adresse waere ein Bild, das
+                 verschwinden kann.
+              */ ?>
               <label class="<?= $label ?> mt-2 block">
-                <?= $tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt es)' ?>
+                <?= $art_ === 'audio'
+                  ? ($tr ? 'ya da yol / https adresi (boş bırakınca kalkar)' : 'oder Pfad / https-Adresse (leer entfernt es)')
+                  : ($tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt es)') ?>
                 <input class="<?= $feld ?> font-mono text-[0.78rem]"
                        name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>"
                        value="<?= e($wert_) ?>"
-                       placeholder="/uploads/designs/…"></label>
+                       placeholder="<?= $art_ === 'audio' ? 'https://… veya /uploads/designs/…' : '/uploads/designs/…' ?>"></label>
             <?php else : ?>
               <label class="<?= $label ?>"><?= e($s['label'][$sprache] ?? (string) $schluessel) ?>
                 <select class="<?= $feld ?>" name="sec_set_<?= e((string) $schluessel) ?>_<?= $i ?>">

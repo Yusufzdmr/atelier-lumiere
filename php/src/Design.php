@@ -771,6 +771,54 @@ final class Design
         return $src;
     }
 
+    /*
+     * Wie safeSrc, aber fuer Ton - und der darf auch von auswaerts kommen.
+     *
+     * safeSrc laesst nur zu, was wir selbst vergeben (/uploads, /assets). Fuer
+     * Bilder und Filme ist das richtig: sie gehoeren zur Vorlage. Ein Lied
+     * liegt oft schon irgendwo, und es dann erst herunterzuladen und wieder
+     * hochzuladen ist ein Umweg ohne Gewinn - "linkle yukleme yapabilelim
+     * muzik".
+     *
+     * Nur https. Nicht aus Formalismus: die Einladung selbst laeuft ueber
+     * https, und ein Lied ueber http wuerde der Browser als gemischten Inhalt
+     * verweigern - der Ton bliebe stumm, ohne dass jemand sagen koennte,
+     * warum.
+     *
+     * Und nur die Adresse, kein Markup: das Ergebnis landet in einem
+     * src-Attribut, also faellt alles weg, was ein Anfuehrungszeichen, einen
+     * Winkel oder Steuerzeichen traegt.
+     */
+    public static function safeAudio(string $src): string
+    {
+        $src = trim($src);
+        if ($src === '') {
+            return '';
+        }
+
+        // Das eigene Haus zuerst - dieselbe Pruefung wie ueberall sonst.
+        $eigen = self::safeSrc($src);
+        if ($eigen !== '') {
+            return $eigen;
+        }
+
+        if (!str_starts_with($src, 'https://')) {
+            return '';
+        }
+        // Alles, was in einem src-Attribut oder im Markup Aerger macht.
+        if (preg_match('~[\s\"<>]~', $src) === 1) {
+            return '';
+        }
+        if (str_contains($src, chr(39)) || str_contains($src, chr(92))) {
+            return '';
+        }
+        if (filter_var($src, FILTER_VALIDATE_URL) === false) {
+            return '';
+        }
+
+        return $src;
+    }
+
     /**
      * Die dynamischen Felder aus den Daten einer Einladung.
      *

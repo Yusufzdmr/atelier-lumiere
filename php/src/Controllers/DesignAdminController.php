@@ -274,14 +274,18 @@ final class DesignAdminController
 
         $id = (string) $design['id'];
 
-        if (!isset($_POST['bestaetigt'])) {
-            return 'frage=loeschen&id=' . rawurlencode($id)
-                 . '&n=' . count(InvitationsV2::byDesign($id));
-        }
+        /*
+         * Ohne Rueckfrage, ausdruecklich gewuenscht: "sil dedigimde direkt
+         * silsin, emin misin diye sormasin". Die Zahl der Einladungen daran
+         * wandert in die Meldung danach - sie bleiben ohnehin stehen, jede
+         * traegt ihre eingefrorene Kopie; was fehlt, ist nur der Weg zu einer
+         * neueren Fassung.
+         */
+        $daran = count(InvitationsV2::byDesign($id));
 
         Design::delete($id);
 
-        return 'ok=geloescht';
+        return $daran > 0 ? 'ok=geloescht&n=' . $daran : 'ok=geloescht';
     }
 
     /** Aktiv/inaktiv. Hinweise halten nicht auf, aber sie werden gesagt. */

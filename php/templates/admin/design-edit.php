@@ -520,6 +520,20 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
       <button type="button" class="b-knopf" data-vor disabled
               title="<?= $tr ? 'İleri al (Ctrl+Shift+Z)' : 'Vor (Strg+Umschalt+Z)' ?>">↷ <?= $tr ? 'İleri' : 'Vor' ?></button>
     </span>
+    <?php /*
+       Die Bestaetigung gehoert dorthin, wo gedrueckt wurde.
+
+       Sie stand nur ganz oben, ueber der Karte - und wer speichert, sieht auf
+       den Knopf unten und danach auf die Karte in der Mitte. Sie kam also an,
+       nur nie ins Auge: "1 kaydedildi gormedim". Gemessen an der lebenden
+       Seite: die Meldung stand bei 200 Pixeln, der Knopf steht am unteren
+       Rand. Oben bleibt sie stehen, hier kommt sie dazu.
+    */ ?>
+    <?php if ($ok === 'gespeichert') : ?>
+      <span class="b-fein" style="color:var(--color-ink,#14110f);">
+        <?= $tr ? '✓ Kaydedildi.' : '✓ Gespeichert.' ?>
+      </span>
+    <?php endif; ?>
     <span class="b-fein" data-sec-hinweis>
       <?= $tr ? 'Soldan bir bölüm seç, ayarları sağda açılır.' : 'Links einen Abschnitt wählen - seine Einstellungen stehen dann rechts.' ?>
     </span>
