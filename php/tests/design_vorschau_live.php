@@ -97,3 +97,21 @@ assert_contains($koerper, 'Security::checkCsrf', 'Vorschau: prueft das Token tro
  * einmalig, und in eine Vorschau tippt ohnehin niemand.
  */
 assert_contains($js, 'el.disabled = true', 'Skript: legt die Felder der Vorschau still');
+
+/*
+ * Und die Folge davon: die Seite wurde lang.
+ *
+ * Bis die Abschnitte lebten, war die Mitte ungefaehr so hoch wie die Spalten
+ * daneben. Gemessen danach an bild: die Vorschau haengt mit 2705 Pixeln unter
+ * der Karte, die Seite ist 4154 hoch. Wer sich einen Abschnitt ansieht, hat
+ * die Liste zum Auswaehlen weit ueber sich - "sol taraftaki bolumler kismi da
+ * kaysin, yukari tekrar cikmayayim".
+ *
+ * Die Buehne in der Mitte klebte laengst; die beiden Raender nicht. Jetzt tun
+ * sie es auch, mit eigenem Ueberlauf: scrollen soll nur, was lang ist.
+ */
+assert_contains($editor, 'b-spalte-fest', 'Editor: die Randspalten sind benannt');
+assert_same(3, substr_count($editor, 'b-spalte-fest'),
+    'Editor: beide Raender tragen die Klasse, und es gibt eine Regel dazu');
+assert_contains($editor, 'overscroll-behavior:contain',
+    'Editor: das Ende einer Spalte schiebt nicht die ganze Seite weiter');

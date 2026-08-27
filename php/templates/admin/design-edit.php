@@ -89,6 +89,30 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
      warum ueberhaupt jemand hier ist. */
   @media (min-width:1120px){.b-buehne{position:sticky;top:5.5rem;}}
 
+  /* Und seit der lebenden Vorschau laufen auch die beiden Randspalten mit.
+
+     Bis die Abschnitte lebten, war die Mitte ungefaehr so hoch wie die
+     Spalten daneben - man scrollte kaum. Jetzt haengen 2705 Pixel Abschnitte
+     unter der Karte, die Seite ist 4154 hoch, und wer sich einen Abschnitt
+     ansieht, hat die Liste zum Auswaehlen weit ueber sich: "soldan bolum
+     sectigimde asagi kaydiriyor guzel ama sol taraftaki bolumler kismi da
+     kaysin, yukari tekrar cikmayayim".
+
+     Also bleiben beide Raender stehen und bekommen ihren eigenen Ueberlauf.
+     Scrollen tut dann nur noch das, was wirklich lang ist: die Vorschau.
+
+     overscroll-behavior:contain, damit das Ende einer Spalte nicht die ganze
+     Seite weiterschiebt. Und erst ab 1120px - darunter stehen die Spalten
+     ohnehin untereinander, und ein festgeklebter Kasten waere dort im Weg. */
+  @media (min-width:1120px){
+    .b-spalte-fest{position:sticky;top:5.5rem;
+                   max-height:calc(100vh - 7rem);max-height:calc(100dvh - 7rem);
+                   overflow-y:auto;overscroll-behavior:contain;
+                   /* Luft fuer den eigenen Balken, damit er nicht auf den
+                      Kaesten klebt. */
+                   padding-right:0.35rem;}
+  }
+
   .b-liste{list-style:none;margin:0;padding:0;display:grid;gap:0.35rem;}
   .b-zeile{display:flex;align-items:center;gap:0.35rem;padding:0.45rem 0.5rem;
            border:1px solid var(--color-sand-deep,#dccebc);}
@@ -338,7 +362,7 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   <div class="b-schale">
 
     <?php /* --- Links: was die Seite zeigt ------------------------------- */ ?>
-    <div class="b-spalte">
+    <div class="b-spalte b-spalte-fest">
       <?php include __DIR__ . '/design-edit-liste.php'; ?>
     </div>
 
@@ -443,7 +467,7 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
     </div>
 
     <?php /* --- Rechts: die Einstellungen des Ausgewaehlten ---------------- */ ?>
-    <div class="b-spalte">
+    <div class="b-spalte b-spalte-fest">
       <?php /*
          Alle Tafeln stehen im Markup, sichtbar ist eine. Der Server rendert
          sie einmal, das Skript blendet um - kein zweiter Endpunkt, kein
