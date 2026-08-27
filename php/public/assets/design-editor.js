@@ -1133,6 +1133,182 @@
       });
     });
 
+    /*
+     * Einen Abschnitt waehlen heisst: ihn auch sehen.
+     *
+     * Links stehen die Abschnitte, in der Mitte die Karte - und ein Abschnitt
+     * steht NICHT auf der Karte, sondern darunter auf der Seite. Wer links
+     * klickte, sah in der Mitte deshalb nichts; rechts erschien eine Tafel,
+     * und in der Mitte blieb dieselbe Karte stehen. Das liest sich wie ein
+     * kaputter Editor, und genau so kam es zurueck: "soldan sectigim karti
+     * onizleyemiyorum".
+     *
+     * Also holt die Mitte von selbst die Ansicht, in der es etwas zu sehen
+     * gibt. Steht dort schon ein Geraet, bleibt es stehen - wer am
+     * Schreibtisch prueft, will nicht bei jedem Klick aufs Telefon
+     * zurueckgeworfen werden.
+     *
+     * Was sich dadurch NICHT aendert: der Rahmen zeigt den gespeicherten
+     * Stand. Ein Abschnitt, den es dort noch nicht gibt, wird nicht gefunden
+     * - dann bleibt es beim Umschalten, und die Zeile unter dem Rahmen sagt
+     * ohnehin, woran man ist.
+     */
+    var mitAbschnitt = function (name, tuWas) {
+      var kind = rahmen.querySelector("iframe");
+      if (!kind) return;
+
+      /*
+       * Erst versuchen, dann warten. Ein Rahmen, der gerade erst entstanden
+       * ist, traegt noch about:blank - dort ist nichts zu finden, und der
+       * Versuch sagt das von selbst, ohne dass hier ein Ladezustand geraten
+       * werden muesste.
+       */
+      var versuch = function () {
+        var doc;
+        try { doc = kind.contentDocument; } catch (fehler) { return false; }
+        if (!doc) return false;
+
+        var knoten = doc.querySelector(".d-sec-" + name);
+        if (!knoten) return false;
+
+        tuWas(knoten, doc);
+        return true;
+      };
+
+      if (versuch()) return;
+      kind.addEventListener("load", versuch, { once: true });
+    };
+
+    var hervor = null;
+
+    /*
+     * Den Rahmen aufmachen, bevor darin gesucht wird.
+     *
+     * Der Rahmen zeigt die Einladung, und die faengt GESCHLOSSEN an:
+     * invitation.js legt die Seite still, solange das Kuvert zu ist - nicht
+     * nur overflow:hidden, sondern ein festgestellter body (position:fixed),
+     * weil am Telefon der Finger sonst daran vorbeiscrollt.
+     *
+     * Ein Abschnitt liegt unter der Karte. Solange die Sperre haelt, ist er
+     * also nicht zu erreichen - gemessen im Rahmen: scrollY blieb 0, obwohl
+     * der Abschnitt bei 2278 Pixeln stand. Deshalb konnte man Abschnitte auch
+     * von Hand nie im Rahmen sehen; erst ein Klick aufs Kuvert im Rahmen
+     * selbst haette geholfen, und darauf kommt niemand.
+     *
+     * Geklickt wird das Kuvert und nicht die Sperre aufgehoben: invitation.js
+     * hebt sie selbst auf, wenn seine Choreografie durch ist (mit
+     * Oeffnungsfilm dauert das ein paar Sekunden). Von aussen an fremden
+     * Inline-Stilen zu drehen hiesse, dieselbe Sache an zwei Stellen zu
+     * entscheiden.
+     */
+    var oeffneRahmen = function (doc, dann) {
+      var kuvert = doc.querySelector("[data-envelope]");
+      if (!kuvert) { dann(); return; }
+
+      if (kuvert.getAttribute("data-open") !== "true") {
+        // invitation.js hoert auf das Kuvert selbst (event.target === envelope)
+        // und auf den Anklickpunkt darin - der eine oder der andere ist da,
+        // je nachdem ob das Thema einen Oeffnungsfilm mitbringt.
+        kuvert.click();
+      }
+
+      /*
+       * Warten, bis die Seite wieder laeuft. Wie lange das dauert, weiss nur
+       * das andere Skript (Auftakt, Film, Kartenbewegung), also wird gefragt
+       * statt gerechnet. Nach zehn Sekunden wird trotzdem gesprungen - lieber
+       * an die falsche Stelle als gar nicht.
+       */
+      var versuche = 0;
+      var schau = window.setInterval(function () {
+        versuche += 1;
+
+        var frei;
+        try {
+          frei = doc.body.style.position !== "fixed";
+        } catch (fehler) {
+          frei = true;
+        }
+
+        if (frei || versuche > 40) {
+          window.clearInterval(schau);
+          dann();
+        }
+      }, 250);
+    };
+
+    var zeigeAbschnitt = function (nummer) {
+      var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
+
+      if (!aktiv || aktiv.getAttribute("data-ansicht") === "karte") {
+        // Telefon zuerst: Einladungen werden auf Telefonen geoeffnet.
+        var telefon = form.querySelector('[data-ansicht="390"]');
+        if (telefon) telefon.click();
+      }
+
+      var kennung = form.querySelector('[data-sec-kennung="' + nummer + '"]');
+      var name = kennung ? kennung.value.trim() : "";
+      if (name === "") return;
+
+      mitAbschnitt(name, function (knoten, doc) {
+        oeffneRahmen(doc, function () {
+          knoten.scrollIntoView({ block: "center" });
+
+          /*
+           * Kurz umranden, nicht faerben und nicht dauerhaft: der Rahmen zeigt
+           * die Seite, wie der Gast sie sieht, und eine bleibende Markierung
+           * waere eine Aussage darueber, die nicht stimmt. Der Rand liegt
+           * inline im Dokument des Rahmens und ist beim naechsten Laden fort.
+           */
+          if (hervor) {
+            hervor.knoten.style.outline = hervor.vorher;
+            hervor.knoten.style.outlineOffset = hervor.vorherAbstand;
+            window.clearTimeout(hervor.uhr);
+          }
+
+          var vorher = knoten.style.outline;
+          var vorherAbstand = knoten.style.outlineOffset;
+
+          knoten.style.outline = "2px solid #b08d57";
+          knoten.style.outlineOffset = "4px";
+
+          hervor = {
+            knoten: knoten,
+            vorher: vorher,
+            vorherAbstand: vorherAbstand,
+            uhr: window.setTimeout(function () {
+              knoten.style.outline = vorher;
+              knoten.style.outlineOffset = vorherAbstand;
+              hervor = null;
+            }, 1800)
+          };
+        });
+      });
+    };
+
+    form.addEventListener("click", function (ereignis) {
+      var knopf = ereignis.target.closest("[data-sec-waehl]");
+      if (!knopf) return;
+
+      var zeile = knopf.closest("[data-sec-zeile]");
+      if (!zeile) return;
+
+      /*
+       * Links waehlen entscheidet, was in der Mitte steht - in beide
+       * Richtungen. Die Vorlage IST die Karte (Farben, Schriften, Ebenen),
+       * also kommt die Karte zurueck; ein Abschnitt steht auf der Seite, also
+       * kommt der Rahmen. Nur so heisst ein Klick links immer dasselbe.
+       */
+      var welche = zeile.getAttribute("data-sec-zeile");
+
+      if (welche === "thema") {
+        var zurKarte = form.querySelector('[data-ansicht="karte"]');
+        if (zurKarte && !zurKarte.hasAttribute("data-aktiv")) zurKarte.click();
+        return;
+      }
+
+      zeigeAbschnitt(welche);
+    });
+
     window.addEventListener("resize", function () {
       var aktiv = form.querySelector("[data-ansicht][data-aktiv]");
       if (!aktiv || aktiv.getAttribute("data-ansicht") === "karte") return;
