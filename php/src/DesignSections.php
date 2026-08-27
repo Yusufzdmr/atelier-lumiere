@@ -982,8 +982,10 @@ final class DesignSections
                 . 'font-feature-settings:"tnum";}'
                 . $sel . ' .d-sec-uhr-wort{font-size:0.6rem;letter-spacing:0.16em;'
                 . 'text-transform:uppercase;opacity:0.7;margin-top:0.2rem;}'
+                // Der Abstand wandert mit der Reihenfolge: er trennte das
+                // Datum von der Uhr darueber, jetzt von der Uhr darunter.
                 . $sel . ' .d-sec-countdown-datum{font-size:0.86rem;letter-spacing:0.1em;'
-                . 'margin-top:1.1rem;opacity:0.85;}',
+                . 'margin-bottom:1.1rem;opacity:0.85;}',
 
             /*
              * Der sichtbare Spieler.
@@ -1245,7 +1247,21 @@ final class DesignSections
                 ? ['days' => 'Tage', 'hours' => 'Stunden', 'minutes' => 'Minuten', 'seconds' => 'Sekunden']
                 : ['days' => 'days', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds'];
 
-            $out = '<div class="d-sec-uhr" data-countdown="' . e($ziel) . '">';
+            /*
+             * Erst das Datum, dann die Felder.
+             *
+             * Andersherum stand es bis zum 27.08.2026, und die Leserichtung
+             * war die schlechtere: die Uhr nennt eine Spanne, und eine Spanne
+             * ohne Bezugspunkt ist eine Zahl. Zuerst also die Aussage - wann
+             * -, darunter die Ungeduld - noch wie lange.
+             *
+             * Ohne Skript bleiben die vier Felder leer; dann traegt das
+             * Datum den Abschnitt allein, und es steht jetzt an der Stelle,
+             * an der es das auch kann.
+             */
+            $out = '<p class="d-sec-countdown-datum">' . e(Dates::long($datum, $locale)) . '</p>'
+                . '<div class="d-sec-uhr" data-countdown="' . e($ziel) . '">';
+
             foreach ($felder as $schluessel => $wort) {
                 $out .= '<span class="d-sec-uhr-feld">'
                     . '<span class="d-sec-uhr-zahl" data-countdown-' . e($schluessel) . '>&nbsp;</span>'
@@ -1253,8 +1269,7 @@ final class DesignSections
                     . '</span>';
             }
 
-            return $out . '</div>'
-                . '<p class="d-sec-countdown-datum">' . e(Dates::long($datum, $locale)) . '</p>';
+            return $out . '</div>';
         }
 
         return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'

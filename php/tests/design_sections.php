@@ -1159,3 +1159,30 @@ assert_contains($gedruckt3, "mask-image:url('/assets/icons/dresscode.svg')", 'ht
 
 $nurCode = DesignSections::html($kleid, ['sections' => ['kleidung' => ['code' => 'Black Tie']]], 'de');
 assert_not_contains($nurCode, 'd-dress-note', 'html: ohne Hinweis kein leerer Absatz');
+
+/*
+ * Die Uhr: erst das Datum, dann die Felder.
+ *
+ * Bis heute stand die Uhr oben und das Datum darunter. Gefragt wurde am
+ * 27.08.2026 andersherum - "tarih yazsin ama altinda kac gun kac saat dakika
+ * saniye" - und das ist auch die bessere Leserichtung: zuerst die Aussage
+ * (wann), darunter die Ungeduld (noch wie lange). Kein lebendes Thema stand
+ * auf dieser Gestalt, also aendert das Drehen an keiner Einladung etwas;
+ * geprueft am selben Tag ueber alle elf Vorlagen des Servers.
+ *
+ * Geprueft wird die REIHENFOLGE und nicht nur das Vorkommen: beide Stuecke
+ * standen vorher schon da, nur verkehrt herum.
+ */
+$uhr = DesignSections::html(sec_doc([
+    ['id' => 'cd-uhr', 'type' => 'countdown', 'variant' => 'uhr',
+     'title' => ['de' => 'Noch', 'en' => 'Still']],
+]), $daten + ['time' => '18:00'], 'de', '2027-01-01');
+
+$datumAn = strpos($uhr, 'd-sec-countdown-datum');
+$uhrAn   = strpos($uhr, 'd-sec-uhr');
+
+assert_true($datumAn !== false, 'uhr: das Datum wird gedruckt');
+assert_true($uhrAn !== false, 'uhr: die Felder werden gedruckt');
+assert_true($datumAn < $uhrAn, 'uhr: das Datum steht VOR den Feldern');
+assert_contains($uhr, 'data-countdown-seconds', 'uhr: die Sekunden haben ihr Feld');
+assert_contains($uhr, 'T18:00', 'uhr: die Uhrzeit reist mit');
