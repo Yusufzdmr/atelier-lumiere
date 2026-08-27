@@ -33,6 +33,58 @@
    * der Browser jede gewaehlte Datei bis zum Neuladen fest.
    */
   /*
+   * Der Vorspann ueber der Karte.
+   *
+   * Er folgt dem Pfadfeld wie die kleinen Kaesten auch - wer einen Film aus
+   * der Ablage waehlt, sieht ihn sofort und nicht erst nach dem Speichern.
+   * Und er geht mit einem Klick weg: solange er liegt, faengt er die Klicks
+   * ab, und darunter will man ziehen.
+   *
+   * Leeres Feld heisst kein Vorspann. Dann verschwindet er ganz, statt ein
+   * schwarzes Rechteck ueber der Karte stehen zu lassen - genau das waere die
+   * Antwort auf eine Frage, die niemand gestellt hat.
+   */
+  (function () {
+    var vorspann = vorschau.querySelector("[data-vorspann]");
+    if (!vorspann) return;
+
+    var feld = form.querySelector('[name="intro_video"]');
+
+    var stelle = function () {
+      var wert = feld ? feld.value.trim() : "";
+      var film = vorspann.querySelector("video");
+
+      if (wert === "") {
+        vorspann.hidden = true;
+        if (film) film.removeAttribute("src");
+        return;
+      }
+
+      if (!film) {
+        film = document.createElement("video");
+        film.muted = true;
+        film.setAttribute("playsinline", "");
+        film.setAttribute("preload", "metadata");
+        film.style.height = "100%";
+        film.style.width = "100%";
+        film.style.objectFit = "contain";
+        vorspann.insertBefore(film, vorspann.firstChild);
+      }
+
+      if (film.getAttribute("src") !== wert) film.setAttribute("src", wert);
+      vorspann.hidden = false;
+    };
+
+    // Wegnehmen. Er kommt wieder, sobald jemand den Film wechselt - das ist
+    // der einzige Moment, in dem man ihn wieder sehen will.
+    vorspann.addEventListener("click", function () {
+      vorspann.hidden = true;
+    });
+
+    if (feld) feld.addEventListener("input", stelle);
+  })();
+
+  /*
    * Ein Bild oder einen Film in einen Vorschaukasten setzen.
    *
    * Film oder Bild entscheidet der Aufrufer: bei einer Datei sagt es ihr Typ,

@@ -191,3 +191,20 @@ assert_same(6, substr_count($editorSec, 'data-vorschau-pfad'),
 assert_contains($editorSec, 'data-vorschau-art="film"', 'Editor: und sagen, was hineingehoert');
 assert_contains($js, 'data-vorschau-pfad', 'Skript: hoert auch auf den Pfad');
 assert_contains($js, 'var zeigeImKasten', 'Skript: beide Wege nehmen dieselbe Hand');
+
+/*
+ * Der Vorspann steht jetzt auch im Editor.
+ *
+ * Die Buehne der echten Seite zeigt ihn ueber dem Kuvert; das Kaestchen im
+ * Panel zeigte nur Seite und Karte. Wer einen Film auswaehlte und speicherte,
+ * sah ihn danach an keiner Stelle: "sagdan video secip kaydettim hala gelmedi
+ * onizlemeye".
+ *
+ * Er folgt dem Pfadfeld und geht mit einem Klick weg - solange er liegt,
+ * faengt er die Klicks ab, und darunter will man ziehen.
+ */
+$editorHaupt = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit.php');
+assert_contains($editorHaupt, 'data-vorspann', 'Editor: der Vorspann hat seinen Platz ueber der Karte');
+assert_contains($editorHaupt, 'z-index:60', 'Editor: und liegt darueber - als Stil, nicht als erfundene Klasse');
+assert_contains($js, 'data-vorspann', 'Skript: haengt daran');
+assert_contains($js, 'vorspann.hidden = true', 'Skript: ein Klick nimmt ihn weg');

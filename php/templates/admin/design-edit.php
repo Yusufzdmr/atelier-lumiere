@@ -421,6 +421,40 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
                     background: var(--d-bg, #EFE7DC);">
           <div class="absolute inset-0"><?= $seite ?></div>
           <div class="absolute inset-0"><?= $karte ?></div>
+
+          <?php /*
+             Der Vorspann - hier, wo hingesehen wird.
+
+             Die Buehne der echten Seite zeigt ihn ueber dem Kuvert; dieses
+             Kaestchen zeigte bisher nur Seite und Karte, also kam er im
+             Editor nirgends vor. Wer einen Film auswaehlte und speicherte,
+             sah ihn danach an keiner Stelle: "sagdan video secip kaydettim
+             hala gelmedi onizlemeye".
+
+             Er liegt UEBER der Karte und wird mit einem Klick weggenommen -
+             dieselbe Bewegung wie beim Gast, nur ohne Kuvert dazwischen.
+             Solange er liegt, faengt er die Klicks ab; weggenommen ist die
+             Karte wieder anfassbar.
+
+             Satzweise Stile statt Klassen: style.css ist fertig gebaut, und
+             z-[60] steht nicht darin - es taete schweigend gar nichts.
+          */ ?>
+          <?php $vorspannFilm = Design::safeSrc((string) $design['intro']['video']); ?>
+          <div data-vorspann <?= $vorspannFilm === '' ? 'hidden' : '' ?>
+               title="<?= $tr ? 'kapatmak için tıkla' : 'zum Wegnehmen klicken' ?>"
+               style="position:absolute;inset:0;z-index:60;display:flex;
+                      align-items:center;justify-content:center;cursor:pointer;
+                      background:var(--d-bg,#0b0a09);">
+            <?php if ($vorspannFilm !== '') : ?>
+              <video src="<?= e($vorspannFilm) ?>" muted playsinline preload="metadata"
+                     style="height:100%;width:100%;object-fit:contain;"></video>
+            <?php endif; ?>
+            <span style="position:absolute;bottom:0.6rem;left:0;right:0;text-align:center;
+                         font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;
+                         color:var(--color-cream,#faf7f2);opacity:0.75;pointer-events:none;">
+              <?= $tr ? 'Kapatmak için tıkla' : 'Zum Wegnehmen klicken' ?>
+            </span>
+          </div>
         </div>
 
         <?php /*
