@@ -32,6 +32,42 @@
    * Freigegeben wird die vorige Adresse beim naechsten Mal; ohne das haelt
    * der Browser jede gewaehlte Datei bis zum Neuladen fest.
    */
+  /*
+   * Ein Bild oder einen Film in einen Vorschaukasten setzen.
+   *
+   * Film oder Bild entscheidet der Aufrufer: bei einer Datei sagt es ihr Typ,
+   * bei einem Pfad die Vorlage. Ein Standbild in einem <video> waere ein
+   * schwarzes Rechteck, ein Film in einem <img> gar nichts.
+   */
+  var zeigeImKasten = function (kasten, adresse, film, istBlob) {
+    var art = film ? "VIDEO" : "IMG";
+    var knoten = kasten.firstElementChild;
+
+    if (!knoten || knoten.tagName !== art) {
+      kasten.innerHTML = "";
+      knoten = document.createElement(film ? "video" : "img");
+      knoten.className = "h-full w-full object-contain";
+      if (film) {
+        knoten.muted = true;
+        knoten.setAttribute("playsinline", "");
+      } else {
+        knoten.alt = "";
+      }
+      kasten.appendChild(knoten);
+    }
+
+    // Die vorige Blob-Adresse freigeben; ohne das haelt der Browser jede
+    // gewaehlte Datei bis zum Neuladen fest.
+    if (knoten.dataset.blob === "1") URL.revokeObjectURL(knoten.src);
+
+    knoten.src = adresse;
+    if (istBlob) {
+      knoten.dataset.blob = "1";
+    } else {
+      delete knoten.dataset.blob;
+    }
+  };
+
   form.querySelectorAll('input[type="file"]').forEach(function (feld) {
     var name = feld.getAttribute("name") || "";
     if (name === "") return;
@@ -55,31 +91,40 @@
         return;
       }
 
-      /*
-       * Film oder Bild - der Kasten traegt beides, und was hineingehoert,
-       * sagt die Datei selbst. Ein Standbild in einen <video> zu legen waere
-       * ein leerer schwarzer Kasten, und andersherum genauso.
-       */
-      var film = datei.type.indexOf("video/") === 0;
-      var art = film ? "VIDEO" : "IMG";
-      var knoten = kasten.firstElementChild;
+      zeigeImKasten(kasten, adresse, datei.type.indexOf("video/") === 0, true);
+    });
+  });
 
-      if (!knoten || knoten.tagName !== art) {
+  /*
+   * Und dasselbe, wenn nicht eine DATEI gewaehlt wird, sondern ein PFAD sich
+   * aendert - von Hand getippt oder aus der Filmablage eingesetzt.
+   *
+   * Genau daran fehlte es: die Auswahl schrieb den Film brav ins Feld, und
+   * der Kasten daneben zeigte weiter nichts. "Videoyu sectim ama gelmedi
+   * onizleme." Der Kasten hing am Dateifeld allein, und das war nur die
+   * Haelfte der Wege, auf denen ein Bild in eine Vorlage kommt.
+   *
+   * Welche Art hineingehoert, sagt hier die Vorlage (data-vorschau-art) und
+   * nicht die Datei - ein Pfad sagt es nicht von sich aus, und ".mp4" zu
+   * lesen waere Raten.
+   */
+  form.querySelectorAll("[data-vorschau-pfad]").forEach(function (kasten) {
+    var feld = form.querySelector('[name="' + kasten.getAttribute("data-vorschau-pfad") + '"]');
+    if (!feld) return;
+
+    var film = kasten.getAttribute("data-vorschau-art") === "film";
+
+    feld.addEventListener("input", function () {
+      var wert = feld.value.trim();
+
+      // Leer heisst leer: der Kasten faellt auf seinen Platzhalter zurueck,
+      // statt das vorige Bild zu behalten und etwas zu behaupten.
+      if (wert === "") {
         kasten.innerHTML = "";
-        knoten = document.createElement(film ? "video" : "img");
-        knoten.className = "h-full w-full object-contain";
-        if (film) {
-          knoten.muted = true;
-          knoten.setAttribute("playsinline", "");
-        } else {
-          knoten.alt = "";
-        }
-        kasten.appendChild(knoten);
+        return;
       }
 
-      if (knoten.dataset.blob === "1") URL.revokeObjectURL(knoten.src);
-      knoten.src = adresse;
-      knoten.dataset.blob = "1";
+      zeigeImKasten(kasten, wert, film, false);
     });
   });
 

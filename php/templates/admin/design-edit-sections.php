@@ -131,7 +131,8 @@ use function Atelier\e;
         */ ?>
         <div class="w-24 shrink-0">
           <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-               data-vorschau-fuer="bild_<?= e($ebene['id']) ?>">
+               data-vorschau-fuer="bild_<?= e($ebene['id']) ?>"
+               data-vorschau-pfad="src_<?= e($ebene['id']) ?>" data-vorschau-art="bild">
             <?php if ($bildQuelle !== '') : ?>
               <img src="<?= e($bildQuelle) ?>" alt="" class="h-full w-full object-contain">
             <?php else : ?>
@@ -258,7 +259,8 @@ use function Atelier\e;
       <div class="mt-3 flex items-start gap-5">
         <div class="w-24 shrink-0">
           <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-               data-vorschau-fuer="video_<?= e($ebene['id']) ?>">
+               data-vorschau-fuer="video_<?= e($ebene['id']) ?>"
+               data-vorschau-pfad="src_<?= e($ebene['id']) ?>" data-vorschau-art="film">
             <?php if ($filmQuelle !== '') : ?>
               <video src="<?= e($filmQuelle) ?>" muted preload="metadata"
                      <?= $filmPoster !== '' ? 'poster="' . e($filmPoster) . '"' : '' ?>
@@ -311,7 +313,8 @@ use function Atelier\e;
     <div class="mt-4 flex items-start gap-5">
       <div class="w-24 shrink-0">
         <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-             data-vorschau-fuer="intro_datei">
+             data-vorschau-fuer="intro_datei"
+             data-vorschau-pfad="intro_video" data-vorschau-art="film">
           <?php $introQuelle = Design::safeSrc((string) $design['intro']['video']); ?>
           <?php if ($introQuelle !== '') : ?>
             <video src="<?= e($introQuelle) ?>" muted preload="metadata"
@@ -374,7 +377,8 @@ use function Atelier\e;
         <div class="mt-4 flex items-start gap-5">
           <div class="w-24 shrink-0">
             <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-                 data-vorschau-fuer="intro_poster_datei">
+                 data-vorschau-fuer="intro_poster_datei"
+                 data-vorschau-pfad="intro_poster" data-vorschau-art="bild">
               <?php if ($posterBild !== '') : ?>
                 <img src="<?= e($posterBild) ?>" alt="" class="h-full w-full object-contain">
               <?php else : ?>
@@ -436,7 +440,8 @@ use function Atelier\e;
     <div class="mt-4 flex items-start gap-5">
       <div class="w-24 shrink-0">
         <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-             data-vorschau-fuer="sectionsbg_datei">
+             data-vorschau-fuer="sectionsbg_datei"
+             data-vorschau-pfad="sectionsbg" data-vorschau-art="bild">
           <?php $grundBild = Design::safeSrc((string) $design['sectionsBg']); ?>
           <?php if ($grundBild !== '') : ?>
             <img src="<?= e($grundBild) ?>" alt="" class="h-full w-full object-cover">
@@ -479,7 +484,8 @@ use function Atelier\e;
           <div class="mt-3 flex items-start gap-5">
             <div class="w-24 shrink-0">
               <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
-                   data-vorschau-fuer="sectionsbg_end_datei">
+                   data-vorschau-fuer="sectionsbg_end_datei"
+                   data-vorschau-pfad="sectionsbg_end" data-vorschau-art="bild">
                 <?php if ($schlussBild !== '') : ?>
                   <img src="<?= e($schlussBild) ?>" alt="" class="h-full w-full object-contain">
                 <?php else : ?>

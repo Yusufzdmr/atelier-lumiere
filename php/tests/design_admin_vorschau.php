@@ -173,3 +173,21 @@ assert_contains($editorSec, 'data-introwahl', 'Editor: die Auswahl steht da');
 assert_contains($editorSec, 'data-poster', 'Editor: mit dem Standbild des Films');
 assert_contains($js, 'data-introwahl', 'Skript: haengt daran');
 assert_contains($js, 'schreibe("intro_poster"', 'Skript: und schreibt auch das Standbild');
+
+/*
+ * Der Kasten haengt am Pfad, nicht nur am Dateifeld.
+ *
+ * Es gibt zwei Wege, wie ein Bild oder ein Film in eine Vorlage kommt: man
+ * waehlt eine Datei, oder ein Pfad aendert sich - getippt oder aus der
+ * Filmablage eingesetzt. Der Kasten kannte nur den ersten, und deshalb blieb
+ * er leer, als die neue Auswahl den Film brav ins Feld schrieb: "videoyu
+ * sectim ama gelmedi onizleme".
+ *
+ * Welche Art hineingehoert, sagt bei einem Pfad die Vorlage - ein Pfad sagt
+ * es nicht von sich aus, und ".mp4" zu lesen waere Raten.
+ */
+assert_same(6, substr_count($editorSec, 'data-vorschau-pfad'),
+    'Editor: alle sechs Kaesten kennen ihr Pfadfeld');
+assert_contains($editorSec, 'data-vorschau-art="film"', 'Editor: und sagen, was hineingehoert');
+assert_contains($js, 'data-vorschau-pfad', 'Skript: hoert auch auf den Pfad');
+assert_contains($js, 'var zeigeImKasten', 'Skript: beide Wege nehmen dieselbe Hand');
