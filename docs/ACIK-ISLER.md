@@ -1,12 +1,12 @@
 # Açık işler — 27.08.2026 (akşam)
 
 Bu dosya, 27 Ağustos oturumunun sonunda **bitmemiş** olanları taşır. Biten
-işler git geçmişinde duruyor (`e289ddf` → `797ce1e`, 26 commit), tekrar
+işler git geçmişinde duruyor (`e289ddf` → `126bcec`, 27 commit), tekrar
 anlatılmıyor.
 
-Öğleden sonraki hâline göre ne değişti: 1. madde çözüldü ve yayına alındı,
-yerine çerçevedeki sürüklemenin yarısı açık kaldı. 2. madde olduğu gibi
-duruyor.
+Öğleden sonraki hâline göre ne değişti: 1. madde çözüldü ve yayına alındı
+(geriye tek bir gözle bakma kaldı), 3. madde bütünüyle bitti. 2. madde olduğu
+gibi duruyor — ve tek gerçek açık iş o.
 
 ---
 
@@ -93,9 +93,9 @@ Yani istenirse önce ürün kararı gerekiyor: "arka plan müziği" mi, yoksa
 
 ---
 
-## 3 · Çerçevede sürüklemenin son iki parçası
+## 3 · Çerçevede sürükleme — bitti
 
-**Durum: dört parçanın dördü de bitti, yayında, ölçüldü. İki küçük iş kaldı.**
+**Durum: altı parçanın altısı da bitti, yayında, tek tek ölçüldü.**
 
 "Sürükle bırak hala diğer bölümlerde çalışmıyor … telefon tablet masaüstü
 kısmında falan da." Sebep basitti: bütün işaretçi bağları kart kutusundaydı
@@ -123,12 +123,24 @@ stil bloğundan kopyalanıp `[data-design-preview]` → `[data-zieht-bereit]`
 sayfayı kaydırırdı. Canlıda ölçüldü: kurallar enjekte, 8 tutamak, seçim
 çerçevesi katmanla birebir örtüşüyor (51,101, 291×40).
 
-**Kalan — iki parça.**
+**Ve 5 ile 6 da bitti.** Cihaz görünümüne geçince çerçevedeki zarf kendiliğinden
+açılıyor (`kuvertAuf`, aynı `oeffneRahmen()` üzerinden — soldan bölüm seçmenin
+zaten kullandığı yol), yani kart artık görünüyor ve kör sürüklenmiyor. Çift tık
+da her kökte geçerli.
 
-| # | Ne | Neden ayrı |
-|---|---|---|
-| 5 | Sürüklemeden önce çerçevedeki zarf açılsın | Kart zarfın arkasında. `oeffneRahmen()` zaten var, bağlanması gerek. |
-| 6 | Çift tıkla metni yerinde düzenleme | `dblclick` hâlâ tek kutuda — kart kutusunda kalan tek olay bağı. |
+Çift tıkta bir tuzak vardı, taşımada görünmeyen cinsten: seçim ve Range,
+düğümün durduğu **belgeye** ait. Editörün `document.createRange()`'iyle
+çerçevedeki bir düğümü işaretlemek belge sınırını aşar ve hiçbir şey seçmez.
+`el.ownerDocument` ve onun `defaultView`'ı kullanılıyor. Canlıda ölçüldü:
+seçim çerçevenin penceresinde kuruldu, metin ("Wir heiraten") baştan sona
+seçili.
+
+**Kalan: yok.** Dördü de yayında ve ölçüldü.
+
+Bir not, ileride yanlış yorumlanmasın diye: düzenlemeyi programatik `blur()`
+ile bitirmek çalışmıyor — ama bu çerçeveye özgü değil. Kart kutusunda, yani
+aylardır çalışan yolda, birebir aynı sonuç çıkıyor. Enter ve Escape ikisinde de
+çalışıyor. Gerçek bir tıklamayla çıkışı kendi elinle bir kez denersen iyi olur.
 
 ---
 
