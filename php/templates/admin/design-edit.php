@@ -138,6 +138,67 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-rahmen{border:1px solid var(--color-sand-deep,#dccebc);overflow:hidden;}
   .b-rahmen iframe{border:0;display:block;transform-origin:top left;background:#fff;}
 
+  /* Ziehen statt tippen.
+
+     Der Rahmen um die gewaehlte Ebene und seine acht Griffe. Beides liegt IM
+     Vorschaukasten und wird vom Skript in Pixeln hingestellt (offsetLeft,
+     offsetTop, offsetWidth, offsetHeight) - deshalb steht hier keine Groesse,
+     nur das Aussehen.
+
+     Der Rahmen selbst faengt keine Klicks: er liegt ueber der Ebene, und wer
+     die Ebene schieben will, greift durch ihn hindurch. Nur die Griffe
+     nehmen den Zeiger an.
+
+     Warum als eigene Regeln und nicht als Tailwind: siehe Kopf dieser Datei -
+     style.css ist fertig gebaut, eine erfundene Klasse taete schweigend
+     nichts. */
+  [data-design-preview] .d-el{cursor:move;}
+  [data-design-preview][data-zieht]{user-select:none;}
+  [data-design-preview][data-zieht] .d-el{cursor:grabbing;}
+  [data-design-preview] .d-el[contenteditable]{cursor:text;outline:1px dashed var(--color-gold,#b08d57);}
+  .b-rahmen-wahl{position:absolute;z-index:9999;pointer-events:none;transform-origin:center;
+                 outline:1px solid var(--color-gold,#b08d57);outline-offset:1px;}
+  .b-griff{position:absolute;width:10px;height:10px;box-sizing:border-box;pointer-events:auto;
+           background:var(--color-cream,#faf7f2);border:1px solid var(--color-gold,#b08d57);}
+  /* INNEN an der Kante, nicht mittig darauf. Der Vorschaukasten schneidet ab,
+     was ueber ihn hinausragt (overflow:hidden - sonst liefe eine Ebene, die
+     ueber die Karte hinaussteht, in den Editor hinein). Ein Griff mittig auf
+     der Kante waere damit bei jeder Ebene, die die Karte fuellt, zur Haelfte
+     weggeschnitten - gemessen an einer Ebene mit x=0: fuenf Pixel zum
+     Treffen, und an der rechten Kante gar keine. */
+  .b-griff[data-griff="nw"]{left:0;top:0;cursor:nwse-resize;}
+  .b-griff[data-griff="n"]{left:50%;top:0;margin-left:-5px;cursor:ns-resize;}
+  .b-griff[data-griff="ne"]{left:100%;top:0;margin-left:-10px;cursor:nesw-resize;}
+  .b-griff[data-griff="e"]{left:100%;top:50%;margin:-5px 0 0 -10px;cursor:ew-resize;}
+  .b-griff[data-griff="se"]{left:100%;top:100%;margin:-10px 0 0 -10px;cursor:nwse-resize;}
+  .b-griff[data-griff="s"]{left:50%;top:100%;margin:-10px 0 0 -5px;cursor:ns-resize;}
+  .b-griff[data-griff="sw"]{left:0;top:100%;margin-top:-10px;cursor:nesw-resize;}
+  .b-griff[data-griff="w"]{left:0;top:50%;margin-top:-5px;cursor:ew-resize;}
+  /* Ist der Kasten duenner als zwei Griffe, weichen sie nach aussen aus -
+     sonst liegen der obere und der untere uebereinander und nur einer von
+     beiden ist zu treffen. Gemessen an einer Textzeile von 14 Pixeln. */
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="nw"],
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="n"],
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="ne"]{margin-top:-10px;}
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="sw"],
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="s"],
+  .b-rahmen-wahl[data-eng] .b-griff[data-griff="se"]{margin-top:0;}
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="nw"],
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="w"],
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="sw"]{margin-left:-10px;}
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="ne"],
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="e"],
+  .b-rahmen-wahl[data-schmal] .b-griff[data-griff="se"]{margin-left:0;}
+  /* An einem Text ziehen die Ecken die Schrift, nicht den Kasten - ein
+     runder Griff sagt, dass hier etwas anderes passiert als an den Kanten. */
+  .b-rahmen-wahl[data-schrift] .b-griff[data-griff="nw"],
+  .b-rahmen-wahl[data-schrift] .b-griff[data-griff="ne"],
+  .b-rahmen-wahl[data-schrift] .b-griff[data-griff="se"],
+  .b-rahmen-wahl[data-schrift] .b-griff[data-griff="sw"]{border-radius:50%;
+           background:var(--color-gold,#b08d57);}
+  /* Und dieselbe Ebene in der Liste rechts, damit man die Zeile nicht sucht. */
+  [data-ebene][data-gewaehlt]{outline:1px solid var(--color-gold,#b08d57);}
+
   .b-fuss{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:0.8rem;
           background:var(--color-cream,#faf7f2);border-top:1px solid var(--color-sand-deep,#dccebc);
           padding:0.9rem 0;margin-top:1rem;}
@@ -320,7 +381,22 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
                 ? 'Bu çerçeve KAYDEDİLMİŞ hâli gösterir — sayfanın kendisini sunucudan alır. Değişikliği görmek için önce kaydet.'
                 : 'Der Rahmen zeigt den GESPEICHERTEN Stand - er holt die Seite vom Server. Erst speichern, dann sieht man die Änderung.' ?>"></div>
 
-        <p class="b-fein" style="margin-top:0.75rem;" data-ansicht-hinweis>
+        <?php /*
+           Die Karte ist anfassbar, und das sieht man ihr nicht an - deshalb
+           steht es darunter. Zwei Zeilen: die erste sagt, was die Hand kann,
+           die zweite, was die Ansicht zeigt.
+
+           Das Kuvert fehlt in dieser Aufzaehlung mit Absicht: die Vorschau
+           baut nur Seite und Karte, eine Kuvertebene hat hier gar keinen
+           Knoten und bleibt bei ihren Zahlen.
+        */ ?>
+        <p class="b-fein" style="margin-top:0.75rem;">
+          <?= $tr
+            ? 'Kartın üstünde: sürükle → yeri · kenar tutamakları → en/boy · köşeler → yazıda büyüklük, resimde boyut · çift tık → yazıyı yerinde düzenle (Enter biter, Esc geri alır) · ok tuşları → %1, Shift ile %5 · Esc → seçimi bırak. Kuvert katmanları burada görünmez, onlar sayılarla kalır.'
+            : 'Auf der Karte: ziehen → Platz · Griffe an den Kanten → Breite/Höhe · Ecken → beim Text die Schriftgröße, beim Bild die Größe · Doppelklick → Text an Ort und Stelle (Enter beendet, Esc nimmt zurück) · Pfeiltasten → 1 %, mit Umschalt 5 % · Esc → Auswahl lösen. Kuvertebenen stehen nicht in dieser Vorschau, sie bleiben bei ihren Zahlen.' ?>
+        </p>
+
+        <p class="b-fein" style="margin-top:0.5rem;" data-ansicht-hinweis>
           <?= $tr
             ? 'Kart: renk, yazı, metin ve katman yerleşimi anında değişir. BÖLÜMLER kartta değil, sayfada — onları görmek için Telefon/Tablet/Masaüstü sekmesine geç.'
             : 'Karte: Farbe, Schrift, Text und der Kasten einer Ebene ändern sich sofort. ABSCHNITTE stehen nicht auf der Karte, sondern auf der Seite — dafür auf Telefon/Tablet/Schreibtisch wechseln.' ?>

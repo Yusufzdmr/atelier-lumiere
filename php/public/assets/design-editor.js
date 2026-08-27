@@ -162,6 +162,590 @@
     });
   });
 
+  /* ======================================================================
+   * Ziehen statt tippen: anfassen, an den Griffen ziehen, doppelt klicken.
+   *
+   * Der Block darueber ist die Wahrheit, dieser hier nur eine zweite Hand an
+   * denselben Feldern. Das Ziehen rechnet nichts eigenes aus und speichert
+   * nichts eigenes: es schreibt eine Zahl in genau das Feld, in das sonst
+   * jemand tippt, und loest dessen input-Ereignis aus. Danach laeuft alles
+   * Weitere von selbst - stelle() rueckt die Ebene, das Formular merkt sich
+   * den Schritt fuer Strg+Z, und Speichern schickt dieselben Namen wie immer.
+   *
+   * Deshalb gibt es hier auch keine zweite Liste von Grenzen: geklemmt wird
+   * am min/max des Feldes, und das steht in der Vorlage, die es aus
+   * Design::BOX bezieht. Drei Stellen mit denselben Zahlen laufen frueher
+   * oder spaeter auseinander, zwei sind schon eine zu viel.
+   *
+   * Was NICHT gezogen werden kann: Ebenen des Kuverts (die Vorschau zeigt nur
+   * Seite und Karte, ihr Knoten fehlt) und Textebenen ohne Text (Design::html
+   * laesst einen leeren Text ganz weg - es gibt nichts anzufassen).
+   * ==================================================================== */
+  (function () {
+    var kastenFeld = function (id, mass) {
+      return form.querySelector('[data-kasten="' + id + '"][data-mass="' + mass + '"]');
+    };
+    var schriftFeld = function (id) {
+      return form.querySelector('[data-schriftgroesse="' + id + '"]');
+    };
+    var textFeld = function (id) {
+      return form.querySelector('[data-textfeld="' + id + '"]');
+    };
+
+    /*
+     * Eine Zahl ins Feld schreiben - geklemmt, gerundet, und mit dem
+     * Ereignis, an dem alles andere haengt.
+     *
+     * bubbles: true, und das ist kein Detail. Die Vorschau haengt am Feld
+     * selbst, das Rueckgaengig aber am FORMULAR (form.addEventListener
+     * "input"). Ein Ereignis ohne bubbles erreicht nur das erste von beiden -
+     * die Karte bewegte sich, und Strg+Z kaeme nie an dieser Bewegung vorbei.
+     */
+    var setze = function (f, wieviel) {
+      if (!f) return;
+
+      var min = parseInt(f.getAttribute("min"), 10);
+      var max = parseInt(f.getAttribute("max"), 10);
+      if (isFinite(min) && wieviel < min) wieviel = min;
+      if (isFinite(max) && wieviel > max) wieviel = max;
+
+      var gerundet = String(Math.round(wieviel));
+      if (gerundet === f.value) return;
+
+      f.value = gerundet;
+      f.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    // Die Kennung steht in der Klasse: d-el d-el-<id> d-spot-<ort>.
+    var kennung = function (el) {
+      var treffer = null;
+      Array.prototype.forEach.call(el.classList, function (name) {
+        if (name.indexOf("d-el-") === 0) treffer = name.slice(5);
+      });
+      return treffer;
+    };
+
+    /* --- Der Rahmen um das Gewaehlte ------------------------------------ */
+
+    /*
+     * Acht Griffe, benannt wie die Himmelsrichtungen. Der Name traegt die
+     * Rechnung: "nw" fasst die obere und die linke Kante an, "e" nur die
+     * rechte. Welche davon sich bewegen darf, entscheidet der Anker.
+     *
+     * Wo sie sitzen, steht im Stilblock der Seite und nicht hier: sie liegen
+     * INNEN an der Kante, weil der Vorschaukasten abschneidet, was ueber ihn
+     * hinausragt - ein mittig auf der Kante sitzender Griff waere bei einer
+     * Ebene, die die Karte fuellt, zur Haelfte weggeschnitten und nur noch
+     * mit fuenf Pixeln zu treffen.
+     */
+    var GRIFFE = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+
+    var gewaehlt = null;
+    var rahmenWahl = null;
+    var tippt = null;
+
+    var baueRahmen = function () {
+      var kasten = document.createElement("div");
+      kasten.className = "b-rahmen-wahl";
+      GRIFFE.forEach(function (g) {
+        var punkt = document.createElement("span");
+        punkt.className = "b-griff";
+        punkt.setAttribute("data-griff", g);
+        kasten.appendChild(punkt);
+      });
+      return kasten;
+    };
+
+    /*
+     * Den Rahmen auf die Ebene legen.
+     *
+     * Gemessen wird mit offsetLeft/offsetWidth und nicht mit
+     * getBoundingClientRect: das eine ist die Groesse VOR der Drehung, das
+     * andere danach. Ein gedrehter Kasten haette sonst einen waagerechten
+     * Rahmen, der groesser ist als er selbst.
+     *
+     * Der Rahmen haengt im Vorschaukasten und nicht in der Ebene: in ihr
+     * wuerde er ihre Deckkraft erben und mit ihr verblassen, und bei einer
+     * Ebene der SEITE laege er unter der Karte. Beide Huellen liegen
+     * absolute inset-0 auf dem Vorschaukasten - die Koordinaten stimmen
+     * also unveraendert.
+     *
+     * Gespiegelt wird nicht mitgedreht: scale(-1) um die Mitte laesst den
+     * Kasten dort, wo er ist, und wuerde nur die Griffe vertauschen - "nw"
+     * saesse rechts und zoege in die falsche Richtung.
+     */
+    var zeichne = function () {
+      if (!gewaehlt || !rahmenWahl) return;
+
+      var el = knoten(gewaehlt);
+      if (!el || el.style.display === "none" || el.hidden) {
+        waehle(null);
+        return;
+      }
+
+      var eltern = el.offsetParent;
+      if (!eltern) {
+        waehle(null);
+        return;
+      }
+
+      if (rahmenWahl.parentNode !== vorschau) vorschau.appendChild(rahmenWahl);
+
+      var links = el.offsetLeft + (eltern === vorschau ? 0 : eltern.offsetLeft);
+      var oben = el.offsetTop + (eltern === vorschau ? 0 : eltern.offsetTop);
+
+      rahmenWahl.style.left = links + "px";
+      rahmenWahl.style.top = oben + "px";
+      rahmenWahl.style.width = el.offsetWidth + "px";
+      rahmenWahl.style.height = el.offsetHeight + "px";
+
+      var dreh = zahl(gewaehlt, "rotate");
+      rahmenWahl.style.transform = dreh ? "rotate(" + dreh + "deg)" : "";
+
+      /*
+       * Duenne Ebenen: die Griffe nach AUSSEN.
+       *
+       * Innen an der Kante ist die richtige Stelle, solange der Kasten
+       * groesser ist als zwei Griffe. Eine Textzeile ist das oft nicht:
+       * gemessen an "Wir heiraten" mit 14 Pixel Hoehe lagen der obere Griff
+       * bei 0-10 und der untere bei 4-14 - sie ueberlappten, der spaeter
+       * gezeichnete gewann, und der obere war nicht mehr zu treffen. Man
+       * fasste oben an und zog unten.
+       *
+       * Also weichen sie bei duennen Kaesten nach draussen aus. Der Kasten
+       * bleibt, wo er ist; nur die Griffe ruecken auseinander.
+       */
+      if (el.offsetHeight < 24) {
+        rahmenWahl.setAttribute("data-eng", "");
+      } else {
+        rahmenWahl.removeAttribute("data-eng");
+      }
+      if (el.offsetWidth < 24) {
+        rahmenWahl.setAttribute("data-schmal", "");
+      } else {
+        rahmenWahl.removeAttribute("data-schmal");
+      }
+
+      // An einem Text ziehen die Ecken die SCHRIFT - der Zeiger soll es sagen.
+      if (schriftFeld(gewaehlt)) {
+        rahmenWahl.setAttribute("data-schrift", "");
+      } else {
+        rahmenWahl.removeAttribute("data-schrift");
+      }
+    };
+
+    /*
+     * Waehlen heisst: Rahmen auf die Karte, Zeile in der Liste markieren.
+     * Beides zusammen, damit man nie raten muss, welche der vierzehn Zeilen
+     * gerade die angefasste Ebene ist.
+     */
+    var waehle = function (id) {
+      gewaehlt = id;
+
+      if (liste) {
+        liste.querySelectorAll("[data-ebene]").forEach(function (zeile) {
+          if (id !== null && zeile.getAttribute("data-ebene") === id) {
+            zeile.setAttribute("data-gewaehlt", "");
+          } else {
+            zeile.removeAttribute("data-gewaehlt");
+          }
+        });
+      }
+
+      if (id === null) {
+        if (rahmenWahl && rahmenWahl.parentNode) {
+          rahmenWahl.parentNode.removeChild(rahmenWahl);
+        }
+        return;
+      }
+
+      if (!rahmenWahl) rahmenWahl = baueRahmen();
+      zeichne();
+    };
+
+    /* --- Anfassen und schieben ------------------------------------------ */
+
+    var zieht = null;
+
+    vorschau.addEventListener("pointerdown", function (ereignis) {
+      if (ereignis.button !== 0) return;
+
+      /*
+       * Waehrend auf der Karte getippt wird, gehoert der Klick dem Browser:
+       * er setzt den Schreibzeiger oder nimmt den Fokus weg, und das Wegnehmen
+       * ist es, was das Tippen beendet. Stuende hier preventDefault, kaeme man
+       * aus dem Text nie wieder heraus.
+       */
+      if (tippt) return;
+
+      var griff = ereignis.target.closest("[data-griff]");
+      var el = griff ? knoten(gewaehlt) : ereignis.target.closest(".d-el");
+
+      if (!el) {
+        waehle(null);
+        return;
+      }
+
+      var id = griff ? gewaehlt : kennung(el);
+      // Ohne Feld ist die Ebene hier nicht einstellbar - das Kuvert etwa
+      // steht in der Liste, aber nicht in dieser Vorschau.
+      if (!id || !kastenFeld(id, "x")) return;
+
+      if (id !== gewaehlt) {
+        waehle(id);
+        var zeile = liste && liste.querySelector('[data-ebene="' + id + '"]');
+        if (zeile && zeile.scrollIntoView) zeile.scrollIntoView({ block: "nearest" });
+      }
+
+      var eltern = el.offsetParent;
+      if (!eltern) return;
+
+      var mass = eltern.getBoundingClientRect();
+      if (!mass.width || !mass.height) return;
+
+      /*
+       * Der Anker sagt, von welcher Kante gemessen wird - und damit ueber das
+       * VORZEICHEN. Haengt eine Ebene rechts, wird x KLEINER, wenn man nach
+       * rechts zieht. Ohne diese beiden Zahlen liefe jede Ebene mit Anker
+       * "oben rechts" der Maus davon.
+       */
+      var anker = wert(id, "anchor") || "topleft";
+
+      zieht = {
+        id: id,
+        griff: griff ? griff.getAttribute("data-griff") : "",
+        x0: ereignis.clientX,
+        y0: ereignis.clientY,
+        breite: mass.width,
+        hoehe: mass.height,
+        sx: anker.indexOf("right") >= 0 ? -1 : 1,
+        sy: anker.indexOf("bottom") === 0 ? -1 : 1,
+        haeltX: anker.indexOf("right") >= 0 ? "e" : "w",
+        haeltY: anker.indexOf("bottom") === 0 ? "s" : "n",
+        wx: zahl(id, "x"),
+        wy: zahl(id, "y"),
+        ww: zahl(id, "w"),
+        wh: zahl(id, "h"),
+        // Die gemessene Hoehe in Prozent - gebraucht, wenn aus "auto" eine
+        // Zahl wird und dabei nichts springen soll.
+        hoeheJetzt: el.offsetHeight / mass.height * 100,
+        kastenBreite: el.offsetWidth,
+        groesse: schriftFeld(id) ? parseInt(schriftFeld(id).value, 10) : 0
+      };
+
+      vorschau.setPointerCapture(ereignis.pointerId);
+      vorschau.setAttribute("data-zieht", "");
+      ereignis.preventDefault();
+    });
+
+    vorschau.addEventListener("pointermove", function (ereignis) {
+      if (!zieht) return;
+
+      var id = zieht.id;
+      var dxP = (ereignis.clientX - zieht.x0) / zieht.breite * 100;
+      var dyP = (ereignis.clientY - zieht.y0) / zieht.hoehe * 100;
+
+      // Ohne Griff wandert die ganze Ebene.
+      if (zieht.griff === "") {
+        setze(kastenFeld(id, "x"), zieht.wx + dxP * zieht.sx);
+        setze(kastenFeld(id, "y"), zieht.wy + dyP * zieht.sy);
+        zeichne();
+        return;
+      }
+
+      var g = zieht.griff;
+      var kanteX = g.indexOf("w") >= 0 ? "w" : (g.indexOf("e") >= 0 ? "e" : "");
+      var kanteY = g.charAt(0) === "n" ? "n" : (g.charAt(0) === "s" ? "s" : "");
+      var ecke = kanteX !== "" && kanteY !== "";
+
+      /*
+       * Wieviel die angefasste Kante nach AUSSEN gegangen ist, in Pixeln.
+       * Die freie Kante waechst mit der Bewegung, die angeankerte gegen sie:
+       * wer den linken Rand einer links haengenden Ebene nach rechts zieht,
+       * macht sie schmaler, nicht breiter.
+       */
+      var wachsPx = (ereignis.clientX - zieht.x0) * zieht.sx * (kanteX === zieht.haeltX ? -1 : 1);
+
+      /*
+       * Die Ecke eines Textes zieht die SCHRIFT, nicht den Kasten.
+       *
+       * Einen Textkasten breiter zu ziehen aendert nur, wo die Zeile
+       * umbricht - man zieht und zieht, und die Buchstaben bleiben gleich
+       * gross. Wer an einer Ecke zieht, will groessere Buchstaben; wer die
+       * Zeile umbrechen lassen will, nimmt die Kante links oder rechts.
+       */
+      if (ecke && zieht.groesse > 0 && zieht.kastenBreite > 0) {
+        var faktor = (zieht.kastenBreite + wachsPx) / zieht.kastenBreite;
+        if (faktor > 0.05) setze(schriftFeld(id), zieht.groesse * faktor);
+        zeichne();
+        return;
+      }
+
+      if (kanteX !== "") {
+        if (kanteX === zieht.haeltX) {
+          // Die angeankerte Kante zieht den Kasten hinter sich her: die
+          // gegenueberliegende bleibt stehen, also wandert auch x.
+          setze(kastenFeld(id, "x"), zieht.wx + dxP * zieht.sx);
+          setze(kastenFeld(id, "w"), zieht.ww - dxP * zieht.sx);
+        } else {
+          setze(kastenFeld(id, "w"), zieht.ww + dxP * zieht.sx);
+        }
+      }
+
+      /*
+       * Die Senkrechte, nach derselben Regel wie die Waagerechte - mit einer
+       * Ausnahme an der Ecke.
+       *
+       * Eine Hoehe von 0 heisst "so hoch wie der Inhalt". Wer den Griff oben
+       * oder unten anfasst, will genau das aendern; aus auto wird dann die
+       * gerade gemessene Zahl, damit im ersten Moment nichts springt.
+       *
+       * An der ECKE bleibt auto dagegen auto. Ein Bild ohne feste Hoehe
+       * traegt seine eigene Proportion, und ihm nebenbei eine Hoehe zu geben
+       * hiesse, es zu beschneiden: Design::css() schreibt zu jeder gesetzten
+       * Hoehe object-fit:cover. Von elf Bildebenen oertlich und sechzehn in
+       * der Produktion hat KEINE eine Hoehe - die Ecke waere also der
+       * haeufigste Weg in eine Aenderung, die niemand wollte.
+       */
+      if (kanteY !== "" && !(ecke && zieht.wh === 0)) {
+        var basisH = zieht.wh > 0 ? zieht.wh : zieht.hoeheJetzt;
+        if (kanteY === zieht.haeltY) {
+          setze(kastenFeld(id, "y"), zieht.wy + dyP * zieht.sy);
+          setze(kastenFeld(id, "h"), basisH - dyP * zieht.sy);
+        } else {
+          setze(kastenFeld(id, "h"), basisH + dyP * zieht.sy);
+        }
+      }
+
+      zeichne();
+    });
+
+    var beende = function (ereignis) {
+      if (!zieht) return;
+      zieht = null;
+      vorschau.removeAttribute("data-zieht");
+
+      if (ereignis && vorschau.hasPointerCapture && vorschau.hasPointerCapture(ereignis.pointerId)) {
+        vorschau.releasePointerCapture(ereignis.pointerId);
+      }
+      zeichne();
+    };
+
+    vorschau.addEventListener("pointerup", beende);
+    vorschau.addEventListener("pointercancel", beende);
+
+    /* --- Den Text an Ort und Stelle schreiben ---------------------------- */
+
+    /*
+     * Doppelklick oeffnet den Text auf der Karte.
+     *
+     * Geschrieben wird trotzdem ins FELD - der Knoten ist nur die Tastatur.
+     * Waehrend getippt wird, geht das Feld aber OHNE Ereignis: sein eigener
+     * Zuhoerer (oben, [data-textfeld]) beschriftet den Knoten neu, und ein
+     * neu beschrifteter Knoten hat keinen Schreibzeiger mehr - man tippt
+     * einen Buchstaben und steht wieder am Anfang. Das eine input-Ereignis
+     * kommt deshalb erst zum Schluss, und es ist zugleich der eine Schritt,
+     * den Strg+Z zurueckdreht.
+     *
+     * Nur Ebenen mit eigenem Textfeld: eine gebundene Ebene (die Namen des
+     * Paares) zeigt hier Beispieltext, ihre Worte stehen in der Einladung
+     * und nicht in der Vorlage.
+     */
+    var beginneTippen = function (el, id, f) {
+      if (tippt) return;
+      tippt = id;
+
+      var vorher = f.value;
+
+      try {
+        el.contentEditable = "plaintext-only";
+      } catch (fehler) {
+        el.contentEditable = "true";
+      }
+      if (!el.isContentEditable) el.contentEditable = "true";
+      el.focus();
+
+      // Alles gewaehlt: eine Textebene traegt ein Wort, ein Datum, einen
+      // Namen - ueberschreiben ist der Normalfall, anhaengen die Ausnahme.
+      var auswahl = window.getSelection();
+      if (auswahl) {
+        var bereich = document.createRange();
+        bereich.selectNodeContents(el);
+        auswahl.removeAllRanges();
+        auswahl.addRange(bereich);
+      }
+
+      var schreibe = function () {
+        f.value = el.textContent;
+      };
+
+      /*
+       * stopPropagation, nicht nur preventDefault.
+       *
+       * Escape hat hier eine Bedeutung (nimm die Eingabe zurueck) und weiter
+       * unten am Dokument eine zweite (loese die Auswahl). Ohne das Anhalten
+       * laufen beide: gemessen am 27.08.2026 nahm ein Esc die Eingabe
+       * zurueck UND liess den Rahmen verschwinden - man wollte ein Wort
+       * verwerfen und stand ohne gewaehlte Ebene da. Das Naehere gewinnt.
+       */
+      var taste = function (e2) {
+        if (e2.key === "Enter") {
+          e2.preventDefault();
+          e2.stopPropagation();
+          beenden(false);
+        } else if (e2.key === "Escape") {
+          e2.preventDefault();
+          e2.stopPropagation();
+          beenden(true);
+        }
+      };
+
+      var aufBlur = function () { beenden(false); };
+
+      var beenden = function (zurueckdrehen) {
+        if (tippt !== id) return;
+        tippt = null;
+
+        el.removeEventListener("input", schreibe);
+        el.removeEventListener("keydown", taste);
+        el.removeEventListener("blur", aufBlur);
+        el.removeAttribute("contenteditable");
+
+        if (zurueckdrehen) f.value = vorher;
+
+        /*
+         * Ein leer gelassener Text nimmt die Ebene beim Speichern mit:
+         * Design::html laesst eine Textebene ohne Text ganz weg. Hier bleibt
+         * der Knoten noch stehen, nach dem Speichern ist er fort. Das ist
+         * dieselbe Regel wie beim Tippen ins Feld daneben, und deshalb steht
+         * hier keine Sonderbehandlung.
+         */
+        el.textContent = f.value;
+        f.dispatchEvent(new Event("input", { bubbles: true }));
+        zeichne();
+      };
+
+      el.addEventListener("input", schreibe);
+      el.addEventListener("keydown", taste);
+      el.addEventListener("blur", aufBlur);
+    };
+
+    vorschau.addEventListener("dblclick", function (ereignis) {
+      /*
+       * NICHT ueber ereignis.target - das war der erste Versuch, und er hat
+       * nie gegriffen.
+       *
+       * Der Doppelklick traegt als Ziel den gemeinsamen Vorfahren der beiden
+       * Klicks, und pointerdown wird hier default-verhindert (sonst faengt
+       * der Browser an, Text zu markieren, sobald man eine Ebene zieht).
+       * Ohne mousedown faellt das Ziel auf den Vorschaukasten zurueck:
+       * gemessen am 27.08.2026 stand dort "d-elysee buehne", und
+       * closest(".d-el") fand nichts - man klickte doppelt, und es geschah
+       * nichts.
+       *
+       * Gebraucht wird das Ziel aber gar nicht: der ERSTE Klick des
+       * Doppelklicks hat die Ebene unter dem Zeiger schon gewaehlt. Was dort
+       * liegt, steht also in gewaehlt - und das ist zugleich das, was der
+       * Rahmen zeigt. Eine Wahrheit statt zweier.
+       */
+      if (!gewaehlt) return;
+      // Auf einem Griff wird gezogen, nicht geschrieben.
+      if (ereignis.target.closest("[data-griff]")) return;
+
+      var el = knoten(gewaehlt);
+      var f = el ? textFeld(gewaehlt) : null;
+      if (!f) return;
+
+      ereignis.preventDefault();
+      beginneTippen(el, gewaehlt, f);
+    });
+
+    /* --- Von der Liste aus waehlen, mit den Pfeilen schieben ------------- */
+
+    if (liste) {
+      liste.addEventListener("click", function (ereignis) {
+        // Die Knoepfe der Zeile (vorn, hinten, weg) haben ihre eigene Arbeit.
+        if (ereignis.target.closest("button, input, select, label")) return;
+
+        var zeile = ereignis.target.closest("[data-ebene]");
+        if (!zeile) return;
+
+        var id = zeile.getAttribute("data-ebene");
+        if (knoten(id) && kastenFeld(id, "x")) waehle(id);
+      });
+    }
+
+    /*
+     * Ein Prozent ist der kleinste Schritt, den das Dokument kennt - die
+     * Werte sind ganze Zahlen (Design::completeBox castet auf int). Mit den
+     * Pfeilen ist er erreichbar, ohne die Maus ruhig halten zu muessen; mit
+     * Umschalt geht es in Fuenfern.
+     */
+    document.addEventListener("keydown", function (ereignis) {
+      if (!gewaehlt || tippt) return;
+      if (ereignis.ctrlKey || ereignis.metaKey || ereignis.altKey) return;
+
+      var wo = document.activeElement;
+      if (wo && (wo.tagName === "INPUT" || wo.tagName === "TEXTAREA"
+                 || wo.tagName === "SELECT" || wo.isContentEditable)) return;
+
+      if (ereignis.key === "Escape") {
+        waehle(null);
+        return;
+      }
+
+      var pfeile = {
+        ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+        ArrowUp: [0, -1], ArrowDown: [0, 1]
+      };
+      var schritt = pfeile[ereignis.key];
+      if (!schritt) return;
+
+      ereignis.preventDefault();
+
+      var weite = ereignis.shiftKey ? 5 : 1;
+      var anker = wert(gewaehlt, "anchor") || "topleft";
+      var sx = anker.indexOf("right") >= 0 ? -1 : 1;
+      var sy = anker.indexOf("bottom") === 0 ? -1 : 1;
+
+      if (schritt[0]) setze(kastenFeld(gewaehlt, "x"), zahl(gewaehlt, "x") + schritt[0] * weite * sx);
+      if (schritt[1]) setze(kastenFeld(gewaehlt, "y"), zahl(gewaehlt, "y") + schritt[1] * weite * sy);
+      zeichne();
+    });
+
+    /*
+     * Der Rahmen folgt allem, was die Ebene bewegt - auch der getippten Zahl,
+     * der gewechselten Schrift und dem Rueckgaengig. Eng gefasst und nicht am
+     * ganzen Formular: zeichne() misst, und Messen mitten im Tippen in einem
+     * beliebigen Feld waere Arbeit fuer nichts.
+     */
+    var folgt = function (ereignis) {
+      if (!gewaehlt) return;
+
+      var t = ereignis.target;
+      if (!t || !t.hasAttribute) return;
+
+      if (t.hasAttribute("data-kasten") || t.hasAttribute("data-schriftgroesse")
+          || t.hasAttribute("data-textfeld") || t.hasAttribute("data-groessefeld")
+          || t.hasAttribute("data-schriftfeld") || t.hasAttribute("data-gewichtfeld")) {
+        zeichne();
+      }
+    };
+
+    form.addEventListener("input", folgt);
+    form.addEventListener("change", folgt);
+
+    // Nach einem Knopf: die Ebene kann weggenommen worden sein, dann nimmt
+    // zeichne() den Rahmen von selbst zurueck.
+    form.addEventListener("click", function () {
+      if (gewaehlt) setTimeout(zeichne, 0);
+    });
+
+    window.addEventListener("resize", function () {
+      if (gewaehlt) zeichne();
+    });
+  })();
+
   // Auch von aussen gebraucht: Rueckgaengig zieht beide Listen nach.
   var stapleNeu = function () {};
 
@@ -877,9 +1461,14 @@
      * einzelne Buchstaben; unseres kennt nur ganze Zustaende, und es waere
      * ein schlechter Tausch, ein getipptes Wort nur im Ganzen zurueckdrehen
      * zu koennen.
+     *
+     * isContentEditable gehoert dazu, seit auf der Karte selbst getippt
+     * werden kann: ein Text dort ist weder INPUT noch TEXTAREA, und
+     * herstellen() wuerde ihn mitten im Wort neu beschriften - der
+     * Schreibzeiger waere weg und die halbe Eingabe dazu.
      */
     var wo = document.activeElement;
-    if (wo && (wo.tagName === "INPUT" || wo.tagName === "TEXTAREA")) return;
+    if (wo && (wo.tagName === "INPUT" || wo.tagName === "TEXTAREA" || wo.isContentEditable)) return;
 
     var taste = ereignis.key.toLowerCase();
     if (taste === "z" && !ereignis.shiftKey) {
