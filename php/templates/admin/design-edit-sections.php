@@ -130,7 +130,8 @@ use function Atelier\e;
            src-Attribut. Dieselbe Pruefung, die auch die Karte anwendet.
         */ ?>
         <div class="w-24 shrink-0">
-          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+               data-vorschau-fuer="bild_<?= e($ebene['id']) ?>">
             <?php if ($bildQuelle !== '') : ?>
               <img src="<?= e($bildQuelle) ?>" alt="" class="h-full w-full object-contain">
             <?php else : ?>
@@ -229,7 +230,8 @@ use function Atelier\e;
 
       <div class="mt-3 flex items-start gap-5">
         <div class="w-24 shrink-0">
-          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+          <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+               data-vorschau-fuer="video_<?= e($ebene['id']) ?>">
             <?php if ($filmQuelle !== '') : ?>
               <video src="<?= e($filmQuelle) ?>" muted preload="metadata"
                      <?= $filmPoster !== '' ? 'poster="' . e($filmPoster) . '"' : '' ?>
@@ -281,7 +283,8 @@ use function Atelier\e;
 
     <div class="mt-4 flex items-start gap-5">
       <div class="w-24 shrink-0">
-        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+             data-vorschau-fuer="intro_datei">
           <?php $introQuelle = Design::safeSrc((string) $design['intro']['video']); ?>
           <?php if ($introQuelle !== '') : ?>
             <video src="<?= e($introQuelle) ?>" muted preload="metadata"
@@ -304,12 +307,37 @@ use function Atelier\e;
           <input name="intro_video" value="<?= e((string) $design['intro']['video']) ?>"
                  class="<?= $feld ?> font-mono text-[0.78rem]"></label>
 
-        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'Kapak görseli yükle' : 'Standbild hochladen' ?>
-          <input type="file" name="intro_poster_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+        <?php /*
+           Das Standbild bekommt denselben Kasten wie alles andere.
 
-        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da kapak yolu' : 'oder Standbild-Pfad' ?>
-          <input name="intro_poster" value="<?= e((string) $design['intro']['poster']) ?>"
-                 class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+           Es war das einzige Medienfeld ohne einen: zwei Felder, ein Pfad -
+           und die Frage "was liegt da eigentlich" nur zu beantworten, indem
+           man die Einladung aufmacht.
+        */ ?>
+        <?php $posterBild = Design::safeSrc((string) $design['intro']['poster']); ?>
+        <div class="mt-4 flex items-start gap-5">
+          <div class="w-24 shrink-0">
+            <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+                 data-vorschau-fuer="intro_poster_datei">
+              <?php if ($posterBild !== '') : ?>
+                <img src="<?= e($posterBild) ?>" alt="" class="h-full w-full object-contain">
+              <?php else : ?>
+                <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+                  <?= $tr ? 'kapak yok' : 'kein Standbild' ?>
+                </span>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <div class="w-full">
+            <label class="<?= $label ?>"><?= $tr ? 'Kapak görseli yükle' : 'Standbild hochladen' ?>
+              <input type="file" name="intro_poster_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+            <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da kapak yolu' : 'oder Standbild-Pfad' ?>
+              <input name="intro_poster" value="<?= e((string) $design['intro']['poster']) ?>"
+                     class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+          </div>
+        </div>
 
         <?php /*
            Wie lange der Film laeuft, bevor die Karte kommt.
@@ -351,7 +379,8 @@ use function Atelier\e;
 
     <div class="mt-4 flex items-start gap-5">
       <div class="w-24 shrink-0">
-        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+        <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+             data-vorschau-fuer="sectionsbg_datei">
           <?php $grundBild = Design::safeSrc((string) $design['sectionsBg']); ?>
           <?php if ($grundBild !== '') : ?>
             <img src="<?= e($grundBild) ?>" alt="" class="h-full w-full object-cover">
@@ -390,12 +419,30 @@ use function Atelier\e;
               : 'Liegt einmal ganz unten und wird nicht gezogen. Ein Blatt, dessen Blumen unten sitzen, gehört hierher.' ?>
           </p>
 
-          <label class="<?= $label ?> mt-3 block"><?= $tr ? 'Görsel yükle' : 'Bild hochladen' ?>
-            <input type="file" name="sectionsbg_end_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+          <?php $schlussBild = Design::safeSrc((string) ($design['sectionsBgEnd'] ?? '')); ?>
+          <div class="mt-3 flex items-start gap-5">
+            <div class="w-24 shrink-0">
+              <div class="flex aspect-[4/5] items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+                   data-vorschau-fuer="sectionsbg_end_datei">
+                <?php if ($schlussBild !== '') : ?>
+                  <img src="<?= e($schlussBild) ?>" alt="" class="h-full w-full object-contain">
+                <?php else : ?>
+                  <span class="px-2 text-center text-[0.62rem] leading-tight text-muted">
+                    <?= $tr ? 'yok' : 'keins' ?>
+                  </span>
+                <?php endif; ?>
+              </div>
+            </div>
 
-          <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş = yok)' : 'oder Pfad (leer = keins)' ?>
-            <input name="sectionsbg_end" value="<?= e((string) ($design['sectionsBgEnd'] ?? '')) ?>"
-                   class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+            <div class="w-full">
+              <label class="<?= $label ?>"><?= $tr ? 'Görsel yükle' : 'Bild hochladen' ?>
+                <input type="file" name="sectionsbg_end_datei" accept="image/png,image/jpeg,image/webp" class="<?= $feld ?>"></label>
+
+              <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş = yok)' : 'oder Pfad (leer = keins)' ?>
+                <input name="sectionsbg_end" value="<?= e((string) ($design['sectionsBgEnd'] ?? '')) ?>"
+                       class="<?= $feld ?> font-mono text-[0.78rem]"></label>
+            </div>
+          </div>
         </div>
       </div>
     </div>

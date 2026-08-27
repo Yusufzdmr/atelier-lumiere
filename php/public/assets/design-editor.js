@@ -13,6 +13,76 @@
   var form = document.querySelector("[data-design-form]");
   if (!vorschau || !form) return;
 
+  /*
+   * Was gewaehlt ist, zeigen - vor dem Speichern.
+   *
+   * Ein Dateifeld sagt nur "bild-2.webp", und der Kasten daneben zeigt bis
+   * zum Speichern noch das ALTE Bild. Wer vier Medienfelder untereinander
+   * hat, weiss danach nicht, was er gerade hinterlegt hat: "yukledigin halde
+   * neyin yuklu oldugu gorulmuyor". Nachsehen hiess: speichern, Einladung
+   * aufmachen, zurueck.
+   *
+   * Die Paarung steht in der Vorlage - data-vorschau-fuer traegt den NAMEN
+   * des Dateifeldes. Ein Kasten ohne Gegenstueck bleibt einfach, wie er ist;
+   * es wird nichts erfunden.
+   *
+   * createObjectURL und nicht FileReader: die Adresse steht sofort, ohne
+   * dass die Datei erst durch den Speicher gelesen wird - bei einem Blatt von
+   * drei Megabyte ist das der Unterschied zwischen "sofort" und "gleich".
+   * Freigegeben wird die vorige Adresse beim naechsten Mal; ohne das haelt
+   * der Browser jede gewaehlte Datei bis zum Neuladen fest.
+   */
+  form.querySelectorAll('input[type="file"]').forEach(function (feld) {
+    var name = feld.getAttribute("name") || "";
+    if (name === "") return;
+
+    var kasten = form.querySelector('[data-vorschau-fuer="' + name + '"]');
+    var ton = form.querySelector('[data-tonvorschau="' + name + '"]');
+    if (!kasten && !ton) return;
+
+    feld.addEventListener("change", function () {
+      var datei = feld.files && feld.files[0];
+      if (!datei) return;
+
+      var adresse = URL.createObjectURL(datei);
+
+      // Der Ton: derselbe Spieler, nur eine andere Quelle.
+      if (ton) {
+        if (ton.dataset.blob === "1") URL.revokeObjectURL(ton.src);
+        ton.src = adresse;
+        ton.dataset.blob = "1";
+        ton.load();
+        return;
+      }
+
+      /*
+       * Film oder Bild - der Kasten traegt beides, und was hineingehoert,
+       * sagt die Datei selbst. Ein Standbild in einen <video> zu legen waere
+       * ein leerer schwarzer Kasten, und andersherum genauso.
+       */
+      var film = datei.type.indexOf("video/") === 0;
+      var art = film ? "VIDEO" : "IMG";
+      var knoten = kasten.firstElementChild;
+
+      if (!knoten || knoten.tagName !== art) {
+        kasten.innerHTML = "";
+        knoten = document.createElement(film ? "video" : "img");
+        knoten.className = "h-full w-full object-contain";
+        if (film) {
+          knoten.muted = true;
+          knoten.setAttribute("playsinline", "");
+        } else {
+          knoten.alt = "";
+        }
+        kasten.appendChild(knoten);
+      }
+
+      if (knoten.dataset.blob === "1") URL.revokeObjectURL(knoten.src);
+      knoten.src = adresse;
+      knoten.dataset.blob = "1";
+    });
+  });
+
   // Farbe: das Textfeld ist die Wahrheit, der Waehler schreibt hinein. So
   // ueberlebt ein rgba(), das der Waehler gar nicht darstellen kann.
   form.querySelectorAll("[data-farbfeld]").forEach(function (feld) {

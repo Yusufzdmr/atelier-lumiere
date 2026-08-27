@@ -236,8 +236,20 @@ foreach ($katalog as $art => $eintrag) {
                        name="sec_setdatei_<?= e((string) $schluessel) ?>_<?= $i ?>"
                        accept="<?= e($accept_) ?>"></label>
 
-              <?php if ($wert_ !== '' && $art_ === 'audio') : ?>
-                <audio class="mt-2 w-full" controls preload="none" src="<?= e($wert_) ?>"></audio>
+              <?php /*
+                 Der Spieler gehoert zum FELD, nicht zum Wert.
+
+                 Bisher stand er nur da, wenn schon etwas hinterlegt war - und
+                 genau dann sucht ihn niemand. Wer gerade eine Datei waehlt,
+                 will sie hoeren, bevor er speichert; das Skript haengt sie
+                 ueber data-tonvorschau hinein. Ohne Datei und ohne Skript
+                 bleibt er leer und stumm, und das ist keine Luege: es liegt
+                 ja nichts an.
+              */ ?>
+              <?php if ($art_ === 'audio') : ?>
+                <audio class="mt-2 w-full" controls preload="none"
+                       data-tonvorschau="sec_setdatei_<?= e((string) $schluessel) ?>_<?= $i ?>"
+                       <?= $wert_ !== '' ? 'src="' . e($wert_) . '"' : '' ?>></audio>
               <?php endif; ?>
 
               <label class="<?= $label ?> mt-2 block">
