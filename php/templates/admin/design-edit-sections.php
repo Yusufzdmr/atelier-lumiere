@@ -327,7 +327,36 @@ use function Atelier\e;
       </div>
 
       <div class="w-full">
-        <label class="<?= $label ?>"><?= $tr ? 'Video yükle' : 'Film hochladen' ?>
+        <?php /*
+           Aus der Ablage waehlen, statt noch einmal hochzuladen.
+
+           Die Filme liegen laengst da - die Uebersicht fuehrt sie mit Namen
+           und Standbild. Hier gab es sie trotzdem nicht: der Weg zum Vorspann
+           war "Adresse abtippen" oder "dieselbe Datei ein zweites Mal
+           hochladen". Beides ist Arbeit fuer nichts, und abgetippte Adressen
+           haben Tippfehler.
+
+           Die Auswahl SCHREIBT nur in die beiden Felder darunter - Film und
+           Standbild, denn ein Film in der Ablage bringt sein eigenes mit. Sie
+           hat keinen eigenen Namen im Formular und wird nicht mitgeschickt:
+           gespeichert wird, was in den Feldern steht, wie vorher auch.
+        */ ?>
+        <?php if (($videos ?? []) !== []) : ?>
+          <label class="<?= $label ?>"><?= $tr ? 'Yüklü videolardan seç' : 'Aus der Ablage wählen' ?>
+            <select class="<?= $feld ?>" data-introwahl>
+              <option value=""><?= $tr ? '— seç —' : '— wählen —' ?></option>
+              <?php foreach ($videos as $film) : ?>
+                <option value="<?= e((string) $film['mp4']) ?>"
+                        data-poster="<?= e((string) $film['poster']) ?>"
+                        <?= (string) $film['mp4'] === (string) $design['intro']['video'] ? 'selected' : '' ?>>
+                  <?= e(($film['label'] !== '' ? $film['label'] : $film['id'])
+                        . ($film['category'] !== '' ? ' · ' . $film['category'] : '')) ?>
+                </option>
+              <?php endforeach; ?>
+            </select></label>
+        <?php endif; ?>
+
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da video yükle' : 'oder Film hochladen' ?>
           <input type="file" name="intro_datei" accept="video/mp4,video/webm,video/quicktime" class="<?= $feld ?>"></label>
 
         <label class="<?= $label ?> mt-4 block"><?= $tr ? 'ya da yol (boş bırakınca kalkar)' : 'oder Pfad (leer entfernt ihn)' ?>

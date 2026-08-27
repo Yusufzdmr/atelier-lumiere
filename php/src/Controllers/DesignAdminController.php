@@ -425,6 +425,13 @@ final class DesignAdminController
             ],
             'design'   => $design,
             'scope'    => ltrim($scope, '.'),
+            /*
+             * Die Filmablage. Sie stand bisher nur auf der Uebersicht, wo man
+             * sie fuellt - gebraucht wird sie aber hier, wo man einen Film
+             * AUSWAEHLT. Ohne sie blieb der Weg zum Vorspann: Adresse
+             * abtippen oder dieselbe Datei ein zweites Mal hochladen.
+             */
+            'videos'   => DesignVideos::all(),
             'styles'   => Design::css($design, $scope),
             'seite'    => Design::html($design, $werte, $locale, 'page'),
             'karte'    => Design::html($design, $werte, $locale, 'card'),

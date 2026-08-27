@@ -153,3 +153,23 @@ assert_same('', Design::safeAudio('http://cdn.example.com/l.mp3'), 'Ton: http fa
 assert_same('', Design::safeAudio('javascript:alert(1)'), 'Ton: ein Skript erst recht');
 assert_same('', Design::safeAudio('https://x.test/a b.mp3'), 'Ton: Leerzeichen faellt weg');
 assert_same('', Design::safeSrc('https://cdn.example.com/bild.webp'), 'Bild: bleibt beim eigenen Haus');
+
+/*
+ * Der Vorspann laesst sich aus der Ablage waehlen.
+ *
+ * Die Filme liegen laengst da, mit Namen und Standbild - nur eben auf der
+ * Uebersicht, wo man sie FUELLT. Im Editor, wo man einen auswaehlt, gab es
+ * sie nicht: der Weg war "Adresse abtippen" oder "dieselbe Datei ein zweites
+ * Mal hochladen".
+ *
+ * Die Auswahl schreibt in die Pfadfelder und hat selbst keinen Namen im
+ * Formular - gespeichert wird weiterhin, was in den Feldern steht. Und sie
+ * schreibt BEIDE: ein gewechselter Film mit stehengebliebenem Standbild zeigt
+ * beim Oeffnen das falsche erste Bild.
+ */
+$steuerV = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
+assert_contains($steuerV, "'videos'   => DesignVideos::all()", 'Controller: der Editor bekommt die Ablage');
+assert_contains($editorSec, 'data-introwahl', 'Editor: die Auswahl steht da');
+assert_contains($editorSec, 'data-poster', 'Editor: mit dem Standbild des Films');
+assert_contains($js, 'data-introwahl', 'Skript: haengt daran');
+assert_contains($js, 'schreibe("intro_poster"', 'Skript: und schreibt auch das Standbild');

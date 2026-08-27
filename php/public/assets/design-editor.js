@@ -83,6 +83,39 @@
     });
   });
 
+  /*
+   * Einen Film aus der Ablage waehlen.
+   *
+   * Die Auswahl selbst wird nicht gespeichert - gespeichert wird, was in den
+   * beiden Pfadfeldern steht. Sie schreibt also nur hinein, und zwar beides
+   * auf einmal: ein Film in der Ablage bringt sein Standbild mit, und wer den
+   * Film wechselt und das alte Standbild stehen laesst, sieht beim Oeffnen
+   * das falsche erste Bild.
+   *
+   * Das Standbild nur, wenn der Film eins hat. Sonst bliebe das vorhandene
+   * ohne Grund zurueck - und ein Vorspann ohne Standbild ist besser als einer
+   * mit einem fremden.
+   */
+  form.querySelectorAll("[data-introwahl]").forEach(function (wahl) {
+    wahl.addEventListener("change", function () {
+      var film = wahl.value;
+      if (film === "") return;
+
+      var gewaehlt = wahl.options[wahl.selectedIndex];
+      var standbild = gewaehlt ? gewaehlt.getAttribute("data-poster") : "";
+
+      var schreibe = function (name, wert) {
+        var feld = form.querySelector('[name="' + name + '"]');
+        if (!feld) return;
+        feld.value = wert;
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+
+      schreibe("intro_video", film);
+      if (standbild) schreibe("intro_poster", standbild);
+    });
+  });
+
   // Farbe: das Textfeld ist die Wahrheit, der Waehler schreibt hinein. So
   // ueberlebt ein rgba(), das der Waehler gar nicht darstellen kann.
   form.querySelectorAll("[data-farbfeld]").forEach(function (feld) {
