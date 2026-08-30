@@ -226,6 +226,21 @@ use Atelier\Design;
            hervorzuholen. Der Film liegt also von Anfang an da, auf z-40 ueber
            dem gezeichneten Kuvert, und ist selbst der Anklickpunkt.
 
+           NACHTRAG - genau das war der Fehler. "Sein erstes Bild IST das
+           geschlossene Kuvert" stimmt nur, wenn der Browser dieses Bild auch
+           zeichnet. Ein <video> ohne autoplay tut das auf iOS nicht. Uebrig
+           blieb der deckende Kasten in der Grundfarbe der Vorlage - bei
+           elysee (#EFE7DC) also eine weisse Flaeche, ohne Kuvert, ohne
+           Siegel, ohne Hinweis, ueber einer Seite, deren Scrollen
+           invitation.js gerade gesperrt hat. Der Gast sah nichts und konnte
+           nichts tun; nur ein Tippen ins Leere half.
+
+           Jetzt liegt das gezeichnete Kuvert wieder darunter und traegt den
+           Hinweis, und der Film schiebt sich erst darueber, wenn er
+           tatsaechlich laeuft (invitation.js, Ereignis "playing"). Zwei
+           Kuverts hintereinander gibt es trotzdem nicht: lief der Film,
+           faellt das gezeichnete stumm weg, statt danach noch aufzuklappen.
+
            Und sein LETZTES Bild ist das Blatt der Karte - gemessen, nicht
            vermutet: bei 5,20 s stehen dort dieselben Goldecken und dieselben
            zwei Senkrechten wie auf bild.jpg. Deshalb ist er so breit wie die
@@ -251,8 +266,25 @@ use Atelier\Design;
            Fenster. Gefahrlos, weil die Seite waehrend des Vorspanns ohnehin
            stillsteht.
         */ ?>
+        <?php /*
+           Unsichtbar, bis er etwas zeigt.
+
+           opacity:0 und pointer-events:none sind zusammen der ganze
+           Unterschied zu vorher: der Kasten liegt zwar ueber dem Kuvert,
+           verdeckt es aber nicht und faengt auch den Finger nicht ab - der
+           geht auf den Knopf darunter, der eine aria-label traegt und
+           aussieht wie ein Kuvert. Erst wenn der Film laeuft, dreht
+           invitation.js die Deckkraft auf 1.
+
+           Die Ueberblendung dauert so lang wie die am anderen Ende
+           (UEBERGANG_MS im Skript). Sie steht hier und nicht dort, weil sie
+           auch fuer das EINblenden gilt und das Skript sie sonst zweimal
+           setzen muesste.
+        */ ?>
         <div class="fixed inset-0 z-40 flex items-center justify-center"
-             style="background: var(--d-bg, #0b0a09);" data-intro-video>
+             style="background: var(--d-bg, #0b0a09);
+                    opacity:0; pointer-events:none; transition: opacity 600ms ease;"
+             data-intro-video>
           <?php /*
              Derselbe Kasten wie die Karte: volle Breite bis max-w-2xl, das
              Seitenverhaeltnis des Dokuments, object-cover. Nur so liegt das
@@ -284,30 +316,30 @@ use Atelier\Design;
         </div>
       <?php endif; ?>
       <?php /*
-         Bringt das Thema einen Oeffnungsfilm mit, faellt unser gezeichnetes
-         Kuvert ganz weg - Huelle, Klappe, Siegel, Hinweis.
+         Das gezeichnete Kuvert - und zwar immer.
 
-         Zwei Kuverts hintereinander waeren einmal zu viel: der Film zeigt ein
-         echtes, und danach kam bisher noch die gezeichnete Klappe zum
-         Vorschein. Sichtbar war das zwischen dem Ende des Films (5,2 s) und
-         dem Verschwinden der Huelle (8,6 s) - drei Sekunden, in denen der
-         Gast ein zweites Kuvert sah, das niemand angefasst hat.
+         Hier stand bis zum 30. August die Umkehrung: bringt das Thema einen
+         Oeffnungsfilm mit, faellt unser Kuvert ganz weg (Huelle, Klappe,
+         Siegel, Hinweis), weil der Film ja selbst ein echtes zeigt. Der
+         Gedanke war richtig, die Voraussetzung nicht - er setzte voraus,
+         dass der Film zu sehen ist, bevor ihn jemand gestartet hat. Auf iOS
+         ist er das nicht, und dann war die Einladung eine weisse Flaeche.
 
-         Der Knoten selbst BLEIBT, leer und durchsichtig: er traegt den
-         Vertrag von invitation.js (data-envelope, data-animation,
-         data-intro-ms). Nur zu sehen ist an ihm nichts mehr.
+         Das Kuvert wird jetzt immer gedruckt und traegt immer den Hinweis.
+         Es IST die Aufforderung, und eine Aufforderung, die von der
+         Ladefaehigkeit eines Videos abhaengt, ist keine.
 
-         Der Schalter dafuer ist kein eigenes Feld, sondern der Film selbst:
-         ein Thema mit Oeffnungsfilm bekommt keins, ein Thema ohne behaelt
-         seins. Wer die gezeichnete Klappe zurueckwill, nimmt im Panel den
-         Film heraus.
+         Zwei Kuverts hintereinander bleiben trotzdem ausgeschlossen - nur an
+         einer anderen Stelle. Frueher wurde das gezeichnete gar nicht erst
+         gebaut; jetzt entscheidet invitation.js, ob es aufklappt: lief der
+         Film, faellt es beim Uebergang stumm weg. Der Unterschied ist, dass
+         die Entscheidung dort getroffen wird, wo man WEISS, ob der Film lief.
       */ ?>
       <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 z-30 flex flex-col items-center justify-center gap-9 px-6"
            data-envelope
            data-animation="<?= e($karteAn) ?>"
            data-intro-ms="<?= $introMs ?>"
-           <?= $introFilm === '' ? 'style="background: var(--d-bg);"' : '' ?>>
-      <?php if ($introFilm === '') : ?>
+           style="background: var(--d-bg);">
 
         <button type="button" data-envelope-open
                 class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
@@ -338,7 +370,6 @@ use Atelier\Design;
         <p class="text-[0.62rem] uppercase tracking-[0.28em]" style="color: var(--d-accent);">
           <?= $locale === 'de' ? 'Tippen zum Öffnen' : 'Tap to open' ?>
         </p>
-      <?php endif; ?>
       </div>
   </div>
 

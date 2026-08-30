@@ -92,6 +92,27 @@
       // sehen (im Stylesheet auf display:none) – dann auch nicht warten.
       var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+      /*
+       * Lief der Vorspann wirklich?
+       *
+       * Nicht "gibt es einen" und nicht "wurde play() gerufen" - lief er.
+       * Daran haengen zwei Entscheidungen weiter unten, und beide waren
+       * bisher falsch, weil die Frage gar nicht gestellt wurde:
+       *
+       *   1. Ob der Filmkasten sichtbar wird. Er liegt jetzt auf Deckkraft 0
+       *      im Markup (design-stage.php). Ein <video> ohne autoplay zeichnet
+       *      auf iOS sein erstes Bild nicht, und ein deckender Kasten davor
+       *      war deshalb eine weisse Flaeche ueber dem Kuvert. Gemeldet:
+       *      "davetiyeye girince bembeyaz bir goeruentue geliyor".
+       *   2. Ob das gezeichnete Kuvert aufklappt. Lief der echte Film, waere
+       *      das ein zweites Kuvert nach dem ersten. Lief er nicht, ist es
+       *      das einzige, das es je gab - und muss aufklappen.
+       *
+       * var und nicht let: die Datei ist durchgehend ES5, und der Wert wird
+       * weiter unten ausserhalb dieses Blocks gelesen.
+       */
+      var filmLief = false;
+
       // Der Vorspann laeuft nur, wenn Bewegung erwuenscht ist. Wer sie
       // abbestellt hat, bekommt sofort die Karte.
       if (introFilm && !still) {
@@ -155,6 +176,27 @@
         introFilm.addEventListener("error", schliessen, { once: true });
         setTimeout(schliessen, deckel);
 
+        /*
+         * Sichtbar wird der Film erst, wenn er laeuft - und "playing" ist
+         * das einzige Ereignis, das genau das sagt. "loadeddata" hiesse
+         * "es liegen Daten vor", "canplay" hiesse "es koennte losgehen";
+         * beide feuern auch dort, wo dann doch nichts zu sehen ist.
+         *
+         * Die Ueberblendung steht im Markup (transition auf opacity), damit
+         * das Ein- und das Ausblenden dieselbe Zeit brauchen und nicht zwei
+         * Zahlen an zwei Orten gepflegt werden muessen.
+         *
+         * pointerEvents mit: solange der Kasten durchsichtig ist, gehoert
+         * der Finger dem Kuvert darunter - dort sitzt der Knopf mit
+         * aria-label, und ein Tippen auf eine unsichtbare Flaeche waere fuer
+         * einen Vorleser nichts.
+         */
+        introFilm.addEventListener("playing", function () {
+          filmLief = true;
+          introBox.style.opacity = "1";
+          introBox.style.pointerEvents = "auto";
+        }, { once: true });
+
         introFilm.play().catch(schliessen);
 
         // Die Karte kommt, wenn der Vorspann durch ist - und "durch" ist genau
@@ -176,7 +218,25 @@
       // Ab hier laeuft alles wie bisher, nur um die Szene versetzt.
       envelope.style.pointerEvents = "none";
       setTimeout(function () {
-        envelope.setAttribute("data-open", "true");
+        /*
+         * Aufklappen - oder stumm verschwinden.
+         *
+         * Lief der echte Film, hat der Gast bereits ein Kuvert aufgehen
+         * sehen. Das gezeichnete danach noch einmal aufklappen zu lassen
+         * waere ein zweites, das niemand angefasst hat - genau der Fehler,
+         * der am 18. August abgeschafft wurde, als das Kuvert bei einem Film
+         * gar nicht mehr gedruckt wurde.
+         *
+         * Es wird jetzt wieder gedruckt, weil es die einzige Aufforderung
+         * ist, die auch dann dasteht, wenn der Film nichts zeigt. Die alte
+         * Absicht bleibt aber gueltig, und sie steht hier - an der Stelle,
+         * an der bekannt ist, ob der Film wirklich lief.
+         */
+        if (filmLief) {
+          envelope.style.display = "none";
+        } else {
+          envelope.setAttribute("data-open", "true");
+        }
         // Der Film ist durch, die Karte kommt - ab hier darf gewischt werden.
         scrollSperre(false);
       }, introMs);
