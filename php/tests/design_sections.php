@@ -406,7 +406,13 @@ assert_contains($ohneForm, 'Familie Weber', 'html: die vier Anzeige-Abschnitte b
  * ueberschreiben.
  */
 
-assert_same(12, count(DesignSections::TYPES), 'TYPES: zwoelf Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie, Speisekarte, Kleiderordnung');
+assert_same(13, count(DesignSections::TYPES),
+    'TYPES: dreizehn Arten - sechs alte, dann Schluss, Geschenk, Musik, Galerie, '
+    . 'Speisekarte, Kleiderordnung und das Datum');
+
+// Angehaengt und nicht einsortiert: die Reihenfolge steht in Tests, und ein
+// Einschub verschoebe alles dahinter.
+assert_same('date', DesignSections::TYPES[12], 'TYPES: das Datum steht am Ende');
 assert_true(in_array('text', DesignSections::TYPES, true), 'TYPES: text steht im Katalog');
 
 // Der Zugriffsweg, einmal geprueft: fehlt irgendetwas davon, ist der Text leer

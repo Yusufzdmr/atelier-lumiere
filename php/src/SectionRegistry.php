@@ -170,6 +170,12 @@ final class SectionRegistry
                         'en' => 'Venue name, address, small map, route',
                         'tr' => 'Salon adı, adres, küçük harita, yol tarifi'],
         ],
+        'date' => [
+            'label' => ['de' => 'Datum', 'en' => 'Date', 'tr' => 'Tarih'],
+            'hint'  => ['de' => 'Der Tag selbst — gross gesetzt statt in einer Zeile',
+                        'en' => 'The day itself — set large instead of in one line',
+                        'tr' => 'Günün kendisi — satır içinde değil, büyük'],
+        ],
         'countdown' => [
             'label' => ['de' => 'Countdown', 'en' => 'Countdown', 'tr' => 'Geri sayım'],
             'hint'  => ['de' => 'Zählt bis zum Datum der Feier',
@@ -288,13 +294,62 @@ final class SectionRegistry
                  * leer, und dann steht der Ort besser allein da. Ohne
                  * Adresse - nur mit Saalnamen - erscheint es ohnehin nicht.
                  */
+                /*
+                 * "eigen" ist neu: "Kendi haritali resmimi ekleyebilmeliyim.
+                 * Gercek haritayi optional cikarabilmeliyim kendi harita
+                 * resmimi yuklemek icin."
+                 *
+                 * Eine gezeichnete Karte ist auf einer Einladung oft die
+                 * bessere: sie zeigt drei Strassen und den Saal, statt einen
+                 * Kartendienst nachzumalen. "aus" gab es schon und bleibt -
+                 * es ist die Antwort fuer eine Adresse, die niemand kennt.
+                 */
                 'karte' => [
                     'type'    => 'select',
-                    'options' => ['blatt', 'rechteck', 'aus'],
+                    'options' => ['blatt', 'rechteck', 'eigen', 'aus'],
                     'default' => 'blatt',
                     'label'   => ['de' => 'Kleine Karte', 'tr' => 'Küçük harita'],
                 ],
+                // Die eigene Zeichnung dazu. Sie ersetzt das gerechnete
+                // Kartenbild vollstaendig - der Weg zur Route bleibt, er
+                // haengt an der Adresse und nicht am Bild.
+                'mapSrc' => [
+                    'type'    => 'src',
+                    'kind'    => 'bild',
+                    'default' => '',
+                    'label'   => ['de' => 'Eigenes Kartenbild (für "eigen")',
+                                  'tr' => 'Kendi harita resmin ("eigen" için)'],
+                ],
             ],
+        ],
+        /*
+         * Der Tag, gross gesetzt.
+         *
+         * "TARIH / 08 / AGUSTOS / 2026 — burada 08 cok buyuk olabilir,
+         * digerleri ise daha kucuk ve zarif." Bis hierher gab es das Datum
+         * nur als Zeile unter dem Countdown und als Zeile auf der Karte -
+         * beide Male klein und beide Male in einem anderen Abschnitt.
+         *
+         * Eine eigene Art und keine Gestalt des Countdowns: der Countdown
+         * zaehlt und verschwindet nach der Feier (hatInhalt), das Datum
+         * steht. Zwei Aufgaben, zwei Arten.
+         */
+        'date' => [
+            'variants' => [
+                // Wochentag und ausgeschriebenes Datum, wie es die Karte
+                // seit jeher druckt.
+                'default' => ['de' => 'Ausgeschrieben', 'tr' => 'Yazıyla'],
+                /*
+                 * Die grosse Zahl. Genau die Anordnung aus der Anfrage: der
+                 * Tag traegt die Rolle "grosse Zahl", Monat und Jahr die
+                 * Rolle "kleiner Hinweis".
+                 */
+                'gross'   => ['de' => 'Grosse Zahl', 'tr' => 'Büyük rakam'],
+                // Eine Zeile mit Haarstrichen links und rechts - fuer
+                // Vorlagen, die das Datum nicht zum Denkmal machen wollen.
+                'zeile'   => ['de' => 'Eine Zeile mit Strichen', 'tr' => 'Çizgili tek satır'],
+            ],
+            'settings' => [],
         ],
         'countdown' => [
             'variants' => [
@@ -316,6 +371,16 @@ final class SectionRegistry
                  * Gestalt bleibt als eigene Variante stehen - der Grafiker
                  * waehlt, statt dass die Vorlage entscheidet.
                  */
+                /*
+                 * "10 GUN — altinda: 23 SAAT · 31 DAKIKA · 54 SANIYE."
+                 *
+                 * Die Tage gross, der Rest als eine leise Zeile darunter.
+                 * Sie benutzt denselben Vertrag wie die Uhr (das Skript
+                 * fuellt vier Felder, sobald [data-countdown-hours] da ist)
+                 * und ordnet ihn nur anders an - kein zweiter Zaehler.
+                 */
+                'tage'    => ['de' => 'Grosse Tageszahl, Rest darunter',
+                              'tr' => 'Büyük gün sayısı, altında kalanı'],
                 'uhr'     => ['de' => 'Tage · Stunden · Minuten · Sekunden',
                               'tr' => 'Gün · saat · dakika · saniye'],
             ],
@@ -338,6 +403,10 @@ final class SectionRegistry
                 // ist der Fall, in dem er sich lohnt: ein Ablauf mit acht
                 // Zeilen liest sich als Strahl besser denn als Tabelle.
                 'zeitstrahl' => ['de' => 'Zeitstrahl', 'tr' => 'Zaman çizgisi'],
+                // "Ayri kucuk kartlar." Jede Station steht fuer sich, mit
+                // ihrem Zeichen darueber - auf dem Telefon untereinander,
+                // auf dem Schreibtisch nebeneinander.
+                'karten'     => ['de' => 'Einzelne Kärtchen', 'tr' => 'Ayrı küçük kartlar'],
             ],
             'settings' => [],
         ],
@@ -392,6 +461,11 @@ final class SectionRegistry
         'dresscode' => [
             'variants' => [
                 'default' => ['de' => 'Ansage über Hinweis', 'tr' => 'Kural, altında açıklama'],
+                // Frauen links, Maenner rechts. Auf dem Telefon
+                // untereinander - zwei Spalten auf 320 px waeren zwei
+                // Spalten mit je zwei Woertern pro Zeile.
+                'paar'    => ['de' => 'Damen und Herren nebeneinander',
+                              'tr' => 'Kadın ve erkek yan yana'],
             ],
             'settings' => [],
             'inputs' => [
@@ -399,6 +473,29 @@ final class SectionRegistry
                     'label' => ['de' => 'Kleiderordnung', 'en' => 'Dress code', 'tr' => 'Kıyafet kuralı']],
                 'note' => ['type' => 'textarea', 'max' => 300,
                     'label' => ['de' => 'Hinweis dazu', 'en' => 'A note about it', 'tr' => 'Açıklama']],
+                // "Kadin / Erkek" - zwei eigene Zeilen und keine zweite
+                // Bedeutung des Hinweises: was Damen tragen, ist eine andere
+                // Auskunft als was Herren tragen, und in einem Absatz
+                // zusammengeschrieben liest sie niemand zu Ende.
+                'women' => ['type' => 'text', 'max' => 160,
+                    'label' => ['de' => 'Für Damen', 'en' => 'For women', 'tr' => 'Kadın']],
+                'men' => ['type' => 'text', 'max' => 160,
+                    'label' => ['de' => 'Für Herren', 'en' => 'For men', 'tr' => 'Erkek']],
+                /*
+                 * Die Farbpalette.
+                 *
+                 * "Admin veya musteri renkleri secebilmeli ve davetiyede
+                 * bunlar sik renk daireleri olarak gosterilebilmeli."
+                 *
+                 * Ein Textfeld mit Farben, durch Komma getrennt, und kein
+                 * Feld je Farbe: wie viele es sind, weiss nur das Paar - drei
+                 * feste Felder waeren bei zwei Farben zwei leere und bei
+                 * fuenf zu wenige. Jede geht beim Drucken durch
+                 * Design::safeColor; was keine Farbe ist, faellt weg.
+                 */
+                'colors' => ['type' => 'text', 'max' => 200,
+                    'label' => ['de' => 'Farben (mit Komma)', 'en' => 'Colours (comma separated)',
+                                'tr' => 'Renkler (virgülle)']],
             ],
         ],
 
@@ -790,6 +887,9 @@ final class SectionRegistry
             // Karte, und das soll seine Entscheidung sein und kein Zufall.
             'location'  => ['venue', 'address'],
             'countdown' => ['date'],
+            // Dieselbe Angabe wie der Countdown, andere Aufgabe: der eine
+            // zaehlt darauf zu, der andere zeigt sie.
+            'date'      => ['date'],
             default     => [],
         };
     }

@@ -1872,6 +1872,141 @@ dress code için yeni görünümler, renk paleti, kendi harita resmin. Artık Pa
 A'nın rolleri ve Paket B'nin çerçeveleri var, yani her yeni varyant kendi
 ölçülerini uydurmak yerine bu kelimelerle yazılacak.
 
+## 31 Ağustos — Paket C: tarih modülü ve dört yeni görünüm
+
+İstek "daha çok seçenek" değildi: *"her bölüm farklı bir görsel yapıya sahip
+olmalı — davetiye scroll edildiğinde her şey aynı görünmemeli."* Yukarıdan
+aşağı aynı ortalanmış metin sütunu olan bir davetiye, papeterie gibi değil web
+sitesi gibi okunuyor.
+
+Dördü de Paket A'nın rollerini kullanıyor. **Hiçbirinde sabit ölçü yok** —
+yoksa her yeni görünüm, grafikerin çeviremediği bir knob daha olurdu.
+
+### 1 · Tarih — on üçüncü tür
+
+Şimdiye kadar tarih yalnızca bir satırdı: küçük, ya countdown'un altında ya
+kartın üstünde. Basılı papeteride neredeyse her zaman sayfadaki en büyük şey
+olan bir bilginin kendi görünümü yoktu.
+
+Üç görünüm: **Yazıyla** (gün adı + uzun tarih), **Büyük rakam** (isteğin
+kendisi: gün büyük, ay ve yıl küçük), **Çizgili tek satır**.
+
+**Countdown'un bir görünümü değil, ayrı bir tür — ve fark zevk değil:**
+countdown sayar ve düğünden sonra kaybolur, tarih durur. Davetiyeyi bir yıl
+sonra açan kişi ne zaman olduğunu okumak ister. Test bunu tutuyor: geçmiş bir
+tarihte `date` duruyor, `countdown` gidiyor.
+
+"TARİH" kelimesi bölümün **başlığı**, dördüncü bir alan değil — kendi alanı
+olsa aynı satır için ikinci bir yer açılırdı.
+
+Gün ISO dizgisinden kesiliyor, zaman damgasıyla hesaplanmıyor: değer bir
+formdan geliyor ve zaman dilimi üzerinden dolaşmak 12'yi sunucu saatine göre
+11 yapar. Countdown betiğindeki aynı ihtiyat.
+
+Tarayıcıda: gün 54.4px (3.4rem = *büyük rakam* rolü), yıl 13.76px (0.86rem =
+*küçük açıklama* rolü).
+
+### 2 · Countdown — büyük gün sayısı
+
+Ayhan'ın örneği birebir: **377** büyük, altında **TAGE**, altında
+**17 STUNDEN · 02 MINUTEN · 02 SEKUNDEN**.
+
+**İkinci bir sayaç değil**: betik, kutuda `[data-countdown-hours]` görür görmez
+saniye moduna geçiyor ve dört alanı da dolduruyor. Bu görünümün değiştirdiği
+tek şey dizilim. Aradaki `·` işaretleri stilden geliyor, markup'tan değil —
+metin düğümü olsalardı ekran okuyucu onları okurdu ve hiçbir tasarım
+kapatamazdı.
+
+Tarayıcıda bir kusur görüp düzelttim: rakamın satır yüksekliği 1 (bu *büyük
+rakam* rolünün parçası) olduğu için "TAGE" rakamların alt uzantılarına
+yapışıyordu. 0.5rem boşluk eklendi — tahmin değil, ekranda ölçüldü.
+
+### 3 · Dress code — kadın, erkek, renk paleti
+
+Yeni alanlar: **Kadın**, **Erkek**, **Renkler**. Ve yeni bir görünüm:
+*yan yana* (dar ekranda alt alta — 320px'te iki sütun, her satırda iki
+kelimelik iki sütun demektir).
+
+Kadın ve erkek ayrı satırlar, açıklamanın ikinci anlamı değil: kadınların ne
+giydiği ile erkeklerin ne giydiği iki farklı bilgi, ve tek paragrafta
+birleştirilince kimse sonuna kadar okumuyor.
+
+**Renk paleti** virgülle ayrılmış bir alan, renk başına bir alan değil: kaç
+tane olacağını yalnız çift bilir — üç sabit alan, iki renkte iki boş, beş
+renkte yetersiz olurdu. Her değer `Design::safeColor`'dan geçiyor; renk
+olmayan düşüyor. Bu formalite değil: değer sonunda bir `style` niteliğine
+giriyor, ve kontrolsüz CSS'e dönüşen bir metin alanı, her davetiyeye yabancı
+CSS yazılabilecek tek yer olurdu.
+
+**Sadece hex.** Bu, ayıraçtan çıkan bir sonuç: `rgba(12, 34, 56, .5)` kendi
+içinde virgül taşıyor ve virgüllü bir liste onu ortadan keserdi. İkinci bir
+ayıraç getirmek daha kötü olurdu — grafiker burada hangisinin, yandaki alanda
+hangisinin geçtiğini ezberlemek zorunda kalırdı.
+
+Daireler değeri `title` olarak taşıyor: rengi satın alacak kişinin sayıya
+ihtiyacı var, bir renge bakarak kodunu yazamaz.
+
+Palet **tek başına bölümü taşıyor** — yoksa sadece renk göstermek isteyen bir
+tasarım davetiyede hiç görünmezdi.
+
+### 4 · Konum — kendi harita resmin
+
+`karte` seçeneğine **eigen** eklendi, yanına `mapSrc` dosya alanı. Hesaplanan
+harita görselini tamamen değiştiriyor — slug sorusu dahil: yüklenen bir çizim
+vitrinde ve sihirbazda da var, oysa orada davetiye henüz yok ve hesaplanan
+görsel boş kalıyordu. Haritasını ayarlayan grafiker onu hemen görmek ister.
+
+**Yol tarifi bağlantısı kalıyor**: o adrese bağlı, resme değil.
+
+Dosya yoksa görsel de yok (`aus`'a düşüyor). Haritanın durması gereken yerde
+boş bir çerçeve, hiç harita olmamasından kötüdür — ve "eigen"e geçtikten hemen
+sonraki hâl tam olarak budur.
+
+`gerçek haritayı optional çıkarabilme` zaten vardı: `aus`.
+
+### 5 · Program — ayrı küçük kartlar
+
+Her istasyon kendi kutusunda. Bu, olmayan bir düğüm gerektiriyordu: `dt` ve
+`dd` kardeş, ve CSS iki kardeşi tek bir kutuya toplayamıyor. `<dl>` ile
+çiftler arasına bir `<div>` **geçerli HTML** — spesifikasyon tam da böyle
+gruplar için buna izin veriyor. Liste liste kalıyor, ekran okuyucu hâlâ "saat
+— ne oluyor" okuyor.
+
+Yalnız bu görünümde: diğer ikisi `dt`/`dd`'yi ızgaranın doğrudan çocukları
+olarak hesaplıyor.
+
+`auto-fit`, sabit sütun değil: üç istasyon üçlü ızgaraya zorlanmamalı, ve
+telefonda her biri kendi satırına iniyor.
+
+### Tarayıcıda ölçülen (430×900)
+
+| Ne | Sonuç |
+|---|---|
+| Tarih | 12 / September / 2027 — 54.4px / 13.76px |
+| Countdown | 377 büyük, "17 STUNDEN · 02 MINUTEN · 02 SEKUNDEN" |
+| Program | 4 kart, 1px çerçeve, 2×2 ızgara |
+| Dress code | 4 renk dairesi, ilki `rgb(232,216,195)` = `#E8D8C3` |
+| Yatay kaydırma çubuğu | **yok** |
+
+### Test
+
+`php bin/test.php` → **2214 kontrol** (öncesi 2108). Yeni dosya
+`tests/module_c.php` (59).
+
+### Yusuf'un gözle bakması gereken
+
+Panelde **+ Bölüm ekle** → kartlarda artık **Tarih** de var. Ekledikten sonra
+"görünüm" listesinde üç seçenek. Countdown'da **Büyük gün sayısı, altında
+kalanı**, programda **Ayrı küçük kartlar**, dress code'da **Kadın ve erkek yan
+yana** ve altında dört yeni alan.
+
+### Sıradaki: Paket D
+
+Fotoğrafların sunumu — polaroid / gold frame / kâğıt fotoğraf / oval / yuvarlak
+/ çerçevesiz / özel PNG frame, ve gift'in yanına mini galeri. Paket B'nin
+çerçeve motoru burada da işe yarayacak: fotoğraf çerçevesi ile bölüm çerçevesi
+aynı soruya iki cevap.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

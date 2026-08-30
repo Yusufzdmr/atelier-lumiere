@@ -43,6 +43,9 @@ final class DesignSections
         'menu',
         // Und die zwoelfte: was man anzieht.
         'dresscode',
+        // Die dreizehnte: der Tag selbst, gross gesetzt. Angehaengt und
+        // nicht einsortiert - die Reihenfolge steht in Tests.
+        'date',
     ];
 
     /**
@@ -335,6 +338,15 @@ final class DesignSections
             // Ein vergangener Termin bekommt keinen Countdown; der Tag selbst
             // zaehlt noch, es wird ja bis zum Morgen gefeiert.
             'countdown' => $datum !== '' && $datum >= $heute,
+            /*
+             * Das Datum dagegen bleibt stehen, auch danach.
+             *
+             * Es ist keine Zugabe, sondern eine Auskunft: wer die Einladung
+             * ein Jahr spaeter noch einmal oeffnet, will lesen, wann es war.
+             * Genau darin unterscheidet es sich vom Countdown, der ohne
+             * Zukunft nichts mehr zu sagen hat.
+             */
+            'date'      => $datum !== '',
             'family'    => trim((string) ($familien['bride'] ?? '')) !== ''
                         || trim((string) ($familien['groom'] ?? '')) !== '',
             'program'   => self::programRows($data) !== [],
@@ -384,9 +396,14 @@ final class DesignSections
             // Ein einziger Gang genuegt. Keiner heisst: eine Ueberschrift
             // ueber einer leeren Karte.
             'menu'      => self::speisekarteGefuellt($abschnitt, $data),
-            // Ansage oder Hinweis - eines genuegt.
+            // Ansage, Hinweis, eine der beiden Zeilen oder die Palette -
+            // eines genuegt. Ohne die letzten drei stuende eine Vorlage, die
+            // nur Farben zeigt, ueberhaupt nicht auf der Einladung.
             'dresscode' => trim(self::inhalt($abschnitt, $data, 'code')) !== ''
-                        || trim(self::inhalt($abschnitt, $data, 'note')) !== '',
+                        || trim(self::inhalt($abschnitt, $data, 'note')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'women')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'men')) !== ''
+                        || trim(self::inhalt($abschnitt, $data, 'colors')) !== '',
             default     => false,
         };
     }
@@ -1039,6 +1056,25 @@ final class DesignSections
              */
             . $scope . ' .d-sec-dresscode .d-dress-code{display:flex;align-items:center;'
               . 'justify-content:center;gap:0.6rem;font-size:1.15em;letter-spacing:0.06em;}'
+            /*
+             * Die Farbpalette - in JEDER Gestalt und deshalb hier.
+             *
+             * Kreise und keine Quadrate: eine Farbprobe auf Papeterie ist
+             * rund, und ein Quadrat liest sich wie ein Schalter. Der duenne
+             * Rand traegt die Schriftfarbe mit wenig Deckkraft - ohne ihn
+             * verschwindet ein cremefarbener Kreis auf cremefarbenem Papier
+             * vollstaendig, und genau solche Toene stehen auf einer
+             * Hochzeitseinladung.
+             */
+            . $scope . ' .d-sec-dresscode .d-dress-farben{display:flex;flex-wrap:wrap;'
+              . 'justify-content:center;gap:0.6rem;margin-top:1.2rem;}'
+            . $scope . ' .d-sec-dresscode .d-dress-kreis{display:block;'
+              . 'width:1.6rem;height:1.6rem;border-radius:9999px;'
+              . 'border:1px solid color-mix(in srgb, currentColor 22%, transparent);}'
+            // Damen und Herren stehen auch ohne die Gestalt "nebeneinander"
+            // da - dann untereinander, mit etwas Luft.
+            . $scope . ' .d-sec-dresscode .d-dress-paar{margin-top:1.1rem;}'
+            . $scope . ' .d-sec-dresscode .d-dress-paar p{margin-bottom:0.35rem;}'
             . $scope . ' .d-sec-dresscode .d-dress-note{margin-top:0.6rem;opacity:0.75;'
               . 'max-width:24rem;margin-inline:auto;}'
             /*
@@ -1357,6 +1393,105 @@ final class DesignSections
              * bleibt der Span leer, und dann traegt das gedruckte Datum den
              * Abschnitt allein - das muss auch in dieser Gestalt gelten.
              */
+            /*
+             * Der Tag, gross gesetzt.
+             *
+             * Die Groessen stehen NICHT hier, sondern in den Rollen: der Tag
+             * traegt "grosse Zahl", Monat und Jahr tragen "kleiner Hinweis"
+             * (Design::TYPO). Damit entscheidet die Vorlage, wie gross die
+             * 08 wird - und genau das war die Bitte.
+             */
+            'date/gross' => $sel . ' .d-datum-tag{'
+                . self::typoText('number', '3.4rem', '1')
+                . 'margin-bottom:var(--dt-number-below,0.6rem);}'
+                . $sel . ' .d-datum-monat{' . self::typoText('subtitle', '1.7rem', '1.2') . '}'
+                . $sel . ' .d-datum-jahr{' . self::typoText('small', '0.86rem') . 'opacity:0.75;}',
+
+            /*
+             * Eine Zeile mit Haarstrichen.
+             *
+             * Die Striche sind Stil und kein Text: ein Bindestrich im Markup
+             * wuerde vorgelesen und liesse sich von keiner Vorlage
+             * abschalten. Sie sitzen als Rand an den beiden aeusseren
+             * Feldern, also wachsen sie mit der Zeile mit.
+             */
+            'date/zeile' => $sel . ' .d-datum-zeile{display:flex;flex-wrap:wrap;'
+                . 'align-items:center;justify-content:center;gap:0.5rem 1.1rem;'
+                . self::typoText('subtitle', '1.7rem', '1.2') . '}'
+                . $sel . ' .d-datum-zeile span::before,'
+                . $sel . ' .d-datum-zeile span::after{content:"";display:none;}'
+                . $sel . ' .d-datum-zeile span:first-child::before,'
+                . $sel . ' .d-datum-zeile span:last-child::after{display:inline-block;'
+                . 'width:2.2rem;height:1px;vertical-align:middle;'
+                . 'background:var(--d-accent,currentColor);opacity:0.7;}'
+                . $sel . ' .d-datum-zeile span:first-child::before{margin-right:1.1rem;}'
+                . $sel . ' .d-datum-zeile span:last-child::after{margin-left:1.1rem;}',
+
+            // Ausgeschrieben: der Wochentag leise darueber, das Datum in der
+            // Zeile darunter.
+            'date/default' => $sel . ' .d-datum-wochentag{' . self::typoText('small', '0.86rem')
+                . 'opacity:0.75;}'
+                . $sel . ' .d-datum-lang{' . self::typoText('subtitle', '1.7rem', '1.2') . '}',
+
+            /*
+             * Die grosse Tageszahl, der Rest als leise Zeile darunter.
+             *
+             * Dieselbe Rolle wie die einzelne grosse Zahl - der Grafiker
+             * dreht an einem Knopf und nimmt beide Gestalten mit.
+             */
+            'countdown/tage' => $sel . ' .d-uhr-tage{display:block;}'
+                . $sel . ' .d-uhr-tage .d-sec-uhr-zahl{display:block;'
+                . self::typoText('number', '3.4rem', '1') . '}'
+                /*
+                 * Luft zwischen Zahl und Wort. Die Zahl steht auf
+                 * Zeilenhoehe 1 (das gehoert zur Rolle "grosse Zahl"), und
+                 * ohne diesen Abstand klebte "TAGE" an den Unterlaengen der
+                 * Ziffern - im Browser nachgesehen, nicht vermutet.
+                 */
+                . $sel . ' .d-uhr-tage .d-sec-uhr-wort{display:block;margin-top:0.5rem;'
+                . self::typoText('small', '0.86rem')
+                . 'text-transform:uppercase;letter-spacing:0.18em;opacity:0.8;}'
+                . $sel . ' .d-uhr-rest{display:flex;flex-wrap:wrap;'
+                . 'align-items:center;justify-content:center;gap:0.2rem 0.9rem;'
+                . 'margin-top:0.9rem;' . self::typoText('small', '0.86rem')
+                . 'text-transform:uppercase;letter-spacing:0.12em;opacity:0.7;}'
+                // Der Mittelpunkt steht im Stil und nicht im Markup: als
+                // Textknoten wuerde er vorgelesen.
+                . $sel . ' .d-uhr-teil + .d-uhr-teil::before{content:"·";'
+                . 'margin-right:0.9rem;opacity:0.6;}',
+
+            /*
+             * Einzelne Kaertchen.
+             *
+             * auto-fit statt fester Spalten: drei Stationen sollen nicht in
+             * ein Dreierraster gezwungen werden, und auf dem Telefon rutscht
+             * jede in ihre eigene Zeile, statt dass drei Kaesten auf 320 px
+             * zusammengedrueckt werden.
+             */
+            'program/karten' => $sel . ' .d-sec-plan{display:grid;'
+                . 'grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));'
+                . 'gap:1rem;justify-content:center;text-align:center;}'
+                . $sel . ' .d-plan-karte{display:flex;flex-direction:column;'
+                . 'align-items:center;gap:0.35rem;padding:1.4rem 1rem;'
+                . 'border:1px solid currentColor;}'
+                . $sel . ' .d-plan-karte dt{display:flex;flex-direction:column;'
+                . 'align-items:center;gap:0.5rem;margin:0;font-weight:400;}'
+                . $sel . ' .d-plan-karte dd{margin:0;}'
+                . $sel . ' .d-plan-karte .d-plan-zeit{'
+                . self::typoText('small', '0.86rem')
+                . 'letter-spacing:0.14em;opacity:0.75;}'
+                . $sel . ' .d-plan-karte .d-ikon{width:1.6em;height:1.6em;}',
+
+            /*
+             * Damen und Herren nebeneinander - und untereinander, sobald es
+             * eng wird. Zwei Spalten auf 320 px waeren zwei Spalten mit je
+             * zwei Woertern pro Zeile.
+             */
+            'dresscode/paar' => $sel . ' .d-dress-paar{display:grid;gap:0.8rem 2.4rem;'
+                . 'grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));'
+                . 'margin-top:1.1rem;}'
+                . $sel . ' .d-dress-paar p{margin:0;}',
+
             'countdown/gross' => $sel . ' .d-sec-days{'
                 . self::typoText('number', '3.4rem', '1')
                 . 'margin-top:var(--dt-number-above,0);'
@@ -1653,6 +1788,7 @@ final class DesignSections
             $out .= match ($typ) {
                 'location'  => self::ort($data, $locale, $abschnitt['settings']),
                 'countdown' => self::countdown($data, $locale, (string) $abschnitt['variant']),
+                'date'      => self::datum($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
                 'program'   => self::programm($data, $locale, (string) $abschnitt['variant']),
                 'rsvp'      => self::formular($form, $locale),
@@ -1795,6 +1931,35 @@ final class DesignSections
         }
 
         $form = (string) ($settings['karte'] ?? 'blatt');
+
+        /*
+         * Die eigene Zeichnung.
+         *
+         * "Kendi haritali resmimi ekleyebilmeliyim. Gercek haritayi optional
+         * cikarabilmeliyim kendi harita resmimi yuklemek icin."
+         *
+         * Sie ersetzt das gerechnete Bild vollstaendig - inklusive der Frage
+         * nach dem Slug: eine hochgeladene Zeichnung gibt es auch im
+         * Schaufenster und im Assistenten, wo es die Einladung noch gar nicht
+         * gibt. Genau dort war das gerechnete Bild bisher leer, und ein
+         * Grafiker, der seine Karte einstellt, will sie sofort sehen.
+         *
+         * Die Form bleibt eine eigene Frage: auch eine gezeichnete Karte darf
+         * im Blatt oder im Rechteck sitzen. "eigen" waehlt die QUELLE, nicht
+         * den Rahmen - deshalb faellt sie hier auf "blatt" zurueck.
+         */
+        if ($form === 'eigen') {
+            $eigen = Design::safeSrc((string) ($settings['mapSrc'] ?? ''));
+
+            // Ohne Datei kein Bild. Ein leerer Rahmen an der Stelle, an der
+            // eine Karte stehen sollte, ist schlimmer als gar keine.
+            if ($eigen === '') {
+                $form = 'aus';
+            } else {
+                $quelle = $eigen;
+                $form = 'blatt';
+            }
+        }
         if ($form !== 'aus' && $quelle !== '') {
             $out .= '<a class="d-sec-map-bild d-sec-map-' . e($form) . '"'
                 . ' rel="noopener noreferrer" target="_blank" href="' . e($route) . '">'
@@ -1834,6 +1999,59 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
+    /**
+     * Der Tag selbst - und zwar so gross, wie die Vorlage ihn haben will.
+     *
+     * "TARIH / 08 / AGUSTOS / 2026 - burada 08 cok buyuk olabilir, digerleri
+     * ise daha kucuk ve zarif." Bis hierher gab es das Datum nur als Zeile:
+     * klein, unter dem Countdown oder auf der Karte. Eine Angabe, die auf
+     * gedruckter Papeterie fast immer das Groesste auf dem Blatt ist, hatte
+     * hier keine eigene Gestalt.
+     *
+     * Die Rollen tun die Arbeit (Paket A): der Tag traegt "grosse Zahl",
+     * Monat und Jahr tragen "kleiner Hinweis". Wie gross das ausfaellt,
+     * entscheidet damit die Vorlage und nicht diese Funktion - hier steht
+     * nur, WAS wo hingehoert.
+     *
+     * Ohne Datum kein Abschnitt (hatInhalt), hier also keine Leerpruefung.
+     *
+     * @param array<string,mixed> $data
+     */
+    private static function datum(array $data, string $locale, string $variant = 'default'): string
+    {
+        $iso = trim((string) ($data['date'] ?? ''));
+
+        /*
+         * Aus dem ISO-Datum geschnitten und nicht mit date() gerechnet: der
+         * Wert ist eine Zeichenkette aus einem Formular, und ein
+         * Zeitstempel-Umweg wuerde aus "2027-09-12" je nach Zeitzone den
+         * elften machen. Dieselbe Vorsicht wie im Countdown-Skript.
+         */
+        $tag  = ltrim(substr($iso, 8, 2), '0');
+        $jahr = substr($iso, 0, 4);
+
+        if ($variant === 'gross') {
+            return '<p class="d-datum-tag">' . e($tag) . '</p>'
+                . '<p class="d-datum-monat">' . e(Dates::month($iso, $locale)) . '</p>'
+                . '<p class="d-datum-jahr">' . e($jahr) . '</p>';
+        }
+
+        if ($variant === 'zeile') {
+            // Die Striche sind Stil, nicht Text: ein Bindestrich im Markup
+            // wuerde vorgelesen und liesse sich nicht abschalten.
+            return '<p class="d-datum-zeile">'
+                . '<span>' . e($tag) . '</span>'
+                . '<span>' . e(Dates::month($iso, $locale)) . '</span>'
+                . '<span>' . e($jahr) . '</span>'
+                . '</p>';
+        }
+
+        // Ausgeschrieben, mit dem Wochentag darueber - dieselbe Auskunft,
+        // die die Karte seit jeher druckt.
+        return '<p class="d-datum-wochentag">' . e(Dates::weekday($iso, $locale)) . '</p>'
+            . '<p class="d-datum-lang">' . e(Dates::long($iso, $locale)) . '</p>';
+    }
+
     private static function countdown(array $data, string $locale, string $variant = 'default'): string
     {
         $datum = trim((string) ($data['date'] ?? ''));
@@ -1849,13 +2067,44 @@ final class DesignSections
          * und nicht bis Mitternacht davor. Fehlt sie, faengt der Tag um
          * Mitternacht an - dieselbe Annahme wie in Dates.
          */
-        if ($variant === 'uhr') {
-            $zeit = trim((string) ($data['time'] ?? ''));
-            $ziel = $datum . ($zeit !== '' ? 'T' . $zeit : 'T00:00');
+        $zeit = trim((string) ($data['time'] ?? ''));
+        $ziel = $datum . ($zeit !== '' ? 'T' . $zeit : 'T00:00');
 
-            $felder = $locale === 'de'
-                ? ['days' => 'Tage', 'hours' => 'Stunden', 'minutes' => 'Minuten', 'seconds' => 'Sekunden']
-                : ['days' => 'days', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds'];
+        $felder = $locale === 'de'
+            ? ['days' => 'Tage', 'hours' => 'Stunden', 'minutes' => 'Minuten', 'seconds' => 'Sekunden']
+            : ['days' => 'days', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds'];
+
+        /*
+         * Die Tage gross, der Rest als leise Zeile darunter.
+         *
+         * "10 GUN - altinda: 23 SAAT · 31 DAKIKA · 54 SANIYE."
+         *
+         * Derselbe Vertrag wie die Uhr und kein zweiter Zaehler: das Skript
+         * schaltet auf den Sekundentakt, sobald [data-countdown-hours] im
+         * Kasten steht, und fuellt dann alle vier Felder. Was diese Gestalt
+         * anders macht, ist allein die Anordnung.
+         *
+         * Die Punkte zwischen den drei kleinen Angaben stehen im Stilblock
+         * und nicht im Markup: ein Mittelpunkt als Textknoten wuerde
+         * vorgelesen und liesse sich von keiner Vorlage abschalten.
+         */
+        if ($variant === 'tage') {
+            $out = '<div class="d-sec-uhr d-uhr-tage" data-countdown="' . e($ziel) . '">'
+                . '<span class="d-sec-uhr-zahl" data-countdown-days>&nbsp;</span>'
+                . '<span class="d-sec-uhr-wort">' . e($felder['days']) . '</span>'
+                . '<span class="d-uhr-rest">';
+
+            foreach (['hours', 'minutes', 'seconds'] as $schluessel) {
+                $out .= '<span class="d-uhr-teil">'
+                    . '<span data-countdown-' . e($schluessel) . '>&nbsp;</span> '
+                    . e($felder[$schluessel])
+                    . '</span>';
+            }
+
+            return $out . '</span></div>';
+        }
+
+        if ($variant === 'uhr') {
 
             /*
              * Erst das Datum, dann die Felder.
@@ -1931,6 +2180,23 @@ final class DesignSections
          */
         $iv = $variant === 'zeitstrahl' ? ' class="iv"' : '';
 
+        /*
+         * "Ayri kucuk kartlar."
+         *
+         * Jede Station bekommt einen Kasten um sich. Das braucht einen
+         * Knoten, den es bisher nicht gab: dt und dd sind Geschwister, und
+         * CSS kann zwei Geschwister nicht zu einem Kaestchen zusammenfassen.
+         *
+         * Ein <div> zwischen <dl> und den Paaren ist gueltiges HTML - die
+         * Spezifikation erlaubt es ausdruecklich, um genau solche Gruppen zu
+         * bilden. Die Liste bleibt damit eine Liste, und ein Vorleser liest
+         * weiterhin "Uhrzeit - was passiert".
+         *
+         * Nur in dieser Gestalt: die anderen beiden rechnen mit dt und dd
+         * als direkten Kindern des Rasters.
+         */
+        $karten = $variant === 'karten';
+
         foreach (self::programRows($data) as $zeile) {
             // Eigener Titel gewinnt, sonst der Vorschlag des Zeichens.
             $titel = $zeile['title'] !== ''
@@ -1944,6 +2210,10 @@ final class DesignSections
              * Wahrheit - und der Zeitstrahl braucht das Zeichen dort, wo seine
              * Linie laeuft.
              */
+            if ($karten) {
+                $out .= '<div class="d-plan-karte">';
+            }
+
             $out .= '<dt' . $iv . '><span class="d-plan-zeit">' . e($zeile['time']) . '</span>';
 
             if ($zeile['icon'] !== '') {
@@ -1970,7 +2240,7 @@ final class DesignSections
                 $out .= '<span class="d-plan-text">' . e($zeile['text']) . '</span>';
             }
 
-            $out .= '</dd>';
+            $out .= '</dd>' . ($karten ? '</div>' : '');
         }
 
         return $out . '</dl>';
@@ -2378,7 +2648,73 @@ final class DesignSections
             $out .= '<p class="d-dress-note">' . e($hinweis) . '</p>';
         }
 
-        return $out;
+        /*
+         * Damen und Herren.
+         *
+         * Zwei eigene Zeilen und keine zweite Bedeutung des Hinweises: was
+         * Damen tragen, ist eine andere Auskunft als was Herren tragen, und
+         * in einem Absatz zusammengeschrieben liest sie niemand zu Ende.
+         *
+         * Der Kasten steht nur da, wenn wenigstens eine der beiden gefuellt
+         * ist - sonst waere die Gestalt "nebeneinander" ein leeres Raster.
+         */
+        $damen  = trim(self::inhalt($abschnitt, $data, 'women'));
+        $herren = trim(self::inhalt($abschnitt, $data, 'men'));
+
+        if ($damen !== '' || $herren !== '') {
+            $out .= '<div class="d-dress-paar">';
+            foreach (['women' => $damen, 'men' => $herren] as $wer => $wert) {
+                if ($wert === '') {
+                    continue;
+                }
+                $out .= '<p class="d-dress-' . e($wer) . '">' . e($wert) . '</p>';
+            }
+            $out .= '</div>';
+        }
+
+        /*
+         * Die Farbpalette.
+         *
+         * "Renkleri secebilmeli ve davetiyede bunlar sik renk daireleri
+         * olarak gosterilebilmeli."
+         *
+         * Jede Farbe geht durch Design::safeColor - was keine ist, faellt
+         * weg. Das ist kein Formalismus: der Wert steht am Ende in einem
+         * style-Attribut, und ein Textfeld, aus dem ungeprueft CSS wird,
+         * waere die eine Stelle, an der sich fremdes CSS in jede Einladung
+         * schreiben liesse.
+         *
+         * Die Kreise tragen ihren Wert als title: wer die Farbe nachkaufen
+         * will, braucht die Zahl, und eine Farbe allein laesst sich nicht
+         * abschreiben.
+         */
+        $roh = trim(self::inhalt($abschnitt, $data, 'colors'));
+        if ($roh === '') {
+            return $out;
+        }
+
+        /*
+         * Nur Hex-Werte, und das ist eine Folge des Trennzeichens: ein
+         * rgba(12, 34, 56, .5) traegt selbst Kommas, und eine Liste mit
+         * Komma zerschnitte es mitten hindurch. Ein zweites Trennzeichen
+         * einzufuehren waere schlimmer - der Grafiker muesste sich merken,
+         * welches hier gilt und welches nebenan.
+         *
+         * safeColor gibt bei allem Uebrigen "transparent" zurueck, nicht
+         * eine leere Zeichenkette; ein durchsichtiger Kreis waere ein Loch
+         * in der Palette, also faellt er hier weg.
+         */
+        $kreise = '';
+        foreach (array_slice(array_map('trim', explode(',', $roh)), 0, 8) as $farbe) {
+            $sicher = Design::safeColor($farbe);
+            if ($sicher === 'transparent' || !str_starts_with($sicher, '#')) {
+                continue;
+            }
+            $kreise .= '<span class="d-dress-kreis" style="background:' . e($sicher) . '"'
+                . ' title="' . e($sicher) . '"></span>';
+        }
+
+        return $kreise === '' ? $out : $out . '<div class="d-dress-farben">' . $kreise . '</div>';
     }
 
     private static function galerie(array $data, string $id): string
