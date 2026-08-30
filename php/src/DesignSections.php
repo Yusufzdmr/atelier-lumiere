@@ -326,9 +326,16 @@ final class DesignSections
             // nicht an einem festen Namen: ein Dokument kann mehrere
             // Textbloecke tragen, und zwei feste Namen waeren einer.
             'text'      => trim(self::inhalt($abschnitt, $data, 'text')) !== '',
-            // Der Schluss traegt zwei Dinge und braucht nur eines davon.
+            // Der Schluss traegt drei Dinge und braucht nur eines davon.
+            //
+            // Der Hinweis auf uns zaehlt mit, und das ist keine Kleinigkeit:
+            // zaehlte er nicht, erschiene er nur auf Einladungen, deren Paar
+            // ohnehin ein Schlusswort geschrieben hat - also selten und
+            // unvorhersehbar. Der Grafiker schaltet ihn in der Vorlage ein
+            // und darf dann erwarten, dass er dasteht.
             'footer'    => trim(self::inhalt($abschnitt, $data, 'text')) !== ''
-                        || trim(self::inhalt($abschnitt, $data, 'hashtag')) !== '',
+                        || trim(self::inhalt($abschnitt, $data, 'hashtag')) !== ''
+                        || (bool) ($abschnitt['settings']['credit'] ?? false),
             // Ohne Kontonummer bleibt der Wunsch, und der ist auch etwas.
             'gift'      => trim(self::inhalt($abschnitt, $data, 'text')) !== ''
                         || trim(self::inhalt($abschnitt, $data, 'iban')) !== '',
@@ -641,6 +648,21 @@ final class DesignSections
              * bei der Kontonummer eine Zeile weiter.
              */
             . $scope . ' .d-sec-hashtag{margin-top:1.2rem;letter-spacing:0.1em;font-size:0.9rem;}'
+            /*
+             * Der Hinweis auf uns. Leise, und mit Absicht leiser als alles
+             * andere: er steht auf der Einladung eines fremden Paares, und
+             * ein Absender, der lauter ist als das Brautpaar, wird beim
+             * naechsten Mal nicht wieder gebucht.
+             *
+             * Unterstrichen ist er nicht - Preflight nimmt den Strich
+             * ohnehin, und auf einer typografierten Einladung liest sich ein
+             * unterstrichener Link wie ein Fremdkoerper (dieselbe
+             * Ueberlegung wie beim Weg zur Route in ort()). Erkennbar wird
+             * er ueber die Akzentfarbe und die Sperrung.
+             */
+            . $scope . ' .d-sec-credit{margin-top:2.4rem;font-size:0.66rem;'
+                . 'letter-spacing:0.22em;text-transform:uppercase;opacity:0.62;}'
+            . $scope . ' .d-sec-credit a{color:inherit;text-decoration:none;}'
             /*
              * Die Kontonummer. tabular-nums, damit die Vierergruppen
              * untereinander stehen, wenn sie umbrechen; break-all, weil eine
@@ -1263,7 +1285,7 @@ final class DesignSections
                 'program'   => self::programm($data, $locale, (string) $abschnitt['variant']),
                 'rsvp'      => self::formular($form, $locale),
                 'text'      => self::freitext($abschnitt, $data),
-                'footer'    => self::schluss($abschnitt, $data),
+                'footer'    => self::schluss($abschnitt, $data, $locale),
                 'gift'      => self::geschenk($abschnitt, $data),
                 // Als einzige Art liest sie ihre Einstellung und nicht die
                 // Daten des Paares - der Klang gehoert der Vorlage.
@@ -1278,6 +1300,59 @@ final class DesignSections
         }
 
         return $out;
+    }
+
+    /**
+     * Wohin die Route fuehrt - und warum das nicht die Anschrift allein ist.
+     *
+     * Gemeldet vom Kunden: "adres secilirken dogru adres bulunuyor fakat
+     * navigasyona gecildiginde sadece sehir kullaniliyor." Auf dem
+     * Demoserver stand in der Einladung genau das:
+     *
+     *     venue   = Imza Event Center
+     *     address = Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland
+     *
+     * Keine Strasse - und das ist kein Speicherfehler. Das Verzeichnis kennt
+     * zu diesem Ort keine, und StaticMap::search nimmt den Namen aus der
+     * Anschrift heraus, weil er gleich daneben ins Feld "Saal" wandert. Was
+     * uebrig bleibt, ist eine Stadt, und eine Stadt ist kein Ziel.
+     *
+     * Der GENAUESTE Teil der Angabe ist damit der Saalname, und der stand
+     * bisher nicht im Ziel. Google findet "Imza Event Center, Thannhausen"
+     * auf Anhieb; "Thannhausen, Bayern, Deutschland" ist ein Ortsschild.
+     *
+     * Warum nicht Koordinaten: die Suche kennt sie (StaticMap::search gibt
+     * lat/lng zurueck), gespeichert wird aber nur der Text - wer die
+     * Anschrift von Hand tippt, hat gar keine. Ein Ziel, das nur nach der
+     * Suche funktioniert, waere schlechter als eines, das immer funktioniert.
+     *
+     * Eine eigene Stelle und keine zwei Verkettungen: dieselbe Zeichenkette
+     * steuert die Route UND das Kartenbild (InviteV2Controller::karte).
+     * Liefen sie auseinander, zeigte das Bild auf das Ortsschild und der
+     * Klick auf den Saal.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function routenZiel(array $data): string
+    {
+        $adresse = trim((string) ($data['address'] ?? ''));
+        $saal    = trim((string) ($data['venue'] ?? ''));
+
+        // Ohne Anschrift kein Ziel. Der Saalname allein ist zu wenig: "Bei
+        // Oma im Garten" schickt jeden Gast irgendwohin, und irgendwohin ist
+        // schlimmer als nirgendwohin (siehe ort(): dort faellt der Link weg).
+        if ($adresse === '') {
+            return '';
+        }
+
+        // Steht er schon vorn, kommt er nicht zweimal. Manche
+        // Verzeichniseintraege tragen ihn selbst, und ein verdoppelter Name
+        // findet nichts.
+        if ($saal === '' || str_starts_with(mb_strtolower($adresse), mb_strtolower($saal))) {
+            return $adresse;
+        }
+
+        return $saal . ', ' . $adresse;
     }
 
     /**
@@ -1306,7 +1381,11 @@ final class DesignSections
             return $out;
         }
 
-        $route = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($adresse);
+        // Der Saalname fuehrt das Ziel an - siehe routenZiel(), dort steht
+        // der gemessene Grund. Gedruckt bleiben die beiden Zeilen getrennt:
+        // das Ziel ist eine Adresse fuer Google, keine fuer den Leser.
+        $route = 'https://www.google.com/maps/dir/?api=1&destination='
+            . rawurlencode(self::routenZiel($data));
 
         /*
          * Das Kartenbild.
@@ -1720,7 +1799,7 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
-    private static function schluss(array $abschnitt, array $data): string
+    private static function schluss(array $abschnitt, array $data, string $locale = 'de'): string
     {
         $out = '';
 
@@ -1731,6 +1810,32 @@ final class DesignSections
         $zeichen = trim(self::inhalt($abschnitt, $data, 'hashtag'));
         if ($zeichen !== '') {
             $out .= '<p class="d-sec-hashtag">#' . e(ltrim($zeichen, '#')) . '</p>';
+        }
+
+        /*
+         * Der Weg zurueck zu uns - zuunterst, nach allem, was dem Paar
+         * gehoert.
+         *
+         * Relativ und nicht ausgeschrieben. Die Einladung wird von derselben
+         * Seite ausgeliefert, also fuehrt "/de/" dorthin, wo sie herkommt -
+         * und zwar auch dann noch, wenn die Domain wechselt. Sie steht laut
+         * DURUM.md noch nicht fest, und eine ausgeschriebene Adresse waere
+         * eine zweite Stelle, an die beim Wechsel jemand denken muesste.
+         *
+         * I18n::path und keine Verkettung: dieselbe Stelle, die auch das
+         * Kartenbild im Ort-Abschnitt sprachrichtig aufhaengt.
+         *
+         * Der Name des Hauses steht im Code und nicht in einem Feld. Er ist
+         * dasselbe wie in <title>, im Impressum und in der og:site_name; ihn
+         * hier eintippbar zu machen hiesse, eine fuenfte Quelle fuer einen
+         * Namen zu oeffnen, der ohnehin ueberall gleich sein muss.
+         */
+        if (($abschnitt['settings']['credit'] ?? false)) {
+            $out .= '<p class="d-sec-credit"><a href="' . e(I18n::path('/', $locale)) . '">'
+                . e($locale === 'de'
+                    ? 'Gestaltet mit Atelier Lumière'
+                    : 'Made with Atelier Lumière')
+                . '</a></p>';
         }
 
         return $out;

@@ -183,3 +183,86 @@ foreach ($gaenge as $schluessel => $feld) {
     assert_true(SectionRegistry::iconFile((string) ($feld['icon'] ?? '')) !== '',
         'menu: "' . $schluessel . '" traegt ein Zeichen, das es gibt');
 }
+
+/* --- Wie die Arten heissen --- */
+
+/*
+ * Bis hierher stand im Panel der rohe englische Schluessel: "gift",
+ * "footer", "dresscode". Der Kunde hat genau danach gefragt - "Gift ne
+ * oluyor", "Footer ney" -, und die zweite Frage kam, weil die erste
+ * beantwortet werden musste.
+ *
+ * Schlimmer als unschoen: er hat in "gift" ein Bild hochgeladen und
+ * gewartet. Das ist die Kontonummer-Art; Bilder gehoeren in "gallery". Ein
+ * Wort haette die halbe Stunde gespart.
+ *
+ * Die Kennung selbst bleibt englisch - sie steht in jedem Dokument und in
+ * jeder Einladung. Uebersetzt wird nur, was der Grafiker liest.
+ */
+
+foreach (DesignSections::TYPES as $art) {
+    foreach (['de', 'en', 'tr'] as $sprache) {
+        $etikett = SectionRegistry::typeLabel($art, $sprache);
+        assert_true($etikett !== '', 'typeLabel: ' . $art . ' hat einen Namen auf ' . $sprache);
+        assert_true($etikett !== $art,
+            'typeLabel: ' . $art . ' heisst auf ' . $sprache . ' nicht wieder "' . $art . '"');
+    }
+}
+
+// Die zwei, die der Kunde nicht verstanden hat - namentlich, damit sie
+// niemand versehentlich wieder zu "Sonstiges" macht.
+assert_same('Hediye & hesap', SectionRegistry::typeLabel('gift', 'tr'), 'typeLabel: gift ist die Kontonummer');
+assert_same('Fotoğraflar', SectionRegistry::typeLabel('gallery', 'tr'), 'typeLabel: gallery sind die Bilder');
+assert_same('Alt bilgi', SectionRegistry::typeLabel('footer', 'tr'), 'typeLabel: footer ist der Schluss');
+
+// Eine fremde Sprache faellt auf Deutsch, wie ueberall sonst im Katalog.
+assert_same(
+    SectionRegistry::typeLabel('gift', 'de'),
+    SectionRegistry::typeLabel('gift', 'fr'),
+    'typeLabel: eine unbekannte Sprache faellt auf Deutsch'
+);
+
+assert_same('', SectionRegistry::typeLabel('gibtesnicht', 'de'), 'typeLabel: unbekannte Art bleibt leer');
+
+/*
+ * Und der Halbsatz darunter. Er ist der eigentliche Dienst: der Name sagt,
+ * wie die Art heisst, der Hinweis sagt, was hineingehoert - und daran ist
+ * die Verwechslung entstanden.
+ */
+foreach (DesignSections::TYPES as $art) {
+    foreach (['de', 'en', 'tr'] as $sprache) {
+        assert_true(SectionRegistry::typeHint($art, $sprache) !== '',
+            'typeHint: ' . $art . ' sagt auf ' . $sprache . ', was hineingehoert');
+    }
+}
+
+// Die beiden, die einmal verwechselt wurden, sagen es ausdruecklich.
+assert_contains(SectionRegistry::typeHint('gift', 'tr'), 'resim', 'typeHint: gift warnt vor Bildern');
+assert_contains(SectionRegistry::typeHint('gallery', 'tr'), 'resimlerin', 'typeHint: gallery holt sie ab');
+
+/*
+ * Und das Panel benutzt die Namen auch.
+ *
+ * Die Funktion allein haette nichts geaendert: der Fehler war nicht, dass es
+ * keine Uebersetzung gab, sondern dass an drei Stellen die rohe Kennung
+ * gedruckt wurde. Zwei davon sind die Tafel (Kartenwahl und Auswahlliste),
+ * die dritte ist die Zeile in der Liste links.
+ *
+ * Geprueft wird die Vorlage als Text, wie bei der Buehne in
+ * kuvert_vorspann.php - eine gerenderte Panelseite braucht eine Anmeldung.
+ */
+$tafelnQuelle = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-tafeln.php');
+$listeQuelle  = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-liste.php');
+
+assert_same(2, substr_count($tafelnQuelle, 'SectionRegistry::typeLabel'),
+    'Tafel: beide Stellen - Kartenwahl und Auswahlliste - nennen die Art beim Namen');
+assert_contains($tafelnQuelle, 'SectionRegistry::typeHint',
+    'Tafel: und sagen darunter, was hineingehoert');
+assert_contains($listeQuelle, 'SectionRegistry::typeLabel',
+    'Liste: die Zeile links nennt die Art beim Namen');
+
+// Die KENNUNG bleibt der Wert des Feldes. Wuerde dort der Name stehen, kaeme
+// beim Speichern "Hediye & hesap" als Art an und faellt in complete() weg -
+// der Abschnitt waere still verschwunden.
+assert_contains($tafelnQuelle, 'value="<?= e($typ) ?>"',
+    'Tafel: gespeichert wird weiterhin die englische Kennung');

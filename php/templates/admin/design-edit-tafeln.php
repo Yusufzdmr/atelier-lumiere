@@ -79,9 +79,19 @@ foreach ($katalog as $art => $eintrag) {
           <span class="<?= $label ?>"><?= $tr ? 'ne göstersin?' : 'Was soll er zeigen?' ?></span>
           <div class="b-karten">
             <?php foreach ($katalog as $kArt => $kEintrag) : ?>
+              <?php /*
+                 Der Name der Art, und darunter, was hineingehoert.
+
+                 Hier stand die rohe Kennung und darunter der Name der
+                 Voreinstellungs-Gestalt. Beides half nicht: "gift" sagte
+                 nicht, dass es um eine Kontonummer geht, und "Sade"
+                 beschrieb eine Gestalt, die man erst waehlt, wenn man die
+                 Art schon verstanden hat. Der Hinweis beantwortet die Frage,
+                 die an dieser Stelle wirklich gestellt wird.
+              */ ?>
               <button type="button" class="b-karte" data-sec-art="<?= e((string) $kArt) ?>" data-fuer="<?= $i ?>">
-                <?= e((string) $kArt) ?>
-                <small><?= e((string) ($kEintrag['variants']['default'][$sprache] ?? '')) ?></small>
+                <?= e(SectionRegistry::typeLabel((string) $kArt, $sprache) ?: (string) $kArt) ?>
+                <small><?= e(SectionRegistry::typeHint((string) $kArt, $sprache)) ?></small>
               </button>
             <?php endforeach; ?>
           </div>
@@ -98,8 +108,12 @@ foreach ($katalog as $art => $eintrag) {
         <label class="<?= $label ?>"><?= $tr ? 'tür' : 'Art' ?>
           <select class="<?= $feld ?>" name="sec_type_<?= $i ?>" data-sec-art-feld="<?= $i ?>">
             <option value="" <?= $art === '' ? 'selected' : '' ?>><?= $tr ? '— yok —' : '— keine —' ?></option>
+            <?php /* Der WERT bleibt die Kennung - sie steht im Dokument und in
+                     jeder verschickten Einladung. Uebersetzt wird die Zeile,
+                     die der Grafiker liest. */ ?>
             <?php foreach (DesignSections::TYPES as $typ) : ?>
-              <option value="<?= e($typ) ?>" <?= $art === $typ ? 'selected' : '' ?>><?= e($typ) ?></option>
+              <option value="<?= e($typ) ?>" <?= $art === $typ ? 'selected' : '' ?>>
+                <?= e(SectionRegistry::typeLabel($typ, $sprache) ?: $typ) ?></option>
             <?php endforeach; ?>
           </select></label>
       </div>

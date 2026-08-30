@@ -148,3 +148,85 @@ assert_contains(
     '.d-sec-v-uhr .d-sec-uhr{',
     'uhr: die Variante bringt ihren Stil mit'
 );
+
+/* ------------------ 6. Das Ziel der Route ist der SAAL ------------------- */
+
+/*
+ * Gemeldet: "adres secilirken dogru adres bulunuyor fakat navigasyona
+ * gecildiginde sadece sehir kullaniliyor."
+ *
+ * Auf dem Demoserver nachgesehen, und dort stand es wortwoertlich so:
+ *
+ *     venue   = Imza Event Center
+ *     address = Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland
+ *
+ * Keine Strasse. Das ist kein Speicherfehler - das Verzeichnis kennt zu
+ * diesem Ort keine, und StaticMap::search nimmt den Namen aus der Anschrift
+ * heraus (er steht ja gleich daneben im Feld "Saal"). Uebrig bleibt die
+ * Stadt.
+ *
+ * Der Fehler war, die Route allein aus der ANSCHRIFT zu bauen. Der Saalname
+ * ist der genaueste Teil der Angabe, und Google findet "Imza Event Center,
+ * Thannhausen" ohne Weiteres - "Thannhausen, Bayern, Deutschland" ist
+ * dagegen ein Ortsschild.
+ *
+ * Gedruckt bleibt beides getrennt: der Saal gross, die Anschrift klein
+ * darunter. Zusammengesetzt wird nur das Ziel.
+ */
+
+$ziel = DesignSections::routenZiel([
+    'venue'   => 'Imza Event Center',
+    'address' => 'Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland',
+]);
+assert_same(
+    'Imza Event Center, Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland',
+    $ziel,
+    'ziel: der Saalname fuehrt die Anschrift an'
+);
+
+// Steht er schon vorn, kommt er nicht zweimal - manche Verzeichniseintraege
+// tragen ihn selbst, und "Villa Sonnenhof, Villa Sonnenhof, ..." findet
+// niemand.
+assert_same(
+    'Villa Sonnenhof, Seestrasse 4, 88131 Lindau',
+    DesignSections::routenZiel([
+        'venue'   => 'Villa Sonnenhof',
+        'address' => 'Villa Sonnenhof, Seestrasse 4, 88131 Lindau',
+    ]),
+    'ziel: ein schon vorangestellter Saalname wird nicht verdoppelt'
+);
+
+// Gross- und Kleinschreibung entscheidet das nicht.
+assert_same(
+    'imza event center, Thannhausen',
+    DesignSections::routenZiel(['venue' => 'Imza Event Center', 'address' => 'imza event center, Thannhausen']),
+    'ziel: der Vergleich sieht ueber die Schreibweise hinweg'
+);
+
+// Nur eines von beiden: dann ist dieses eine das Ziel.
+assert_same('Seestrasse 4, 88131 Lindau',
+    DesignSections::routenZiel(['address' => 'Seestrasse 4, 88131 Lindau']),
+    'ziel: ohne Saal traegt die Anschrift allein');
+assert_same('', DesignSections::routenZiel(['venue' => 'Villa Sonnenhof']),
+    'ziel: ohne Anschrift gibt es keine Route - der Saalname allein ist kein Ziel');
+assert_same('', DesignSections::routenZiel([]), 'ziel: ohne alles nichts');
+
+/* --- Und im Markup steht dasselbe --- */
+
+$route = DesignSections::html(
+    $doc,
+    ['venue' => 'Imza Event Center',
+     'address' => 'Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland',
+     'slug' => 'medine-ayhan'],
+    'de'
+);
+
+assert_contains($route, rawurlencode('Imza Event Center, Thannhausen'),
+    'ort: die Route zielt auf den Saal und nicht auf das Ortsschild');
+
+// Gedruckt bleiben die beiden Zeilen getrennt - das Ziel ist eine Adresse
+// fuer Google, keine fuer den Leser.
+assert_contains($route, '<p class="d-sec-venue">Imza Event Center</p>',
+    'ort: der Saalname steht weiterhin allein in seiner Zeile');
+assert_contains($route, '<p class="d-sec-address">Thannhausen',
+    'ort: und die Anschrift in ihrer');

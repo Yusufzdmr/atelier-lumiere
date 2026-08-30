@@ -89,7 +89,15 @@ $sprache  = $tr ? 'tr' : 'de';
         </label>
         <button type="button" class="b-greifer" data-sec-waehl>
           <?= e($name) ?>
-          <small><?= e($art) ?><?= $art !== '' ? ' · ' . e((string) $etikett) : '' ?></small>
+          <?php /*
+             Der Name der Art und nicht ihre Kennung. "gift · Sade" liest
+             sich wie ein Bilderformat mit einer Gestalt daneben; "Hediye &
+             hesap · Sade" sagt, was in der Zeile steht. Die Kennung bleibt
+             der Ersatz fuer den Fall, dass eine Art keinen Namen hat - dann
+             ist ein englisches Wort immer noch besser als ein leeres Feld.
+          */ ?>
+          <?php $artName = SectionRegistry::typeLabel($art, $sprache) ?: $art; ?>
+          <small><?= e($artName) ?><?= $art !== '' ? ' · ' . e((string) $etikett) : '' ?></small>
         </button>
         <button type="button" class="b-knopf" data-sec-hoch title="<?= $tr ? 'yukarı' : 'nach oben' ?>">↑</button>
         <button type="button" class="b-knopf" data-sec-runter title="<?= $tr ? 'aşağı' : 'nach unten' ?>">↓</button>

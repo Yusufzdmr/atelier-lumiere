@@ -1472,3 +1472,53 @@ assert_contains($einbJs, 'allowfullscreen', 'Skript: und der Rahmen darf gross')
 $tafeln = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-tafeln.php');
 assert_contains($tafeln, "=== 'einbettung'", 'Tafel: die Einbettung hat einen eigenen Zweig');
 assert_contains($tafeln, 'youtube.com/watch', 'Tafel: und sagt mit einem Beispiel, was hineingehoert');
+
+/* --- Der Schluss darf auf uns zurueckverweisen --- */
+
+/*
+ * "Footer ney" - "sitenin en alt tarafi" - "oraya sitenin reklamini
+ * yapabiliriz". Also ein Hinweis im Fuss der Einladung, der zurueck auf die
+ * Seite fuehrt, die sie gebaut hat.
+ *
+ * Ein Haken und kein Adressfeld: die Adresse ist immer unsere eigene. Ein
+ * freies URL-Feld in JEDER Einladung waere eine Weiterleitung, die jemand
+ * eines Tages irgendwohin zeigen laesst - und sie stuende auf einer Seite,
+ * der die Gaeste vertrauen.
+ *
+ * Relativ und nicht absolut: die Einladung wird von derselben Seite
+ * ausgeliefert. Eine ausgeschriebene Domain waere eine zweite Stelle, die
+ * beim Domainwechsel mitgezogen werden muesste - und die Domain steht laut
+ * DURUM.md noch nicht fest.
+ */
+$fussDoc = DesignSections::complete(sec_doc([
+    ['id' => 'schluss', 'type' => 'footer', 'settings' => ['credit' => true]],
+]));
+$fussHtml = DesignSections::html($fussDoc, [], 'de', '2026-01-01');
+
+assert_contains($fussHtml, 'd-sec-credit', 'Schluss: der Hinweis wird gedruckt');
+assert_contains($fussHtml, 'Atelier Lumière', 'Schluss: und nennt das Haus');
+// "/de" und nicht "/de/": das ist die Adresse, die auch Seo.php und
+// PageController als kanonische Startseite fuehren. Zwei Schreibweisen
+// fuer dieselbe Seite waeren zwei Adressen fuer Google.
+assert_contains($fussHtml, 'href="/de"', 'Schluss: der Weg zurueck geht auf unsere Seite');
+
+// Er allein traegt den Abschnitt. Sonst muesste das Paar ein Schlusswort
+// schreiben, damit unser Hinweis erscheint - und dann erschiene er nie.
+assert_contains($fussHtml, 'd-sec-footer', 'Schluss: der Hinweis allein genuegt fuer den Abschnitt');
+
+// Englische Einladung, englischer Weg zurueck.
+$fussEn = DesignSections::html($fussDoc, [], 'en', '2026-01-01');
+assert_contains($fussEn, 'href="/en"', 'Schluss: auf Englisch fuehrt er zur englischen Seite');
+
+// Und ohne Haken steht dort nichts - auch nicht auf einem Schluss mit Text.
+$ohneDoc = DesignSections::complete(sec_doc([
+    ['id' => 'schluss', 'type' => 'footer'],
+]));
+$ohneHtml = DesignSections::html($ohneDoc, ['sections' => ['schluss' => ['text' => 'Bis bald.']]], 'de', '2026-01-01');
+
+assert_contains($ohneHtml, 'Bis bald.', 'Schluss: der Text des Paares steht da');
+assert_true(!str_contains($ohneHtml, 'd-sec-credit'), 'Schluss: ohne Haken kein Hinweis');
+assert_true(
+    !str_contains(DesignSections::html($ohneDoc, [], 'de', '2026-01-01'), 'd-sec-footer'),
+    'Schluss: ohne Haken und ohne Wort weiterhin kein Abschnitt'
+);

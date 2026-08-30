@@ -1152,8 +1152,22 @@ final class InviteV2Controller
             exit;
         }
 
-        $adresse = trim((string) ($einladung['data']['address'] ?? ''));
-        $bild = $adresse === '' ? null : StaticMap::forAddress($adresse, 640, 480);
+        /*
+         * Dasselbe Ziel wie der Klick daneben.
+         *
+         * Bis hierher stand hier die Anschrift allein - und wo das
+         * Verzeichnis zum Saal keine Strasse kennt ("Imza Event Center" in
+         * Thannhausen), ist das die Stadt. Der Zeiger landete also mitten im
+         * Ort, waehrend der Klick darauf ab jetzt zum Saal fuehrt. Zwei
+         * Auskuenfte in einem Bild, das die eine ist und zur anderen
+         * verlinkt, sind eine zu viel.
+         *
+         * Findet der Geokoder das genauere Ziel nicht, faellt das Bild weg
+         * (404) und der Ort steht mit Namen, Anschrift und Route da - wie
+         * schon bisher bei einer unbekannten Adresse.
+         */
+        $ziel = DesignSections::routenZiel($einladung['data'] ?? []);
+        $bild = $ziel === '' ? null : StaticMap::forAddress($ziel, 640, 480);
 
         if ($bild === null) {
             http_response_code(404);

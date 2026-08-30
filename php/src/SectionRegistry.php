@@ -60,6 +60,110 @@ final class SectionRegistry
     ];
 
     /**
+     * Wie die Arten heissen - und wozu sie da sind.
+     *
+     * Die KENNUNG bleibt englisch und klein: sie steht im Dokument jeder
+     * Vorlage und in den Daten jeder verschickten Einladung, und sie zu
+     * uebersetzen hiesse, alte Einladungen unlesbar zu machen. Uebersetzt
+     * wird nur, was der Grafiker im Panel liest.
+     *
+     * Warum das eine eigene Liste ist und keine Zeile im Katalog: der
+     * Katalog beschreibt, was eine Art KANN (Varianten, Einstellungen,
+     * Eingaben). Wie sie heisst, ist Oberflaeche - und Oberflaeche gehoert
+     * an einen Ort, an dem man sie ohne Angst umformulieren kann.
+     *
+     * Der Anlass: das Panel druckte bisher den rohen Schluessel. Der Kunde
+     * fragte "Gift ne oluyor" und "Footer ney", lud dann ein Bild in "gift"
+     * hoch und wartete darauf, dass es erscheint. "gift" ist die Art mit der
+     * Kontonummer; Bilder gehoeren in "gallery". Ein Wort haette gereicht.
+     *
+     * Deshalb steht neben dem Namen ein Halbsatz. Er beantwortet nicht "wie
+     * heisst das", sondern "was kommt da hinein" - und genau daran ist die
+     * halbe Stunde verlorengegangen.
+     *
+     * @var array<string,array{label:array<string,string>,hint:array<string,string>}>
+     */
+    private const NAMEN = [
+        'location' => [
+            'label' => ['de' => 'Ort & Anfahrt', 'en' => 'Venue & route', 'tr' => 'Konum & yol'],
+            'hint'  => ['de' => 'Saalname, Adresse, kleine Karte, Route',
+                        'en' => 'Venue name, address, small map, route',
+                        'tr' => 'Salon adı, adres, küçük harita, yol tarifi'],
+        ],
+        'countdown' => [
+            'label' => ['de' => 'Countdown', 'en' => 'Countdown', 'tr' => 'Geri sayım'],
+            'hint'  => ['de' => 'Zählt bis zum Datum der Feier',
+                        'en' => 'Counts down to the date of the celebration',
+                        'tr' => 'Düğün tarihine kadar sayar'],
+        ],
+        'family' => [
+            'label' => ['de' => 'Familien', 'en' => 'Families', 'tr' => 'Aileler'],
+            'hint'  => ['de' => 'Die Namen der beiden Familien',
+                        'en' => 'The names of the two families',
+                        'tr' => 'İki ailenin adı'],
+        ],
+        'program' => [
+            'label' => ['de' => 'Ablauf des Tages', 'en' => 'The day', 'tr' => 'Günün programı'],
+            'hint'  => ['de' => 'Uhrzeit, Zeichen und was dann passiert',
+                        'en' => 'Time, icon and what happens then',
+                        'tr' => 'Saat, simge ve o saatte ne olduğu'],
+        ],
+        'rsvp' => [
+            'label' => ['de' => 'Rückmeldung', 'en' => 'RSVP', 'tr' => 'Katılım formu'],
+            'hint'  => ['de' => 'Das Formular, mit dem Gäste zu- oder absagen',
+                        'en' => 'The form guests answer with',
+                        'tr' => 'Davetlinin gelip gelmediğini yazdığı form'],
+        ],
+        'text' => [
+            'label' => ['de' => 'Freier Text', 'en' => 'Free text', 'tr' => 'Serbest metin'],
+            'hint'  => ['de' => 'Ein Absatz, den das Paar selbst schreibt',
+                        'en' => 'A paragraph the couple writes itself',
+                        'tr' => 'Çiftin kendi yazdığı bir paragraf'],
+        ],
+        'footer' => [
+            'label' => ['de' => 'Schluss', 'en' => 'Closing', 'tr' => 'Alt bilgi'],
+            'hint'  => ['de' => 'Ganz unten: Schlusswort, Hashtag, Hinweis auf uns',
+                        'en' => 'At the very bottom: closing words, hashtag, credit',
+                        'tr' => 'En altta: kapanış sözü, hashtag, bize yönlendirme'],
+        ],
+        /*
+         * "Geschenk" und nicht "gift": das englische Wort liest sich fuer
+         * einen tuerkischsprachigen Betrachter wie ein Bilderformat, und
+         * genau so wurde es benutzt.
+         */
+        'gift' => [
+            'label' => ['de' => 'Geschenk & Konto', 'en' => 'Gift & account', 'tr' => 'Hediye & hesap'],
+            'hint'  => ['de' => 'Wunsch und IBAN — KEINE Bilder',
+                        'en' => 'A wish and an IBAN — NO photos',
+                        'tr' => 'Dilek ve IBAN — resim BURAYA değil'],
+        ],
+        'music' => [
+            'label' => ['de' => 'Musik', 'en' => 'Music', 'tr' => 'Müzik'],
+            'hint'  => ['de' => 'Eigene Tondatei oder ein YouTube-Rahmen',
+                        'en' => 'Your own audio file or a YouTube frame',
+                        'tr' => 'Kendi ses dosyanız ya da YouTube çerçevesi'],
+        ],
+        'gallery' => [
+            'label' => ['de' => 'Fotos', 'en' => 'Photos', 'tr' => 'Fotoğraflar'],
+            'hint'  => ['de' => 'Bis zu acht Bilder des Paares — hierhin gehören sie',
+                        'en' => 'Up to eight photos of the couple — this is where they go',
+                        'tr' => 'Çiftin sekiz fotoğrafına kadar — resimlerin yeri burası'],
+        ],
+        'menu' => [
+            'label' => ['de' => 'Speisekarte', 'en' => 'Menu', 'tr' => 'Menü'],
+            'hint'  => ['de' => 'Was serviert wird, Gang für Gang',
+                        'en' => 'What is served, course by course',
+                        'tr' => 'Servis edilenler, sırayla'],
+        ],
+        'dresscode' => [
+            'label' => ['de' => 'Dresscode', 'en' => 'Dress code', 'tr' => 'Kıyafet'],
+            'hint'  => ['de' => 'Die Ansage und ein Hinweis dazu',
+                        'en' => 'The rule and a note about it',
+                        'tr' => 'Kural ve altındaki açıklama'],
+        ],
+    ];
+
+    /**
      * Der Katalog.
      *
      * Bewusst duenn besetzt: hier steht nur, was DesignSections auch wirklich
@@ -260,7 +364,33 @@ final class SectionRegistry
                 // Abschnitt darueber loesen, ohne laut zu werden.
                 'linie'   => ['de' => 'Mit Strich', 'tr' => 'Çizgili'],
             ],
-            'settings' => [],
+            'settings' => [
+                /*
+                 * Der Hinweis auf uns, ganz unten.
+                 *
+                 * "Footer sitenin en alt tarafidir … oraya sitenin
+                 * reklamini yapabiliriz." Eine Einladung liegt bei fuenfzig
+                 * bis dreihundert Menschen, und die meisten von ihnen
+                 * heiraten irgendwann selbst.
+                 *
+                 * Ein Haken und kein Adressfeld. Die Adresse ist immer
+                 * unsere eigene; ein freies URL-Feld waere eine
+                 * Weiterleitung in JEDER Einladung, die eines Tages jemand
+                 * irgendwohin zeigen laesst - auf einer Seite, der die
+                 * Gaeste vertrauen, weil das Brautpaar sie geschickt hat.
+                 *
+                 * Voreingestellt aus. Eine Einladung, die ungefragt fuer den
+                 * Hersteller wirbt, ist eine Entscheidung des Paares und
+                 * nicht des Werkzeugs - der Grafiker schaltet sie je Vorlage
+                 * ein.
+                 */
+                'credit' => [
+                    'type'    => 'bool',
+                    'default' => false,
+                    'label'   => ['de' => 'Hinweis auf Atelier Lumière',
+                                  'tr' => 'Altta Atelier Lumière yönlendirmesi'],
+                ],
+            ],
             'inputs' => [
                 'text' => [
                     'type'  => 'textarea',
@@ -696,6 +826,32 @@ final class SectionRegistry
         }
 
         return (string) ($eintrag['title'][$locale] ?? $eintrag['title']['de']);
+    }
+
+    /**
+     * Wie eine Art im Panel heisst.
+     *
+     * Eine fremde Sprache faellt auf Deutsch, wie ueberall sonst hier
+     * (iconTitle, I18n::raw). Eine unbekannte Art bleibt leer und nicht
+     * "unbekannt": der Aufrufer soll selbst entscheiden, was er dann
+     * hinschreibt - im Panel steht dort die Kennung, und die ist besser als
+     * ein Wort, das nichts sagt.
+     */
+    public static function typeLabel(string $type, string $locale): string
+    {
+        return (string) (self::NAMEN[$type]['label'][$locale]
+            ?? self::NAMEN[$type]['label']['de']
+            ?? '');
+    }
+
+    /**
+     * Der Halbsatz darunter: was in diese Art hineingehoert.
+     */
+    public static function typeHint(string $type, string $locale): string
+    {
+        return (string) (self::NAMEN[$type]['hint'][$locale]
+            ?? self::NAMEN[$type]['hint']['de']
+            ?? '');
     }
 
     public static function has(string $type): bool

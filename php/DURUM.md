@@ -1440,6 +1440,166 @@ davetiyenin kendi adresi, `twitter:card` = `summary_large_image`.
   önizlemesi ve PayPal dönüş adresleri yanlış host'a gidiyor olabilir.
   `config.php` tek satır.
 
+## 30 Ağustos — Paket 0: beyaz ekran, navigasyon, isimsiz bölümler
+
+Ayhan'ın WhatsApp listesi 12 maddelik büyük bir istek (modüler layout'lar,
+çerçeveler, tipografi kontrolü, PNG/video dekorasyon, spacing sistemi). O liste
+beş pakete bölündü; bu oturum **Paket 0**, yani yayında duran kırıklar.
+
+### 1 · Davetiye iPhone'da bembeyaz açılıyordu
+
+**Bildirilen:** "Davetiyeye girince bembeyaz bir görüntü geliyor. Tıklayınca
+oluşturulan davetiye ortaya çıkıyor, tıklamayınca bembeyaz."
+
+Sebep koddaydı, cihazda değil. `design-stage.php` filmi olan bir tasarımda
+`fixed inset-0 z-40` bir kutu basıyordu — içinde **autoplay'siz** bir `<video>`,
+arkasında `var(--d-bg)` — ve aynı anda çizili zarfı **hiç basmıyordu**
+(`$introFilm === ''` koşulu). İpucu satırı da aynı dalın içindeydi.
+
+Üç şey üst üste:
+
+| | |
+|---|---|
+| `<video>` autoplay'siz | iOS ilk kareyi **çizmez** |
+| Poster yok | Geriye düz renk kalır |
+| `--d-bg` = `#EFE7DC` (elysee) | O düz renk **beyaz** |
+
+Üstüne `invitation.js` açılışta `position:fixed` ile sayfayı kilitliyor, yani
+davetli kaydırıp altında bir şey olup olmadığına da bakamıyor. Görünen: boş
+beyaz ekran, sıfır ipucu.
+
+**Düzeltme — sıra ters çevrildi.** Çizili zarf ve "Tippen zum Öffnen" artık
+**her zaman** basılıyor. Film kutusu `opacity:0; pointer-events:none` doğuyor
+ve `invitation.js` onu ancak `playing` olayında görünür yapıyor. Böylece
+"film bir şey göstermiyorsa davetli zarfı görür" garantisi kodda duruyor,
+tarayıcının video çözebilmesine bağlı değil.
+
+**İki kuvert sorunu geri gelmedi** — 18 Ağustos'ta bu yüzden zarf kaldırılmıştı.
+Karar yer değiştirdi: zarf yine basılıyor, ama `filmLief` bayrağı sayesinde
+*film gerçekten çaldıysa* zarf açılmadan `display:none` oluyor. Karar artık
+filmin çalıp çalmadığının **bilindiği** yerde veriliyor.
+
+Yerelde Chrome'da 414×860'ta ölçüldü, `/de/v2/designs/film`:
+
+| Ne | Sonuç |
+|---|---|
+| Dokunmadan önce | Zarf + mühür + "TIPPEN ZUM ÖFFNEN" görünür (eskiden düz siyah) |
+| Film çözülmedi (`readyState 0`) | Kutu `opacity:0` kaldı, zarf `data-open=true` ile açıldı, kart geldi |
+| `playing` olayı gelince | Kutu anında `opacity:1`, `pointer-events:auto` |
+| Film bittikten sonra | Kutu `opacity:0`, zarf `display:none`, **`data-open` = null** — ikinci zarf yok |
+| Sonrasında | `body.style.position` boş → kaydırma serbest |
+
+Filmsiz tasarım (`elysee`) değişmedi: zarf, mühür, ipucu, aynı.
+
+> Not: otomasyon tarayıcısı hâlâ hiçbir videoyu çözmüyor (ACIK-ISLER 1. madde
+> ile aynı). `playing` olayı bu yüzden elle tetiklenerek ölçüldü — ölçülen şey
+> kodun bağlantısı, videonun çözülmesi değil.
+
+**Kalan bir pürüz (düzeltilmedi, bilerek):** `play()` reddedilirse `schliessen`
+kutuyu hemen kapatıyor ama zarf yine de `introMs` kadar (film süresi, ya da
+süre bilinmiyorsa 6 sn) bekliyor. Düşük ihtimal — dokunma sonrası `muted
+playsinline` play'i iOS'ta izinli — ve düzeltmek `reveal()`'ın zamanlama
+kurgusunu yeniden yazmayı gerektiriyor. Paket 0'ın kapsamı dışında bırakıldı.
+
+### 2 · Navigasyon sadece şehre gidiyordu
+
+**Bildirilen:** "Adres seçilirken doğru adres bulunuyor fakat navigasyona
+geçildiğinde sadece şehir kullanılıyor."
+
+Kodu okuyarak bulunamadı; demo sunucusundaki gerçek kayıtlara bakıldı ve orada
+kelimesi kelimesine duruyordu:
+
+    venue   = Imza Event Center
+    address = Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland
+
+**Sokak yok.** Bu bir kaydetme hatası değil: Nominatim o mekâna sokak
+tanımıyor, ve `StaticMap::search` mekân adını adresten çıkarıyor (zaten
+yanındaki "Saal" alanına gidiyor). Geriye şehir kalıyor.
+
+Hata, rotayı **yalnız adresten** kurmaktı. Angabenin en kesin parçası mekân
+adı, ve o hedefte hiç yoktu. Google "Imza Event Center, Thannhausen"i bulur;
+"Thannhausen, Bayern, Deutschland" bir tabeladır.
+
+**Düzeltme:** `DesignSections::routenZiel()` — mekân adı adresin başına
+geçiyor, zaten baştaysa iki kez yazılmıyor (büyük/küçük harfe bakmadan),
+adres yoksa rota yok (mekân adı tek başına hedef değil).
+
+Tek yerde, çünkü aynı dizgi **iki** şeyi yönetiyor: rota linki ve harita
+görseli (`InviteV2Controller::map`). Ayrı ayrı yazılsa görsel tabelayı,
+tıklama mekânı gösterirdi.
+
+**Koordinat kullanılmadı, bilerek:** arama lat/lng döndürüyor ama saklanan
+yalnız metin — adresi elle yazan çiftin koordinatı hiç yok. Sadece aramadan
+sonra çalışan bir hedef, her zaman çalışandan kötüdür.
+
+### 3 · Bölümlerin adı yoktu — "Gift ne oluyor?"
+
+Panelde bölüm türü **ham İngilizce anahtar** olarak yazılıyordu: `gift`,
+`footer`, `dresscode`, `gallery`. Ayhan ikisini de sordu, sonra `gift`'e resim
+yükleyip bekledi. `gift` hesap numarası bölümü; resimler `gallery`'ye ait.
+
+`SectionRegistry::NAMEN` — 12 tür için DE/EN/TR ad **ve** bir yarım cümle
+("ne buraya gelir"). Ad sorunun yarısını, yarım cümle diğer yarısını
+çözüyor: `gift` → "Dilek ve IBAN — resim BURAYA değil", `gallery` →
+"resimlerin yeri burası". Üç yerde kullanılıyor (tafeln kart seçimi, tür
+listesi, sol sütun satırı). **Kennung İngilizce kalıyor** — her dokümanda ve
+gönderilmiş her davetiyede duruyor; çevirmek eski davetiyeleri kırardı.
+
+### 4 · YouTube linkleri
+
+Zaten çalışıyordu ve testliydi: dört yazım (`watch?v=`, `youtu.be`, `/embed/`,
+`m.youtube.com`), kimlik yeniden kuruluyor, `t=`/`list=` düşüyor, kendi
+çıktısını da tanıyor, Vimeo ve Spotify reddediliyor, `http://` reddediliyor.
+Çerçeve tıklamadan önce markup'ta yok. Yeni bir şey yapılmadı, doğrulandı.
+
+**Spotify eklenmedi — Yusuf'un kararı.** Gömülü Spotify, oturum açmamış
+dinleyiciye şarkının 30 saniyesini çalar. Ayhan'a "spotify linki de var"
+denmişti; düzeltme Ayhan'a gidecek.
+
+### 5 · Footer'da site yönlendirmesi
+
+`footer` bölümüne `credit` ayarı (bool, **varsayılan kapalı**). Açıkken en
+altta "Gestaltet mit Atelier Lumière" / "Made with Atelier Lumière", kendi
+sayfamıza bağlantı.
+
+**Kutucuk, adres alanı değil.** Serbest bir URL alanı, her davetiyede birinin
+bir gün başka bir yere çevirebileceği bir yönlendirme demekti — üstelik
+davetlilerin güvendiği bir sayfada. Bağlantı göreli (`/de`, `/en`,
+`I18n::path`): alan adı hâlâ kesinleşmedi ve yazılı bir domain, değişimde
+kimsenin aklına gelmeyecek ikinci bir yer olurdu.
+
+`hatInhalt`'ta sayılıyor: sayılmasaydı yalnız kapanış sözü yazmış çiftlerin
+davetiyesinde çıkardı, yani nadiren ve öngörülemez şekilde.
+
+### Test ve doğrulama
+
+`php bin/test.php` → **1820 kontrol**, hepsi geçiyor (öncesi 1807; yeni dosya
+`tests/kuvert_vorspann.php` artı `section_registry`, `design_sections`,
+`section_ort_karte` eklemeleri). Değişen altı dosyada `php -l` ve
+`node --check` temiz.
+
+### Yusuf'un gözle bakması gereken tek şey
+
+Panel şifresi tarayıcıya yazılmadı. **`/tr/admin/designs/<bir tasarım>` → sol
+sütunda "+ Bölüm ekle"**: kartlarda artık `gift` değil "Hediye & hesap"
+yazmalı, altında "Dilek ve IBAN — resim BURAYA değil". Bağlantı testle
+sabitlendi, ama gözle bir kez görmek iyi olur.
+
+### Ayhan'a gidecek iki düzeltme
+
+- **Gift = hediye/IBAN bölümü.** Fotoğraflar için ayrı bir "Fotoğraflar"
+  bölümü var (Izgara / Şerit, 8 fotoğrafa kadar) ve o zaten çalışıyor.
+- **Spotify gömülemiyor** — oturum açmamış dinleyiciye 30 saniye çalar.
+  YouTube ya da bilgisayardan dosya.
+
+### Sıradaki: Paket A
+
+Tipografi rolleri (başlık / alt başlık / büyük rakam / normal metin / küçük
+açıklama / buton) ve XS–XL boşluk ölçeği, **üst ve alt**. Şu an bölüm başına
+yalnız renk + font markası var, boşluk yalnız alt (`eng/normal/weit`) ve üst
+kilitli. Paket A önce geliyor çünkü Paket C'deki her varyant onun
+kelimeleriyle yazılacak.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
