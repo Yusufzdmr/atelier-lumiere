@@ -70,6 +70,28 @@ final class DesignSections
      * @param array<string,mixed> $doc
      * @return array<string,mixed>
      */
+    /**
+     * Die Leiter der Abstaende.
+     *
+     * Prozent und keine rem: das Polster der Abschnitte ist seit jeher an
+     * die BREITE gebunden (Prozente im padding beziehen sich auf die
+     * Breite), und genau deshalb sitzt es auf dem Telefon so wie auf dem
+     * Schreibtisch. Eine feste rem-Zahl waere am Telefon plötzlich die
+     * halbe Seite.
+     *
+     * s, m und l sind die drei Werte, die es vorher schon gab (eng, normal,
+     * weit). xs und xl sind neu und liegen aussen daneben - eine Leiter, die
+     * an ihren Enden nichts Neues bietet, waere drei Worte in fuenf
+     * Verpackungen.
+     */
+    private const LUFT = [
+        'xs' => '4%',
+        's'  => '6%',
+        'm'  => '12%',
+        'l'  => '22%',
+        'xl' => '34%',
+    ];
+
     public static function complete(array $doc): array
     {
         $out = [];
@@ -435,12 +457,32 @@ final class DesignSections
                 $regeln .= 'text-align:' . $aus . ';';
             }
 
-            // Die Luft UNTEN. Oben sitzt das gerechnete Polster, mit dem der
-            // Titel zwischen die Goldlinien des Blattes faellt - daran darf
-            // ein Knopf im Panel nicht drehen.
-            $luft = (string) ($einstellung['space'] ?? 'normal');
-            if ($luft !== 'normal') {
-                $regeln .= 'padding-bottom:' . ($luft === 'eng' ? '6' : '22') . '%;';
+            /*
+             * Die Luft, oben und unten.
+             *
+             * Die Leiter steht in LUFT und nicht als Zahlen hier: dieselben
+             * fuenf Stufen gelten fuer beide Richtungen, und zwei Listen
+             * mit denselben Werten laufen auseinander.
+             *
+             * Geschrieben wird nur, was ABWEICHT. "m" ist genau die Zahl,
+             * die schon in der Grundregel steht (12 %), und eine zweite
+             * Zeile mit demselben Wert waere Rauschen in einem Stilblock,
+             * der inline in jeder Seite steht - nicht in einer Datei, die
+             * der Browser einmal holt und behaelt. Dieselbe Haltung wie bei
+             * der Ausrichtung eine Zeile darueber.
+             *
+             * Oben nur, wenn jemand es sagt: "auto" ist das gerechnete
+             * Polster der Grundregel, mit dem der Titel zwischen die
+             * Goldlinien des Blattes faellt.
+             */
+            $luft = (string) ($einstellung['space'] ?? 'm');
+            if ($luft !== 'm' && isset(self::LUFT[$luft])) {
+                $regeln .= 'padding-bottom:' . self::LUFT[$luft] . ';';
+            }
+
+            $oben = (string) ($einstellung['spaceTop'] ?? 'auto');
+            if ($oben !== 'auto' && isset(self::LUFT[$oben])) {
+                $regeln .= 'padding-top:' . self::LUFT[$oben] . ';';
             }
 
             if ($regeln !== '') {
@@ -492,6 +534,30 @@ final class DesignSections
      * Farbe des Abschnitts an, die der Grafiker gesetzt hat, statt eine
      * zweite Quelle dafuer aufzumachen.
      */
+    /**
+     * Die Angaben einer Textrolle als CSS-Zeilen - ohne die Abstaende.
+     *
+     * Getrennt von den Abstaenden, weil nicht jede Stelle beide braucht: die
+     * Anschrift nimmt Groesse und Schnitt aus der Rolle, ihren Abstand aber
+     * aus der Regel fuer Absaetze. Ein Helfer, der beides schriebe, muesste
+     * an der Haelfte der Stellen wieder ueberschrieben werden.
+     *
+     * Die Ersatzwerte sind der heutige Stand. Sie greifen nie - complete()
+     * legt die Rollen immer an -, aber ein Stilblock, der ohne seine
+     * Variablen zusammenfaellt, ist eine Falle fuer den naechsten, der hier
+     * etwas umbaut.
+     */
+    private static function typoText(string $rolle, string $groesse, string $hoehe = '1.7'): string
+    {
+        return 'font-family:var(--dt-' . $rolle . '-font,inherit);'
+            . 'color:var(--dt-' . $rolle . '-color,inherit);'
+            . 'font-size:var(--dt-' . $rolle . '-size,' . $groesse . ');'
+            . 'font-weight:var(--dt-' . $rolle . '-weight,400);'
+            . 'letter-spacing:var(--dt-' . $rolle . '-track,0);'
+            . 'line-height:var(--dt-' . $rolle . '-line,' . $hoehe . ');'
+            . 'text-transform:var(--dt-' . $rolle . '-caps,none);';
+    }
+
     private static function baseline(string $scope): string
     {
         /*
@@ -591,9 +657,27 @@ final class DesignSections
              * deckende Farbe hier uebermalt genau das Blatt, das man sehen
              * soll. Die Farbe traegt jetzt die Flaeche, durchgehend.
              */
+            /*
+             * Der Fliesstext kommt aus der Rolle "body".
+             *
+             * Hier stand line-height:1.7 als feste Zahl, und die Groesse gar
+             * nicht - die Abschnitte erbten 1rem vom Dokument. Beides gehoert
+             * jetzt der Vorlage (Design::TYPO). Die Voreinstellung ist
+             * genau dieser Stand, ein Dokument ohne eigene Rollen sieht also
+             * aus wie vorher.
+             *
+             * Die Schriftmarke des ABSCHNITTS schlaegt das weiterhin: ihre
+             * Regel (.d-sec-<kennung>, aus css()) hat dieselbe Genauigkeit
+             * und steht spaeter im Block. Das ist die richtige Rangfolge -
+             * die Rolle sagt, wie Fliesstext ueberall aussieht, der
+             * Abschnitt darf ausscheren.
+             */
             . $scope . ' .d-sec{position:relative;'
-            . 'padding:56% 14% 12%;'
-            . 'margin-top:0;line-height:1.7;text-align:center;}'
+            . 'padding:56% 14% 12%;margin-top:0;text-align:center;'
+            . 'font-family:var(--dt-body-font,inherit);color:var(--dt-body-color,inherit);'
+            . 'font-size:var(--dt-body-size,1rem);font-weight:var(--dt-body-weight,400);'
+            . 'letter-spacing:var(--dt-body-track,0);line-height:var(--dt-body-line,1.7);'
+            . 'text-transform:var(--dt-body-caps,none);}'
             . $scope . ' .d-sec:first-child{margin-top:0;}'
             /*
              * Das Blatt liegt in einer eigenen Schicht - und blendet unten aus.
@@ -637,17 +721,33 @@ final class DesignSections
             . $scope . ' .d-sec > *{position:relative;z-index:1;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
             // dieselben zwei Marken, die auf der Karte den Ton angeben.
-            . $scope . ' .d-sec-title{font-size:1.5rem;font-weight:400;line-height:1.3;margin-bottom:1.5rem;'
-            . 'font-family:var(--df-display,inherit);color:var(--d-accent,inherit);'
-            . 'letter-spacing:0.16em;text-transform:uppercase;}'
-            . $scope . ' .d-sec p{margin-bottom:0.5rem;}'
+            /*
+             * Die Ueberschrift kommt aus der Rolle "title".
+             *
+             * Die Verweise auf df-display und d-accent stehen nicht mehr
+             * hier, sondern in der Rolle: WELCHE Marke die Ueberschrift
+             * traegt, ist eine Entscheidung der Vorlage. Die Voreinstellung
+             * der Rolle ist dieselbe Wahl wie bisher.
+             */
+            . $scope . ' .d-sec-title{'
+            . 'font-family:var(--dt-title-font,inherit);color:var(--dt-title-color,inherit);'
+            . 'font-size:var(--dt-title-size,1.5rem);font-weight:var(--dt-title-weight,400);'
+            . 'letter-spacing:var(--dt-title-track,0.16em);line-height:var(--dt-title-line,1.3);'
+            . 'text-transform:var(--dt-title-caps,uppercase);'
+            . 'margin-top:var(--dt-title-above,0);margin-bottom:var(--dt-title-below,1.5rem);}'
+            . $scope . ' .d-sec p{margin-bottom:var(--dt-body-below,0.5rem);}'
             . $scope . ' .d-sec-days{display:block;margin-bottom:0.25rem;}'
             /*
              * Das Zeichen fuer die Bilder. Gesperrt gesetzt, weil es
              * abgeschrieben wird und nicht gelesen - dieselbe Ueberlegung wie
              * bei der Kontonummer eine Zeile weiter.
              */
-            . $scope . ' .d-sec-hashtag{margin-top:1.2rem;letter-spacing:0.1em;font-size:0.9rem;}'
+            . $scope . ' .d-sec-hashtag{margin-top:1.2rem;'
+            . self::typoText('small', '0.9rem')
+            // Die eigene Sperrung steht NACH der Rolle: sie ist der Grund,
+            // warum das Zeichen ueberhaupt anders aussieht als eine
+            // Anschrift, und darf von ihr nicht eingeebnet werden.
+            . 'letter-spacing:0.1em;}'
             /*
              * Der Hinweis auf uns. Leise, und mit Absicht leiser als alles
              * andere: er steht auf der Einladung eines fremden Paares, und
@@ -670,7 +770,7 @@ final class DesignSections
              * und eine halbe Kontonummer ist keine.
              */
             . $scope . ' .d-sec-konto{margin-top:1.2rem;display:grid;gap:0.25rem;}'
-            . $scope . ' .d-sec-inhaber{font-size:0.86rem;opacity:0.8;}'
+            . $scope . ' .d-sec-inhaber{' . self::typoText('small', '0.86rem') . 'opacity:0.8;}'
             . $scope . ' .d-sec-iban{font-variant-numeric:tabular-nums;letter-spacing:0.08em;'
             . 'word-break:break-all;}'
             /*
@@ -718,7 +818,22 @@ final class DesignSections
             . $scope . ' .d-sec-form-row span{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;}'
             . $scope . ' .d-sec-form input[type=text],'
             . $scope . ' .d-sec-form input[type=number]{border:0;border-bottom:1px solid currentColor;background:transparent;padding:0.35rem 0;color:inherit;font:inherit;}'
-            . $scope . ' .d-sec-form button{justify-self:center;margin-top:0.5rem;border:1px solid currentColor;background:transparent;padding:0.55rem 1.5rem;color:inherit;font:inherit;cursor:pointer;}'
+            /*
+             * Der Knopf des Formulars traegt jetzt die Rolle "button" -
+             * dieselbe wie "Route planen". Bis hierher stand hier
+             * font:inherit, also Fliesstext: zwei Knoepfe auf derselben
+             * Einladung, die verschieden aussahen, ohne dass es dafuer einen
+             * Grund gab.
+             *
+             * font:inherit bleibt stehen und kommt ZUERST: die Kurzform
+             * setzt Groesse, Schnitt und Familie zurueck, und was nach ihr
+             * steht, gilt. Ohne sie brauchte der Knopf die Angaben, die
+             * Preflight ihm nimmt, einzeln zurueck.
+             */
+            . $scope . ' .d-sec-form button{justify-self:center;border:1px solid currentColor;'
+            . 'background:transparent;padding:0.55rem 1.5rem;cursor:pointer;font:inherit;'
+            . self::typoText('button', '0.72rem')
+            . 'margin-top:var(--dt-button-above,0.5rem);}'
 
             /*
              * Das Zeichen.
@@ -1046,22 +1161,27 @@ final class DesignSections
              * und der Weg dorthin ist ein Knopf: eine unterstrichene Zeile
              * liest sich auf einer Einladung wie ein Fremdkoerper.
              */
-            'location/gross' => $sel . ' .d-sec-venue{font-family:var(--df-display,inherit);'
-                . 'font-size:1.7rem;line-height:1.2;margin-bottom:0.4rem;}'
-                . $sel . ' .d-sec-address{font-size:0.86rem;opacity:0.75;}'
-                . $sel . ' .d-sec-map{display:inline-block;margin-top:1.2rem;'
-                . 'border:1px solid currentColor;padding:0.5rem 1.5rem;'
-                . 'font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;'
-                . 'text-decoration:none;}',
+            'location/gross' => $sel . ' .d-sec-venue{'
+                . self::typoText('subtitle', '1.7rem', '1.2')
+                . 'margin-top:var(--dt-subtitle-above,0);'
+                . 'margin-bottom:var(--dt-subtitle-below,0.4rem);}'
+                . $sel . ' .d-sec-address{' . self::typoText('small', '0.86rem') . 'opacity:0.75;}'
+                . $sel . ' .d-sec-map{display:inline-block;'
+                . 'border:1px solid currentColor;padding:0.5rem 1.5rem;text-decoration:none;'
+                . self::typoText('button', '0.72rem')
+                . 'margin-top:var(--dt-button-above,1.2rem);}',
 
             /*
              * Dieselbe Zahl, nur laut. Nur Groesse, kein Bau: ohne Skript
              * bleibt der Span leer, und dann traegt das gedruckte Datum den
              * Abschnitt allein - das muss auch in dieser Gestalt gelten.
              */
-            'countdown/gross' => $sel . ' .d-sec-days{font-family:var(--df-display,inherit);'
-                . 'font-size:3.4rem;line-height:1;margin-bottom:0.6rem;}'
-                . $sel . ' .d-sec-countdown{font-size:0.86rem;letter-spacing:0.1em;}',
+            'countdown/gross' => $sel . ' .d-sec-days{'
+                . self::typoText('number', '3.4rem', '1')
+                . 'margin-top:var(--dt-number-above,0);'
+                . 'margin-bottom:var(--dt-number-below,0.6rem);}'
+                . $sel . ' .d-sec-countdown{' . self::typoText('small', '0.86rem')
+                . 'letter-spacing:0.1em;}',
 
             /*
              * Die Uhr. Vier Felder in einer Reihe, mit einer festen
@@ -1076,15 +1196,28 @@ final class DesignSections
                 . 'justify-content:center;gap:0.4rem 1.6rem;}'
                 . $sel . ' .d-sec-uhr-feld{display:flex;flex-direction:column;'
                 . 'align-items:center;min-width:3.4rem;}'
-                . $sel . ' .d-sec-uhr-zahl{font-family:var(--df-display,inherit);'
-                . 'font-size:2.4rem;line-height:1.1;font-variant-numeric:tabular-nums;'
+                /*
+                 * Dieselbe Rolle wie die einzelne grosse Zahl, nur kleiner:
+                 * vier Zahlen nebeneinander passen sonst auf kein Telefon.
+                 * Das Verhaeltnis ist der heutige Stand (2.4 von 3.4) und
+                 * haengt an der GESTALT, nicht an einer zweiten Rolle - der
+                 * Grafiker soll an einem Knopf drehen und beide Gestalten
+                 * mitnehmen.
+                 */
+                . $sel . ' .d-sec-uhr-zahl{'
+                . 'font-family:var(--dt-number-font,inherit);'
+                . 'color:var(--dt-number-color,inherit);'
+                . 'font-size:calc(var(--dt-number-size,3.4rem) * 0.7059);'
+                . 'font-weight:var(--dt-number-weight,400);'
+                . 'letter-spacing:var(--dt-number-track,0);'
+                . 'line-height:1.1;font-variant-numeric:tabular-nums;'
                 . 'font-feature-settings:"tnum";}'
                 . $sel . ' .d-sec-uhr-wort{font-size:0.6rem;letter-spacing:0.16em;'
                 . 'text-transform:uppercase;opacity:0.7;margin-top:0.2rem;}'
                 // Der Abstand wandert mit der Reihenfolge: er trennte das
                 // Datum von der Uhr darueber, jetzt von der Uhr darunter.
-                . $sel . ' .d-sec-countdown-datum{font-size:0.86rem;letter-spacing:0.1em;'
-                . 'margin-bottom:1.1rem;opacity:0.85;}',
+                . $sel . ' .d-sec-countdown-datum{' . self::typoText('small', '0.86rem')
+                . 'letter-spacing:0.1em;margin-bottom:1.1rem;opacity:0.85;}',
 
             /*
              * Der sichtbare Spieler.

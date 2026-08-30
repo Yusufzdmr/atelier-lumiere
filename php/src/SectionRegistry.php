@@ -51,10 +51,43 @@ final class SectionRegistry
             'default' => 'center',
             'label'   => ['de' => 'Ausrichtung', 'tr' => 'Hizalama'],
         ],
+        /*
+         * Die Luft UEBER dem Abschnitt.
+         *
+         * "auto" ist die Voreinstellung und bedeutet: das gerechnete
+         * Polster, mit dem der Titel zwischen die Goldlinien des Blattes
+         * faellt (DesignSections::baseline - 56 %, hergeleitet aus dem
+         * Seitenverhaeltnis des Blattes). An dieser Zahl darf ein Knopf im
+         * Panel nicht versehentlich drehen; wer sie ueberschreibt, tut es
+         * ausdruecklich.
+         *
+         * Es GIBT den Knopf jetzt trotzdem, weil die alte Begruendung nur
+         * fuer Vorlagen mit diesem Blatt trug. Eine Vorlage ohne Goldlinien
+         * traegt 56 % Polster ohne Grund - das war die Beschwerde: "boslukar
+         * daha duzenli olsun".
+         */
+        'spaceTop' => [
+            'type'    => 'select',
+            'options' => ['auto', 'xs', 's', 'm', 'l', 'xl'],
+            'default' => 'auto',
+            'label'   => ['de' => 'Luft darüber', 'tr' => 'Üst boşluk'],
+        ],
+        /*
+         * Und darunter.
+         *
+         * Frueher drei Worte (eng / normal / weit), jetzt eine Leiter von
+         * fuenf. Die alten drei bleiben als Alias erhalten und treffen
+         * genau ihre alten Werte: eng = s = 6 %, normal = m = 12 %,
+         * weit = l = 22 %. Ohne das faende completeSettings() sie nicht in
+         * der Liste, setzte stillschweigend die Voreinstellung - und jede
+         * Vorlage auf dem Demoserver, die "weit" gewaehlt hatte, rueckte
+         * beim naechsten Deploy zusammen.
+         */
         'space' => [
             'type'    => 'select',
-            'options' => ['eng', 'normal', 'weit'],
-            'default' => 'normal',
+            'options' => ['xs', 's', 'm', 'l', 'xl'],
+            'aliases' => ['eng' => 's', 'normal' => 'm', 'weit' => 'l'],
+            'default' => 'm',
             'label'   => ['de' => 'Luft darunter', 'tr' => 'Alt boşluk'],
         ],
     ];
@@ -916,6 +949,20 @@ final class SectionRegistry
 
         foreach (self::settings($type) as $schluessel => $schema) {
             $wert = $roh[$schluessel] ?? null;
+
+            /*
+             * Ein alter Name fuer denselben Wert.
+             *
+             * Er wird VOR der Pruefung uebersetzt, nicht danach: was in
+             * einem Dokument steht, ist eine Behauptung von gestern, und
+             * gestern hiess "weit" das, was heute "l" heisst. Ohne diese
+             * Zeile faende die Pruefung "weit" nicht in der Liste und
+             * setzte die Voreinstellung - eine stille Aenderung an einer
+             * Vorlage, die niemand angefasst hat.
+             */
+            if (is_string($wert) && isset($schema['aliases'][$wert])) {
+                $wert = $schema['aliases'][$wert];
+            }
 
             $out[$schluessel] = match ((string) $schema['type']) {
                 'select' => in_array($wert, $schema['options'], true)

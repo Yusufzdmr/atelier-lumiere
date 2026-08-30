@@ -487,7 +487,7 @@ assert_contains($kollision, '<p class="d-sec-absatz">', 'html: der Absatz hat se
 
 $mitVariante = DesignSections::complete(sec_doc([
     ['id' => 'ablauf', 'type' => 'program', 'variant' => 'zeitstrahl',
-     'settings' => ['align' => 'left', 'space' => 'weit']],
+     'settings' => ['align' => 'left', 'space' => 'l']],
     ['id' => 'wo', 'type' => 'location', 'variant' => 'discokugel'],
     ['id' => 'wann', 'type' => 'countdown'],
 ]));
@@ -497,7 +497,7 @@ assert_same('default', $mitVariante['sections'][1]['variant'], 'complete: eine e
 assert_same('default', $mitVariante['sections'][2]['variant'], 'complete: ohne Angabe die Voreinstellung');
 
 assert_same('left', $mitVariante['sections'][0]['settings']['align'], 'complete: die Einstellung bleibt');
-assert_same('weit', $mitVariante['sections'][0]['settings']['space'], 'complete: die zweite auch');
+assert_same('l', $mitVariante['sections'][0]['settings']['space'], 'complete: die zweite auch');
 assert_same('center', $mitVariante['sections'][2]['settings']['align'], 'complete: ohne Angabe die Voreinstellung');
 
 // Die eigene Einstellung einer Art steht neben den gemeinsamen.

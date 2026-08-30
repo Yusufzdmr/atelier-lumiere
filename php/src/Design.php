@@ -66,6 +66,155 @@ final class Design
     public const ANCHORS = ['topleft', 'topright', 'bottomleft', 'bottomright'];
 
     /**
+     * Die sechs Textrollen der Abschnitte - und ihr heutiger Stand.
+     *
+     * Bis hierher standen die Groessen als feste Zahlen in
+     * DesignSections::baseline() und in den Variantenbloecken: 1.5rem fuer
+     * die Ueberschrift, 0.86rem fuer die Anschrift, 3.4rem fuer die grosse
+     * Zahl. Wer sie aendern wollte, aenderte sie fuer JEDE Vorlage - und
+     * genau das war die Bitte: "08 cok buyuk olabilir, digerleri daha kucuk
+     * ve zarif". Das ist eine Entscheidung der Vorlage, keine des Hauses.
+     *
+     * Warum sechs und nicht "jedes Element einzeln": die Liste ist die des
+     * Kunden (Baslik / Alt baslik / Buyuk rakam / Normal metin / Kucuk
+     * aciklama / Buton). Sie ist auch die richtige Zahl - eine Rolle je
+     * Element waere ein Formular mit vierzig Feldern, in dem niemand mehr
+     * findet, woran die Anschrift haengt.
+     *
+     * DIE ZAHLEN HIER SIND DER HEUTIGE STAND. Ein Dokument ohne eigenen
+     * typo-Block sieht nach dieser Aenderung aus wie davor - Pixel fuer
+     * Pixel. Das ist keine Hoeflichkeit, sondern die Bedingung: auf dem
+     * Demoserver liegen verschickte Einladungen, und ihr Sockel ist
+     * eingefroren, aber die Regeln kommen aus dem Code.
+     *
+     * Einheiten, und warum diese:
+     *
+     *   size      Prozent von 1rem. 150 = 1.5rem. Absolut und kein Faktor
+     *             wie bei fonts.size: eine Rolle IST eine Groesse, waehrend
+     *             eine Schriftmarke nur ein Verhaeltnis beisteuert.
+     *   weight    wie im Formular, 100..900
+     *   tracking  Hundertstel em - dieselbe Einheit wie fonts.tracking
+     *   lineHeight Prozent, 130 = 1.3
+     *   above     Hundertstel rem Luft darueber
+     *   below     Hundertstel rem Luft darunter
+     *
+     * font und color sind VERWEISE auf eine Marke (display, accent, ...),
+     * kein eigener Wert. Leer heisst erben. Sonst gaebe es zwei Orte, an
+     * denen dieselbe Farbe steht, und der zweite waere der falsche.
+     *
+     * Was hier NICHT steht: die Ausrichtung. Sie gehoert dem ABSCHNITT
+     * (SectionRegistry, 'align') und nicht der Rolle - eine Anschrift, die
+     * immer links steht, waehrend der Abschnitt um sie herum zentriert ist,
+     * ist kein Gestaltungsmittel, sondern ein Fehler.
+     *
+     * @var array<string,array<string,mixed>>
+     */
+    public const TYPO = [
+        // Die Ueberschrift eines Abschnitts. Auszeichnungsschrift, Akzent,
+        // gesperrt und in Versalien - der Ton der Karte, weitergetragen.
+        'title' => [
+            'font' => 'display', 'color' => 'accent',
+            'size' => 150, 'weight' => 400, 'tracking' => 16, 'lineHeight' => 130,
+            'caps' => true, 'above' => 0, 'below' => 150,
+            'label' => ['de' => 'Überschrift', 'en' => 'Heading', 'tr' => 'Başlık'],
+        ],
+        // Der Saalname, der Gang auf der Karte, die Ansage der
+        // Kleiderordnung: die Zeile, die eine Angabe ANFUEHRT.
+        'subtitle' => [
+            // display, weil der grosse Saalname sie heute schon traegt -
+            // "erben" waere hier keine Voreinstellung, sondern eine
+            // Aenderung.
+            'font' => 'display', 'color' => '',
+            'size' => 170, 'weight' => 400, 'tracking' => 0, 'lineHeight' => 120,
+            'caps' => false, 'above' => 0, 'below' => 40,
+            'label' => ['de' => 'Unterüberschrift', 'en' => 'Subheading', 'tr' => 'Alt başlık'],
+        ],
+        // Die grosse Zahl: die Tage bis zur Feier, der Tag im Datum.
+        'number' => [
+            'font' => 'display', 'color' => '',
+            'size' => 340, 'weight' => 400, 'tracking' => 0, 'lineHeight' => 100,
+            'caps' => false, 'above' => 0, 'below' => 60,
+            'label' => ['de' => 'Grosse Zahl', 'en' => 'Large number', 'tr' => 'Büyük rakam'],
+        ],
+        // Fliesstext. size 100 heisst 1rem, also die Groesse, die die
+        // Abschnitte bis heute geerbt haben.
+        'body' => [
+            'font' => '', 'color' => '',
+            'size' => 100, 'weight' => 400, 'tracking' => 0, 'lineHeight' => 170,
+            'caps' => false, 'above' => 0, 'below' => 50,
+            'label' => ['de' => 'Fliesstext', 'en' => 'Body text', 'tr' => 'Normal metin'],
+        ],
+        // Anschrift, Datumszeile, Kontoinhaber, Menuezeile: alles, was unter
+        // etwas anderem steht und es erlaeutert.
+        'small' => [
+            'font' => '', 'color' => '',
+            // 170 und nicht 150: heute erben diese Zeilen die Zeilenhoehe
+            // des Fliesstextes, und die ist 1.7.
+            'size' => 86, 'weight' => 400, 'tracking' => 0, 'lineHeight' => 170,
+            'caps' => false, 'above' => 0, 'below' => 0,
+            'label' => ['de' => 'Kleiner Hinweis', 'en' => 'Small note', 'tr' => 'Küçük açıklama'],
+        ],
+        // Route planen, Antwort abschicken, ein Lied anhoeren.
+        'button' => [
+            'font' => '', 'color' => '',
+            'size' => 72, 'weight' => 400, 'tracking' => 14, 'lineHeight' => 170,
+            'caps' => true, 'above' => 120, 'below' => 0,
+            'label' => ['de' => 'Knopf', 'en' => 'Button', 'tr' => 'Buton'],
+        ],
+    ];
+
+    /**
+     * Die Rollen mit ihren Werten - die Voreinstellung dort, wo das Dokument
+     * nichts sagt.
+     *
+     * Getrennt von complete(), weil auch das Panel und die Tests sie
+     * brauchen, ohne ein ganzes Dokument in der Hand zu haben.
+     *
+     * @param array<string,mixed> $doc
+     * @return array<string,array<string,mixed>>
+     */
+    public static function typo(array $doc): array
+    {
+        $roh = is_array($doc['typo'] ?? null) ? $doc['typo'] : [];
+        $out = [];
+
+        foreach (self::TYPO as $rolle => $stand) {
+            $eigen = is_array($roh[$rolle] ?? null) ? $roh[$rolle] : [];
+
+            /*
+             * Ein Verweis auf eine Marke, die es nicht gibt, faellt auf
+             * "erben" zurueck und nicht auf die Voreinstellung: wer die
+             * Marke "display" aus einer Vorlage entfernt, soll geerbte
+             * Schrift bekommen und nicht stillschweigend wieder display -
+             * eine Marke, die im Dokument gar nicht mehr steht, waere eine
+             * Variable ohne Wert.
+             */
+            $schrift = self::key((string) ($eigen['font'] ?? $stand['font']));
+            if ($schrift !== '' && !isset($doc['fonts'][$schrift])) {
+                $schrift = '';
+            }
+            $farbe = self::key((string) ($eigen['color'] ?? $stand['color']));
+            if ($farbe !== '' && !isset($doc['palette'][$farbe])) {
+                $farbe = '';
+            }
+
+            $out[$rolle] = [
+                'font'       => $schrift,
+                'color'      => $farbe,
+                'size'       => max(10, min(2000, (int) ($eigen['size'] ?? $stand['size']))),
+                'weight'     => max(100, min(900, (int) ($eigen['weight'] ?? $stand['weight']))),
+                'tracking'   => max(-20, min(100, (int) ($eigen['tracking'] ?? $stand['tracking']))),
+                'lineHeight' => max(50, min(300, (int) ($eigen['lineHeight'] ?? $stand['lineHeight']))),
+                'caps'       => (bool) ($eigen['caps'] ?? $stand['caps']),
+                'above'      => max(0, min(1200, (int) ($eigen['above'] ?? $stand['above']))),
+                'below'      => max(0, min(1200, (int) ($eigen['below'] ?? $stand['below']))),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * @param array<string,mixed> $doc
      * @return array<string,mixed>
      */
@@ -85,6 +234,11 @@ final class Design
             'canvas'    => ['ratio' => '9:16', 'safe' => 6],
             'palette'   => [],
             'fonts'     => [],
+            /*
+             * Die Textrollen. Leer heisst: alle sechs stehen auf ihrer
+             * Voreinstellung, und die ist der heutige Stand - siehe TYPO.
+             */
+            'typo'      => [],
             'layers'    => [],
             'sections'  => [],
             'animation' => ['intro' => 'none', 'idle' => 'none', 'reveal' => 'up', 'particle' => 'none'],
@@ -209,6 +363,11 @@ final class Design
             ];
         }
         $doc['fonts'] = $fonts;
+
+        // NACH palette und fonts: die Rollen verweisen auf beide, und ein
+        // Verweis laesst sich erst pruefen, wenn feststeht, welche Marken es
+        // ueberhaupt gibt.
+        $doc['typo'] = self::typo($doc);
 
         $doc['layers'] = array_values(array_map(
             [self::class, 'completeElement'],
@@ -417,6 +576,35 @@ final class Design
              * Ayhan im Panel gesucht hat.
              */
             $vars .= '--dfs-' . $key . ':' . ($entry['size'] / 100) . ';';
+        }
+
+        /*
+         * Die Textrollen.
+         *
+         * Variablen und keine fertigen Regeln, aus demselben Grund wie bei
+         * den Schriftmarken: die lebende Vorschau im Panel aendert einen
+         * Wert, ohne zu speichern und ohne den Stilblock neu zu bauen. Eine
+         * feste Zahl in einer Regel braeuchte eine Karte Regel->Rolle, und
+         * die gibt es im DOM nicht.
+         *
+         * Wo die Rolle nichts sagt (font, color leer), wird die Variable
+         * auf "inherit" gesetzt statt weggelassen. Weggelassen hiesse, dass
+         * der Ersatzwert in JEDER Regel noch einmal getippt werden muss -
+         * und dass ein Wechsel auf "erben" in der Vorschau gar nicht
+         * ankaeme, weil die Variable dann einfach stehen bliebe.
+         */
+        foreach ($doc['typo'] as $rolle => $stand) {
+            $vars .= '--dt-' . $rolle . '-font:'
+                . ($stand['font'] === '' ? 'inherit' : 'var(--df-' . $stand['font'] . ')') . ';';
+            $vars .= '--dt-' . $rolle . '-color:'
+                . ($stand['color'] === '' ? 'inherit' : 'var(--d-' . $stand['color'] . ')') . ';';
+            $vars .= '--dt-' . $rolle . '-size:' . ($stand['size'] / 100) . 'rem;';
+            $vars .= '--dt-' . $rolle . '-weight:' . (int) $stand['weight'] . ';';
+            $vars .= '--dt-' . $rolle . '-track:' . ($stand['tracking'] / 100) . 'em;';
+            $vars .= '--dt-' . $rolle . '-line:' . ($stand['lineHeight'] / 100) . ';';
+            $vars .= '--dt-' . $rolle . '-caps:' . ($stand['caps'] ? 'uppercase' : 'none') . ';';
+            $vars .= '--dt-' . $rolle . '-above:' . ($stand['above'] / 100) . 'rem;';
+            $vars .= '--dt-' . $rolle . '-below:' . ($stand['below'] / 100) . 'rem;';
         }
         // Der Bereich wird zum Bezugsrahmen: 1cqw ist ein Prozent seiner
         // Breite. Das gilt unabhaengig von Palette und Schriften – sonst
@@ -1302,6 +1490,52 @@ final class Design
                 }
             }
             $doc['fonts'][$marke]['customer'] = isset($post['font_customer_' . $marke]);
+        }
+
+        /*
+         * Die Textrollen.
+         *
+         * Hinter einem Marker, und das ist kein Zierrat: "caps" ist ein
+         * Haken, und ein abgeraeumter Haken sieht in einem POST genauso aus
+         * wie ein Feld, das gar nicht mitgeschickt wurde. Ohne den Marker
+         * loeschte jeder Aufruf mit einem TEILFORMULAR alle sechs
+         * Versalien-Einstellungen - und genau so einen Aufruf gibt es
+         * (tests/design_admin.php schickt Geometriefelder allein und
+         * erwartet, dass das Dokument stillsteht).
+         *
+         * Der Marker steht im Formular des Panels, das ohnehin alles
+         * mitschickt. Wer ihn nicht schickt, will die Rollen nicht anfassen.
+         */
+        if (isset($post['typo_da'])) {
+            foreach (array_keys(self::TYPO) as $rolle) {
+                $eigen = is_array($doc['typo'][$rolle] ?? null) ? $doc['typo'][$rolle] : [];
+
+                foreach (['font' => 'font', 'color' => 'color'] as $feld => $_) {
+                    if (isset($post['typo_' . $rolle . '_' . $feld])) {
+                        // Leer bleibt leer: "erben" ist eine Wahl und keine
+                        // fehlende Angabe. typo() prueft danach, ob es die
+                        // Marke ueberhaupt gibt.
+                        $eigen[$feld] = self::key((string) $post['typo_' . $rolle . '_' . $feld]);
+                    }
+                }
+
+                foreach ([
+                    'size'       => 'size',
+                    'weight'     => 'weight',
+                    'tracking'   => 'tracking',
+                    'lineHeight' => 'line',
+                    'above'      => 'above',
+                    'below'      => 'below',
+                ] as $feld => $name) {
+                    if (isset($post['typo_' . $rolle . '_' . $name])) {
+                        $eigen[$feld] = (int) $post['typo_' . $rolle . '_' . $name];
+                    }
+                }
+
+                $eigen['caps'] = isset($post['typo_' . $rolle . '_caps']);
+
+                $doc['typo'][$rolle] = $eigen;
+            }
         }
 
         foreach ($doc['layers'] as $i => $ebene) {

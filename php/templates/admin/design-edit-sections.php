@@ -90,6 +90,100 @@ use function Atelier\e;
   <?php endforeach; ?>
 <?= $zu ?>
 
+<?php /*
+   Die sechs Textrollen.
+
+   Als eigener Abschnitt und nicht bei den Schriften: eine Schriftmarke sagt,
+   WELCHE Schrift, eine Rolle sagt, wie gross und wie luftig eine bestimmte
+   Sorte Zeile gesetzt ist. Beides in eine Tafel zu legen hiesse, zwei Fragen
+   zu einer zu machen - und die Antwort auf die zweite ist die, nach der der
+   Kunde gefragt hat ("08 cok buyuk olabilir").
+
+   3b und nicht 4: die Nummern stehen in Schulungsnotizen und in der
+   Reihenfolge, die der Grafiker im Kopf hat. Alles dahinter umzunummerieren
+   waere teurer als ein Buchstabe.
+
+   Die Verweise sind AUSWAHLLISTEN ueber die Marken des Dokuments, keine
+   Farbfelder: eine Rolle soll auf die Palette zeigen und nicht eine zweite
+   Farbe daneben aufmachen. Wer die Palette aendert, aendert die Rolle mit.
+*/ ?>
+<?= $auf($tr ? '3b · Yazı rolleri' : '3b · Textrollen') ?>
+  <?php /* Der Marker: ohne ihn fasst fromPost() die Rollen gar nicht an -
+           siehe Design::fromPost, "caps" ist ein Haken. */ ?>
+  <input type="hidden" name="typo_da" value="1">
+
+  <?php foreach (Atelier\Design::TYPO as $rolle => $stand) : ?>
+    <?php $wert = $design['typo'][$rolle] ?? []; ?>
+    <div class="space-y-3 border-b border-sand-deep pb-4" data-typo-rolle="<?= e((string) $rolle) ?>">
+      <div class="text-[0.72rem] uppercase tracking-[0.16em] text-muted">
+        <?= e((string) ($stand['label'][$tr ? 'tr' : 'de'] ?? $rolle)) ?>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-4">
+        <label class="<?= $label ?>"><?= $tr ? 'yazı tipi' : 'Schrift' ?>
+          <select name="typo_<?= e((string) $rolle) ?>_font" class="<?= $feld ?>"
+                  data-typo="<?= e((string) $rolle) ?>" data-typo-feld="font">
+            <option value=""><?= $tr ? '— devral —' : '— erben —' ?></option>
+            <?php foreach (array_keys($design['fonts']) as $marke) : ?>
+              <option value="<?= e((string) $marke) ?>"
+                <?= ($wert['font'] ?? '') === $marke ? 'selected' : '' ?>><?= e((string) $marke) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'renk' : 'Farbe' ?>
+          <select name="typo_<?= e((string) $rolle) ?>_color" class="<?= $feld ?>"
+                  data-typo="<?= e((string) $rolle) ?>" data-typo-feld="color">
+            <option value=""><?= $tr ? '— devral —' : '— erben —' ?></option>
+            <?php foreach (array_keys($design['palette']) as $marke) : ?>
+              <option value="<?= e((string) $marke) ?>"
+                <?= ($wert['color'] ?? '') === $marke ? 'selected' : '' ?>><?= e((string) $marke) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+
+        <?php /* Prozent von 1rem: 150 = 1.5rem. Absolut und kein Faktor -
+                 eine Rolle IST eine Groesse. */ ?>
+        <label class="<?= $label ?>"><?= $tr ? 'büyüklük %' : 'Größe %' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_size" type="number" min="10" max="2000"
+                 value="<?= (int) ($wert['size'] ?? $stand['size']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="size"></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'ağırlık' : 'Gewicht' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_weight" type="number" step="100" min="100" max="900"
+                 value="<?= (int) ($wert['weight'] ?? $stand['weight']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="weight"></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'harf aralığı' : 'Laufweite' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_tracking" type="number" min="-20" max="100"
+                 value="<?= (int) ($wert['tracking'] ?? $stand['tracking']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="tracking"></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'satır yüksekliği' : 'Zeilenhöhe' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_line" type="number" min="50" max="300"
+                 value="<?= (int) ($wert['lineHeight'] ?? $stand['lineHeight']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="line"></label>
+
+        <?php /* Hundertstel rem: 150 = 1.5rem Luft. */ ?>
+        <label class="<?= $label ?>"><?= $tr ? 'üst boşluk' : 'Luft darüber' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_above" type="number" min="0" max="1200"
+                 value="<?= (int) ($wert['above'] ?? $stand['above']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="above"></label>
+
+        <label class="<?= $label ?>"><?= $tr ? 'alt boşluk' : 'Luft darunter' ?>
+          <input name="typo_<?= e((string) $rolle) ?>_below" type="number" min="0" max="1200"
+                 value="<?= (int) ($wert['below'] ?? $stand['below']) ?>" class="<?= $feld ?>"
+                 data-typo="<?= e((string) $rolle) ?>" data-typo-feld="below"></label>
+      </div>
+
+      <label class="flex items-center gap-2 text-[0.66rem] text-muted">
+        <input type="checkbox" name="typo_<?= e((string) $rolle) ?>_caps"
+               data-typo="<?= e((string) $rolle) ?>" data-typo-feld="caps"
+               <?= ($wert['caps'] ?? $stand['caps']) ? 'checked' : '' ?>>
+        <?= $tr ? 'BÜYÜK HARF' : 'VERSALIEN' ?>
+      </label>
+    </div>
+  <?php endforeach; ?>
+<?= $zu ?>
+
 <?= $auf($tr ? '4 · Metinler' : '4 · Texte') ?>
   <?php foreach ($textEbenen as $ebene) : ?>
     <div class="grid gap-4 sm:grid-cols-2">

@@ -55,13 +55,33 @@ assert_true(!SectionRegistry::isVariant('location', 'zeitstrahl'), 'Katalog: ein
 $leer = SectionRegistry::completeSettings('program', []);
 
 assert_same('center', $leer['align'], 'Einstellungen: ohne Angabe steht der Abschnitt mittig');
-assert_same('normal', $leer['space'], 'Einstellungen: ohne Angabe normale Luft');
+assert_same('m', $leer['space'], 'Einstellungen: ohne Angabe mittlere Luft');
+assert_same('auto', $leer['spaceTop'], 'Einstellungen: oben bleibt das gerechnete Polster');
+
+/*
+ * Die drei alten Worte treffen ihre alten Werte.
+ *
+ * Auf dem Demoserver stehen Vorlagen, die "weit" gewaehlt haben. Ohne
+ * Uebersetzung faende die Pruefung das Wort nicht in der Liste, setzte
+ * stillschweigend die Voreinstellung - und der Abschnitt rueckte beim
+ * naechsten Deploy von 22 % auf 12 % zusammen, ohne dass jemand etwas
+ * angefasst haette.
+ */
+foreach (['eng' => 's', 'normal' => 'm', 'weit' => 'l'] as $alt => $neu) {
+    assert_same($neu, SectionRegistry::completeSettings('program', ['space' => $alt])['space'],
+        'Einstellungen: "' . $alt . '" ist heute "' . $neu . '"');
+}
+
+// Und die Leiter hat fuenf Sprossen, nicht drei.
+assert_same(['xs', 's', 'm', 'l', 'xl'],
+    SectionRegistry::settings('program')['space']['options'],
+    'Einstellungen: die Leiter der Luft');
 
 /* --- Was danebenliegt, faellt zurueck; was nicht im Schema steht, faellt weg --- */
 
 $quatsch = SectionRegistry::completeSettings('program', [
     'align'      => 'diagonal',
-    'space'      => 'normal',
+    'space'      => 'm',
     'discokugel' => 'an',
 ]);
 

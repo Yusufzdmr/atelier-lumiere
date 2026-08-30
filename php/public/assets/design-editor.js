@@ -360,6 +360,74 @@
   });
 
   /*
+   * Die sechs Textrollen.
+   *
+   * Eine Schleife und kein Block je Rolle: alle sechs tragen dieselben neun
+   * Angaben, und was sie unterscheidet, steht im Namen der Variablen. Sechs
+   * abgeschriebene Bloecke waeren sechs Stellen, an denen die naechste
+   * Angabe vergessen wird.
+   *
+   * Die Rechnung ist dieselbe wie in Design::css() - Prozent von 1rem,
+   * Hundertstel em, Hundertstel rem. Sie steht zweimal, weil sie zweimal
+   * gebraucht wird (Server beim Drucken, Browser beim Ansehen); dass die
+   * Zahlen uebereinstimmen muessen, ist der Preis der lebenden Vorschau.
+   * Ein Test haelt beide Seiten zusammen.
+   *
+   * Die Rollen wirken auf die ABSCHNITTE, nicht auf die Karte - und
+   * .d-sec-flaeche ist eine der Wurzeln (siehe wurzeln()). Ohne sie waere
+   * das hier eine Vorschau, in der sich nichts bewegt: die Karte kennt
+   * keine Rolle.
+   */
+  var typoWert = function (feld, roh) {
+    var zahl = parseInt(roh, 10);
+
+    switch (feld) {
+      // Ein Verweis auf eine Marke - oder "erben". Leer heisst erben, und
+      // die Variable muss dann wirklich "inherit" tragen: bliebe die alte
+      // stehen, kaeme das Umschalten auf erben in der Vorschau nie an.
+      case "font":  return roh ? "var(--df-" + roh + ")" : "inherit";
+      case "color": return roh ? "var(--d-" + roh + ")" : "inherit";
+      case "caps":  return roh ? "uppercase" : "none";
+    }
+
+    if (!isFinite(zahl)) return null;
+
+    switch (feld) {
+      case "size":   return (zahl / 100) + "rem";
+      case "weight": return String(zahl);
+      case "tracking": return (zahl / 100) + "em";
+      case "line":   return String(zahl / 100);
+      case "above":
+      case "below":  return (zahl / 100) + "rem";
+    }
+
+    return null;
+  };
+
+  // Der Name der Variablen. "line" heisst in der Variablen "-line", die
+  // Zeilenhoehe im Formular aber "lineHeight" - hier steht die eine Karte
+  // zwischen beiden, damit sie nicht in jeder Zeile wiederholt wird.
+  var typoName = function (rolle, feld) {
+    return "--dt-" + rolle + "-" + (feld === "tracking" ? "track" : feld);
+  };
+
+  form.querySelectorAll("[data-typo]").forEach(function (feld) {
+    var rolle = feld.getAttribute("data-typo");
+    var art = feld.getAttribute("data-typo-feld");
+
+    var male = function () {
+      var roh = feld.type === "checkbox" ? (feld.checked ? "1" : "") : feld.value.trim();
+      var wert = typoWert(art, roh);
+      if (wert !== null) setzeMarke(typoName(rolle, art), wert);
+    };
+
+    // change fuer Listen und Haken, input fuer die Zahlenfelder: ein
+    // Zahlenfeld soll sich beim Tippen bewegen, eine Liste hat beim Tippen
+    // gar kein Ereignis.
+    feld.addEventListener(feld.tagName === "SELECT" || feld.type === "checkbox" ? "change" : "input", male);
+  });
+
+  /*
    * Die Groesse einer einzelnen Zeile. Dieselbe Rechnung wie in
    * Design::css(): Zehntelprozent der Kartenbreite, mal dem Faktor der
    * Marke. Der Faktor kommt aus der Variablen und nicht aus dem Feld daneben

@@ -420,7 +420,7 @@ $mitVariante = Design::fromPost($basis, [
     'sec_type_0'       => 'program',
     'sec_variant_0'    => 'zeitstrahl',
     'sec_set_align_0'  => 'left',
-    'sec_set_space_0'  => 'weit',
+    'sec_set_space_0'  => 'l',
 
     'sec_id_1'         => 'wo',
     'sec_type_1'       => 'location',
@@ -430,7 +430,7 @@ $mitVariante = Design::fromPost($basis, [
 
 assert_same('zeitstrahl', $mitVariante['sections'][0]['variant'], 'fromPost: die Variante kommt an');
 assert_same('left', $mitVariante['sections'][0]['settings']['align'], 'fromPost: die Ausrichtung kommt an');
-assert_same('weit', $mitVariante['sections'][0]['settings']['space'], 'fromPost: die Luft kommt an');
+assert_same('l', $mitVariante['sections'][0]['settings']['space'], 'fromPost: die Luft kommt an');
 assert_same('default', $mitVariante['sections'][1]['variant'], 'fromPost: eine erfundene Variante faellt zurueck');
 assert_same(true, $mitVariante['sections'][1]['settings']['map'], 'fromPost: der Haken kommt an');
 

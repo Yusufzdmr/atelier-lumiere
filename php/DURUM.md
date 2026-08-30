@@ -1600,6 +1600,153 @@ yalnız renk + font markası var, boşluk yalnız alt (`eng/normal/weit`) ve üs
 kilitli. Paket A önce geliyor çünkü Paket C'deki her varyant onun
 kelimeleriyle yazılacak.
 
+## 30 Ağustos — Paket A: yazı rolleri ve boşluk ölçeği
+
+Ayhan'ın 4. ve 11. maddeleri. Paket A önce yapıldı çünkü Paket C'deki her
+varyant bu kelimelerle yazılacak; sonraya bırakılsaydı hepsi iki kez yazılırdı.
+
+### Neydi
+
+Bölümlerin bütün ölçüleri **koda gömülüydü**: `.d-sec-title` 1.5rem,
+`.d-sec-address` 0.86rem, `.d-sec-days` 3.4rem. Bir tasarımda başlığı
+büyütmek, evdeki **her** tasarımda büyütmek demekti. Ayhan'ın istediği tam
+tersi: "08 çok büyük olabilir, diğerleri daha küçük ve zarif" bu tasarımın
+kararı.
+
+Panelde bölüm başına yalnız *renk* ve *font markası* vardı. Boşluk yalnız
+alttaydı ve üç kelimeydi (eng / normal / weit); üst boşluk hesaplanıp
+kilitlenmişti.
+
+### Altı rol — `Design::TYPO`
+
+Liste Ayhan'ın kendi listesi: Başlık, Alt başlık, Büyük rakam, Normal metin,
+Küçük açıklama, Buton. Her biri dokuz ayar taşıyor: font markası, renk
+markası, büyüklük, ağırlık, harf aralığı, satır yüksekliği, BÜYÜK HARF, üst
+ve alt boşluk.
+
+`font` ve `color` birer **verweis** — palet ve font markalarına işaret
+ediyorlar, kendi değerlerini tutmuyorlar. Yoksa aynı renk iki yerde dururdu ve
+ikincisi yanlış olurdu. İşaret ettiği marka dokümandan silinmişse rol "devral"a
+düşüyor, varsayılana değil: olmayan bir markaya bakan bir değişken, değersiz
+bir `var()` demek.
+
+Birimler: `size` 1rem'in yüzdesi (150 = 1.5rem), `tracking` yüzde em,
+`lineHeight` yüzde, `above`/`below` yüzde rem. Font markasındaki `size`
+bir **çarpan**dı; rol ise bir **büyüklük** — ikisi farklı sorular.
+
+**Hizalama bilerek rolde yok.** O bölüme ait (`SectionRegistry`, `align`).
+Bölüm ortalıyken hep sola yaslanan bir adres, tasarım aracı değil hatadır.
+
+### Varsayılanlar bugünkü görüntüyü **birebir** üretiyor
+
+Bu bir nezaket değil, şart: demo sunucusunda gönderilmiş davetiyeler var,
+sockelleri donmuş ama kurallar koddan geliyor. Deploy'da kayan bir tasarım
+verilmiş sözün bozulmasıdır.
+
+`tests/typo_rollen.php` her sayıyı tek tek tutuyor. Tarayıcıda da ölçüldü
+(`/de/v2/einladung/vergleich-nach`, zarf açıldıktan sonra):
+
+| Ne | Ölçülen | Beklenen |
+|---|---|---|
+| Başlık büyüklüğü | 24px | 1.5rem ✓ |
+| Başlık satır yüksekliği | 31.2px | 1.3 × 24 ✓ |
+| Başlık harf aralığı | 3.84px | 0.16 × 24 ✓ |
+| Başlık alt boşluğu | 24px | 1.5rem ✓ |
+| Gövde | 16px / 27.2px | 1rem / 1.7 ✓ |
+
+Sonra `pruefstand` tasarımına elle bir rol yazıldı (başlık 90%, aralık 0.40em,
+BÜYÜK HARF kapalı) ve ölçüldü: 14.4px, 5.76px, `none` — hepsi doğru, gövde
+kımıldamadı. Veri sonra geri alındı.
+
+### Hangi kural hangi role bağlandı
+
+| Rol | Kural |
+|---|---|
+| title | `.d-sec-title` |
+| subtitle | `.d-sec-venue` (konum/büyük ad) |
+| number | `.d-sec-days` (geri sayım/büyük) ve `.d-sec-uhr-zahl` |
+| body | `.d-sec` ve `.d-sec p` |
+| small | `.d-sec-address`, `.d-sec-countdown`, `.d-sec-countdown-datum`, `.d-sec-inhaber`, `.d-sec-hashtag` |
+| button | `.d-sec-map`, `.d-sec-form button` |
+
+**Bilerek bağlanmayanlar:** form alan etiketleri (0.72rem, versal — bir
+kompozisyonun parçası), saat altındaki kelime (0.6rem), ve bize giden
+yönlendirme (0.66rem — dönenen her knobdan daha sessiz kalmalı). Test bunları
+tek tek istisna olarak yazıyor, toplu bir arama hepsini hata sayardı.
+
+**Uhr'un rakamı aynı rolden hesaplanıyor:** `calc(var(--dt-number-size) *
+0.7059)`. Yan yana dört rakam, tek başına duran birinden küçük olmak zorunda;
+oran bugünkü hâl (2.4 / 3.4) ve **gestalt'a** bağlı, ikinci bir role değil —
+grafiker tek knobu çevirip iki görünümü birden alsın diye. Tarayıcıda
+doğrulandı: varsayılanla 38.401px (= 2.4rem), 9rem'e çekilince 101.65px.
+
+### İki görünür değişiklik (kabul edildi, gizlenmedi)
+
+- **RSVP gönder düğmesi** artık "Buton" rolünü taşıyor. Eskiden `font:inherit`,
+  yani gövde metniydi — aynı davetiyede iki düğme, sebepsiz farklı görünüyordu.
+- **Hashtag** 0.9rem → 0.86rem (küçük açıklama rolü). 0.64px. Dışarıda
+  bırakmak, "yarısını hareket ettiren knob" demekti.
+
+### Boşluk ölçeği
+
+`space` (alt) artık **xs / s / m / l / xl**, `spaceTop` (üst) ise
+**auto / xs / s / m / l / xl**.
+
+Merdiven: xs 4%, s 6%, m 12%, l 22%, xl 34%. **s, m, l eski üç değerin
+kendisi** (eng 6%, normal 12%, weit 22%) — xs ve xl dışarıya eklendi. Uçlarında
+yeni bir şey sunmayan bir merdiven, üç kelimenin beş ambalajı olurdu.
+
+Yüzde, rem değil: bölüm dolgusu her zaman **genişliğe** bağlıydı ve telefonda
+masaüstündeki gibi oturmasının sebebi bu.
+
+`spaceTop` varsayılanı **auto** — yani başlığı yaprağın altın çizgileri arasına
+düşüren hesaplanmış 56% dolgu. Eski notta "buna panelden bir knob dokunmamalı"
+yazıyordu ve o gerekçe hâlâ geçerli; ama yalnız o yaprağı taşıyan tasarımlar
+için. Altın çizgisi olmayan bir tasarım 56% dolguyu sebepsiz taşıyordu.
+Şimdi knob var, ama üstüne yazmak için bilerek seçmek gerekiyor.
+
+**Eski değerler için alias.** `completeSettings` artık şemadaki `aliases`'ı
+doğrulamadan **önce** çeviriyor: eng→s, normal→m, weit→l. Bu olmasaydı demo
+sunucusunda "weit" seçmiş her tasarım listede bulunamayıp sessizce varsayılana
+düşer, 22%'den 12%'ye çökerdi — kimse hiçbir şeye dokunmadan.
+
+### Panel ve canlı önizleme
+
+Editörde yeni bölüm: **3b · Yazı rolleri**. 3b, çünkü numaralar eğitim
+notlarında ve grafikerin kafasında duruyor; arkasındaki her şeyi yeniden
+numaralamak bir harften pahalıya gelirdi.
+
+Canlı önizleme (`design-editor.js`) rollerin değişkenlerini yazıyor, tek
+döngüyle — altı rol aynı dokuz alanı taşıyor, altı kopya blok yeni alanın
+altı kez unutulacağı altı yer demekti. Hesap sunucudakiyle **aynı paydaları**
+kullanıyor ve bir test iki tarafı bir arada tutuyor.
+
+**`typo_da` markörü.** `caps` bir kutucuk, ve boşaltılmış bir kutucuk POST'ta
+hiç gönderilmemiş bir alanla aynı görünür. Markör olmasaydı, kısmi bir formla
+gelen her çağrı altı rolün versal ayarını silerdi — ve öyle bir çağrı var
+(`design_admin.php` geometri alanlarını tek başına yollayıp dokümanın
+kımıldamamasını bekliyor).
+
+### Test
+
+`php bin/test.php` → **1964 kontrol** (öncesi 1897). Yeni dosya
+`tests/typo_rollen.php` (103 kontrol). Panel şablonu ayrıca elle render
+edilip altı rolün de alanlarının çıktığı görüldü — panele girmek şifre
+istiyor, şablonu kendi başına çalıştırmak istemiyor.
+
+### Yusuf'un gözle bakması gereken
+
+`/tr/admin/designs/<bir tasarım>` → sol sütunda **Tema** → **3b · Yazı
+rolleri**. Bir rolün büyüklüğünü değiştir, sağdaki canlı bölüm önizlemesinde
+**kaydetmeden** değişmeli. Kartın kendisi değişmez — roller bölümlere ait,
+kart kendi katmanlarını taşır.
+
+### Sıradaki: Paket B
+
+Çerçeveler (ince / çift / gold / floral / kâğıt / transparan / yok) ve bölüm
+alanına PNG-video katman desteği. Kartta çalışan motorun aynısı; bugün
+`spot` yalnız kart/sayfa/zarf tanıyor, dördüncüsü bölüm alanı olacak.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
