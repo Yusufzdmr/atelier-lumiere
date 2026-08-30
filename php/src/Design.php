@@ -265,6 +265,30 @@ final class Design
             // bastaki sayfa cicekler yukarda, son sayfada asagida." Es liegt
             // ueber dem grossen Blatt, unten, in eigener Groesse.
             'sectionsBgEnd' => '',
+            /*
+             * Wie das grosse Blatt sitzt.
+             *
+             * "Background gercekten full-screen / cover olmali. Sagda-solda
+             * bosluk veya kucuk bir kagit gorunumu olusmamali."
+             *
+             * "blatt" ist der bisherige Stand und bleibt die Voreinstellung:
+             * Breite an der Karte (min(100%,42rem)), nach unten wiederholt.
+             * Das ist richtig fuer ein PAPIER - es soll oben und unten im
+             * selben Massstab stehen wie die Karte darueber.
+             *
+             * "cover" ist es fuer ein BILD: es fuellt die ganze Flaeche,
+             * Kante zu Kante, und wird dafuer beschnitten. Auf einem breiten
+             * Bildschirm ist genau das der Unterschied zwischen "ein Foto
+             * als Hintergrund" und "ein Blatt Papier in der Mitte".
+             *
+             * Nicht background-attachment:fixed dazu - das ist einmal
+             * probiert worden und misst gegen den BILDSCHIRM: dasselbe Blatt
+             * kam unten fast doppelt so gross heraus wie oben, und der Kunde
+             * hat es sofort gesehen ("ilk boyle olup sonra niye buyuyor
+             * arkaplan"). cover ohne fixed misst gegen die Flaeche und tut,
+             * was es soll.
+             */
+            'sectionsBgFit' => 'blatt',
         ];
 
         $doc = array_merge($defaults, $doc);
@@ -286,6 +310,7 @@ final class Design
 
         $doc['sectionsBg'] = self::safeSrc((string) $doc['sectionsBg']);
         $doc['sectionsBgEnd'] = self::safeSrc((string) $doc['sectionsBgEnd']);
+        $doc['sectionsBgFit'] = (string) $doc['sectionsBgFit'] === 'cover' ? 'cover' : 'blatt';
 
         $intro = is_array($doc['intro']) ? $doc['intro'] : [];
         $doc['intro'] = [
@@ -631,13 +656,39 @@ final class Design
             $selector = $scope . ' .d-el-' . $el['id'];
             $box = $el['box'];
 
+            /*
+             * Senkrecht in cqw statt in Prozent - aber nur im
+             * Abschnittsbereich.
+             *
+             * Prozent im top/bottom messen gegen die HOEHE des Kastens. Auf
+             * der Karte ist die bekannt (sie hat ein festes
+             * Seitenverhaeltnis), im Abschnittsbereich nicht: er ist so hoch,
+             * wie das Paar geschrieben hat. Dieselben 10 % waeren dort bei
+             * einer kurzen Einladung 60 px und bei einer langen 600 - der
+             * Grafiker stellte eine Ranke ein und faende sie auf jeder
+             * zweiten Einladung woanders.
+             *
+             * cqw ist ein Hundertstel der BREITE des Bereichs. Damit misst
+             * senkrecht dasselbe wie waagerecht, und die Zahl bedeutet
+             * ueberall dasselbe. Es ist auch die Einheit, in der die
+             * Abschnitte ohnehin schon rechnen: ihr Polster steht in
+             * Prozent, und Prozent im padding beziehen sich auf die Breite.
+             *
+             * Der Bezugskasten ist .d-sec-deko (container-type:inline-size),
+             * siehe DesignSections::baseline.
+             */
+            $imBereich = $el['spot'] === 'sections';
+            $hoch = $imBereich ? $box['y'] . 'cqw' : $box['y'] . '%';
+
             $css .= $selector . '{'
                 . 'position:absolute;'
                 // Welche zwei Kanten geschrieben werden, sagt der Anker.
                 . (str_contains($box['anchor'], 'right') ? 'right:' : 'left:') . $box['x'] . '%;'
-                . (str_starts_with($box['anchor'], 'bottom') ? 'bottom:' : 'top:') . $box['y'] . '%;'
+                . (str_starts_with($box['anchor'], 'bottom') ? 'bottom:' : 'top:') . $hoch . ';'
                 . 'width:' . $box['w'] . '%;'
-                . ($box['h'] > 0 ? 'height:' . $box['h'] . '%;' : 'height:auto;')
+                . ($box['h'] > 0
+                    ? 'height:' . ($imBereich ? $box['h'] . 'cqw' : $box['h'] . '%') . ';'
+                    : 'height:auto;')
                 . 'opacity:' . rtrim(rtrim(number_format($box['opacity'] / 100, 2, '.', ''), '0'), '.') . ';'
                 . 'transform:rotate(' . $box['rotate'] . 'deg)'
                 // Reihenfolge wie bei den Einzeleigenschaften des Originals:
@@ -1451,6 +1502,10 @@ final class Design
         $schluss = $text('sectionsbg_end');
         if ($schluss !== null) {
             $doc['sectionsBgEnd'] = $schluss;
+        }
+
+        if (isset($post['sectionsbg_fit'])) {
+            $doc['sectionsBgFit'] = (string) $post['sectionsbg_fit'] === 'cover' ? 'cover' : 'blatt';
         }
         if (isset($post['tags'])) {
             $roh = explode(',', (string) $post['tags']);

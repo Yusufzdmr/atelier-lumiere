@@ -378,7 +378,7 @@ final class DesignAdminController
         $abschnitte = DesignSections::html($doc, $daten, 'de', '', ['csrf' => '', 'sent' => false]);
 
         echo '<style>' . DesignSections::css($doc, $sel) . '</style>'
-           . DesignSections::flaeche($doc, ltrim($sel, '.'), $abschnitte);
+           . DesignSections::flaeche($doc, ltrim($sel, '.'), $abschnitte, 'mx-auto max-w-2xl', 'de');
     }
 
     /**

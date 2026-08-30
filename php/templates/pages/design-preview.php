@@ -101,7 +101,7 @@ $idle = (string) $design['animation']['idle'];
      Hier stand die Suche nach dem Papier bis heute abgeschrieben, einmal
      hier und einmal in der Nachbarvorlage.
   */ ?>
-  <?= DesignSections::flaeche($design, $scope, $abschnitte, 'mx-auto max-w-2xl pb-24') ?>
+  <?= DesignSections::flaeche($design, $scope, $abschnitte, 'mx-auto max-w-2xl pb-24', $locale) ?>
 <?php endif; ?>
   <?php if ($intern) : ?>
   <div class="fixed inset-x-0 bottom-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-ink/80 px-4 py-2 text-center text-xs text-cream">

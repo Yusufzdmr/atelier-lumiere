@@ -485,9 +485,45 @@ final class DesignSections
                 $regeln .= 'padding-top:' . self::LUFT[$oben] . ';';
             }
 
+            /*
+             * Die eigene Zeichnung des Rahmens.
+             *
+             * Als Variable am Abschnitt und nicht in der Rahmenregel: die
+             * Regel gilt fuer alle Abschnitte mit diesem Rahmen, die
+             * Zeichnung gehoert einem. Derselbe Bau wie beim Blatt
+             * (--d-sec-blatt).
+             *
+             * Der Pfad ist durch safeSrc() gegangen und traegt weder
+             * Anfuehrungszeichen noch Klammern; er kann aus dem url() nicht
+             * ausbrechen.
+             */
+            $zeichnung = Design::safeSrc((string) ($einstellung['frameSrc'] ?? ''));
+            if ($zeichnung !== '') {
+                $regeln .= "--d-sec-frame:url('" . $zeichnung . "');";
+            }
+
             if ($regeln !== '') {
                 $css .= $scope . ' .d-sec-' . $abschnitt['id'] . '{' . $regeln . '}';
             }
+        }
+
+        /*
+         * Die Rahmen - und nur die benutzten.
+         *
+         * Dieselbe Sammlung wie bei den Varianten eine Schleife weiter: zwei
+         * Abschnitte koennen denselben Rahmen tragen, und der Block soll
+         * einmal im Stilblock stehen. Er steht inline in JEDER Seite; tote
+         * Regeln sind hier keine Datei, die der Browser einmal holt.
+         */
+        $rahmen = [];
+        foreach ($doc['sections'] as $abschnitt) {
+            $art = (string) ($abschnitt['settings']['frame'] ?? 'keine');
+            if ($art !== 'keine') {
+                $rahmen[$art] = true;
+            }
+        }
+        foreach (array_keys($rahmen) as $art) {
+            $css .= self::rahmenCss($art, $scope);
         }
 
         /*
@@ -547,6 +583,106 @@ final class DesignSections
      * Variablen zusammenfaellt, ist eine Falle fuer den naechsten, der hier
      * etwas umbaut.
      */
+    /**
+     * Ein Rahmen um Ueberschrift und Inhalt.
+     *
+     * Gezeichnet wird auf .d-sec-inner und nicht auf dem Abschnitt: das
+     * Polster oben ist 56 % der Breite (damit der Titel zwischen die
+     * Goldlinien des Blattes faellt), ein Rahmen um den ganzen Abschnitt
+     * begaenne also einen halben Bildschirm ueber der ersten Zeile.
+     *
+     * Alle Rahmen bringen ihr eigenes Polster mit. Es liegt nicht in einer
+     * gemeinsamen Regel darueber, weil die Zahlen verschieden sind: eine
+     * Haarlinie braucht weniger Luft als ein Papierkasten, und eine
+     * gezeichnete Ranke braucht am meisten - ihre Zierde sitzt ja im Rand.
+     *
+     * Was hier NICHT steht: "floral". Ein Blumenrahmen aus CSS-Strichen
+     * waere ein Versprechen, das keine Zeichnung einloest; wer eine Ranke
+     * will, nimmt "eigen" und seine eigene PNG. Genau danach war auch
+     * gefragt ("kendi hazirladigim transparent PNG … cerceveleri").
+     */
+    private static function rahmenCss(string $art, string $scope): string
+    {
+        $sel = $scope . ' .d-sec-r-' . $art . ' .d-sec-inner';
+
+        return match ($art) {
+            // Die schlichte klassische Linie. currentColor und keine Marke:
+            // sie soll die Farbe des Abschnitts annehmen, die der Grafiker
+            // ohnehin schon gesetzt hat.
+            'linie' => $sel . '{border:1px solid currentColor;padding:2.4rem 1.6rem;}',
+
+            // Zwei Linien. Die innere liegt als Auflage darauf, nicht als
+            // zweiter Rand: ein zweiter Rand braeuchte ein zweites Element
+            // oder outline, und outline folgt keinem border-radius.
+            'doppel' => $sel . '{border:1px solid currentColor;padding:2.6rem 1.8rem;}'
+                . $sel . '::after{content:"";position:absolute;inset:5px;'
+                . 'border:1px solid currentColor;opacity:0.55;pointer-events:none;}',
+
+            /*
+             * Vier Ecken statt eines geschlossenen Rahmens - die Form, die
+             * auf gedruckter Hochzeitspapeterie am haeufigsten vorkommt.
+             *
+             * Zwei Pseudoelemente, jedes fuer zwei Ecken: ein flacher
+             * Kasten mit drei Raendern zeichnet oben links und oben rechts
+             * gleichzeitig, ohne dass die Waagerechte durchlaeuft.
+             */
+            'gold' => $sel . '{padding:2.6rem 1.8rem;}'
+                . $sel . '::before,' . $sel . '::after{content:"";position:absolute;'
+                . 'left:0;right:0;height:1.1rem;pointer-events:none;'
+                . 'border-left:1px solid var(--d-accent,currentColor);'
+                . 'border-right:1px solid var(--d-accent,currentColor);}'
+                . $sel . '::before{top:0;border-top:1px solid var(--d-accent,currentColor);}'
+                . $sel . '::after{bottom:0;border-bottom:1px solid var(--d-accent,currentColor);}',
+
+            /*
+             * Ein Blatt Papier, das auf dem Blatt liegt.
+             *
+             * Der Schatten ist weich und weit unten: eine Karte liegt auf,
+             * sie schwebt nicht. Die Kante ist die Papierkante des Themas -
+             * dieselbe Marke, die auch das Kuvert benutzt.
+             */
+            'papier' => $sel . '{background:var(--d-paper,#faf7f2);'
+                . 'border:1px solid var(--d-paperedge,rgba(0,0,0,0.10));'
+                . 'box-shadow:0 18px 40px -26px rgba(0,0,0,0.5);'
+                . 'padding:3rem 2rem;}',
+
+            /*
+             * Dieselbe Karte, nur durchscheinend - fuer Vorlagen, deren
+             * Blatt eine Zeichnung traegt, die man nicht zudecken will.
+             *
+             * color-mix und kein rgba mit fester Farbe: der Grund muss die
+             * Papierfarbe DIESER Vorlage sein, und die steht in einer
+             * Variablen. Browser ohne color-mix bekommen die Zeile davor
+             * und damit deckendes Papier - eine lesbare Karte ist der
+             * bessere Ausfall.
+             */
+            'transparent' => $sel . '{background:var(--d-paper,#faf7f2);'
+                . 'background:color-mix(in srgb, var(--d-paper,#faf7f2) 62%, transparent);'
+                . 'border:1px solid color-mix(in srgb, currentColor 28%, transparent);'
+                . 'padding:3rem 2rem;}',
+
+            /*
+             * Die eigene Zeichnung.
+             *
+             * Als Hintergrundbild und nicht als border-image: ein
+             * border-image will eine Neunerteilung, und wie breit der Rand
+             * einer fremden PNG ist, weiss nur die, die sie gezeichnet hat.
+             * Ein gedehnter Hintergrund ist vorhersagbar - der Grafiker
+             * sieht sofort, was passiert, und kann seine Datei danach
+             * bauen.
+             *
+             * Ohne Datei bleibt nur das Polster stehen. Kein Kasten, keine
+             * Linie: ein Rahmen, der ein leeres Rechteck malt, waere
+             * schlimmer als keiner.
+             */
+            'eigen' => $sel . '{background-image:var(--d-sec-frame,none);'
+                . 'background-size:100% 100%;background-repeat:no-repeat;'
+                . 'background-position:center;padding:3.2rem 2.4rem;}',
+
+            default => '',
+        };
+    }
+
     private static function typoText(string $rolle, string $groesse, string $hoehe = '1.7'): string
     {
         return 'font-family:var(--dt-' . $rolle . '-font,inherit);'
@@ -597,7 +733,11 @@ final class DesignSections
          * darunter traegt die Papierfarbe weiter. Wiederholt kaemen die
          * Goldecken alle paar hundert Pixel noch einmal.
          */
-        return $scope . '.d-sec-flaeche{background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
+        // position:relative, damit der Schmuckkasten darin sitzt. Nicht
+        // container-type: das machte die Flaeche zum Bezugspunkt fuer
+        // position:fixed, und der Stummschalter der Musik haengt daran.
+        return $scope . '.d-sec-flaeche{position:relative;'
+            . 'background-color:var(--d-paper,#faf7f2);color:var(--d-fg,#14110f);'
             /*
              * Zwei Schichten. Oben das grosse Blatt, ueber die ganze Hoehe
              * gezogen - es traegt die Papierstruktur. Darueber, unten und in
@@ -609,8 +749,19 @@ final class DesignSections
              * der Laenge der Einladung streckt, sieht sofort falsch aus.
              */
             . 'background-image:var(--d-sec-blatt-end,none),var(--d-sec-blatt,none);'
-            . 'background-position:bottom center,top center;'
-            . 'background-size:min(100%,42rem) auto,min(100%,42rem) 100%;'
+            /*
+             * Groesse und Sitz des grossen Blattes stehen in Variablen, weil
+             * die Vorlage sie waehlt (sectionsBgFit): ein PAPIER sitzt in der
+             * Breite der Karte und wiederholt sich nach unten, ein BILD
+             * fuellt die Flaeche von Kante zu Kante.
+             *
+             * Die Ersatzwerte sind der bisherige Stand - eine Vorlage ohne
+             * die Angabe sieht aus wie vorher. Der Schluss (die erste
+             * Schicht) bleibt fest: er ist ein Strauss am Fuss der Seite und
+             * soll sich nie strecken.
+             */
+            . 'background-position:bottom center,var(--d-sec-blatt-pos,top center);'
+            . 'background-size:min(100%,42rem) auto,var(--d-sec-blatt-size,min(100%,42rem) 100%);'
             . 'background-repeat:no-repeat,no-repeat;}'
             /*
              * Das Blatt wiederholt sich nach unten - jede Laenge ein neues
@@ -719,6 +870,36 @@ final class DesignSections
              */
             // Ueber der Schicht, sonst laege der Text darunter.
             . $scope . ' .d-sec > *{position:relative;z-index:1;}'
+            /*
+             * Der Kasten um Ueberschrift und Inhalt. Er steht in JEDEM
+             * Abschnitt, auch ohne Rahmen - dann traegt er nur diese eine
+             * Zeile, und die braucht er ohnehin: die Rahmen legen ihre
+             * Ecken und ihre zweite Linie als Pseudoelemente hinein, und
+             * die brauchen einen Bezugspunkt.
+             */
+            . $scope . ' .d-sec-inner{position:relative;}'
+            /*
+             * Der Schmuckkasten des Bereichs.
+             *
+             * inset:0 und overflow:hidden: eine Ranke, die ueber die Kante
+             * haengt, soll die Seite nicht breiter machen - auf dem Telefon
+             * waere das ein waagerechter Scrollbalken quer durch die
+             * Einladung.
+             *
+             * pointer-events:none, weil darunter ein Antwortformular liegt:
+             * eine durchsichtige Ecke einer PNG darf keinen Fingertipp
+             * schlucken, der einem Eingabefeld galt.
+             *
+             * container-type:inline-size ist der Bezug fuer die
+             * cqw-Angaben der Ebenen (Design::css). Es steht hier und nicht
+             * an der Flaeche: es macht einen Kasten zum Bezugspunkt fuer
+             * position:fixed, und der Stummschalter der Musik ist fixed.
+             */
+            . $scope . ' .d-sec-deko{position:absolute;inset:0;z-index:0;'
+              . 'overflow:hidden;pointer-events:none;container-type:inline-size;}'
+            // Der Text darueber. Ohne diese Zeile lieferte der Schmuck sich
+            // mit ihm ein Rennen um die Stapelreihenfolge.
+            . $scope . ' .d-sections{position:relative;z-index:1;}'
             // Die Ueberschriften in der Auszeichnungsschrift und im Akzent -
             // dieselben zwei Marken, die auf der Karte den Ton angeben.
             /*
@@ -1348,8 +1529,13 @@ final class DesignSections
      *
      * @param array<string,mixed> $doc
      */
-    public static function flaeche(array $doc, string $scope, string $inhalt, string $spalte = 'mx-auto max-w-2xl'): string
-    {
+    public static function flaeche(
+        array $doc,
+        string $scope,
+        string $inhalt,
+        string $spalte = 'mx-auto max-w-2xl',
+        string $locale = 'de'
+    ): string {
         if ($inhalt === '') {
             return '';
         }
@@ -1370,6 +1556,16 @@ final class DesignSections
         $stil = '';
         if ($papier !== '') {
             $stil .= "--d-sec-blatt:url('" . e($papier) . "');";
+
+            /*
+             * Und wie es sitzt. Nur bei "cover" geschrieben: "blatt" IST der
+             * Ersatzwert in der Grundregel, und eine zweite Angabe mit
+             * demselben Wert waere Rauschen in einem style-Attribut, das auf
+             * jeder Einladung steht.
+             */
+            if ((string) ($doc['sectionsBgFit'] ?? 'blatt') === 'cover') {
+                $stil .= '--d-sec-blatt-size:cover;--d-sec-blatt-pos:center;';
+            }
         }
         if ($schluss !== '') {
             $stil .= "--d-sec-blatt-end:url('" . e($schluss) . "');";
@@ -1380,8 +1576,27 @@ final class DesignSections
          * damit das Papier der Karte einfach weiterlaeuft; der Text darin
          * bleibt in seiner Spalte.
          */
+        /*
+         * Der Schmuck des Bereichs - Ranken, Linien, Papierkanten, Filme.
+         *
+         * In einem EIGENEN Kasten und nicht direkt in der Flaeche, aus zwei
+         * Gruenden. Erstens braucht er container-type:inline-size, damit die
+         * Ebenen senkrecht in cqw sitzen koennen (siehe Design::css) - und
+         * container-type macht einen Kasten zum Bezugspunkt fuer
+         * position:fixed. Der Stummschalter der Musik ist fixed und sitzt in
+         * der Flaeche; laege er darin, klebte er am Abschnittsbereich statt
+         * am Fenster. Zweitens haelt der Kasten den Schmuck mit einem
+         * einzigen z-index hinter dem ganzen Text, statt ihn Ebene fuer
+         * Ebene einsortieren zu muessen.
+         *
+         * Ist nichts hinterlegt, steht hier auch nichts - kein leerer Kasten
+         * ueber der ganzen Einladung.
+         */
+        $schmuck = Design::html($doc, [], $locale, 'sections');
+
         return '<div class="' . e($scope) . ' d-sec-flaeche"'
             . ($stil !== '' ? ' style="' . $stil . '"' : '') . '>'
+            . ($schmuck !== '' ? '<div class="d-sec-deko" aria-hidden="true">' . $schmuck . '</div>' : '')
             . '<div class="d-sections ' . e($spalte) . '">' . $inhalt . '</div>'
             . '</div>';
     }
@@ -1396,8 +1611,32 @@ final class DesignSections
 
             // Drei Klassen, drei Fragen: welcher Abschnitt (fuer die eigene
             // Regel des Grafikers), welche Art, welches Aussehen.
+            /*
+             * Vier Klassen, vier Fragen: welcher Abschnitt (fuer die eigene
+             * Regel des Grafikers), welche Art, welches Aussehen - und
+             * welcher Rahmen.
+             *
+             * Der Rahmen steht am Abschnitt und wird INNEN gezeichnet
+             * (d-sec-inner). Das muss er: das Polster oben ist 56 % der
+             * Breite, damit der Titel zwischen die Goldlinien des Blattes
+             * faellt. Ein Rahmen um den ganzen Abschnitt begaenne also einen
+             * halben Bildschirm ueber der ersten Zeile.
+             */
+            $rahmen = (string) ($abschnitt['settings']['frame'] ?? 'keine');
+
             $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ)
-                . ' d-sec-v-' . e((string) $abschnitt['variant']) . '">';
+                . ' d-sec-v-' . e((string) $abschnitt['variant'])
+                . ($rahmen !== 'keine' ? ' d-sec-r-' . e($rahmen) : '') . '">';
+
+            /*
+             * Der Kasten um Ueberschrift und Inhalt.
+             *
+             * Er steht IMMER da, auch ohne Rahmen: ein Kasten, den es nur
+             * manchmal gibt, waere ein zweiter Bauplan, und jede Regel, die
+             * ihn erwaehnt, muesste beide Faelle kennen. Ohne Rahmen ist er
+             * ein <div> ohne eine einzige Eigenschaft und kostet nichts.
+             */
+            $out .= '<div class="d-sec-inner">';
 
             // Explizit auf '' pruefen, nicht mit ?? verketten: complete()
             // schreibt beide Sprachen immer als String, also feuert ?? nie -
@@ -1429,7 +1668,7 @@ final class DesignSections
                 default     => '',
             };
 
-            $out .= '</section>';
+            $out .= '</div></section>';
         }
 
         return $out;

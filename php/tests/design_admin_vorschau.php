@@ -21,6 +21,9 @@ use Atelier\Design;
 
 $abschnitte = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-sections.php');
 $tafeln     = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-tafeln.php');
+// Der Bauer eines einzelnen Einstellungsfeldes steht seit dem Rahmen in einer
+// eigenen Vorlage - er wird von beiden Schleifen der Tafel gebraucht.
+$feldbauer  = (string) file_get_contents(__DIR__ . '/../templates/partials/einstellung-feld.php');
 $js         = (string) file_get_contents(__DIR__ . '/../public/assets/design-editor.js');
 
 /* --- Die vier Medienfelder tragen einen Kasten --------------------------- */
@@ -47,7 +50,7 @@ assert_contains($js, 'revokeObjectURL', 'Skript: und gibt sie wieder frei');
  * hinterlegt war, und genau dann sucht man ihn. Jetzt gehoert er zum Feld und
  * nicht zum Wert: leer bleibt er stumm, gefuellt spielt er.
  */
-assert_contains($tafeln, 'data-tonvorschau', 'Panel: die Tonspur hat einen Spieler am Feld');
+assert_contains($feldbauer, 'data-tonvorschau', 'Panel: die Tonspur hat einen Spieler am Feld');
 
 /* --- Eine Vorlage wieder loswerden --------------------------------------- */
 

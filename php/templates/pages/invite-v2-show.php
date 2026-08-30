@@ -78,5 +78,5 @@ use Atelier\View;
      Hier stand die Suche nach dem Papier bis heute abgeschrieben, einmal
      hier und einmal in der Nachbarvorlage.
   */ ?>
-  <?= DesignSections::flaeche($design, $scope, $abschnitte) ?>
+  <?= DesignSections::flaeche($design, $scope, $abschnitte, 'mx-auto max-w-2xl', $locale) ?>
 <?php endif; ?>

@@ -575,6 +575,31 @@ use function Atelier\e;
                  class="<?= $feld ?> font-mono text-[0.78rem]"></label>
 
         <?php /*
+           Wie es sitzt.
+
+           "Background gercekten full-screen / cover olmali. Sagda-solda
+           bosluk veya kucuk bir kagit gorunumu olusmamali."
+
+           Zwei Antworten, weil es zwei Sorten Datei gibt. Ein PAPIER soll in
+           der Breite der Karte stehen und sich nach unten wiederholen -
+           sonst steht es unten in einem anderen Massstab als die Karte
+           darueber, und genau das ist schon einmal aufgefallen ("ilk boyle
+           olup sonra niye buyuyor arkaplan"). Ein BILD soll die Flaeche
+           fuellen, Kante zu Kante, und dafuer beschnitten werden.
+
+           "blatt" bleibt die Voreinstellung: sie ist der bisherige Stand,
+           und eine Vorlage, die niemand angefasst hat, soll sich beim
+           naechsten Deploy nicht verschieben.
+        */ ?>
+        <label class="<?= $label ?> mt-4 block"><?= $tr ? 'nasıl otursun' : 'Wie es sitzt' ?>
+          <select name="sectionsbg_fit" class="<?= $feld ?>">
+            <option value="blatt" <?= (string) ($design['sectionsBgFit'] ?? 'blatt') !== 'cover' ? 'selected' : '' ?>>
+              <?= $tr ? 'kâğıt gibi — kart genişliğinde, aşağı doğru tekrarlar' : 'wie Papier — in der Breite der Karte, nach unten wiederholt' ?></option>
+            <option value="cover" <?= (string) ($design['sectionsBgFit'] ?? 'blatt') === 'cover' ? 'selected' : '' ?>>
+              <?= $tr ? 'kaplasın — kenardan kenara doldurur, kırpılır' : 'füllend — Kante zu Kante, wird beschnitten' ?></option>
+          </select></label>
+
+        <?php /*
            Das Blatt des Schlusses.
 
            "Son sayfa da ayri eklensin - bastaki sayfa cicekler yukarda, son

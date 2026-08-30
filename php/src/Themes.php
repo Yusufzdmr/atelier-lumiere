@@ -546,6 +546,21 @@ final class Themes
         'card'     => ['de' => 'Auf der Karte', 'tr' => 'Kartın üzerinde'],
         'page'     => ['de' => 'Auf der Seite (hinter der Karte)', 'tr' => 'Sayfada (kartın arkasında)'],
         'envelope' => ['de' => 'Auf dem Kuvert', 'tr' => 'Zarfın üzerinde'],
+        /*
+         * Der vierte Ort: die Flaeche mit den Abschnitten, unter der Karte.
+         *
+         * "Cicek, cerceve, muhur, cizgi, dantel, kagit kenari, ornament …
+         * bunlarin pozisyonu, boyutu ve layer/z-index'i ayarlanabilmeli."
+         * Bis hierher endete der Schmuck an der Unterkante der Karte, und
+         * darunter lief die Einladung nackt weiter.
+         *
+         * HINTER dem Text und nicht davor, und das steht im Namen: die
+         * Flaeche ist beliebig hoch und traegt ein Antwortformular. Eine
+         * Ranke darueber verdeckte irgendwann ein Eingabefeld, und welches,
+         * haenge davon ab, wie viel das Paar geschrieben hat.
+         */
+        'sections' => ['de' => 'Im Abschnittsbereich (hinter dem Text)',
+                       'tr' => 'Bölüm alanında (metnin arkasında)'],
     ];
 
     /**

@@ -222,8 +222,12 @@ assert_contains($sectionsPhp, "e(\$scope) . ' d-sec-flaeche",
 
 // Und sie liest sie auch: Papier und Schriftfarbe der Flaeche kommen aus
 // denselben Marken, die der Editor beim Tippen umschreibt.
-assert_contains($sectionsPhp, '.d-sec-flaeche{background-color:var(--d-paper',
+// Seit dem Schmuck im Bereich steht position:relative davor - er sitzt als
+// eigener Kasten darin. Die Marken kommen unveraendert aus derselben Regel.
+assert_contains($sectionsPhp, "background-color:var(--d-paper,#faf7f2);color:var(--d-fg",
     'Abschnitte: die Flaeche liest die Marken der Vorlage');
+assert_contains($sectionsPhp, ".d-sec-flaeche{position:relative;",
+    'Abschnitte: und traegt den Schmuckkasten in sich');
 
 /* --- Und ziehen laesst er sich auch ------------------------------------- */
 

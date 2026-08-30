@@ -670,8 +670,18 @@ assert_contains($blatt, '.d-x.d-sec-flaeche{', 'Blatt: die Flaeche traegt es');
 // der Aussage - die erste Schicht liegt oben.
 assert_contains($blatt, 'background-image:var(--d-sec-blatt-end,none),var(--d-sec-blatt,none)',
     'Blatt: Schluss vorn, grosses Blatt dahinter');
-assert_contains($blatt, 'background-position:bottom center,top center', 'Blatt: der Schluss sitzt unten');
-assert_contains($blatt, 'background-size:min(100%,42rem) auto,min(100%,42rem) 100%',
+/*
+ * Der Sitz des grossen Blattes steht seit "cover" in einer Variablen: eine
+ * Vorlage darf waehlen, ob unten ein PAPIER in der Breite der Karte liegt
+ * oder ein BILD von Kante zu Kante. Der Ersatzwert ist der bisherige Stand,
+ * eine Vorlage ohne die Angabe sieht also aus wie vorher.
+ *
+ * Der SCHLUSS bleibt fest: er ist ein Strauss am Fuss der Seite und soll
+ * sich nie strecken.
+ */
+assert_contains($blatt, 'background-position:bottom center,var(--d-sec-blatt-pos,top center)',
+    'Blatt: der Schluss sitzt unten');
+assert_contains($blatt, 'background-size:min(100%,42rem) auto,var(--d-sec-blatt-size,min(100%,42rem) 100%)',
     'Blatt: der Schluss wird nicht gezogen, das grosse schon');
 assert_contains($blatt, '.d-x .d-sec > *{position:relative;z-index:1;}', 'Blatt: der Text liegt darueber');
 
@@ -1469,7 +1479,10 @@ assert_contains($einbJs, 'allowfullscreen', 'Skript: und der Rahmen darf gross')
  * letzte Schublade gefallen und als LEERE Liste erschienen. Kein Fehler, kein
  * Hinweis, nur ein Feld, in das man nichts eintragen kann.
  */
-$tafeln = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-tafeln.php');
+// Seit dem Rahmen steht der Feldbauer in einer eigenen Vorlage: er wird an
+// ZWEI Stellen gebraucht (die Einstellungen jeder Art und die einer
+// einzelnen), und die erste konnte bis dahin nur Auswahllisten.
+$tafeln = (string) file_get_contents(__DIR__ . '/../templates/partials/einstellung-feld.php');
 assert_contains($tafeln, "=== 'einbettung'", 'Tafel: die Einbettung hat einen eigenen Zweig');
 assert_contains($tafeln, 'youtube.com/watch', 'Tafel: und sagt mit einem Beispiel, was hineingehoert');
 

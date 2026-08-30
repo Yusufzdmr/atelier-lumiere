@@ -1747,6 +1747,131 @@ kart kendi katmanlarını taşır.
 alanına PNG-video katman desteği. Kartta çalışan motorun aynısı; bugün
 `spot` yalnız kart/sayfa/zarf tanıyor, dördüncüsü bölüm alanı olacak.
 
+## 30 Ağustos — Paket B: çerçeveler, bölüm alanında dekorasyon, kaplayan arka plan
+
+Ayhan'ın 3. ve 10. maddeleri, artı 10'un içindeki "background gerçekten
+cover olmalı".
+
+### 1 · Çerçeveler
+
+Her bölüm artık bir çerçeve taşıyabiliyor (`SectionRegistry::GRUND`, yani
+**her** tür): `keine / linie / doppel / gold / papier / transparent / eigen`.
+
+**"floral" listede yok, bilerek.** CSS çizgilerinden yapılmış bir çiçek
+çerçevesi, hiçbir çizimin karşılamadığı bir vaattir. Ayhan aynı cümlede zaten
+doğrusunu istemişti — "kendi hazırladığım transparent PNG çerçeveleri
+yükleyebilmeliyim" — o yüzden **`eigen`** var: bölüm başına bir PNG
+(`frameSrc`), `background-size:100% 100%` ile bölümün arkasına geriliyor.
+`border-image` değil: dokuz parçalı bir bölme, kenarın ne kadar geniş olduğunu
+bilmeyi gerektirir, ve onu yalnız çizimi yapan bilir. Gerilen bir arka plan
+öngörülebilir — grafiker ne olduğunu hemen görür ve dosyasını ona göre yapar.
+
+**Çizim bölüm başına, tasarım başına değil.** Bir davetiye programın etrafında
+bir dal, adresin etrafında sade bir çizgi taşıyabilir.
+
+**Çerçeve `.d-sec-inner`'a çiziliyor, bölüme değil.** Zorunlu: üst dolgu
+genişliğin %56'sı (başlık yaprağın altın çizgileri arasına düşsün diye), yani
+bölümün etrafındaki bir çerçeve ilk satırın yarım ekran üstünde başlardı. Bunun
+için markup'a bir kutu eklendi ve o **her zaman** basılıyor: yalnız bazen var
+olan bir kutu ikinci bir plan demektir, ve onu anan her kural iki hâli birden
+bilmek zorunda kalır.
+
+Tarayıcıda görüldü: `papier` yumuşak gölgeli bir kart, `doppel` dış çizgi + iç
+ikinci çizgi, `gold` köşe işaretleri accent renginde (ölçüldü: 17.59px =
+1.1rem, `rgb(176,141,87)`).
+
+### 2 · Bölüm alanında dekorasyon — dördüncü `spot`
+
+`Themes::SPOTS` artık dört: card / page / envelope / **sections**. Şimdiye
+kadar süsleme kartın alt kenarında bitiyordu, altında davetiye çıplak devam
+ediyordu — davetlinin en uzun baktığı yer.
+
+**Metnin arkasında, önünde değil**, ve bu adın içinde yazıyor: alan istediği
+kadar yüksek olabiliyor ve içinde bir RSVP formu var. Üstteki bir dal er ya da
+geç bir giriş alanını kapatırdı, hangisini kapatacağı da çiftin ne kadar
+yazdığına bağlı olurdu.
+
+**Dikey ölçü `cqw`, yüzde değil — bu maddenin asıl işi.** `top`'taki yüzdeler
+kutunun **yüksekliğine** göre ölçülür. Kartta yükseklik bilinir (sabit oran);
+bölüm alanı çiftin yazdığı kadar yüksektir. Aynı %12, kısa bir davetiyede 70px,
+uzun birinde 700px olurdu — grafiker bir dalı ayarlar, her ikinci davetiyede
+başka yerde bulurdu. `cqw` genişliğin yüzde biri: sayı her yerde aynı şeyi
+ifade ediyor, ve bölümlerin zaten hesapladığı birim bu (dolgu yüzde, ve
+dolgudaki yüzde genişliğe göredir).
+
+**`container-type` kutuda, alanda değil — ve bu zevk meselesi değil.**
+`container-type` bir kutuyu `position:fixed` için referans yapar. Müziğin
+sessize alma düğmesi `fixed` ve bölüm alanının içinde duruyor; alana yazılsaydı
+pencere kenarına değil bölüm alanına yapışırdı — yani tam da arandığı anda,
+davetiyenin ortasında kaybolurdu. Bir test bunu tutuyor.
+
+`overflow:hidden` (kenardan taşan bir dal sayfayı genişletmesin — telefonda
+yatay kaydırma çubuğu demekti) ve `pointer-events:none` (şeffaf bir köşe, bir
+giriş alanına giden dokunuşu yutmasın).
+
+Tarayıcıda ölçüldü: alan 1910px genişken `y=18` → 344px (0.18 × 1910 = 343.8),
+`w=26` → 497px, opaklık 0.35, yatay kaydırma çubuğu **yok**.
+
+### 3 · Kaplayan arka plan
+
+`sectionsBgFit`: **blatt** (bugünkü hâl, varsayılan) veya **cover**.
+
+İki cevap çünkü iki tür dosya var. Bir **kâğıt** kart genişliğinde durmalı ve
+aşağı doğru tekrarlamalı — yoksa altta üsttekinden başka ölçekte durur, ve bu
+zaten bir kez fark edilmişti ("ilk böyle olup sonra niye büyüyor arkaplan").
+Bir **resim** alanı doldurmalı, kenardan kenara, ve bunun için kırpılmalı.
+
+`background-attachment:fixed` **yok**: bir kez denenmiş ve **ekrana** göre
+ölçtüğü için aynı yaprak altta neredeyse iki katı çıkmıştı. `cover` fixed'siz
+alana göre ölçüyor ve isteneni yapıyor.
+
+1920px'te ölçüldü: `background-size: min(100%,672px), cover`, konum
+`50% 100%, 50% 50%` — yani kapanış yaprağı altta kendi ölçüsünde, büyük yaprak
+tüm genişlikte. Sağda solda boşluk yok.
+
+### 4 · Transparan video — yapılacak bir şey yoktu, doğrulandı
+
+`Media::storeVideo` bir WebM'i **olduğu gibi** saklıyor, yeniden kodlamıyor →
+VP9 alfa kanalı hayatta kalıyor. Ve katmanın arkasında hiçbir renk yok: `.d-el`
+bir background taşısaydı, videonun şeffaf ortası kapanırdı. Bir test ikisini de
+tutuyor, "şimdi çalışıyor" demek yerine "böyle kalacak" diyor.
+
+### Yan iş: ayar alanı çizicisi tek yere taşındı
+
+Tafel'de iki döngü var — her türün taşıdığı ayarlar, ve yalnız bir türün
+taşıdıkları. Birincisi bugüne kadar **sadece açılır liste** çizebiliyordu. Bu,
+orada sadece açılır listeler durduğu sürece sorun değildi; `frameSrc` bir dosya
+ve **boş bir liste** olarak görünürdü — hata yok, uyarı yok, sadece içine bir
+şey yazılamayan bir alan. Aynı hata einbettung'da bir kez yapılmıştı.
+
+Çizici artık `templates/partials/einstellung-feld.php` ve iki döngü de onu
+kullanıyor. Bir tür alan bir yerde inşa ediliyor, iki yerde değil.
+
+### Kabul edilen ödün
+
+`eigen` çerçevede PNG geriliyor, yani köşeler de geriliyor. Dokuz parçalı
+bölme (köşeler sabit, ortası gerilen) daha iyi olurdu ama bir de "kenar kaç
+piksel" ayarı gerektirir. Grafiker ne olduğunu ilk denemede gördüğü için
+dosyasını buna göre yapabiliyor; gerekirse sonra eklenir.
+
+### Test
+
+`php bin/test.php` → **2108 kontrol** (öncesi 1964). İki yeni dosya:
+`tests/rahmen.php` (43) ve `tests/deko_abschnitte.php` (27).
+
+### Yusuf'un gözle bakması gereken
+
+Panelde bir bölüm seç → **Çerçeve** listesinde yedi seçenek, `eigen`'in altında
+dosya alanı. Ve **Tema → Bölüm arka planı** altında yeni "nasıl otursun"
+seçimi (kâğıt gibi / kaplasın).
+
+### Sıradaki: Paket C
+
+Modül varyantları. Tarih modülü (hiç yok), countdown / program / konum /
+dress code için yeni görünümler, renk paleti, kendi harita resmin. Artık Paket
+A'nın rolleri ve Paket B'nin çerçeveleri var, yani her yeni varyant kendi
+ölçülerini uydurmak yerine bu kelimelerle yazılacak.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

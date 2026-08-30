@@ -52,6 +52,53 @@ final class SectionRegistry
             'label'   => ['de' => 'Ausrichtung', 'tr' => 'Hizalama'],
         ],
         /*
+         * Der Rahmen um den Text.
+         *
+         * "Metinler sadece alt alta gosterilmemeli … cerceve icerisinde,
+         * kart seklinde." Bis hierher stand jeder Abschnitt nackt auf dem
+         * Blatt; wer eine Angabe hervorheben wollte, konnte nur ihre
+         * Schrift aendern.
+         *
+         * Er umschliesst UEBERSCHRIFT UND INHALT, nicht nur den Text: eine
+         * Ueberschrift, die ueber ihrem eigenen Rahmen schwebt, sieht aus
+         * wie ein Fehler beim Setzen.
+         *
+         * "eigen" ist der wichtigste Eintrag der Liste: er nimmt die
+         * transparente PNG, die der Grafiker selbst gezeichnet hat
+         * (frameSrc daneben). Ein "floral" aus CSS-Strichen waere ein
+         * Versprechen, das keine Zeichnung einloest - dafuer gibt es das
+         * Feld darunter, und dort ist es eine echte Ranke.
+         */
+        'frame' => [
+            'type'    => 'select',
+            'options' => ['keine', 'linie', 'doppel', 'gold', 'papier', 'transparent', 'eigen'],
+            'default' => 'keine',
+            'label'   => ['de' => 'Rahmen', 'tr' => 'Çerçeve'],
+        ],
+        /*
+         * Und die eigene Zeichnung dazu.
+         *
+         * Je Abschnitt und nicht je Vorlage: eine Einladung kann eine Ranke
+         * um den Ablauf und eine schlichte Linie um die Anfahrt tragen. Der
+         * Weg ist derselbe wie beim Blatt eines Abschnitts - hochladen,
+         * Pfad bleibt sichtbar, leeren entfernt.
+         *
+         * Sie wird als border-image mit "fill" gelegt: die Mitte der Datei
+         * traegt den Grund, die Raender die Zierde. Eine PNG mit
+         * durchsichtiger Mitte gibt damit einen Rahmen, durch den das Blatt
+         * sichtbar bleibt - genau das, was eine transparente Zeichnung soll.
+         */
+        'frameSrc' => [
+            'type'    => 'src',
+            // 'bild' ist das Wort, das der Katalog schon kennt (neben
+            // 'audio' und 'video'); der Controller waehlt danach seine
+            // Pruefung, das Panel sein accept.
+            'kind'    => 'bild',
+            'default' => '',
+            'label'   => ['de' => 'Eigener Rahmen (PNG)', 'tr' => 'Kendi çerçeven (PNG)'],
+        ],
+
+        /*
          * Die Luft UEBER dem Abschnitt.
          *
          * "auto" ist die Voreinstellung und bedeutet: das gerechnete
