@@ -2271,6 +2271,125 @@ Ayhan'ın 1., 2. ve 3. maddeleri, tek iş:
 beğeniyor ve mevcut tasarımlar ona bağlı. Yeni element listesi onun **yanına**
 gelecek.
 
+## 31 Ağustos — E4: elementler, dört gestalt, ve sürükleme
+
+E4 dört commit'te bitti (`7265384`, `6f2422f`, `8e666ea`, `475b9bc`). Sıradaki
+oturuma kalan bir parçası yok.
+
+### Ayrım: kimin verisi hangisi
+
+İş başlarken listede olmayan bir soru çıktı ve her şeyi o belirledi. Günün
+programındaki satırlar **çiftin**: saat, başlık ve hangi simgenin seçileceği
+onun verisinde duruyor, ve kaç satır olacağını bir şablon bilemez. Müşteri ise
+**şablon** kuruyor.
+
+Yani satır başına resim listesi değil, **kennung (simge kimliği) başına bir
+tane**: çift "pasta"yı seçer, şablon pastanın neye benzediğini söyler. Fotoğraf
+tarafındaki ayrımın aynısı — "müşteri fotoğrafını yükler, nasıl gösterileceğini
+seçilen davetiye tasarımı belirler".
+
+Bunun sonucu: kendi dosyası `<img>`/`<video>` olarak geliyor, maske olarak
+değil. Maske tek renkli SVG için doğru, ama grafikerin PNG'sini yazı renginde
+bir leke yapar. 17 çizili simge yedek olarak duruyor, yani **hiçbir mevcut
+tasarım değişmedi**.
+
+### Geri sayımda kennung yok — dört ayrı liste
+
+Geri sayımda seçilecek bir kimlik yok, o yüzden orada model başka: **gestalt
+(görünüm) başına serbest liste**. İstenen buydu — "countdown görünümü bazında
+ayrı saklama".
+
+Sebebi markup'ta duruyor: dört görünüm aynı alanları göstermiyor. Saat
+görünümünde saniye var, sakin sayıda yok; "saniye"ye asılmış bir süs orada
+hiçbir şeye asılmış olurdu. Ortak tek liste her görünüm değişiminde **yarım**
+uyardı, ve yarım uyan bir şey bozuk görünür. Görünümü değiştiren süsü de
+değiştirir, geri döndüğünde aynen bulur.
+
+`days` dördünde de var; tanınmayan bir anchor oraya düşüyor. Satırı atmak
+demek, yüklenmiş bir dosyayı sessizce silmek demekti.
+
+### Geometri em cinsinden, ve nerede durduğu
+
+Dört sayı (boyut, X, Y, mesafe) **yüzde bir em** olarak saklanıyor. Bu birebir
+istekti: "yazının font boyutunu büyüttüğümde görsel de yazıyla beraber doğru
+konumda hareket etmeli. Sabit koordinatta kalıp tasarım bozulmamalı." em,
+yanında durduğu satıra göre ölçer.
+
+İki tür simgenin geometrisi **iki ayrı yerde** duruyor, ve bu bilerek:
+
+| Ne | Nerede | Neden |
+|---|---|---|
+| Katalog simgeleri | stil bloğu (`.d-ikon-pasta{…}`) | düğümü **davetiye** doğurur; şablon ona uzaktan seslenebilmeli |
+| Geri sayım süsleri | düğümün kendi `style` özniteliği | düğüm zaten yalnızca **şablon** öyle dediği için var |
+
+Bir de zorunlu bir temel kural var: Tailwind preflight `img`/`video`'yu
+`display:block` yapıyor — sayının **yanındaki** süs onsuz bir alt satıra
+düşerdi. `max-width:none` da aynı sebepten (preflight kutuya göre kırpıyor).
+
+`position:relative` z-index'in yanında duruyor: onsuz statik bir düğümde
+z-index hiç tutmaz, ve grafiker etkisi olmayan bir sayıyı çevirir. Bu evde
+daha önce tam olarak bu tuzağa düşüldü (`fonts.size`, aylarca etkisiz).
+
+### Panelde: 3c ve 3d
+
+`3c · Simgeler` on yedi kennung'un tamamını gösteriyor — kullanılmayanları da.
+Yalnızca dolu olanları gösteren bir liste, insanın oraya getirdiği soruyu
+("hangileri var ki?") cevaplamıyor.
+
+`3d · Geri sayım süsleri` dört görünüm için dört liste. Her listenin altında
+**hep bir boş satır** var (betik olmadan da bir şey eklenebilsin diye), yanında
+"+" düğmesi o boş satırı klonluyor. Klonlanan hep **sonuncu** ve uydurma bir
+şablon değil: ikinci bir yapı planı olmasın diye.
+
+**Silme = yolu boşalt, kaydet.** Ayrı bir silme düğmesi formda ikinci bir durum
+olurdu, üstelik kaydedene kadar yalan söyleyen bir durum.
+
+Dosya alanı **tek**, resim de video da alıyor: `Media::storeVideo` dosyanın
+içine bakıyor ve resimse null dönüyor, yani hangi yolun işleyeceğine dosyanın
+kendisi karar veriyor.
+
+### Sürükleme
+
+Dört sayı alanı "tam olarak eksi beş yüzde bir" sorusunun doğru cevabı, "biraz
+daha sola" sorusunun yanlış cevabı. Kartta aylardır sürükleniyordu; bölümlerde
+yalnızca form vardı.
+
+İki tür düğüm, tek tutamak. Kim olduğunu biri sınıftan (`d-ikon-pasta`), öteki
+yeni `data-cd="uhr:0"` özniteliğinden söylüyor. Öznitelik gönderilen sayfada da
+duruyor — on iki ölü karakter, önizleme için ikinci bir yapı planından ucuz.
+
+Hesap yüzde bir em üzerinden, ve düğümün **kendi** font boyutundan: tarayıcı
+içine yazdığı em'i onunla ölçüyor. Çerçevenin `transform:scale`'i de aynı
+düğümden çıkarılıyor (ölçülen genişlik / hesaplanan genişlik), yoksa cihaz
+görünümünde süs elden hızlı kaçardı.
+
+Yazılan yer **alan**, doküman değil. Sürüklerken düğüm yalnız göstermek için
+oynuyor; bırakınca x ve y sayısını alıyor ve **tek** bir `input` olayı canlı
+önizlemeyi uyandırıyor. İki olay geçmişe iki adım yazardı ve Ctrl+Z iki kez
+aynı hareketi geri alırdı.
+
+Aynı kennung'un bütün simgeleri birlikte hareket ediyor. Bu bir kabalık değil,
+modelin kendisi: şablon pastanın ne olduğunu söyler — programda iki satırda
+geçiyorsa, iki kez aynı pastadır.
+
+### Ölçülen
+
+Editör sayfasının formu olduğu gibi `/vorschau`'ya gönderildi (betiğin yaptığı
+şey): süs saniye alanının **önünde** markup'ta duruyor, `width:2.5em`,
+`transform:translate(0.4em,-0.25em)`, `data-cd="uhr:0"`; `.d-cd-el` temel
+kuralı stil bloğunda. Yeni tafel kendi kapalı bloğunda (3d) ve sayfadaki iki
+formun ikisi de hâlâ **birer** csrf alanı taşıyor — yani bu sefer "parçanın
+etrafındaki sayfaya ne yaptığı" da ölçüldü.
+
+`php bin/test.php` → **2420** (öncesi 2328).
+
+### Gözle bakılacak tek şey
+
+Sürüklemenin kendisi tarayıcıda denenmedi: yerel panele girmek parola istiyor
+ve parolayı ben yazmıyorum. `/de/admin/designs/pruefstand` → 3d'de bir yola
+`/assets/icons/pasta.svg` yaz, canlı önizlemede simgeyi tut ve sürükle; X/Y
+alanları değişmeli.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
