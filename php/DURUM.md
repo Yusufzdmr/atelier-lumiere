@@ -2111,6 +2111,91 @@ yapılanların **kullanılması**: artık her tür için birden fazla görünüm
 yazı rolü, yedi metin çerçevesi, yedi fotoğraf biçimi ve bölüm alanına
 dekorasyon var. Bir sonraki iş kod değil, bunlarla **tasarım yapmak**.
 
+## 31 Ağustos — "Papeterie": 12. madde, ve tipografide bir hata
+
+Ayhan'ın listesinde tek başına duran madde 12'ydi: *"Her bölüm farklı bir
+görsel yapıya sahip olmalı — davetiye scroll edildiğinde her şey aynı
+görünmemeli."* Bu programlanamaz. Programlanabilen kısım A–D paketleriyle
+hazırdı; burada bir kez **kullanıldı**.
+
+`bin/seed-papeterie.php` — Élysée'nin kartını (katmanlar, palet, yazılar,
+zarf) olduğu gibi alıyor ve altındaki **strecke**'yi kuruyor. Taslak olarak
+yazılıyor; sorulmadan vitrine çıkmıyor.
+
+### Strecke
+
+| Bölüm | Görünüm | Çerçeve | Boşluk |
+|---|---|---|---|
+| Tarih | büyük rakam | — | auto / xs |
+| Countdown | büyük gün sayısı | — | xs / l |
+| Konum | büyük mekân adı + yaprak harita | — | s / l |
+| Ablauf | ayrı kartlar | — | s / l |
+| Aileler | yan yana | ince çizgi | s / l |
+| Kıyafet | kadın/erkek + renk daireleri | kâğıt kart | s / l |
+| Fotoğraflar | ızgara | — (polaroid) | s / l |
+| Söz | editorial + baş harf | transparan kart | s / l |
+| Katılım | form | **gold köşeler** | s / m |
+| Alt bilgi | çizgili + bize yönlendirme | — | xs / s |
+
+Kural: **ardışık iki bölüm görünüm VE çerçeveyi paylaşmıyor.** Betik bunu
+kendi kontrol ediyor ve çıktısında söylüyor. Bu kontrol `tests/` içinde
+değil, betiğin içinde — çünkü bu **bu tasarımın** iddiası, motorun kuralı
+değil. tests/ içinde olsa, ileride doğacak her tasarım hakkında bir iddia
+olurdu.
+
+Boşluk merdiveni de anlatıyor: tarih ile countdown arası **xs** (aynı bilginin
+iki yüzü), her yeni düşünceden önce **l**.
+
+### Tasarımın sesi
+
+`typo` varsayılanda bırakılmadı — asıl mesele bu: varsayılan bugünkü hâl, ve
+onu terk etmeyen bir tasarım diğerleri gibi görünür. Üç karar:
+
+- **Başlıklar küçüldü** (1.5rem → 0.96rem) ve harf aralığı açıldı. Papeteride
+  başlık öne çıkmaz, haber verir; öne çıkan altındaki bilgidir.
+- **Büyük rakam 3.4 → 6.4rem.** İstek tam olarak buydu: "08 çok büyük olabilir".
+- **Küçük açıklama daha sessiz ve daha geniş.**
+
+### Ve tarayıcıda bir hata çıktı
+
+İlk render'da "TAGE" kelimesi "377"nin içine giriyordu. İki yanlış teşhis:
+
+1. Önce satır yüksekliğini suçladım (`0.92`) ve `max(1, …)` tabanı koydum.
+   İyileşti ama çakışma kalmıştı.
+2. Sonra `Range.getBoundingClientRect()` ile "harflerin altı" diye bir sayı
+   ölçtüm — **o mürekkebi değil satır kutusunu veriyor.** Peşine düştüğüm
+   −3px yanlış şeyin ölçüsüydü.
+
+Gerçek sebep tipografikti: **Cormorant rakamları mediäval yazıyor** — 3, 7 ve
+9 taban çizgisinin altına, bir g ya da p gibi iniyor. Akan metinde doğru ve
+güzel; 100px'lik bir rakamın altında bir kelime varken hiçbir boşluğun
+çözemeyeceği bir çakışma, çünkü alt uzantı yazı boyuyla birlikte büyüyor.
+
+Çözüm `font-variant-numeric: lining-nums` — rakamları taban çizgisine
+oturtuyor. Bu yalnızca çözüm değil, **doğrusu**: mediäval rakam akan metnin,
+versal rakam bir auszeichnung'un rakamıdır. Aynı düzeltme `date/gross`'a da
+kondu (aynı dizilim: rakamın altında bir satır).
+
+`max(1, …)` tabanı da duruyor — ikisi ayrı sorunlara karşı.
+
+Ders, ACIK-ISLER'deki kuralın bir başka yüzü: **ölçtüğün şeyin ne olduğunu
+bilmiyorsan, ölçme — bak.** Üç ölçüm üst üste tutarlıydı ve üçü de yanlış
+şeyi ölçüyordu; ekran görüntüsü tek bakışta söyledi.
+
+### Test
+
+`php bin/test.php` → **2256 kontrol**, değişmedi (bu iş yeni motor değil,
+motorun kullanımı; iki CSS düzeltmesi mevcut testlerin altında kaldı).
+
+### Durum
+
+Yerelde `papeterie` taslak olarak duruyor. Betik idempotent — demo
+sunucusunda da `php bin/seed-papeterie.php` ile aynısı doğar.
+
+**Yayına ve demo sunucusuna hiçbir şey gönderilmedi.** Beş paketin tamamı
+`paket-0-kirik-olanlar` dalında duruyor; master'a almak ve demoya yüklemek
+ayrı bir karar.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

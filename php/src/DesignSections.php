@@ -1507,6 +1507,11 @@ final class DesignSections
              */
             'date/gross' => $sel . ' .d-datum-tag{'
                 . self::typoText('number', '3.4rem', '1')
+                // Dieselbe Untergrenze und dieselben Versalziffern wie bei
+                // der Tageszahl, aus demselben Grund: unter der Zahl steht
+                // eine Zeile.
+                . 'line-height:max(1,var(--dt-number-line,1));'
+                . 'font-variant-numeric:lining-nums;'
                 . 'margin-bottom:var(--dt-number-below,0.6rem);}'
                 . $sel . ' .d-datum-monat{' . self::typoText('subtitle', '1.7rem', '1.2') . '}'
                 . $sel . ' .d-datum-jahr{' . self::typoText('small', '0.86rem') . 'opacity:0.75;}',
@@ -1543,9 +1548,48 @@ final class DesignSections
              * Dieselbe Rolle wie die einzelne grosse Zahl - der Grafiker
              * dreht an einem Knopf und nimmt beide Gestalten mit.
              */
+            /*
+             * Die Zeilenhoehe der Zahl wird hier nach unten begrenzt, und
+             * zwar auf 1.
+             *
+             * Im Browser gemessen, an der Vorlage "Papeterie": sie setzt die
+             * grosse Zahl auf Zeilenhoehe 0.92 - eine ganz normale Wahl fuer
+             * eine Zahl, die allein steht. Bei 102 px ist die Zeilenbox dann
+             * 94 px hoch, die Ziffern aber 108: sie ragen 14 px unter ihre
+             * eigene Box. Das Wort darunter begann daraufhin 7 px INNERHALB
+             * der Ziffern, trotz seines Abstands.
+             *
+             * Der Abstand allein kann das nicht loesen - er misst ab der
+             * Box, nicht ab den Ziffern, und wie weit sie herausragen,
+             * haengt an der Schrift. In DIESER Anordnung steht ein Wort
+             * direkt unter der Zahl; dort darf die Box nicht kleiner sein
+             * als das, was in ihr steht. Groessere Werte gelten weiter.
+             */
             'countdown/tage' => $sel . ' .d-uhr-tage{display:block;}'
                 . $sel . ' .d-uhr-tage .d-sec-uhr-zahl{display:block;'
-                . self::typoText('number', '3.4rem', '1') . '}'
+                . self::typoText('number', '3.4rem', '1')
+                . 'line-height:max(1,var(--dt-number-line,1));'
+                /*
+                 * Versalziffern fuer die grosse Zahl.
+                 *
+                 * Cormorant setzt Ziffern als MEDIAEVALZIFFERN: die 3, die
+                 * 7 und die 9 haengen unter die Grundlinie, so wie ein g
+                 * oder ein p. In laufendem Text ist das richtig und schoen -
+                 * unter einer 100 px grossen Zahl, unter der ein Wort steht,
+                 * ist es eine Kollision, die kein Abstand loest: die
+                 * Unterlaenge waechst mit der Schriftgroesse mit.
+                 *
+                 * Gemessen an "Papeterie": 377 bei 102 px ragte 11 px unter
+                 * seine eigene Zeilenbox, und "TAGE" begann 7 px INNERHALB
+                 * der Ziffern.
+                 *
+                 * lining-nums stellt die Ziffern auf die Grundlinie. Das ist
+                 * hier nicht nur die Loesung, sondern auch das Richtige:
+                 * Mediaevalziffern gehoeren in den Fliesstext, Versalziffern
+                 * in eine Auszeichnung.
+                 */
+                . 'font-variant-numeric:lining-nums;'
+                . '}'
                 /*
                  * Luft zwischen Zahl und Wort. Die Zahl steht auf
                  * Zeilenhoehe 1 (das gehoert zur Rolle "grosse Zahl"), und
