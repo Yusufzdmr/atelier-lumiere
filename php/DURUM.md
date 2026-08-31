@@ -2414,6 +2414,82 @@ oturum istiyor); orayı gözle bir kez görmek iyi olur.
 
 `php bin/test.php` → **2420**.
 
+## 31 Ağustos — fiyat hesaplayıcı (Ayhan'ın "en son ona da el at" dediği iş)
+
+Kuyrukta duran son madde buydu. Backlog notu: `docs/backlog/2026-08-19-fiyat-hesaplayici.md`.
+
+> Bu ek işlerde yani pakete gelecek ilave bölümü — tıkladıkça paket fiyatı
+> oynaması lazım. (…) Ödeme sistemi olmayacak ama müşteri ne ödeyecek, ne
+> alacak görsün, forma eklensin.
+
+### Engel neydi: fiyatlar sayı değil, metin
+
+`site_content` içinde paket ve ek hizmet fiyatları serbest metin (`"1.890 €"`,
+`"+ 450 €"`) — çünkü Ayhan onları panelde bir alana yazıyor. Backlog iki yol
+sayıyordu; **A** seçildi: metni oku, okunamayanı **tahmin etme**.
+
+`Packages::amount()` sadece şunu kabul ediyor: baştaki `+`, Alman binlik
+noktası, virgüllü kuruş, sondaki `€`. **İçinde harf varsa sayı değildir.**
+`"ab 250 €"` bir fiyat değil, fiyat hakkında bir cümle; `"auf Anfrage"` ise
+fiyat söylemeyi açıkça reddetmek. Bunlardan 250 çıkarmak, kimsenin söz
+vermediği bir toplam göstermek olurdu — bu projede en pahalı hata biçimi tam
+olarak bu, çünkü fark edilmiyor.
+
+Gerçek veride bunun canlı bir örneği çıktı: **"Anfahrt über 60 km — 0,40 €/km"**.
+Bu bir fiyat, ama toplanabilir bir fiyat değil. Seçilebilir kalıyor, toplama
+girmiyor, ve sayfa bunu söylüyor.
+
+### Nerede ne oldu
+
+| Dosya | Ne |
+|---|---|
+| `src/Packages.php` (yeni) | `amount()` · `money()` · `summary()` · `asText()` |
+| `templates/pages/prices.php` | kartlarda radio, ek hizmetlerde checkbox, altta toplam |
+| `public/assets/prices.js` | canlı toplam, kuruş cinsinden tam sayı |
+| `PageController::contact()` | seçim mesaj alanına dolduruluyor |
+| `ContentAdminController::packages()` | "bu kalem toplama girmiyor" uyarısı |
+| `data/dict.php` | beş yeni anahtar, üç dilde |
+
+**Neden `Pricing.php` değil de yeni dosya:** `Pricing` dijital **davetiyenin**
+fiyatlarını tutuyor (`BASE`, `SECTIONS`, `total()`). İki fiyat dünyası tek
+sınıfta olsa içindeki her kelimenin iki anlamı olurdu. Backlog da bunu
+söylüyordu.
+
+**Neden `method="get"`:** seçim bir talep değil, talebin hazırlığı. Böylece
+sayfa **betiksiz de** çalışıyor — sadece canlı toplam düşüyor, seçim yine
+iletişim formuna varıyor ve orada sunucu topluyor.
+
+**Neden mesaj alanı, gizli alan değil:** seçim orada mailde, talepler
+listesinde ve **gönderenin gözünün önünde** duruyor, üstelik değiştirebiliyor.
+Gizli alan `leads` tablosuna sütun, maile ve panele ayrı bir yolculuk isterdi —
+ve gönderen ne yolladığını görmezdi. (`schema.sql` baştan sona
+`CREATE TABLE IF NOT EXISTS`; oraya `ALTER` koymak ikinci çalıştırmada patlayan
+ilk satır olurdu.)
+
+**Uyarı panelde de duruyor**, sadece sayfada değil: fiyatı yazan kişi onu
+değiştirebilecek tek kişi, ve sonucu başka türlü hiç görmez.
+
+### Tarayıcıda ölçülen (localhost, gerçek içerik)
+
+| Ne | Sonuç |
+|---|---|
+| Hiçbir şey seçili değilken | toplam satırı gizli, "bir paket seçin" cümlesi görünür |
+| "Der ganze Tag" + iki ek | **2.830 €** (1.890 + 450 + 490) |
+| Üstüne "Anfahrt über 60 km" | toplam **değişmedi**, "sabit fiyatı olmayan kalemler dahil değil" belirdi |
+| Sayfa boyu | 3158 → 3202 px (yalnız beliren cümle kadar) |
+| Gönder → `/de/kontakt?...` | mesaj alanı dolu: kalemler, fiyatlar, toplam, uyarı satırı |
+| İngilizce sayfa | yeni metinler yerinde |
+| Panel `/de/admin/pakete` | "Nicht mitgerechnet (keine reine Zahl): Anfahrt über 60 km." |
+
+`php bin/test.php` → **2485**.
+
+### Kalan / karar bekleyen
+
+Backlog'da bir madde daha var ama o **Ayhan'a üç soru** bekliyor
+(`docs/backlog/2026-08-19-kalp-seklinde-harita.md`): harita davetiyede mi
+iletişim sayfasında mı, kalbin içi harita mı yoksa işaret mi kalp olacak,
+kaydırma/zum şart mı. Sorular sorulmadan başlanmaz.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

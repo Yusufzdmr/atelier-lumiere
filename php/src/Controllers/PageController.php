@@ -8,6 +8,7 @@ use Atelier\Content;
 use Atelier\I18n;
 use Atelier\Images;
 use Atelier\Leads;
+use Atelier\Packages;
 use Atelier\Security;
 use Atelier\Seo;
 use Atelier\View;
@@ -71,6 +72,11 @@ final class PageController
 
         View::page('pages/prices', $this->base('/preise', [
             'meta' => Seo::forPage('preise', [
+                // Die mitlaufende Summe. Als Datei und nicht als Block auf der
+                // Seite: die CSP sagt script-src 'self', und ein Nonce fuer
+                // etwas, das genauso gut eine Datei sein kann, waere eine
+                // Ausnahme ohne Grund.
+                'scripts' => ['/assets/prices.js'],
                 'jsonLd' => [
                     Seo::faq($this->faqPairs($faq)),
                     Seo::breadcrumb([
@@ -352,6 +358,32 @@ final class PageController
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             [$sent, $errors, $values] = $this->handleContact();
+        } else {
+            /*
+             * Die Auswahl von der Preisseite.
+             *
+             * Sie landet im NACHRICHTENFELD und nicht in einem versteckten:
+             * dort steht sie in der Mail, in der Liste der Anfragen und vor
+             * den Augen dessen, der sie abschickt - und er kann sie aendern.
+             * Ein eigenes Feld haette eine Spalte in `leads` gebraucht und
+             * eine Wanderung durch Mail und Panel, und der Absender saehe
+             * nicht, was er mitschickt.
+             *
+             * Gerechnet wird hier und nicht im Browser: was von dort kommt,
+             * sind zwei Nummern, und die Preise stehen im Inhaltsdokument.
+             */
+            $auswahl = Packages::summary(
+                Content::list('packages'),
+                Content::list('addons'),
+                (string) ($_GET['paket'] ?? ''),
+                is_array($_GET['extra'] ?? null) ? $_GET['extra'] : [],
+                I18n::locale()
+            );
+
+            $text = Packages::asText($auswahl, I18n::locale());
+            if ($text !== '') {
+                $values['message'] = $text;
+            }
         }
 
         View::page('pages/contact', $this->base('/kontakt', [

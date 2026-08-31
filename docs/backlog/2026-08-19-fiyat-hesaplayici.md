@@ -2,7 +2,11 @@
 
 **Tarih:** 2026-08-19
 **Kaynak:** Ayhan, WhatsApp
-**Durum:** kayıtlı, planlanmadı. Ayhan "en son ona da el at" dedi.
+**Durum: yapıldı** — 31.08.2026. Seçilen yol **A** (metni ayrıştır, ayrıştırılamayanı tahmin etme). Ayrıntı ve ölçüm: `php/DURUM.md`, "31 Ağustos — fiyat hesaplayıcı" bölümü.
+
+Aşağıdaki not olduğu gibi duruyor: iş bittikten sonra da hangi soruların sorulduğunu ve neyin neden seçildiğini gösteriyor.
+
+**Kaynak durum:** kayıtlı, planlanmadı. Ayhan "en son ona da el at" dedi.
 
 ## İstenen
 

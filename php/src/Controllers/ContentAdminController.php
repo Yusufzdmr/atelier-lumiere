@@ -8,6 +8,7 @@ use Atelier\Content;
 use Atelier\Form;
 use Atelier\I18n;
 use Atelier\Marketing;
+use Atelier\Packages;
 use Atelier\Security;
 use Atelier\View;
 
@@ -95,9 +96,34 @@ final class ContentAdminController
         $de = $this->de();
         $sections = [];
 
+        /*
+         * Der Hinweis fuer einen Preis, den die Seite nicht rechnen kann.
+         *
+         * Auf der Preisseite laeuft eine Summe mit, und sie liest die Zahl aus
+         * dem Text, der hier eingetippt wird ("1.890 €"). Steht dort ein Wort
+         * ("auf Anfrage", "ab 250 €"), gibt es nichts zu addieren - der Posten
+         * bleibt waehlbar und faellt aus der Summe.
+         *
+         * Das gehoert HIERHER gesagt und nicht nur auf die Seite: wer den
+         * Preis eintippt, ist der Einzige, der es aendern kann, und er sieht
+         * die Folge sonst nie.
+         */
+        $warnung = static function (string $preis) use ($de): string {
+            if ($preis === '' || Packages::amount($preis) !== null) {
+                return '';
+            }
+
+            return $de
+                ? 'Hinweis: „' . $preis . '" ist keine reine Zahl und wird auf der Preisseite nicht mitgerechnet. '
+                    . 'Der Posten bleibt wählbar; die Summe sagt dann, dass sie unvollständig ist.'
+                : 'Not: „' . $preis . '" düz bir sayı değil, fiyat sayfasındaki toplama katılmaz. '
+                    . 'Kalem seçilebilir kalır; toplam da eksik olduğunu söyler.';
+        };
+
         foreach (Content::list('packages') as $i => $package) {
             $sections[] = [
                 'title'  => (string) ($package['name'][$this->locale] ?? ($package['name']['de'] ?? 'Paket')),
+                'hint'   => $warnung((string) ($package['price'] ?? '')),
                 'fields' => [
                     ['path' => "packages.$i.name.de", 'label' => $de ? 'Name (DE)' : 'Ad (DE)'],
                     ['path' => "packages.$i.name.en", 'label' => $de ? 'Name (EN)' : 'Ad (EN)'],
@@ -111,9 +137,24 @@ final class ContentAdminController
             ];
         }
 
+        $ohnePreis = [];
+        foreach (Content::list('addons') as $addon) {
+            $preis = (string) ($addon['price'] ?? '');
+            if ($preis !== '' && Packages::amount($preis) === null) {
+                $ohnePreis[] = (string) ($addon['name'][$this->locale] ?? ($addon['name']['de'] ?? $preis));
+            }
+        }
+
+        $zusatzHinweis = $de ? 'Je Zeile: Name | Preis' : 'Her satır: Ad | Fiyat';
+        if ($ohnePreis !== []) {
+            $zusatzHinweis .= $de
+                ? ' — Nicht mitgerechnet (keine reine Zahl): ' . implode(', ', $ohnePreis) . '.'
+                : ' — Toplama katılmıyor (düz sayı değil): ' . implode(', ', $ohnePreis) . '.';
+        }
+
         $sections[] = [
             'title'  => $de ? 'Zusatzleistungen' : 'Ek hizmetler',
-            'hint'   => $de ? 'Je Zeile: Name | Preis' : 'Her satır: Ad | Fiyat',
+            'hint'   => $zusatzHinweis,
             'fields' => [[
                 'path'  => 'addons',
                 'label' => $de ? 'Zusatzleistungen' : 'Ek hizmetler',
