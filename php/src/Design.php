@@ -218,6 +218,110 @@ final class Design
     }
 
     /**
+     * Die Anker des Countdowns - je Gestalt, woran sich etwas haengen laesst.
+     *
+     * Die vier Gestalten zeigen NICHT dasselbe: die ruhige Zahl kennt keine
+     * Sekunden, die Uhr kennt kein grosses Tagesfeld. Ein Zeichen neben
+     * "Sekunden" ist in der einen Gestalt eine Angabe und in der anderen ein
+     * Verweis auf nichts.
+     *
+     * Genau deshalb wird je Gestalt getrennt gespeichert - "countdown
+     * gorunumu bazinda ayri saklama". Wer die Gestalt wechselt, wechselt den
+     * Schmuck mit; wer zurueckwechselt, findet ihn unveraendert wieder. Eine
+     * gemeinsame Liste haette bei jedem Wechsel halb gepasst, und "halb
+     * gepasst" sieht aus wie kaputt.
+     *
+     * "days" steht in allen vieren, und darauf faellt ein unbekannter Anker
+     * zurueck: eine Zeile wegzuwerfen, weil ihr Anker nicht passt, hiesse
+     * eine hochgeladene Datei stillschweigend zu loeschen.
+     */
+    public const COUNTDOWN_ANKER = [
+        'default' => ['days', 'datum'],
+        'gross'   => ['days', 'datum'],
+        'tage'    => ['days', 'hours', 'minutes', 'seconds'],
+        'uhr'     => ['datum', 'days', 'hours', 'minutes', 'seconds'],
+    ];
+
+    /**
+     * Die freien Zeichen am Countdown - je Gestalt eine Liste.
+     *
+     * Anders als bei den Katalogzeichen ist hier keine Kennung im Spiel und
+     * damit auch keine feste Zahl: der Grafiker legt so viele Bilder oder
+     * Filme an den Countdown, wie er mag. Was sie zusammenhaelt, ist der
+     * Anker - die Stelle, an der ein Zeichen klebt - und nicht ein Name aus
+     * einem Katalog.
+     *
+     * Ohne Datei keine Zeile. Das ist der Unterschied zu icons(): dort gibt
+     * es die gezeichnete Fassung des Hauses, an der eine blosse Geometrie
+     * noch etwas aendern kann; hier gibt es ohne Datei nichts zu zeigen. Und
+     * es ist zugleich der Weg zum Loeschen - Pfad leeren, speichern, weg.
+     *
+     * Einheiten wie bei den Zeichen: size/x/y/gap in Hundertstel em. em,
+     * weil das Zeichen neben einer Zahl steht und mit ihr wachsen soll -
+     * "yazinin font boyutunu buyuttugumde gorsel de yaziyla beraber dogru
+     * konumda hareket etmeli."
+     *
+     * @param array<string,mixed> $doc
+     * @return array<string,list<array<string,mixed>>>
+     */
+    public static function countdownIcons(array $doc): array
+    {
+        $roh = is_array($doc['countdownIcons'] ?? null) ? $doc['countdownIcons'] : [];
+        $out = [];
+
+        foreach (self::COUNTDOWN_ANKER as $gestalt => $anker) {
+            $zeilen = is_array($roh[$gestalt] ?? null) ? $roh[$gestalt] : [];
+            $liste  = [];
+
+            foreach ($zeilen as $zeile) {
+                if (!is_array($zeile)) {
+                    continue;
+                }
+
+                $bild = self::safeSrc((string) ($zeile['src'] ?? ''));
+                $film = self::safeSrc((string) ($zeile['video'] ?? ''));
+
+                if ($bild === '' && $film === '') {
+                    continue;
+                }
+
+                $wo = (string) ($zeile['anchor'] ?? '');
+                if (!in_array($wo, $anker, true)) {
+                    $wo = 'days';
+                }
+
+                $liste[] = [
+                    'src'    => $bild,
+                    'video'  => $film,
+                    'anchor' => $wo,
+                    // Links oder rechts vom Feld. Zwei Werte und kein Winkel:
+                    // die Zeile flieszt, und ein Zeichen in ihr steht davor
+                    // oder dahinter. Feiner wird es mit x und y.
+                    'side'   => ($zeile['side'] ?? '') === 'vor' ? 'vor' : 'nach',
+                    'size'   => max(10, min(2000, (int) ($zeile['size'] ?? 100))),
+                    'x'      => max(-400, min(400, (int) ($zeile['x'] ?? 0))),
+                    'y'      => max(-400, min(400, (int) ($zeile['y'] ?? 0))),
+                    'gap'    => max(0, min(400, (int) ($zeile['gap'] ?? 0))),
+                    'z'      => max(-5, min(5, (int) ($zeile['z'] ?? 0))),
+                ];
+
+                // Eine Grenze, die das Panel nie erreicht. Sie steht hier
+                // gegen ein Dokument, das nicht aus dem Panel kommt - eine
+                // Liste ohne Ende waere ein Stilblock ohne Ende.
+                if (count($liste) >= 24) {
+                    break;
+                }
+            }
+
+            if ($liste !== []) {
+                $out[$gestalt] = $liste;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Die Rollen mit ihren Werten - die Voreinstellung dort, wo das Dokument
      * nichts sagt.
      *
@@ -312,6 +416,15 @@ final class Design
              * bleiben der Ersatz, und keine bestehende Vorlage aendert sich.
              */
             'icons'     => [],
+            /*
+             * Und die freien Zeichen am Countdown, je Gestalt.
+             *
+             * Hier ist keine Kennung im Spiel: der Grafiker haengt so viele
+             * Bilder oder Filme an die Zahlen, wie er mag. Getrennt je
+             * Gestalt, weil die vier Gestalten nicht dieselben Felder haben -
+             * siehe COUNTDOWN_ANKER.
+             */
+            'countdownIcons' => [],
             'layers'    => [],
             'sections'  => [],
             'animation' => ['intro' => 'none', 'idle' => 'none', 'reveal' => 'up', 'particle' => 'none'],
@@ -467,6 +580,7 @@ final class Design
         // ueberhaupt gibt.
         $doc['typo']  = self::typo($doc);
         $doc['icons'] = self::icons($doc);
+        $doc['countdownIcons'] = self::countdownIcons($doc);
 
         $doc['layers'] = array_values(array_map(
             [self::class, 'completeElement'],
@@ -1674,6 +1788,56 @@ final class Design
 
                 $doc['icons'][$kennung] = $eigen;
             }
+        }
+
+        /*
+         * Die freien Zeichen am Countdown, je Gestalt.
+         *
+         * Anders als bei den Katalogzeichen wird die Liste hier NEU GEBAUT
+         * und nicht Feld fuer Feld ergaenzt: sie hat keine feste Laenge, und
+         * das Panel schickt sie als Ganzes. Was nicht mitkommt, ist weg -
+         * und genau das ist der Weg zum Loeschen: Pfad leeren, speichern.
+         *
+         * Wohin der Pfad kommt, entscheidet wie oben die Endung. Das Modell
+         * kennt src und video getrennt (der Controller braucht die
+         * Unterscheidung beim Hochladen), der Grafiker sieht ein Feld.
+         */
+        if (isset($post['cdicons_da'])) {
+            $neu = [];
+
+            foreach (array_keys(self::COUNTDOWN_ANKER) as $gestalt) {
+                $wieviel = max(0, min(24, (int) ($post['cd_n_' . $gestalt] ?? 0)));
+                $liste   = [];
+
+                for ($i = 0; $i < $wieviel; $i++) {
+                    $p    = 'cd_' . $gestalt . '_' . $i . '_';
+                    $pfad = self::safeSrc((string) ($post[$p . 'src'] ?? ''));
+
+                    if ($pfad === '') {
+                        continue;
+                    }
+
+                    $film = preg_match('/\.(mp4|webm|mov)$/i', $pfad) === 1;
+
+                    $liste[] = [
+                        'src'    => $film ? '' : $pfad,
+                        'video'  => $film ? $pfad : '',
+                        'anchor' => (string) ($post[$p . 'anchor'] ?? 'days'),
+                        'side'   => (string) ($post[$p . 'side'] ?? 'nach'),
+                        'size'   => (int) ($post[$p . 'size'] ?? 100),
+                        'x'      => (int) ($post[$p . 'x'] ?? 0),
+                        'y'      => (int) ($post[$p . 'y'] ?? 0),
+                        'gap'    => (int) ($post[$p . 'gap'] ?? 0),
+                        'z'      => (int) ($post[$p . 'z'] ?? 0),
+                    ];
+                }
+
+                $neu[$gestalt] = $liste;
+            }
+
+            // Gepruft wird wie ueberall erst in complete() - hier steht nur,
+            // was das Formular gesagt hat.
+            $doc['countdownIcons'] = $neu;
         }
 
         if (isset($post['typo_da'])) {

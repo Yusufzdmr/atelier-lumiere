@@ -1528,6 +1528,48 @@
   })();
 
   /*
+   * Eine Zeile mehr fuer die Zeichen am Countdown.
+   *
+   * Die letzte Zeile jeder Gestalt ist immer leer - die klont der Knopf, und
+   * die Nummern in den Namen ruecken um eins weiter. Der Server liest die
+   * Zahl daneben (cd_n_*), also muss sie mitwachsen; ohne sie sieht er die
+   * neue Zeile nicht einmal.
+   *
+   * Geklont wird die LETZTE und keine erfundene Vorlage: sie steht ohnehin
+   * leer da, und so gibt es keinen zweiten Bauplan, der irgendwann von dem
+   * im Formular abweicht.
+   */
+  form.querySelectorAll("[data-cd-mehr]").forEach(function (knopf) {
+    knopf.addEventListener("click", function () {
+      var gestalt = knopf.getAttribute("data-cd-mehr");
+      var liste = form.querySelector('[data-cd-liste="' + gestalt + '"]');
+      var zahl = form.querySelector('[data-cd-zahl="' + gestalt + '"]');
+      if (!liste || !zahl) return;
+
+      var zeilen = liste.querySelectorAll("[data-cd-zeile]");
+      if (!zeilen.length) return;
+
+      var nummer = zeilen.length;
+      // Vierundzwanzig ist die Grenze des Modells (Design::countdownIcons).
+      // Sie steht hier noch einmal, damit der Knopf nichts anlegt, was beim
+      // Speichern stillschweigend wegfiele.
+      if (nummer >= 24) return;
+
+      var neu = zeilen[zeilen.length - 1].cloneNode(true);
+
+      neu.querySelectorAll("[name]").forEach(function (feld) {
+        // Die erste Zahl im Namen ist die Nummer der Zeile - bei
+        // cd_datei_uhr_3 steht sie am Ende, bei cd_uhr_3_src in der Mitte.
+        feld.setAttribute("name", feld.getAttribute("name").replace(/_\d+(?=_|$)/, "_" + nummer));
+        if (feld.type === "file") feld.value = "";
+      });
+
+      liste.appendChild(neu);
+      zahl.value = String(nummer + 1);
+    });
+  });
+
+  /*
    * Die drei Spalten: links waehlen, rechts erscheint die Tafel.
    *
    * Alle Tafeln stehen im Markup, sichtbar ist eine. Das Skript blendet nur
@@ -2704,6 +2746,7 @@
     reiheVorher();
     rahmenNachziehen();
   };
+
 
   secListe.addEventListener("change", rahmenNachziehen);
   form.querySelectorAll("[data-ansicht]").forEach(function (knopf) {

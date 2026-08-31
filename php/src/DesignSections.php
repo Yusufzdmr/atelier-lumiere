@@ -130,6 +130,10 @@ final class DesignSections
          * liefert bei einem schon geprueften Dokument dasselbe zurueck.
          */
         $doc['icons'] = Design::icons($doc);
+        // Dieselbe Vorsicht fuer die Zeichen am Countdown, aus demselben
+        // Grund: auch sie tragen Pfade, und auch sie werden von hier aus
+        // gedruckt.
+        $doc['countdownIcons'] = Design::countdownIcons($doc);
 
         $out = [];
 
@@ -651,6 +655,22 @@ final class DesignSections
             if ($regeln !== '') {
                 $css .= $scope . ' .d-ikon-' . $kennung . '{' . $regeln . '}';
             }
+        }
+
+        /*
+         * Die Grundregel der freien Zeichen am Countdown. Eine einzige, und
+         * nur wenn es welche gibt - alles Weitere steht am Knoten selbst
+         * (siehe cdEines()).
+         *
+         * display:inline-block gegen Tailwinds Preflight: das setzt img und
+         * video auf display:block, und ein Zeichen NEBEN einer Zahl waere
+         * dann eine Zeile darunter. max-width:none aus demselben Grund -
+         * Preflight deckelt auf 100% des Kastens, und ein Zeichen darf
+         * groesser sein als das Feld, an dem es haengt.
+         */
+        if (($doc['countdownIcons'] ?? []) !== []) {
+            $css .= $scope . ' .d-cd-el{display:inline-block;vertical-align:middle;'
+                . 'height:auto;max-width:none;object-fit:contain;}';
         }
 
         // Und die Formen der Bilder, nach derselben Regel: nur die
@@ -2137,7 +2157,7 @@ final class DesignSections
 
             $out .= match ($typ) {
                 'location'  => self::ort($data, $locale, $abschnitt['settings']),
-                'countdown' => self::countdown($data, $locale, (string) $abschnitt['variant']),
+                'countdown' => self::countdown($doc, $data, $locale, (string) $abschnitt['variant']),
                 'date'      => self::datum($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
                 'program'   => self::programm($doc, $data, $locale, (string) $abschnitt['variant']),
@@ -2482,7 +2502,97 @@ final class DesignSections
             . '<p class="d-datum-lang">' . e(Dates::long($iso, $locale)) . '</p>';
     }
 
-    private static function countdown(array $data, string $locale, string $variant = 'default'): string
+    /**
+     * Die freien Zeichen einer Gestalt, nach Anker und Seite sortiert.
+     *
+     * Fertig sortiert und nicht als Liste: der Bauer unten setzt sie an
+     * sieben Stellen ein, und an jeder soll eine Zeichenkette stehen und
+     * keine Schleife. Alle Anker stehen als Schluessel da, auch die leeren -
+     * so braucht keine der Stellen ein isset.
+     *
+     * @param array<string,mixed> $doc
+     * @return array{vor:array<string,string>,nach:array<string,string>}
+     */
+    private static function cdZeichen(array $doc, string $variant): array
+    {
+        $leer = ['datum' => '', 'days' => '', 'hours' => '', 'minutes' => '', 'seconds' => ''];
+        $out  = ['vor' => $leer, 'nach' => $leer];
+
+        $liste = $doc['countdownIcons'][$variant] ?? [];
+        if (!is_array($liste)) {
+            return $out;
+        }
+
+        foreach ($liste as $eintrag) {
+            if (!is_array($eintrag)) {
+                continue;
+            }
+
+            $seite = (string) ($eintrag['side'] ?? 'nach');
+            $anker = (string) ($eintrag['anchor'] ?? 'days');
+
+            if (!isset($out[$seite][$anker])) {
+                continue;
+            }
+
+            $out[$seite][$anker] .= self::cdEines($eintrag);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Ein einzelnes freies Zeichen.
+     *
+     * Die Geometrie steht am Knoten und nicht im Stilblock, und das ist der
+     * Unterschied zu den Katalogzeichen: dort sagt die EINLADUNG, welche
+     * Zeichen vorkommen, also muss die Vorlage sie von weitem ansprechen
+     * koennen. Hier ist der Knoten selbst die Aussage der Vorlage - er
+     * existiert nur, weil sie ihn angelegt hat, und dann steht seine Groesse
+     * am besten dort, wo er steht.
+     *
+     * em wie ueberall: das Zeichen haengt an einer Zahl und soll mit ihr
+     * wachsen. width allein, die Hoehe folgt aus der Grundregel (height:auto)
+     * und damit dem Seitenverhaeltnis der Datei.
+     *
+     * @param array<string,mixed> $e
+     */
+    private static function cdEines(array $e): string
+    {
+        $stil = 'width:' . (((int) $e['size']) / 100) . 'em;';
+
+        if ((int) $e['x'] !== 0 || (int) $e['y'] !== 0) {
+            $stil .= 'transform:translate(' . (((int) $e['x']) / 100) . 'em,'
+                . (((int) $e['y']) / 100) . 'em);';
+        }
+        // margin-inline: das Zeichen steht mal links, mal rechts vom Feld.
+        if ((int) $e['gap'] !== 0) {
+            $stil .= 'margin-inline:' . (((int) $e['gap']) / 100) . 'em;';
+        }
+        // position:relative gehoert zum z-index - ohne sie greift er an einem
+        // statischen Knoten gar nicht. Dieselbe Falle wie bei den Zeichen.
+        if ((int) $e['z'] !== 0) {
+            $stil .= 'position:relative;z-index:' . ((int) $e['z']) . ';';
+        }
+
+        $film = (string) ($e['video'] ?? '');
+        if ($film !== '') {
+            // autoplay, stumm, in der Schleife - wie das Zeichen daneben.
+            // Wer den Countdown sieht, hat die Einladung geoeffnet.
+            return '<video class="d-cd-el" style="' . e($stil) . '" src="' . e($film) . '"'
+                . ' autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>';
+        }
+
+        $bild = (string) ($e['src'] ?? '');
+        if ($bild === '') {
+            return '';
+        }
+
+        return '<img class="d-cd-el" style="' . e($stil) . '" src="' . e($bild) . '" alt="" aria-hidden="true">';
+    }
+
+    /** @param array<string,mixed> $doc */
+    private static function countdown(array $doc, array $data, string $locale, string $variant = 'default'): string
     {
         $datum = trim((string) ($data['date'] ?? ''));
 
@@ -2505,6 +2615,20 @@ final class DesignSections
             : ['days' => 'days', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds'];
 
         /*
+         * Die freien Zeichen der Vorlage - je Gestalt eigene, weil die vier
+         * Gestalten nicht dieselben Felder haben.
+         *
+         * Sie stehen IM Fluss und nicht darueber: ein Zeichen neben einer
+         * Zahl soll mitrutschen, wenn die Zahl von zwei auf drei Stellen
+         * geht. Wer es woanders haben will, verschiebt es mit x und y - das
+         * ist eine Verschiebung und keine feste Koordinate, also haelt sie
+         * auch, wenn die Schrift waechst.
+         */
+        $schmuck = self::cdZeichen($doc, $variant);
+        $vor     = $schmuck['vor'];
+        $nach    = $schmuck['nach'];
+
+        /*
          * Die Tage gross, der Rest als leise Zeile darunter.
          *
          * "10 GUN - altinda: 23 SAAT · 31 DAKIKA · 54 SANIYE."
@@ -2520,15 +2644,19 @@ final class DesignSections
          */
         if ($variant === 'tage') {
             $out = '<div class="d-sec-uhr d-uhr-tage" data-countdown="' . e($ziel) . '">'
+                . $vor['days']
                 . '<span class="d-sec-uhr-zahl" data-countdown-days>&nbsp;</span>'
                 . '<span class="d-sec-uhr-wort">' . e($felder['days']) . '</span>'
+                . $nach['days']
                 . '<span class="d-uhr-rest">';
 
             foreach (['hours', 'minutes', 'seconds'] as $schluessel) {
-                $out .= '<span class="d-uhr-teil">'
+                $out .= $vor[$schluessel]
+                    . '<span class="d-uhr-teil">'
                     . '<span data-countdown-' . e($schluessel) . '>&nbsp;</span> '
                     . e($felder[$schluessel])
-                    . '</span>';
+                    . '</span>'
+                    . $nach[$schluessel];
             }
 
             return $out . '</span></div>';
@@ -2548,23 +2676,30 @@ final class DesignSections
              * Datum den Abschnitt allein, und es steht jetzt an der Stelle,
              * an der es das auch kann.
              */
-            $out = '<p class="d-sec-countdown-datum">' . e(Dates::long($datum, $locale)) . '</p>'
+            $out = $vor['datum']
+                . '<p class="d-sec-countdown-datum">' . e(Dates::long($datum, $locale)) . '</p>'
+                . $nach['datum']
                 . '<div class="d-sec-uhr" data-countdown="' . e($ziel) . '">';
 
             foreach ($felder as $schluessel => $wort) {
-                $out .= '<span class="d-sec-uhr-feld">'
+                $out .= $vor[$schluessel]
+                    . '<span class="d-sec-uhr-feld">'
                     . '<span class="d-sec-uhr-zahl" data-countdown-' . e($schluessel) . '>&nbsp;</span>'
                     . '<span class="d-sec-uhr-wort">' . e($wort) . '</span>'
-                    . '</span>';
+                    . '</span>'
+                    . $nach[$schluessel];
             }
 
             return $out . '</div>';
         }
 
         return '<p class="d-sec-countdown" data-countdown="' . e($datum) . '">'
+            . $vor['days']
             . '<span class="d-sec-days" data-countdown-days data-label="'
             . e($locale === 'de' ? 'Tage' : 'days') . '"></span>'
-            . e(Dates::long($datum, $locale)) . '</p>';
+            . $nach['days']
+            . $vor['datum'] . e(Dates::long($datum, $locale)) . $nach['datum']
+            . '</p>';
     }
 
     /** @param array<string,mixed> $data */

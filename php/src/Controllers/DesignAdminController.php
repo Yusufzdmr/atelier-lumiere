@@ -658,6 +658,31 @@ final class DesignAdminController
             }
         }
 
+        /*
+         * Und dieselbe Bewegung fuer die freien Zeichen am Countdown - nur
+         * dass sie keine Kennung haben, sondern eine Nummer je Gestalt.
+         *
+         * Wie viele Zeilen es gibt, sagt das Formular selbst (cd_n_*). Die
+         * Zahl wird gedeckelt, bevor sie eine Schleife steuert: sie kommt
+         * von aussen, und eine Schleife ueber eine fremde Zahl ist eine
+         * Schleife ohne Ende.
+         */
+        foreach (array_keys(Design::COUNTDOWN_ANKER) as $gestalt) {
+            $wieviel = max(0, min(24, (int) ($post['cd_n_' . $gestalt] ?? 0)));
+
+            for ($i = 0; $i < $wieviel; $i++) {
+                $datei = $_FILES['cd_datei_' . $gestalt . '_' . $i] ?? null;
+                if (!is_array($datei) || ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $pfad = Media::storeVideo($datei, 'designs') ?? Media::storeGraphic($datei, 'designs');
+                if ($pfad !== null) {
+                    $post['cd_' . $gestalt . '_' . $i . '_src'] = $pfad;
+                }
+            }
+        }
+
         // Der Vorspann haengt an keiner Ebene, also auch an keiner Schleife.
         // Derselbe Weg ueber $_POST wie oben: der Upload sagt nur, was in dem
         // Feld stehen soll.

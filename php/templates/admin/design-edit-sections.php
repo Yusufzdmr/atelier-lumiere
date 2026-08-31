@@ -274,6 +274,128 @@ use function Atelier\e;
   <?php endforeach; ?>
 <?= $zu ?>
 
+<?php /*
+   Die freien Zeichen am Countdown.
+
+   Hier ist keine Kennung im Spiel: der Grafiker haengt so viele Bilder oder
+   Filme an die Zahlen, wie er mag. Getrennt je GESTALT, weil die vier
+   Gestalten nicht dieselben Felder haben - eine Uhr hat Sekunden, die ruhige
+   Zahl nicht. "Countdown gorunumu bazinda ayri saklama."
+
+   Eine leere Zeile steht immer unten: so laesst sich ohne Skript etwas
+   anlegen. Der Knopf daneben legt eine weitere an, fuer den, der drei auf
+   einmal will.
+
+   Geloescht wird durch Leeren des Pfads. Ein eigener Knopf dafuer waere ein
+   zweiter Zustand im Formular - und einer, der bis zum Speichern luegt.
+*/ ?>
+<?= $auf($tr ? '3d · Geri sayım süsleri' : '3d · Zeichen am Countdown') ?>
+  <input type="hidden" name="cdicons_da" value="1">
+
+  <?php
+    $cdAnker = [
+      'datum'   => ['de' => 'Datum',    'tr' => 'Tarih'],
+      'days'    => ['de' => 'Tage',     'tr' => 'Gün'],
+      'hours'   => ['de' => 'Stunden',  'tr' => 'Saat'],
+      'minutes' => ['de' => 'Minuten',  'tr' => 'Dakika'],
+      'seconds' => ['de' => 'Sekunden', 'tr' => 'Saniye'],
+    ];
+    $cdGestalten = SectionRegistry::variants('countdown');
+    $cdKnopf = 'border border-sand-deep px-2 py-1 text-[0.66rem] uppercase tracking-[0.14em] text-muted hover:text-ink';
+  ?>
+
+  <p class="mb-4 text-[0.72rem] text-muted">
+    <?= $tr
+      ? 'Sayıların yanına resim ya da video koyar. Her görünüm kendi süslerini saklar; görünümü değiştirince süsler de değişir. Silmek için yolu boşalt.'
+      : 'Bilder oder Filme neben den Zahlen. Jede Gestalt behält ihre eigenen; wer die Gestalt wechselt, wechselt sie mit. Löschen: den Pfad leeren.' ?>
+  </p>
+
+  <?php foreach (Design::COUNTDOWN_ANKER as $gestalt => $anker) : ?>
+    <?php
+      $zeilen = $design['countdownIcons'][$gestalt] ?? [];
+      // Eine leere Zeile mehr als es gibt - der Platz, an dem man anfaengt.
+      $zeilen[] = ['src' => '', 'video' => '', 'anchor' => $anker[0], 'side' => 'nach',
+                   'size' => 100, 'x' => 0, 'y' => 0, 'gap' => 0, 'z' => 0];
+    ?>
+    <div class="border-b border-sand-deep py-3">
+      <div class="flex items-center justify-between gap-3">
+        <span class="<?= $label ?>">
+          <?= e((string) ($cdGestalten[$gestalt][$tr ? 'tr' : 'de'] ?? $gestalt)) ?>
+          <small class="ml-1 opacity-50"><?= e((string) $gestalt) ?></small>
+        </span>
+        <button type="button" class="<?= $cdKnopf ?>" data-cd-mehr="<?= e((string) $gestalt) ?>">+</button>
+      </div>
+
+      <input type="hidden" name="cd_n_<?= e((string) $gestalt) ?>" value="<?= count($zeilen) ?>"
+             data-cd-zahl="<?= e((string) $gestalt) ?>">
+
+      <div class="mt-2 space-y-3" data-cd-liste="<?= e((string) $gestalt) ?>">
+        <?php foreach (array_values($zeilen) as $i => $z) : ?>
+          <?php
+            $pfad = (string) (($z['video'] ?? '') !== '' ? $z['video'] : ($z['src'] ?? ''));
+            $istFilm = $pfad !== '' && preg_match('/\.(mp4|webm|mov)$/i', $pfad) === 1;
+            $n = 'cd_' . $gestalt . '_' . $i . '_';
+          ?>
+          <div class="space-y-2" data-cd-zeile>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="<?= $label ?>"><?= $tr ? 'dosya (resim ya da video)' : 'Datei (Bild oder Film)' ?>
+                <input type="file" class="<?= $feld ?>" name="cd_datei_<?= e((string) $gestalt) ?>_<?= $i ?>"
+                       accept="image/png,image/webp,image/svg+xml,image/jpeg,video/mp4,video/webm"></label>
+              <label class="<?= $label ?>"><?= $tr ? 'yol (boş = yok)' : 'Pfad (leer = keines)' ?>
+                <input class="<?= $feld ?> font-mono text-[0.72rem]"
+                       name="<?= $n ?>src" value="<?= e($pfad) ?>"></label>
+            </div>
+
+            <div class="grid gap-2 sm:grid-cols-2">
+              <label class="<?= $label ?>"><?= $tr ? 'nereye' : 'woran' ?>
+                <select name="<?= $n ?>anchor" class="<?= $feld ?>">
+                  <?php foreach ($anker as $wert) : ?>
+                    <option value="<?= e($wert) ?>" <?= ($z['anchor'] ?? '') === $wert ? 'selected' : '' ?>>
+                      <?= e((string) ($cdAnker[$wert][$tr ? 'tr' : 'de'] ?? $wert)) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select></label>
+              <label class="<?= $label ?>"><?= $tr ? 'hangi yanına' : 'welche Seite' ?>
+                <select name="<?= $n ?>side" class="<?= $feld ?>">
+                  <option value="vor" <?= ($z['side'] ?? '') === 'vor' ? 'selected' : '' ?>>
+                    <?= $tr ? 'öncesine' : 'davor' ?></option>
+                  <option value="nach" <?= ($z['side'] ?? 'nach') !== 'vor' ? 'selected' : '' ?>>
+                    <?= $tr ? 'sonrasına' : 'dahinter' ?></option>
+                </select></label>
+            </div>
+
+            <div class="grid gap-2 sm:grid-cols-5">
+              <label class="<?= $label ?>"><?= $tr ? 'boyut (em/100)' : 'Grösse (em/100)' ?>
+                <input type="number" min="10" max="2000" class="<?= $feld ?>"
+                       name="<?= $n ?>size" value="<?= (int) ($z['size'] ?? 100) ?>"></label>
+              <label class="<?= $label ?>">X
+                <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                       name="<?= $n ?>x" value="<?= (int) ($z['x'] ?? 0) ?>"></label>
+              <label class="<?= $label ?>">Y
+                <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                       name="<?= $n ?>y" value="<?= (int) ($z['y'] ?? 0) ?>"></label>
+              <label class="<?= $label ?>"><?= $tr ? 'mesafe' : 'Abstand' ?>
+                <input type="number" min="0" max="400" class="<?= $feld ?>"
+                       name="<?= $n ?>gap" value="<?= (int) ($z['gap'] ?? 0) ?>"></label>
+              <label class="<?= $label ?>"><?= $tr ? 'katman' : 'Ebene' ?>
+                <input type="number" min="-5" max="5" class="<?= $feld ?>"
+                       name="<?= $n ?>z" value="<?= (int) ($z['z'] ?? 0) ?>"></label>
+            </div>
+
+            <?php if ($pfad !== '') : ?>
+              <?php if ($istFilm) : ?>
+                <video class="h-6 w-6 shrink-0 object-contain" src="<?= e($pfad) ?>" muted loop autoplay playsinline></video>
+              <?php else : ?>
+                <img class="h-6 w-6 shrink-0 object-contain" src="<?= e($pfad) ?>" alt="">
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endforeach; ?>
+<?= $zu ?>
+
 <?= $auf($tr ? '4 · Metinler' : '4 · Texte') ?>
   <?php foreach ($textEbenen as $ebene) : ?>
     <div class="grid gap-4 sm:grid-cols-2">
