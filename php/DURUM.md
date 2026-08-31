@@ -2196,6 +2196,81 @@ sunucusunda da `php bin/seed-papeterie.php` ile aynısı doğar.
 `paket-0-kirik-olanlar` dalında duruyor; master'a almak ve demoya yüklemek
 ayrı bir karar.
 
+## 31 Ağustos, ikinci tur — koordinat, yükseklik, harita videosu
+
+Ayhan sistemi bir gece boyunca denemiş ve altı maddelik ikinci bir liste
+yollamış. Önemli: **o denemeler Paket 0–D yüklenmeden önceydi**, yani
+listenin bir kısmı o gün zaten değişmişti. Üç küçük madde bu turda bitti,
+büyük olan (E4) sıradaki oturuma kaldı.
+
+### 4 · Navigasyon — ikinci ve kesin çözüm
+
+Birinci deneme (Paket 0) mekân adını hedefin başına koymuştu. Canlıda
+ölçüldü, işe yaramış: hedef artık `Imza Event Center, Thannhausen, …`,
+eskiden yalnız şehirdi.
+
+**Yine de yeterli değil, çünkü o mekân için dizinde hiç sokak yok.** Metinden
+kurulan bir hedef metinden daha kesin olamaz — bu, Paket 0'da "koordinat
+kullanılmadı, bilerek" diye yazdığım kararın yanlış tarafıydı.
+
+Artık koordinat saklanıyor. Üç gizli alan (`ort_lat`, `ort_lng`, `ort_sig`),
+kaydederken **imza doğrulaması** (`StaticMap::verify`) — onsuz form, yabancı
+bir davetiyeye istediğin koordinatı yazmanın yolu olurdu ve harita
+gönderdiğin yeri çizerdi. `DesignSections::routenPunkt()` hedefte metnin
+önüne geçiyor; `InviteV2Controller::map` aynı noktayı `forPoint` ile
+çiziyor, böylece resim ve tıklama ayrışmıyor.
+
+Adres elle düzenlenince koordinat **siliniyor** (`punktVergessen`): kalmış bir
+koordinat güvenilir biçimde yanlış yere götürür, olmayan koordinat metne
+düşer.
+
+### 6 · Bölüm yüksekliği
+
+`height`: `auto / s / m / l / voll` (32 / 50 / 72 vh / 100dvh). Mindesthöhe,
+Höhe değil — içerik her zaman büyüyebilmeli, sabit yükseklik içeriğin her an
+kırdığı bir sözdür.
+
+**Ve içerik dikey ortalanıyor.** Ortalama olmasaydı yükseklik sadece alta
+boşluk eklerdi — yani tam şikâyet edilen şey.
+
+Üst/alt boşluk ölçeği zaten Paket A'da gelmişti; şikâyet edilen "gereğinden
+fazla boşluk" `auto`'nun kendisi (genişliğin %56'sı) ve artık üstüne
+yazılabiliyor.
+
+### 5 · Harita: video ve boyut
+
+`mapVideo` (kind=video) — transparan dahil, WebM yeniden kodlanmıyor. Hem
+resim hem video varsa **video kazanıyor**; resim duruyor, tek tıkla geri
+gelir. `mapSize`: `s/m/l/voll` (14 / 22 / 32 rem / tam) — ortanca eski sabit
+değer, yani dokunulmamış tasarım kaymıyor.
+
+Bir test şunu tutuyor: boyut kuralı stil bloğunda **temel kuraldan sonra**
+duruyor. Önce dursa ortanca dışındaki her boyut sessizce etkisiz kalırdı —
+ikisi de tek sınıf derinliğinde, eşit güçte, sonraki kazanıyor.
+
+### Test
+
+`php bin/test.php` → **2328** (öncesi 2256).
+
+### Sıradaki oturum: E4
+
+Ayhan'ın 1., 2. ve 3. maddeleri, tek iş:
+
+- Öğe başına (program satırı, countdown alanı) **sınırsız** görsel/video
+  elementi
+- Her element için boyut, X/Y kaydırma, **anchor** (yazıya bağlanma), yazıyla
+  arasındaki mesafe, z-index
+- Transparan video
+- **Countdown görünümü bazında ayrı saklama** — bugün ayarlar bölüme ait,
+  görünüme değil; bu veri yapısı değişikliği demek
+- Editörde sürükle-bırak: bölümler dikey akıyor, bir bölümü serbestçe
+  sürüklemek yok — ama elementler koordinat alınca kartta bugün çalışan
+  sürükleme onlara da uygulanabilir
+
+Şu anki simge yuvası (`prog_icon_*`, 17 sabit SVG) korunmalı: Ayhan onu
+beğeniyor ve mevcut tasarımlar ona bağlı. Yeni element listesi onun **yanına**
+gelecek.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
