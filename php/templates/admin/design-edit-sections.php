@@ -184,6 +184,96 @@ use function Atelier\e;
   <?php endforeach; ?>
 <?= $zu ?>
 
+<?php /*
+   Die eigenen Zeichen der Vorlage.
+
+   Die Zeilen des Ablaufs gehoeren dem PAAR - es waehlt "pasta". Was eine
+   Torte IST, gehoert der Vorlage, und hier steht es. Dieselbe Trennung wie
+   bei den Fotos: "musteri fotografini yukler, nasil gosterilecegini secilen
+   davetiye tasarimi belirler."
+
+   Alle siebzehn stehen da, auch die ungenutzten. Eine Liste, die nur zeigt,
+   was schon belegt ist, beantwortet die Frage nicht, mit der man herkommt -
+   "welche gibt es denn?".
+
+   Ein Dateifeld und nicht zwei: es nimmt Bild UND Film. Media::storeVideo
+   sieht in die Datei und gibt bei einem Bild null zurueck, also entscheidet
+   die Datei selbst. Der Grafiker weiss, was er hochlaedt.
+
+   Die vier Zahlen stehen in HUNDERTSTEL em. em, weil das Zeichen neben
+   einer Zeile steht und mit ihr wachsen soll - genau die Bitte: "yazinin
+   font boyutunu buyuttugumde gorsel de yaziyla beraber dogru konumda
+   hareket etmeli."
+*/ ?>
+<?= $auf($tr ? '3c · Simgeler' : '3c · Zeichen') ?>
+  <input type="hidden" name="icons_da" value="1">
+
+  <p class="mb-4 text-[0.72rem] text-muted">
+    <?= $tr
+      ? 'Çift sihirbazda simgeyi seçer; burada o simgenin neye benzediğine sen karar verirsin. Boş bırakılan simge çizili hâliyle kalır.'
+      : 'Das Paar wählt das Zeichen im Assistenten; hier steht, wie es aussieht. Was leer bleibt, behält die gezeichnete Fassung.' ?>
+  </p>
+
+  <?php foreach (SectionRegistry::icons() as $kennung => $eintrag) : ?>
+    <?php
+      $z = $design['icons'][$kennung] ?? [];
+      $pfad = (string) (($z['video'] ?? '') !== '' ? $z['video'] : ($z['src'] ?? ''));
+      $istFilm = $pfad !== '' && preg_match('/\.(mp4|webm|mov)$/i', $pfad) === 1;
+    ?>
+    <div class="space-y-2 border-b border-sand-deep py-3">
+      <div class="flex items-center gap-3">
+        <?php /* Die gezeichnete Fassung als Vorschau - so sieht man, was man
+                 ersetzt, ohne die Kennung im Kopf haben zu muessen. */ ?>
+        <?php if ($pfad === '') : ?>
+          <span class="inline-block h-6 w-6 shrink-0 bg-ink"
+                style="-webkit-mask-image:url('<?= e(SectionRegistry::iconFile((string) $kennung)) ?>');
+                       mask-image:url('<?= e(SectionRegistry::iconFile((string) $kennung)) ?>');
+                       -webkit-mask-size:contain;mask-size:contain;
+                       -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+                       -webkit-mask-position:center;mask-position:center;"></span>
+        <?php elseif ($istFilm) : ?>
+          <video class="h-6 w-6 shrink-0 object-contain" src="<?= e($pfad) ?>" muted loop autoplay playsinline></video>
+        <?php else : ?>
+          <img class="h-6 w-6 shrink-0 object-contain" src="<?= e($pfad) ?>" alt="">
+        <?php endif; ?>
+
+        <span class="<?= $label ?> !mb-0">
+          <?= e((string) ($eintrag['label'][$tr ? 'tr' : 'de'] ?? $kennung)) ?>
+          <small class="ml-1 opacity-50"><?= e((string) $kennung) ?></small>
+        </span>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="<?= $label ?>"><?= $tr ? 'dosya (resim ya da video)' : 'Datei (Bild oder Film)' ?>
+          <input type="file" class="<?= $feld ?>" name="icon_datei_<?= e((string) $kennung) ?>"
+                 accept="image/png,image/webp,image/svg+xml,image/jpeg,video/mp4,video/webm"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'ya da yol (boş = çizili hâli)' : 'oder Pfad (leer = gezeichnet)' ?>
+          <input class="<?= $feld ?> font-mono text-[0.72rem]"
+                 name="icon_src_<?= e((string) $kennung) ?>" value="<?= e($pfad) ?>"></label>
+      </div>
+
+      <div class="grid gap-2 sm:grid-cols-5">
+        <label class="<?= $label ?>"><?= $tr ? 'boyut %' : 'Grösse %' ?>
+          <input type="number" min="10" max="1000" class="<?= $feld ?>"
+                 name="icon_size_<?= e((string) $kennung) ?>"
+                 value="<?= (int) ($z['size'] ?? 100) ?>"></label>
+        <label class="<?= $label ?>">X
+          <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                 name="icon_x_<?= e((string) $kennung) ?>" value="<?= (int) ($z['x'] ?? 0) ?>"></label>
+        <label class="<?= $label ?>">Y
+          <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                 name="icon_y_<?= e((string) $kennung) ?>" value="<?= (int) ($z['y'] ?? 0) ?>"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'yazıya mesafe' : 'Abstand' ?>
+          <input type="number" min="0" max="400" class="<?= $feld ?>"
+                 name="icon_gap_<?= e((string) $kennung) ?>" value="<?= (int) ($z['gap'] ?? 0) ?>"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'katman' : 'Ebene' ?>
+          <input type="number" min="-5" max="5" class="<?= $feld ?>"
+                 name="icon_z_<?= e((string) $kennung) ?>" value="<?= (int) ($z['z'] ?? 0) ?>"></label>
+      </div>
+    </div>
+  <?php endforeach; ?>
+<?= $zu ?>
+
 <?= $auf($tr ? '4 · Metinler' : '4 · Texte') ?>
   <?php foreach ($textEbenen as $ebene) : ?>
     <div class="grid gap-4 sm:grid-cols-2">

@@ -135,3 +135,59 @@ $dreiHtml = DesignSections::html($drei, ['sections' => ['dc' => ['code' => 'Blac
 
 assert_contains($dreiHtml, 'src="/uploads/designs/anzug.png"',
     'Zeichen: die Kleiderordnung nimmt dieselbe eigene Datei');
+
+/* --- Der Weg aus dem Formular --- */
+
+/*
+ * EIN sichtbares Pfadfeld je Kennung und nicht zwei.
+ *
+ * Das Modell kennt src und video getrennt (der Controller braucht die
+ * Unterscheidung fuer seine Pruefung beim Hochladen), aber der Grafiker soll
+ * nicht raten muessen, in welches Feld seine Datei gehoert. Wohin der Pfad
+ * kommt, entscheidet die Endung.
+ */
+$vorher = Design::complete(['id' => 'p', 'slug' => 'p']);
+
+$mitFilm = Design::fromPost($vorher, [
+    'icons_da' => '1', 'icon_src_pasta' => '/uploads/designs/t.webm', 'icon_size_pasta' => '150',
+]);
+assert_same('/uploads/designs/t.webm', $mitFilm['icons']['pasta']['video'], 'Formular: eine Endung fuer Film landet im Film');
+assert_same('', $mitFilm['icons']['pasta']['src'], 'Formular: und nicht im Bild');
+assert_same(150, $mitFilm['icons']['pasta']['size'], 'Formular: die Groesse kommt an');
+
+$mitBild = Design::fromPost($mitFilm, ['icons_da' => '1', 'icon_src_pasta' => '/uploads/designs/t.png']);
+assert_same('/uploads/designs/t.png', $mitBild['icons']['pasta']['src'], 'Formular: ein Bild landet im Bild');
+
+/*
+ * Und das jeweils andere Feld wird geleert. Bliebe der Film stehen, traege
+ * die Vorlage beides, der Film gewaenne (siehe zeichen()), und der Grafiker
+ * saehe seine gerade hochgeladene PNG nicht - ohne zu erfahren, warum.
+ */
+assert_same('', $mitBild['icons']['pasta']['video'], 'Formular: der alte Film tritt zurueck');
+
+// Ohne Marker bleibt alles unberuehrt - dieselbe Vorsicht wie bei den Rollen.
+$ohneMarker = Design::fromPost($mitBild, ['name_de' => 'Probe']);
+assert_same($mitBild['icons'], $ohneMarker['icons'], 'Formular: ohne Marker keine Aenderung');
+
+/* --- Und das Panel bietet sie an --- */
+
+$tafel = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-sections.php');
+
+assert_contains($tafel, 'name="icons_da"', 'Panel: der Marker steht im Formular');
+assert_contains($tafel, 'icon_datei_<?= e((string) $kennung) ?>', 'Panel: ein Dateifeld je Kennung');
+assert_contains($tafel, 'video/webm', 'Panel: es nimmt auch einen Film');
+
+foreach (['icon_src_', 'icon_size_', 'icon_x_', 'icon_y_', 'icon_gap_', 'icon_z_'] as $feld) {
+    assert_contains($tafel, $feld . '<?= e((string) $kennung) ?>', 'Panel: das Feld ' . $feld . ' steht da');
+}
+
+/*
+ * Alle siebzehn stehen da, auch die ungenutzten: eine Liste, die nur zeigt,
+ * was schon belegt ist, beantwortet die Frage nicht, mit der man herkommt -
+ * "welche gibt es denn?".
+ */
+assert_contains($tafel, 'foreach (SectionRegistry::icons() as $kennung', 'Panel: die Liste kommt aus dem Katalog');
+
+$steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
+assert_contains($steuer, "Media::storeVideo(\$datei, 'designs') ?? Media::storeGraphic(\$datei, 'designs')",
+    'Panel: erst der Film, dann das Bild - die Datei entscheidet selbst');

@@ -633,6 +633,31 @@ final class DesignAdminController
             }
         }
 
+        /*
+         * Die eigenen Zeichen. Ein Feld je Kennung, und es nimmt beides.
+         *
+         * Erst der Film, dann das Bild: Media::storeVideo sieht in die Datei
+         * und gibt bei einem Bild null zurueck, also entscheidet die Datei
+         * selbst, welcher Weg greift. Ein zweites Feld "oder ein Film" waere
+         * dieselbe Frage zweimal gestellt - der Grafiker weiss, was er
+         * hochlaedt, und soll es nicht noch einmal ankreuzen.
+         *
+         * Der Pfad geht als $_POST weiter, genau wie beim Vorspann daneben:
+         * der Upload sagt nur, was in dem Feld stehen soll, und fromPost()
+         * bleibt die einzige Stelle, die das Dokument aendert.
+         */
+        foreach (array_keys(SectionRegistry::icons()) as $kennung) {
+            $datei = $_FILES['icon_datei_' . $kennung] ?? null;
+            if (!is_array($datei) || ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $pfad = Media::storeVideo($datei, 'designs') ?? Media::storeGraphic($datei, 'designs');
+            if ($pfad !== null) {
+                $post['icon_src_' . $kennung] = $pfad;
+            }
+        }
+
         // Der Vorspann haengt an keiner Ebene, also auch an keiner Schleife.
         // Derselbe Weg ueber $_POST wie oben: der Upload sagt nur, was in dem
         // Feld stehen soll.

@@ -1635,6 +1635,47 @@ final class Design
          * Der Marker steht im Formular des Panels, das ohnehin alles
          * mitschickt. Wer ihn nicht schickt, will die Rollen nicht anfassen.
          */
+        /*
+         * Die eigenen Zeichen.
+         *
+         * Hinter demselben Marker-Gedanken wie die Rollen, nur an einem
+         * eigenen: das Panel schickt sie gemeinsam, ein Teilformular nicht.
+         *
+         * EIN sichtbares Pfadfeld je Kennung und nicht zwei. Das Modell
+         * kennt src und video getrennt (der Controller braucht die
+         * Unterscheidung fuer seine Pruefung beim Hochladen), aber der
+         * Grafiker soll nicht raten muessen, in welches Feld seine Datei
+         * gehoert. Wohin der Pfad kommt, entscheidet hier die Endung - er
+         * ist ohnehin schon durch safeSrc gegangen und zeigt ins eigene
+         * Haus.
+         *
+         * Das jeweils andere Feld wird geleert. Bliebe es stehen, traege
+         * eine Vorlage ein Bild UND einen Film, der Film gewaenne (siehe
+         * zeichen()), und der Grafiker saehe seine gerade hochgeladene PNG
+         * nicht - ohne zu erfahren, warum.
+         */
+        if (isset($post['icons_da'])) {
+            foreach (array_keys(SectionRegistry::icons()) as $kennung) {
+                $eigen = is_array($doc['icons'][$kennung] ?? null) ? $doc['icons'][$kennung] : [];
+
+                if (isset($post['icon_src_' . $kennung])) {
+                    $pfad = self::safeSrc((string) $post['icon_src_' . $kennung]);
+                    $film = preg_match('/\.(mp4|webm|mov)$/i', $pfad) === 1;
+
+                    $eigen['src']   = $film ? '' : $pfad;
+                    $eigen['video'] = $film ? $pfad : '';
+                }
+
+                foreach (['size', 'x', 'y', 'gap', 'z'] as $feld) {
+                    if (isset($post['icon_' . $feld . '_' . $kennung])) {
+                        $eigen[$feld] = (int) $post['icon_' . $feld . '_' . $kennung];
+                    }
+                }
+
+                $doc['icons'][$kennung] = $eigen;
+            }
+        }
+
         if (isset($post['typo_da'])) {
             foreach (array_keys(self::TYPO) as $rolle) {
                 $eigen = is_array($doc['typo'][$rolle] ?? null) ? $doc['typo'][$rolle] : [];
