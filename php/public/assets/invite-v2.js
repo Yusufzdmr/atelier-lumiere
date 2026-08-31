@@ -202,6 +202,21 @@
   var notiz  = document.querySelector('[data-ortnotiz]');
   var karte  = document.querySelector('[data-ortkarte]');
   var saal   = document.querySelector('[data-live="venue"]');
+
+  /*
+   * Der Punkt, den die Auswahl mitbringt.
+   *
+   * Er ist der eigentliche Fix fuer "navigasyon beni sehrin icerisinde baska
+   * bir noktaya goturuyor": zu manchen Saelen kennt das Verzeichnis GAR
+   * KEINE Strasse, und ein Ziel aus Text kann nie genauer sein als der Text.
+   * Die Koordinaten stehen in derselben Antwort und treffen den Punkt.
+   *
+   * Die Signatur reist mit, weil der Server sie prueft - sonst waere das
+   * Formular ein Weg, beliebige Koordinaten in eine Einladung zu schreiben.
+   */
+  var fLat = document.querySelector('[data-ortlat]');
+  var fLng = document.querySelector('[data-ortlng]');
+  var fSig = document.querySelector('[data-ortsig]');
   var sprache = (document.documentElement.getAttribute('lang') || 'de').slice(0, 2);
 
   // Die Adresse des Suchendpunkts steht im Pfad der Seite: /de/... oder
@@ -224,6 +239,20 @@
     notiz.hidden = !text;
   }
 
+  /*
+   * Wer weitertippt, hat den gewaehlten Punkt verlassen.
+   *
+   * Ohne das bliebe die Koordinate des vorigen Treffers stehen, waehrend in
+   * der Zeile inzwischen eine andere Adresse steht - und die Navigation
+   * fuehrte zuverlaessig an den falschen Ort. Ein stehengebliebener Punkt
+   * ist schlimmer als keiner: keiner faellt auf den Text zurueck.
+   */
+  function punktVergessen() {
+    if (fLat) fLat.value = '';
+    if (fLng) fLng.value = '';
+    if (fSig) fSig.value = '';
+  }
+
   function zumachen() {
     if (!liste) return;
     liste.textContent = '';
@@ -232,6 +261,12 @@
 
   function nehmen(ort) {
     suchfeld.value = ort.address || '';
+
+    if (fLat && fLng && fSig) {
+      fLat.value = ort.lat != null ? String(ort.lat) : '';
+      fLng.value = ort.lng != null ? String(ort.lng) : '';
+      fSig.value = ort.sig || '';
+    }
     // Den Saalnamen nur setzen, wenn das Feld leer ist: wer ihn schon
     // getippt hat, hat sich etwas dabei gedacht ("Bei Oma im Garten").
     if (saal && !saal.value && ort.name) saal.value = ort.name;
@@ -308,6 +343,9 @@
     if (setztSelbst) return;
 
     var q = suchfeld.value.trim();
+
+    // Wer weitertippt, hat den gewaehlten Punkt verlassen.
+    punktVergessen();
 
     if (karte) karte.hidden = true;
     window.clearTimeout(wartet);

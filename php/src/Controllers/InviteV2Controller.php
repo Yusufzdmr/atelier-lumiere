@@ -449,6 +449,30 @@ final class InviteV2Controller
             $data[$feld] = Security::clean($_POST[$feld] ?? '', $feld === 'message' ? 600 : 160);
         }
 
+        /*
+         * Der gewaehlte Punkt.
+         *
+         * Er steht nicht in $darf['fields'], weil er keine EINGABE ist: das
+         * Paar tippt ihn nicht, die Auswahl bringt ihn mit. Er kommt nur
+         * dann in die Daten, wenn auch eine Adresse gefragt war - sonst
+         * traegt eine Einladung ohne Ort trotzdem Koordinaten.
+         *
+         * Und nur mit gueltiger Signatur. StaticMap::sign() hat sie beim
+         * Suchen ausgestellt; ohne diese Pruefung waere das Formular ein
+         * Weg, beliebige Koordinaten in eine fremde Einladung zu schreiben -
+         * und die Karte zeichnet, wohin man sie schickt.
+         */
+        if (in_array('address', $darf['fields'], true)) {
+            $lat = (float) ($_POST['ort_lat'] ?? 0);
+            $lng = (float) ($_POST['ort_lng'] ?? 0);
+            $sig = (string) ($_POST['ort_sig'] ?? '');
+
+            if ($sig !== '' && StaticMap::verify($lat, $lng, $sig)) {
+                $data['lat'] = $lat;
+                $data['lng'] = $lng;
+            }
+        }
+
         foreach ($darf['sections'] as $sid => $abschnitt) {
             if (in_array('families', $abschnitt['fields'], true)) {
                 $braut = Security::clean($_POST['family_bride'] ?? '', 120);
@@ -1166,8 +1190,24 @@ final class InviteV2Controller
          * (404) und der Ort steht mit Namen, Anschrift und Route da - wie
          * schon bisher bei einer unbekannten Adresse.
          */
-        $ziel = DesignSections::routenZiel($einladung['data'] ?? []);
-        $bild = $ziel === '' ? null : StaticMap::forAddress($ziel, 640, 480);
+        /*
+         * Der Punkt schlaegt den Text - hier wie beim Navigationsziel.
+         *
+         * forPoint zeichnet ohne Geokodierung: es gibt nichts nachzuschlagen,
+         * die Koordinate IST das Ergebnis. Damit trifft das Bild denselben
+         * Ort wie der Klick darauf, auch wenn die Anschrift keine Strasse
+         * kennt.
+         */
+        $daten = $einladung['data'] ?? [];
+        $punkt = DesignSections::routenPunkt($daten);
+
+        if ($punkt !== '') {
+            [$lat, $lng] = array_map('floatval', explode(',', $punkt));
+            $bild = StaticMap::forPoint($lat, $lng, 640, 480);
+        } else {
+            $ziel = DesignSections::routenZiel($daten);
+            $bild = $ziel === '' ? null : StaticMap::forAddress($ziel, 640, 480);
+        }
 
         if ($bild === null) {
             http_response_code(404);

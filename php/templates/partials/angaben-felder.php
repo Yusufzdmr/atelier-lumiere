@@ -65,6 +65,35 @@ use function Atelier\e;
         <p data-ortnotiz class="mt-2 text-[0.8rem] text-muted" hidden></p>
         <img data-ortkarte hidden alt=""
              class="mt-3 w-full max-w-[16rem] border border-sand-deep">
+
+        <?php /*
+           Der PUNKT, nicht nur die Anschrift.
+
+           Gemeldet, nachdem der Saalname schon im Navigationsziel stand:
+           "navigasyon beni gercek adrese degil, sehrin icerisinde baska bir
+           noktaya goturuyor." Nachgesehen, und der Grund liegt nicht bei
+           uns: das Verzeichnis kennt zu diesem Saal GAR KEINE Strasse. Die
+           Anschrift, die in der Liste so vollstaendig aussieht, endet bei
+           der Stadt.
+
+           Ein Ziel aus Text kann deshalb nie genauer werden als der Text.
+           Die Koordinaten dagegen stehen in der Antwort der Suche und
+           treffen den Punkt - unabhaengig davon, was in der Zeile steht.
+
+           Drei versteckte Felder und keine sichtbaren: sie sind kein
+           Eingabewert, sondern das, was die Auswahl mitgebracht hat. Wer die
+           Adresse von Hand tippt, hat sie nicht - dann bleibt es beim Text,
+           genau wie bisher.
+
+           Die Signatur ist der Grund, warum das nicht einfach zwei Zahlen
+           sind: sie kommt aus StaticMap::sign() und wird beim Speichern
+           geprueft. Ohne sie waere das Formular ein Endpunkt, ueber den
+           jemand beliebige Koordinaten in eine Einladung schreibt - und die
+           Karte zeichnet, wohin man sie schickt.
+        */ ?>
+        <input type="hidden" name="ort_lat" value="<?= e($old('ort_lat')) ?>" data-ortlat>
+        <input type="hidden" name="ort_lng" value="<?= e($old('ort_lng')) ?>" data-ortlng>
+        <input type="hidden" name="ort_sig" value="<?= e($old('ort_sig')) ?>" data-ortsig>
       <?php endif; ?>
     </div>
   <?php endforeach; ?>

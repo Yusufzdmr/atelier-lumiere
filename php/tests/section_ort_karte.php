@@ -230,3 +230,172 @@ assert_contains($route, '<p class="d-sec-venue">Imza Event Center</p>',
     'ort: der Saalname steht weiterhin allein in seiner Zeile');
 assert_contains($route, '<p class="d-sec-address">Thannhausen',
     'ort: und die Anschrift in ihrer');
+
+/* --------------- 7. Der gewaehlte Punkt schlaegt den Text ---------------- */
+
+/*
+ * Der zweite Anlauf auf dieselbe Beschwerde.
+ *
+ * Beim ersten stand der Saalname noch nicht im Ziel. Seit er drinsteht, ist
+ * es besser - und immer noch nicht genau: zu "Imza Event Center" kennt das
+ * Verzeichnis GAR KEINE Strasse, und ein Ziel aus Text kann nie genauer
+ * werden als der Text. Gemeldet: "navigasyon beni gercek adrese degil,
+ * sehrin icerisinde baska bir noktaya goturuyor."
+ *
+ * Die Koordinaten stehen in derselben Antwort, aus der auch die Anschrift
+ * kommt. Sie treffen den Punkt, egal was in der Zeile steht.
+ */
+assert_same('', DesignSections::routenPunkt([]), 'Punkt: ohne Koordinaten keiner');
+assert_same('', DesignSections::routenPunkt(['address' => 'Seestrasse 4']),
+    'Punkt: eine getippte Adresse bringt keinen mit');
+
+/*
+ * Null/Null ist kein Ort, sondern ein fehlender Wert - der Punkt liegt im
+ * Atlantik vor Afrika, und dorthin soll niemand navigieren.
+ */
+assert_same('', DesignSections::routenPunkt(['lat' => 0, 'lng' => 0]),
+    'Punkt: 0/0 ist kein Ort');
+
+assert_same('48.4561,10.2717', DesignSections::routenPunkt(['lat' => 48.4561, 'lng' => 10.2717]),
+    'Punkt: Breite und Laenge, durch Komma');
+
+/* --- Im Markup: der Punkt gewinnt, der Text bleibt der Ersatz --- */
+
+$mitPunkt = DesignSections::html(
+    $doc,
+    ['venue' => 'Imza Event Center',
+     'address' => 'Thannhausen, Landkreis Günzburg, Bayern, 86470, Deutschland',
+     'lat' => 48.2789, 'lng' => 10.4092, 'slug' => 'medine-ayhan'],
+    'de'
+);
+
+assert_contains($mitPunkt, rawurlencode('48.2789,10.4092'),
+    'Punkt: die Route zielt auf die Koordinate');
+assert_true(!str_contains($mitPunkt, rawurlencode('Imza Event Center, Thannhausen')),
+    'Punkt: und nicht mehr auf den Text daneben');
+
+// Gedruckt bleibt der Text: der Gast liest eine Anschrift, keine Zahlen.
+assert_contains($mitPunkt, '<p class="d-sec-venue">Imza Event Center</p>',
+    'Punkt: der Saalname steht weiterhin da');
+assert_contains($mitPunkt, '<p class="d-sec-address">Thannhausen', 'Punkt: und die Anschrift auch');
+
+// Ohne Punkt traegt der Text weiter - ein Paar, das von Hand tippt, soll
+// nicht schlechter dastehen als vorher.
+$ohnePunkt = DesignSections::html(
+    $doc,
+    ['venue' => 'Imza Event Center', 'address' => 'Thannhausen, Bayern', 'slug' => 'p'],
+    'de'
+);
+assert_contains($ohnePunkt, rawurlencode('Imza Event Center, Thannhausen'),
+    'Punkt: ohne ihn bleibt es beim Text');
+
+/*
+ * Und die Signatur ist der Grund, warum das nicht einfach zwei Zahlen im
+ * Formular sind: ohne sie waere es ein Weg, beliebige Koordinaten in eine
+ * fremde Einladung zu schreiben - und die Karte zeichnet, wohin man sie
+ * schickt.
+ */
+$sig = Atelier\StaticMap::sign(48.2789, 10.4092);
+assert_true(Atelier\StaticMap::verify(48.2789, 10.4092, $sig), 'Punkt: die eigene Signatur gilt');
+assert_true(!Atelier\StaticMap::verify(48.9999, 10.4092, $sig),
+    'Punkt: sie gilt nicht fuer eine andere Koordinate');
+
+$formular = (string) file_get_contents(__DIR__ . '/../templates/partials/angaben-felder.php');
+$skript   = (string) file_get_contents(__DIR__ . '/../public/assets/invite-v2.js');
+$steuer   = (string) file_get_contents(__DIR__ . '/../src/Controllers/InviteV2Controller.php');
+
+assert_contains($formular, 'name="ort_sig"', 'Punkt: das Formular schickt die Signatur mit');
+assert_contains($skript, 'punktVergessen', 'Punkt: wer weitertippt, verlaesst den gewaehlten Punkt');
+assert_contains($steuer, 'StaticMap::verify($lat, $lng, $sig)',
+    'Punkt: der Server prueft sie, bevor er sie speichert');
+
+/* --------- 8. Hoehe des Abschnitts, Groesse und Film der Karte ---------- */
+
+/*
+ * "Her bolumun yuksekligi ayarlanabilmeli … bir bolumden digerine gecerken
+ * cok buyuk bosluklar olusmaz."
+ *
+ * Eine MINDESThoehe: was drinsteht, darf immer groesser werden. Eine feste
+ * Hoehe waere eine Zusage, die der Inhalt jederzeit bricht.
+ */
+$hoch = DesignSections::complete(ort_doc([
+    ['id' => 'ort-1', 'type' => 'location', 'settings' => ['height' => 'voll']],
+    ['id' => 'txt-1', 'type' => 'text'],
+]));
+$hochCss = DesignSections::css($hoch, '.d-x');
+
+assert_contains($hochCss, 'min-height:100dvh;', 'Hoehe: "voll" ist eine Bildschirmhoehe');
+
+/*
+ * Und die Zentrierung dazu. Ohne sie waere die Hoehe nur Luft UNTEN - also
+ * genau das, worueber die Beschwerde ging.
+ */
+assert_contains($hochCss, 'display:flex;flex-direction:column;justify-content:center;',
+    'Hoehe: der Inhalt steht in der Mitte, nicht oben');
+
+// "auto" ist kein Wert, sondern die Abwesenheit eines Werts: kein flex, keine
+// Hoehe. Ein Abschnitt ohne Angabe soll sich nicht anders verhalten.
+$txtRegel = strstr($hochCss, '.d-x .d-sec-txt-1{');
+assert_true($txtRegel === false || !str_contains((string) $txtRegel, 'min-height'),
+    'Hoehe: ohne Angabe keine Hoehe und kein flex');
+
+/* --- Die Groesse der Karte --- */
+
+/*
+ * "Haritanin boyunu kucultmeli mesela." Bis hierher stand sie auf 22rem, fuer
+ * jede Vorlage gleich - auf einer kompakten Einladung der groesste Kasten
+ * weit und breit.
+ */
+$klein = DesignSections::html(
+    ort_doc([['id' => 'ort-1', 'type' => 'location', 'settings' => ['mapSize' => 's']]]),
+    ['venue' => 'Villa Sonnenhof', 'address' => 'Seestrasse 4, 88131 Lindau', 'slug' => 'p'],
+    'de'
+);
+assert_contains($klein, 'd-sec-map-gr-s', 'Karte: die Groesse steht als Klasse am Bild');
+
+// Die mittlere ist der bisherige Stand - eine Vorlage, die nichts sagt, sieht
+// aus wie vorher.
+assert_contains($voll, 'd-sec-map-gr-m', 'Karte: ohne Angabe die bisherige Groesse');
+assert_contains($hochCss, '.d-x .d-sec-map-gr-m{max-width:min(100%,22rem);}',
+    'Karte: und die ist 22rem, wie bisher');
+
+/*
+ * Die Groessenregel steht NACH der Grundregel im Stilblock. Beide sind eine
+ * Klasse tief; bei gleicher Genauigkeit gewinnt die spaetere. Stuende sie
+ * davor, waere jede Groesse ausser der mittleren wirkungslos - und zwar
+ * unsichtbar.
+ */
+assert_true(
+    strpos($hochCss, '.d-x .d-sec-map-gr-s{') > strpos($hochCss, '.d-x .d-sec-map-bild{'),
+    'Karte: die Groesse steht nach der Grundregel, sonst greift sie nicht'
+);
+
+/* --- Ein Film als Karte --- */
+
+$filmDoc = ort_doc([['id' => 'ort-1', 'type' => 'location',
+    'settings' => ['karte' => 'eigen', 'mapVideo' => '/uploads/designs/karte.webm']]]);
+$filmHtml = DesignSections::html($filmDoc, ['venue' => 'V', 'address' => 'Seestrasse 4', 'slug' => 'p'], 'de');
+
+assert_contains($filmHtml, '<video src="/uploads/designs/karte.webm"', 'Karte: der Film wird gedruckt');
+assert_contains($filmHtml, 'autoplay muted loop playsinline', 'Karte: er laeuft von allein und stumm');
+assert_contains($filmHtml, 'https://www.google.com/maps/dir/',
+    'Karte: die Navigation bleibt - sie haengt an der Adresse, nicht am Bild');
+
+/*
+ * Der Film gewinnt gegen das Bild, wenn beide hinterlegt sind: wer einen
+ * hochlaedt, hat sich fuer ihn entschieden. Das Bild bleibt liegen.
+ */
+$beides = ort_doc([['id' => 'ort-1', 'type' => 'location', 'settings' => [
+    'karte' => 'eigen', 'mapSrc' => '/uploads/designs/k.png', 'mapVideo' => '/uploads/designs/k.webm',
+]]]);
+$beidesHtml = DesignSections::html($beides, ['venue' => 'V', 'address' => 'Seestrasse 4', 'slug' => 'p'], 'de');
+assert_contains($beidesHtml, 'k.webm', 'Karte: der Film gewinnt');
+assert_true(!str_contains($beidesHtml, 'k.png'), 'Karte: das Bild tritt zurueck');
+
+// Eine fremde Adresse kommt auch beim Film nicht durch.
+$fremdFilm = ort_doc([['id' => 'ort-1', 'type' => 'location',
+    'settings' => ['karte' => 'eigen', 'mapVideo' => 'https://fremd.example/k.webm']]]);
+assert_true(
+    !str_contains(DesignSections::html($fremdFilm, ['venue' => 'V', 'address' => 'S 4', 'slug' => 'p'], 'de'), 'fremd.example'),
+    'Karte: eine fremde Filmadresse faellt weg'
+);

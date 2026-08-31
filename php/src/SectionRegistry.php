@@ -130,6 +130,30 @@ final class SectionRegistry
          * Vorlage auf dem Demoserver, die "weit" gewaehlt hatte, rueckte
          * beim naechsten Deploy zusammen.
          */
+        /*
+         * Die MINDESTHOEHE eines Abschnitts.
+         *
+         * "Her bolumun yuksekligi ayarlanabilmeli … bir bolumden digerine
+         * gecerken cok buyuk bosluklar olusmaz."
+         *
+         * Eine Mindesthoehe und keine Hoehe: was drinsteht, darf immer
+         * groesser werden. Eine feste Hoehe waere eine Zusage, die der
+         * Inhalt jederzeit bricht - und dann steht Text ueber der Kante.
+         *
+         * Wer eine Hoehe setzt, bekommt den Inhalt SENKRECHT ZENTRIERT
+         * dazu. Ohne das waere die Hoehe nur Luft unten, also genau das,
+         * worueber die Beschwerde ging.
+         *
+         * vh und nicht Prozent: hier geht es um das Verhaeltnis zum
+         * Bildschirm ("eine Seite pro Abschnitt"), nicht zur Breite. Das ist
+         * der eine Ort, an dem das die richtige Frage ist.
+         */
+        'height' => [
+            'type'    => 'select',
+            'options' => ['auto', 's', 'm', 'l', 'voll'],
+            'default' => 'auto',
+            'label'   => ['de' => 'Mindesthöhe', 'tr' => 'En az yükseklik'],
+        ],
         'space' => [
             'type'    => 'select',
             'options' => ['xs', 's', 'm', 'l', 'xl'],
@@ -319,6 +343,43 @@ final class SectionRegistry
                     'default' => '',
                     'label'   => ['de' => 'Eigenes Kartenbild (für "eigen")',
                                   'tr' => 'Kendi harita resmin ("eigen" için)'],
+                ],
+                /*
+                 * Und ein Film statt eines Bildes.
+                 *
+                 * Ein zweites Feld und kein gemeinsames: der Controller
+                 * waehlt seine Pruefung nach 'kind' (Media::storeGraphic
+                 * gegen storeVideo), und ein Feld, das beides annimmt,
+                 * muesste eine der beiden Pruefungen aufweichen.
+                 *
+                 * Er gewinnt gegen das Bild, wenn beide hinterlegt sind: wer
+                 * einen Film hochlaedt, hat sich fuer ihn entschieden. Das
+                 * Bild bleibt liegen und ist mit einem Klick wieder da.
+                 *
+                 * Durchsichtige Filme funktionieren hier wie ueberall:
+                 * Media::storeVideo legt eine WebM ab, wie sie kommt - es
+                 * wird nicht umkodiert, also ueberlebt der Alphakanal.
+                 */
+                'mapVideo' => [
+                    'type'    => 'src',
+                    'kind'    => 'video',
+                    'default' => '',
+                    'label'   => ['de' => 'Eigener Kartenfilm (für "eigen")',
+                                  'tr' => 'Kendi harita videon ("eigen" için)'],
+                ],
+                /*
+                 * Wie gross die Karte sitzt.
+                 *
+                 * "Haritanin boyunu kucultmeli mesela." Bis hierher stand
+                 * sie auf 22rem, fuer jede Vorlage gleich - und auf einer
+                 * kompakten Einladung ist das der groesste Kasten weit und
+                 * breit.
+                 */
+                'mapSize' => [
+                    'type'    => 'select',
+                    'options' => ['s', 'm', 'l', 'voll'],
+                    'default' => 'm',
+                    'label'   => ['de' => 'Grösse der Karte', 'tr' => 'Harita boyutu'],
                 ],
             ],
         ],

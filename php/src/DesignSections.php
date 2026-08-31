@@ -87,6 +87,25 @@ final class DesignSections
      * an ihren Enden nichts Neues bietet, waere drei Worte in fuenf
      * Verpackungen.
      */
+    /**
+     * Die Leiter der Mindesthoehen.
+     *
+     * vh und nicht Prozent, anders als bei der Luft: hier geht es um das
+     * Verhaeltnis zum BILDSCHIRM ("eine Seite pro Abschnitt"), nicht zur
+     * Breite. Das ist der eine Ort, an dem das die richtige Frage ist.
+     *
+     * "voll" steht auf 100dvh und nicht 100vh: am Telefon zaehlt vh den
+     * Streifen hinter der Adressleiste mit, und dann ist der Abschnitt
+     * hoeher als das Sichtbare - dieselbe Beschwerde, die die Buehne schon
+     * einmal hatte (design-stage.php).
+     */
+    private const HOEHE = [
+        's'    => '32vh',
+        'm'    => '50vh',
+        'l'    => '72vh',
+        'voll' => '100dvh',
+    ];
+
     private const LUFT = [
         'xs' => '4%',
         's'  => '6%',
@@ -500,6 +519,24 @@ final class DesignSections
             $oben = (string) ($einstellung['spaceTop'] ?? 'auto');
             if ($oben !== 'auto' && isset(self::LUFT[$oben])) {
                 $regeln .= 'padding-top:' . self::LUFT[$oben] . ';';
+            }
+
+            /*
+             * Die Mindesthoehe - und die Zentrierung dazu.
+             *
+             * Ohne die Zentrierung waere die Hoehe nur Luft UNTEN, also
+             * genau das, worueber die Beschwerde ging ("cok buyuk
+             * bosluklar"). Wer einem Abschnitt eine Seite gibt, will ihn in
+             * der Mitte dieser Seite.
+             *
+             * Nur wenn eine gesetzt ist: "auto" ist kein Wert, sondern die
+             * Abwesenheit eines Werts, und flex am Abschnitt aendert die
+             * Aussenabstaende seiner Kinder.
+             */
+            $hoch = (string) ($einstellung['height'] ?? 'auto');
+            if ($hoch !== 'auto' && isset(self::HOEHE[$hoch])) {
+                $regeln .= 'min-height:' . self::HOEHE[$hoch] . ';'
+                    . 'display:flex;flex-direction:column;justify-content:center;';
             }
 
             /*
@@ -1250,6 +1287,18 @@ final class DesignSections
              */
             . $scope . ' .d-sec-map-bild{display:block;margin:1.4rem auto 0;'
               . 'max-width:min(100%,22rem);line-height:0;overflow:hidden;}'
+            /*
+             * Vier Groessen. Die mittlere ist der bisherige Stand (22rem) -
+             * eine Vorlage, die nichts sagt, sieht aus wie vorher.
+             */
+            . $scope . ' .d-sec-map-gr-s{max-width:min(100%,14rem);}'
+            . $scope . ' .d-sec-map-gr-m{max-width:min(100%,22rem);}'
+            . $scope . ' .d-sec-map-gr-l{max-width:min(100%,32rem);}'
+            . $scope . ' .d-sec-map-gr-voll{max-width:100%;}'
+            // Der Film sitzt wie das Bild. Ohne diese Zeile stuende er in
+            // seiner eigenen Groesse mitten im Kasten.
+            . $scope . ' .d-sec-map-bild video{display:block;width:100%;height:auto;'
+            . 'aspect-ratio:4 / 3;object-fit:cover;}'
             . $scope . ' .d-sec-map-bild img{display:block;width:100%;height:auto;'
               . 'aspect-ratio:4 / 3;object-fit:cover;}'
             . $scope . ' .d-sec-map-blatt{border-radius:58% 0 58% 0;'
@@ -2009,6 +2058,41 @@ final class DesignSections
      *
      * @param array<string,mixed> $data
      */
+    /**
+     * Der gewaehlte Punkt als Ziel - "lat,lng" oder leer.
+     *
+     * Der zweite Anlauf auf dieselbe Beschwerde. Beim ersten stand der
+     * Saalname noch nicht im Ziel; seit er drinsteht, ist es besser, aber
+     * immer noch nicht genau: zu manchen Saelen kennt das Verzeichnis GAR
+     * KEINE Strasse, und ein Ziel aus Text kann nie genauer werden als der
+     * Text. "Imza Event Center, Thannhausen, Bayern" ist ein guter Hinweis
+     * und kein Punkt.
+     *
+     * Die Koordinaten stehen in derselben Antwort, aus der auch die
+     * Anschrift kommt. Gespeichert werden sie nur nach geprueft er Signatur
+     * (InviteV2Controller::sammleAngaben), also steht hier keine zweite
+     * Pruefung - was in den Daten liegt, ist durch sie hindurchgegangen.
+     *
+     * Leer heisst: von Hand getippt. Dann traegt der Text das Ziel weiter,
+     * genau wie bisher - ein Paar ohne Kartendienst-Treffer soll nicht
+     * schlechter dastehen als vorher.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function routenPunkt(array $data): string
+    {
+        $lat = (float) ($data['lat'] ?? 0);
+        $lng = (float) ($data['lng'] ?? 0);
+
+        // Null/Null ist kein Ort, sondern ein fehlender Wert: der Punkt liegt
+        // im Atlantik vor Afrika, und dorthin soll niemand navigieren.
+        if ($lat === 0.0 && $lng === 0.0) {
+            return '';
+        }
+
+        return $lat . ',' . $lng;
+    }
+
     public static function routenZiel(array $data): string
     {
         $adresse = trim((string) ($data['address'] ?? ''));
@@ -2060,8 +2144,15 @@ final class DesignSections
         // Der Saalname fuehrt das Ziel an - siehe routenZiel(), dort steht
         // der gemessene Grund. Gedruckt bleiben die beiden Zeilen getrennt:
         // das Ziel ist eine Adresse fuer Google, keine fuer den Leser.
-        $route = 'https://www.google.com/maps/dir/?api=1&destination='
-            . rawurlencode(self::routenZiel($data));
+        /*
+         * Der Punkt schlaegt den Text.
+         *
+         * Google nimmt "48.123,10.456" als Ziel und fuehrt genau dorthin.
+         * Wo es keinen Punkt gibt (von Hand getippte Adresse), traegt der
+         * Text weiter - siehe routenPunkt() und routenZiel().
+         */
+        $ziel  = self::routenPunkt($data) ?: self::routenZiel($data);
+        $route = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($ziel);
 
         /*
          * Das Kartenbild.
@@ -2116,25 +2207,63 @@ final class DesignSections
          * im Blatt oder im Rechteck sitzen. "eigen" waehlt die QUELLE, nicht
          * den Rahmen - deshalb faellt sie hier auf "blatt" zurueck.
          */
+        $film = '';
+
         if ($form === 'eigen') {
+            /*
+             * Der Film gewinnt gegen das Bild, wenn beide hinterlegt sind:
+             * wer einen hochlaedt, hat sich fuer ihn entschieden. Das Bild
+             * bleibt liegen und ist mit einem Klick wieder da.
+             */
+            $film  = Design::safeSrc((string) ($settings['mapVideo'] ?? ''));
             $eigen = Design::safeSrc((string) ($settings['mapSrc'] ?? ''));
 
             // Ohne Datei kein Bild. Ein leerer Rahmen an der Stelle, an der
             // eine Karte stehen sollte, ist schlimmer als gar keine.
-            if ($eigen === '') {
+            if ($film === '' && $eigen === '') {
                 $form = 'aus';
             } else {
                 $quelle = $eigen;
                 $form = 'blatt';
             }
         }
-        if ($form !== 'aus' && $quelle !== '') {
-            $out .= '<a class="d-sec-map-bild d-sec-map-' . e($form) . '"'
-                . ' rel="noopener noreferrer" target="_blank" href="' . e($route) . '">'
-                . '<img src="' . e($quelle) . '"'
-                . ' width="640" height="480" loading="lazy" decoding="async"'
-                . ' alt="' . e($locale === 'de' ? 'Karte: ' . $adresse : 'Map: ' . $adresse) . '">'
-                . '</a>';
+        if ($form !== 'aus' && ($quelle !== '' || $film !== '')) {
+            /*
+             * Die Groesse steht als Klasse und nicht als Zahl im style: sie
+             * gehoert der Vorlage, und der Stilblock ist der Ort, an dem
+             * die Vorlage spricht. Ein style-Attribut waere dieselbe Angabe
+             * an einem Ort, den kein anderer Abschnitt lesen kann.
+             */
+            $gross = (string) ($settings['mapSize'] ?? 'm');
+
+            $out .= '<a class="d-sec-map-bild d-sec-map-' . e($form)
+                . ' d-sec-map-gr-' . e($gross) . '"'
+                . ' rel="noopener noreferrer" target="_blank" href="' . e($route) . '">';
+
+            if ($film !== '') {
+                /*
+                 * Ein Film als Karte.
+                 *
+                 * autoplay, anders als bei den Ebenen der Karte: die stehen
+                 * hinter dem geschlossenen Kuvert und liefen dort unsichtbar
+                 * im Mobilfunk. Diese hier steht weit unten in den
+                 * Abschnitten - wer sie sieht, hat die Einladung geoeffnet
+                 * und ist bis zum Ort gescrollt.
+                 *
+                 * Kein Ton (muted), keine Bedienleiste: eine Karte ist
+                 * Zierde, kein Film zum Ansehen. Und ohne muted laesst kein
+                 * Browser sie von allein laufen.
+                 */
+                $out .= '<video src="' . e($film) . '"'
+                    . ' width="640" height="480" autoplay muted loop playsinline'
+                    . ' preload="metadata" aria-hidden="true"></video>';
+            } else {
+                $out .= '<img src="' . e($quelle) . '"'
+                    . ' width="640" height="480" loading="lazy" decoding="async"'
+                    . ' alt="' . e($locale === 'de' ? 'Karte: ' . $adresse : 'Map: ' . $adresse) . '">';
+            }
+
+            $out .= '</a>';
         }
 
         // Der Link geht zur Routenplanung, nicht auf eine Karte: wer die
