@@ -164,6 +164,60 @@ final class Design
     ];
 
     /**
+     * Eigene Zeichen der Vorlage - Kennung => Datei und Geometrie.
+     *
+     * Nur was die Vorlage wirklich sagt: ein Eintrag ohne Datei und ohne
+     * abweichende Geometrie faellt weg. Sonst schleppte jedes Dokument
+     * siebzehn leere Kaesten mit, und der Stilblock siebzehn tote Regeln.
+     *
+     * Die Kennungen kommen aus SectionRegistry::icons(): was es dort nicht
+     * gibt, gibt es hier nicht. So gelangt aus einem Dokument nie ein
+     * erfundener Schluessel in einen Selektor.
+     *
+     * Einheiten wie ueberall in den Rollen: size in Prozent (100 = die
+     * bisherige Groesse), x/y/gap in Hundertstel em. em und nicht rem, weil
+     * ein Zeichen neben einer Zeile steht und mit ihr wachsen soll - genau
+     * das war die Bitte ("yazinin font boyutunu buyuttugumde gorsel de
+     * yaziyla beraber dogru konumda hareket etmeli").
+     *
+     * @param array<string,mixed> $doc
+     * @return array<string,array<string,mixed>>
+     */
+    public static function icons(array $doc): array
+    {
+        $roh = is_array($doc['icons'] ?? null) ? $doc['icons'] : [];
+        $out = [];
+
+        foreach (SectionRegistry::icons() as $kennung => $_) {
+            $eigen = is_array($roh[$kennung] ?? null) ? $roh[$kennung] : [];
+
+            $bild = self::safeSrc((string) ($eigen['src'] ?? ''));
+            $film = self::safeSrc((string) ($eigen['video'] ?? ''));
+
+            $satz = [
+                'src'   => $bild,
+                'video' => $film,
+                'size'  => max(10, min(1000, (int) ($eigen['size'] ?? 100))),
+                'x'     => max(-400, min(400, (int) ($eigen['x'] ?? 0))),
+                'y'     => max(-400, min(400, (int) ($eigen['y'] ?? 0))),
+                'gap'   => max(0, min(400, (int) ($eigen['gap'] ?? 0))),
+                'z'     => max(-5, min(5, (int) ($eigen['z'] ?? 0))),
+            ];
+
+            // Nichts gesagt, nichts gespeichert.
+            $stumm = $satz['src'] === '' && $satz['video'] === ''
+                && $satz['size'] === 100 && $satz['x'] === 0 && $satz['y'] === 0
+                && $satz['gap'] === 0 && $satz['z'] === 0;
+
+            if (!$stumm) {
+                $out[(string) $kennung] = $satz;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Die Rollen mit ihren Werten - die Voreinstellung dort, wo das Dokument
      * nichts sagt.
      *
@@ -239,6 +293,25 @@ final class Design
              * Voreinstellung, und die ist der heutige Stand - siehe TYPO.
              */
             'typo'      => [],
+            /*
+             * Die Zeichen, mit eigenen Dateien.
+             *
+             * "Gunun Programi'nda 'Pasta Kesimi' yazisinin yanina arka
+             * plansiz transparan kucuk bir pasta PNG'si koyabilirim."
+             *
+             * Die Zeilen des Ablaufs gehoeren dem PAAR: Uhrzeit, Titel und
+             * die Wahl des Zeichens stehen in seinen Daten. Wie ein Zeichen
+             * AUSSIEHT, gehoert der Vorlage - dieselbe Trennung wie bei den
+             * Fotos ("musteri fotografini yukler, nasil gosterilecegini
+             * secilen davetiye tasarimi belirler").
+             *
+             * Deshalb steht hier keine Liste von Bildern je Zeile, sondern
+             * eine je KENNUNG: das Paar waehlt "pasta", die Vorlage sagt,
+             * was eine Torte ist. Eine Vorlage, die nichts sagt, bekommt das
+             * gezeichnete Zeichen des Hauses - die 17 aus dem Katalog
+             * bleiben der Ersatz, und keine bestehende Vorlage aendert sich.
+             */
+            'icons'     => [],
             'layers'    => [],
             'sections'  => [],
             'animation' => ['intro' => 'none', 'idle' => 'none', 'reveal' => 'up', 'particle' => 'none'],
@@ -392,7 +465,8 @@ final class Design
         // NACH palette und fonts: die Rollen verweisen auf beide, und ein
         // Verweis laesst sich erst pruefen, wenn feststeht, welche Marken es
         // ueberhaupt gibt.
-        $doc['typo'] = self::typo($doc);
+        $doc['typo']  = self::typo($doc);
+        $doc['icons'] = self::icons($doc);
 
         $doc['layers'] = array_values(array_map(
             [self::class, 'completeElement'],

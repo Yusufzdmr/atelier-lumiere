@@ -1000,7 +1000,10 @@ $gedruckt = DesignSections::html(
     'de'
 );
 
-assert_contains($gedruckt, 'class="d-ikon"', 'html: die Zeile traegt ein Zeichen');
+// Die Kennung wandert seit den eigenen Zeichen als zweite Klasse mit
+// (d-ikon-pasta), damit der Stilblock der Vorlage Groesse und Verschiebung
+// daran haengen kann.
+assert_contains($gedruckt, 'class="d-ikon d-ikon-', 'html: die Zeile traegt ein Zeichen');
 assert_contains($gedruckt, "mask-image:url('/assets/icons/pasta.svg')", 'html: und zwar seine Datei');
 assert_contains($gedruckt, 'Tortenanschnitt', 'html: ohne eigenen Titel steht der Vorschlag da');
 assert_contains($gedruckt, 'Bizim dans', 'html: mit eigenem Titel gewinnt das Paar');

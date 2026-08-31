@@ -116,6 +116,21 @@ final class DesignSections
 
     public static function complete(array $doc): array
     {
+        /*
+         * Die eigenen Zeichen werden HIER geprueft und nicht nur in
+         * Design::complete().
+         *
+         * Der Grund ist gemessen: DesignSections::complete() ist ein eigener
+         * Weg - die Tests und die lebende Vorschau kommen hier herein, ohne
+         * vorher durch Design::complete() gegangen zu sein. Ohne diese Zeile
+         * las zeichen() die rohen Werte aus dem Dokument, und ein fremder
+         * Pfad landete ungeprueft im Markup.
+         *
+         * Zweimal geprueft schadet nicht: Design::icons() ist rein und
+         * liefert bei einem schon geprueften Dokument dasselbe zurueck.
+         */
+        $doc['icons'] = Design::icons($doc);
+
         $out = [];
 
         foreach ((array) ($doc['sections'] ?? []) as $eintrag) {
@@ -586,6 +601,58 @@ final class DesignSections
             $css .= self::rahmenCss($art, $scope);
         }
 
+        /*
+         * Die eigenen Zeichen der Vorlage.
+         *
+         * Eine Regel je Kennung, die etwas zu sagen hat. Sie steht im
+         * Stilblock und nicht am Knoten, weil sie der VORLAGE gehoert -
+         * welche Zeichen vorkommen, sagt dagegen die Einladung, und deshalb
+         * steht die Zeichnung selbst inline (siehe zeichen()).
+         *
+         * em und nicht rem: ein Zeichen steht neben einer Zeile und soll mit
+         * ihr wachsen. Genau das war die Bitte - "yazinin font boyutunu
+         * buyuttugumde gorsel de yaziyla beraber dogru konumda hareket
+         * etmeli. Sabit koordinatta kalip tasarim bozulmamali."
+         *
+         * Die Grundgroesse steht in der Grundregel (1.15em); "size" ist ein
+         * Faktor darauf, damit 100 heisst "wie bisher".
+         */
+        foreach ($doc['icons'] ?? [] as $kennung => $z) {
+            $regeln = '';
+
+            if ((int) $z['size'] !== 100) {
+                $regeln .= 'width:calc(1.15em * ' . ($z['size'] / 100) . ');'
+                    . 'height:calc(1.15em * ' . ($z['size'] / 100) . ');';
+            }
+            if ((int) $z['x'] !== 0 || (int) $z['y'] !== 0) {
+                $regeln .= 'transform:translate(' . ($z['x'] / 100) . 'em,'
+                    . ($z['y'] / 100) . 'em);';
+            }
+            // Der Abstand zur Zeile daneben. margin-inline, damit er in
+            // beiden Richtungen gilt - das Zeichen steht mal links, mal
+            // rechts vom Wort, je nach Abschnitt.
+            if ((int) $z['gap'] !== 0) {
+                $regeln .= 'margin-inline:' . ($z['gap'] / 100) . 'em;';
+            }
+            /*
+             * Die Lage im Stapel. position:relative gehoert dazu: ohne sie
+             * greift z-index an einem statischen Knoten gar nicht, und der
+             * Grafiker drehte an einer Zahl ohne Wirkung.
+             */
+            if ((int) $z['z'] !== 0) {
+                $regeln .= 'position:relative;z-index:' . (int) $z['z'] . ';';
+            }
+            // Eine eigene Datei ist ein Bild und keine Maske: sie darf nicht
+            // in Textfarbe uebermalt werden.
+            if ($z['src'] !== '' || $z['video'] !== '') {
+                $regeln .= 'background-color:transparent;object-fit:contain;';
+            }
+
+            if ($regeln !== '') {
+                $css .= $scope . ' .d-ikon-' . $kennung . '{' . $regeln . '}';
+            }
+        }
+
         // Und die Formen der Bilder, nach derselben Regel: nur die
         // benutzten, und jede einmal.
         $formen = [];
@@ -838,6 +905,72 @@ final class DesignSections
 
             default => '',
         };
+    }
+
+    /**
+     * Ein Zeichen - entweder die Zeichnung des Hauses oder die der Vorlage.
+     *
+     * Bis hierher stand an drei Stellen dieselbe Zeile: eine Maske ueber
+     * einer Flaeche in currentColor. Das ist richtig fuer eine einfarbige
+     * SVG - und falsch fuer eine PNG des Grafikers: eine Maske macht aus
+     * seiner Torte einen Farbfleck in Textfarbe.
+     *
+     * Deshalb zwei Wege:
+     *
+     *   Katalogzeichen  <span> mit Maske, wie bisher, faerbbar
+     *   Eigene Datei    <img> oder <video>, so wie sie ist
+     *
+     * Die Kennung wandert als Klasse mit (d-ikon-pasta), damit der
+     * Stilblock der Vorlage Groesse und Verschiebung daran haengen kann -
+     * gerechnet wird dort, nicht hier: welche Zeichen vorkommen, sagt die
+     * EINLADUNG, den Stilblock schreibt die VORLAGE.
+     *
+     * @param array<string,mixed> $doc
+     */
+    private static function zeichen(array $doc, string $kennung): string
+    {
+        if ($kennung === '') {
+            return '';
+        }
+
+        $eigen = is_array($doc['icons'][$kennung] ?? null) ? $doc['icons'][$kennung] : [];
+        $klasse = 'd-ikon d-ikon-' . e($kennung);
+
+        /*
+         * Der Film gewinnt gegen das Bild - dieselbe Rangfolge wie bei der
+         * Karte: wer einen hochlaedt, hat sich fuer ihn entschieden.
+         *
+         * autoplay, wie bei der Karte und anders als bei den Ebenen: ein
+         * Zeichen steht mitten in den Abschnitten, weit unter dem Kuvert.
+         * Wer es sieht, hat die Einladung geoeffnet.
+         */
+        $film = (string) ($eigen['video'] ?? '');
+        if ($film !== '') {
+            return '<video class="' . $klasse . '" src="' . e($film) . '"'
+                . ' autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>';
+        }
+
+        $bild = (string) ($eigen['src'] ?? '');
+        if ($bild !== '') {
+            return '<img class="' . $klasse . '" src="' . e($bild) . '" alt="" aria-hidden="true">';
+        }
+
+        /*
+         * Die Zeichnung des Hauses. Der Pfad steht inline und nicht im
+         * Stilblock: welche Zeichen vorkommen, sagt die Einladung.
+         *
+         * Er ist durch iconFile() gegangen und stammt damit aus dem
+         * Katalog - aus einer Einladung gelangt nie ein Pfad in die Seite.
+         */
+        $datei = SectionRegistry::iconFile($kennung);
+        if ($datei === '') {
+            return '';
+        }
+
+        $maske = "url('" . $datei . "')";
+
+        return '<span class="' . $klasse . '" style="-webkit-mask-image:'
+            . $maske . ';mask-image:' . $maske . '"></span>';
     }
 
     private static function typoText(string $rolle, string $groesse, string $hoehe = '1.7'): string
@@ -2007,7 +2140,7 @@ final class DesignSections
                 'countdown' => self::countdown($data, $locale, (string) $abschnitt['variant']),
                 'date'      => self::datum($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
-                'program'   => self::programm($data, $locale, (string) $abschnitt['variant']),
+                'program'   => self::programm($doc, $data, $locale, (string) $abschnitt['variant']),
                 'rsvp'      => self::formular($form, $locale),
                 'text'      => self::freitext($abschnitt, $data),
                 'footer'    => self::schluss($abschnitt, $data, $locale),
@@ -2016,8 +2149,8 @@ final class DesignSections
                 // Daten des Paares - der Klang gehoert der Vorlage.
                 'music'     => self::musik($abschnitt, $data, $locale),
                 'gallery'   => self::galerie($data, $id),
-                'menu'      => self::speisekarte($abschnitt, $data, $locale),
-                'dresscode' => self::kleiderordnung($abschnitt, $data),
+                'menu'      => self::speisekarte($doc, $abschnitt, $data, $locale),
+                'dresscode' => self::kleiderordnung($doc, $abschnitt, $data),
                 default     => '',
             };
 
@@ -2451,8 +2584,12 @@ final class DesignSections
     }
 
     /** @param array<string,mixed> $data */
-    private static function programm(array $data, string $locale, string $variant = 'default'): string
-    {
+    private static function programm(
+        array $doc,
+        array $data,
+        string $locale,
+        string $variant = 'default'
+    ): string {
         // d-sec-plan und nicht d-sec-program: die <section> traegt bereits
         // d-sec-<typ>, also d-sec-program. Solange die Liste denselben Namen
         // trug, galt JEDE Regel fuer beide - und die Zweispaltenregel machte
@@ -2524,10 +2661,7 @@ final class DesignSections
                  * Grundregel (Groesse, Farbe, Ring) steht dort; hier steht nur,
                  * welche Zeichnung es ist.
                  */
-                $datei = SectionRegistry::iconFile($zeile['icon']);
-                $maske = "url('" . $datei . "')";
-                $out .= '<span class="d-plan-rozet"><span class="d-ikon" style="-webkit-mask-image:'
-                    . $maske . ';mask-image:' . $maske . '"></span></span>';
+                $out .= '<span class="d-plan-rozet">' . self::zeichen($doc, (string) $zeile['icon']) . '</span>';
             }
 
             $out .= '</dt><dd' . $iv . '><span class="d-plan-titel">' . e($titel) . '</span>';
@@ -2883,7 +3017,7 @@ final class DesignSections
      * @param array<string,mixed> $abschnitt
      * @param array<string,mixed> $data
      */
-    private static function speisekarte(array $abschnitt, array $data, string $locale): string
+    private static function speisekarte(array $doc, array $abschnitt, array $data, string $locale): string
     {
         $out = '';
 
@@ -2895,12 +3029,7 @@ final class DesignSections
 
             $out .= '<div class="d-menu-zeile">';
 
-            $datei = SectionRegistry::iconFile((string) ($feld['icon'] ?? ''));
-            if ($datei !== '') {
-                $maske = "url('" . $datei . "')";
-                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
-                    . ';mask-image:' . $maske . '"></span>';
-            }
+            $out .= self::zeichen($doc, (string) ($feld['icon'] ?? ''));
 
             $etikett = (string) ($feld['label'][$locale] ?? $feld['label']['de'] ?? $schluessel);
 
@@ -2921,7 +3050,7 @@ final class DesignSections
      * @param array<string,mixed> $abschnitt
      * @param array<string,mixed> $data
      */
-    private static function kleiderordnung(array $abschnitt, array $data): string
+    private static function kleiderordnung(array $doc, array $abschnitt, array $data): string
     {
         $code = trim(self::inhalt($abschnitt, $data, 'code'));
         $hinweis = trim(self::inhalt($abschnitt, $data, 'note'));
@@ -2930,12 +3059,7 @@ final class DesignSections
         if ($code !== '') {
             $out .= '<p class="d-dress-code">';
 
-            $datei = SectionRegistry::iconFile('dresscode');
-            if ($datei !== '') {
-                $maske = "url('" . $datei . "')";
-                $out .= '<span class="d-ikon" style="-webkit-mask-image:' . $maske
-                    . ';mask-image:' . $maske . '"></span>';
-            }
+            $out .= self::zeichen($doc, 'dresscode');
 
             $out .= e($code) . '</p>';
         }
