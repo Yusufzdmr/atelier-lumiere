@@ -519,6 +519,12 @@ final class DesignSections
                 $regeln .= "--d-sec-frame:url('" . $zeichnung . "');";
             }
 
+            // Dasselbe fuer die Bildform "eigen".
+            $bildrahmen = Design::safeSrc((string) ($einstellung['photoFrameSrc'] ?? ''));
+            if ($bildrahmen !== '') {
+                $regeln .= "--d-bild-frame:url('" . $bildrahmen . "');";
+            }
+
             if ($regeln !== '') {
                 $css .= $scope . ' .d-sec-' . $abschnitt['id'] . '{' . $regeln . '}';
             }
@@ -541,6 +547,19 @@ final class DesignSections
         }
         foreach (array_keys($rahmen) as $art) {
             $css .= self::rahmenCss($art, $scope);
+        }
+
+        // Und die Formen der Bilder, nach derselben Regel: nur die
+        // benutzten, und jede einmal.
+        $formen = [];
+        foreach ($doc['sections'] as $abschnitt) {
+            $art = (string) ($abschnitt['settings']['photoFrame'] ?? 'keine');
+            if ($art !== 'keine') {
+                $formen[$art] = true;
+            }
+        }
+        foreach (array_keys($formen) as $art) {
+            $css .= self::bildFormCss($art, $scope);
         }
 
         /*
@@ -695,6 +714,90 @@ final class DesignSections
             'eigen' => $sel . '{background-image:var(--d-sec-frame,none);'
                 . 'background-size:100% 100%;background-repeat:no-repeat;'
                 . 'background-position:center;padding:3.2rem 2.4rem;}',
+
+            default => '',
+        };
+    }
+
+    /**
+     * Die Form eines Fotos.
+     *
+     * "Fotograflar her zaman normal dikdortgen resim olarak gosterilmemeli."
+     * Sieben Antworten darauf - und die Entscheidung gehoert der VORLAGE,
+     * nicht dem Paar: wer seine Bilder einzeln in Rahmen steckt, baut keine
+     * Einladung mehr, sondern eine Collage.
+     *
+     * Gezeichnet wird auf .d-bild (dem Kasten) und am Bild darin, je
+     * nachdem, was die Form braucht. Ein Polaroid ist ein Rand um das Bild,
+     * ein Oval ist eine Eigenschaft des Bildes selbst.
+     */
+    private static function bildFormCss(string $art, string $scope): string
+    {
+        /*
+         * Die Klasse der Form im Selektor - sonst faerbt eine Galerie die
+         * andere um. Eine Einladung kann mehrere tragen (eine Reihe
+         * Polaroids oben, ein rundes Portrait unten), und ohne diese
+         * Einschraenkung bekaeme jede alles.
+         */
+        $sel    = $scope . ' .d-sec-pf-' . $art;
+        $kasten = $sel . ' .d-sec-bilder .d-bild';
+        $bild   = $sel . ' .d-sec-bilder .d-bild img';
+
+        return match ($art) {
+            /*
+             * Das Polaroid: weisser Rand, unten breiter - dort stand auf dem
+             * Original die Beschriftung. Der Fuss ist der ganze Punkt; ohne
+             * ihn ist es ein Bild mit weissem Rand und kein Polaroid.
+             *
+             * Die leichte Drehung wechselt die Richtung von Bild zu Bild:
+             * alle gleich schief sahen aus wie ein Fehler im Raster, und
+             * abwechselnd sieht es aus wie hingelegt. nth-child und kein
+             * Zufall - ein zufaelliger Winkel spraenge bei jedem Neuladen.
+             */
+            'polaroid' => $kasten . '{background:var(--d-paper,#faf7f2);'
+                . 'padding:0.7rem 0.7rem 2.4rem;'
+                . 'box-shadow:0 14px 30px -20px rgba(0,0,0,0.55);'
+                . 'transform:rotate(-1.4deg);}'
+                . $kasten . ':nth-child(even){transform:rotate(1.6deg);}',
+
+            // Ein Haarstrich in der Akzentfarbe, mit etwas Luft zum Bild -
+            // ohne die Luft liest sich der Strich als Kante des Fotos.
+            'gold' => $kasten . '{padding:0.4rem;'
+                . 'border:1px solid var(--d-accent,currentColor);}',
+
+            // Papierfoto: weisser Rand ringsum, gleichmaessig, mit Schatten.
+            'papier' => $kasten . '{background:var(--d-paper,#faf7f2);padding:0.6rem;'
+                . 'box-shadow:0 12px 26px -20px rgba(0,0,0,0.5);}',
+
+            /*
+             * Oval und rund. Die Form gehoert dem BILD und nicht dem Kasten:
+             * ein runder Kasten mit einem eckigen Bild darin waere ein
+             * Quadrat mit runden Ecken davor.
+             *
+             * Das Oval ist hochkant (3:4) - ein Portrait im Oval ist die
+             * Form, die auf Papeterie vorkommt; ein liegendes Oval sieht aus
+             * wie ein zerdrueckter Kreis.
+             */
+            'oval' => $bild . '{border-radius:50%;aspect-ratio:3/4;}',
+            'rund' => $bild . '{border-radius:9999px;aspect-ratio:1;}',
+
+            /*
+             * Die eigene Zeichnung, als Auflage UEBER dem Bild.
+             *
+             * Deshalb ::after und kein Hintergrund: eine Rahmen-PNG hat eine
+             * durchsichtige Mitte, und hinter dem Foto waere davon nichts zu
+             * sehen. Sie faengt keinen Finger ab - darunter liegt nichts zum
+             * Antippen, aber ein Kasten, der Ereignisse schluckt, ist eine
+             * Falle fuer den naechsten, der hier etwas anklickbar macht.
+             *
+             * Ohne Datei erscheint nichts: none als Ersatzwert, und ein
+             * ::after ohne Bild zeichnet ein leeres Rechteck - deshalb
+             * bleibt es bei background-image und keiner Kante.
+             */
+            'eigen' => $kasten . '::after{content:"";position:absolute;inset:0;'
+                . 'background-image:var(--d-bild-frame,none);'
+                . 'background-size:100% 100%;background-repeat:no-repeat;'
+                . 'pointer-events:none;}',
 
             default => '',
         };
@@ -1002,6 +1105,7 @@ final class DesignSections
              */
             . $scope . ' .d-sec-bilder{display:grid;grid-template-columns:repeat(2,1fr);'
             . 'gap:0.5rem;margin-top:1.2rem;}'
+            . $scope . ' .d-sec-bilder .d-bild{display:block;position:relative;}'
             . $scope . ' .d-sec-bilder img{display:block;width:100%;aspect-ratio:1;'
             . 'object-fit:cover;}'
             // Als Block zentriert, innen ausgerichtet: die Uhrzeiten stehen
@@ -1620,8 +1724,12 @@ final class DesignSections
             'gallery/streifen' => $sel . ' .d-sec-bilder{display:flex;grid-template-columns:none;'
                 . 'gap:0.5rem;overflow-x:auto;scroll-snap-type:x mandatory;'
                 . '-webkit-overflow-scrolling:touch;}'
-                . $sel . ' .d-sec-bilder img{flex:0 0 68%;scroll-snap-align:center;'
-                . 'aspect-ratio:3/4;}',
+                // Der Kasten ist das Flex-Element, nicht mehr das Bild: seit
+                // jedes Foto seinen eigenen Kasten hat (fuer die Form), sitzt
+                // die Breite dort. Am img gemessen waere jeder Streifen so
+                // breit wie sein Inhalt.
+                . $sel . ' .d-sec-bilder .d-bild{flex:0 0 68%;scroll-snap-align:center;}'
+                . $sel . ' .d-sec-bilder img{aspect-ratio:3/4;}',
 
             'gift/rahmen' => $sel . ' .d-sec-konto{border:1px solid currentColor;'
                 . 'padding:1rem 1.2rem;max-width:22rem;margin-inline:auto;}',
@@ -1759,9 +1867,25 @@ final class DesignSections
              */
             $rahmen = (string) ($abschnitt['settings']['frame'] ?? 'keine');
 
+            /*
+             * Und dieselbe Zeile fuer die Form der Bilder.
+             *
+             * Sie muss am Abschnitt haengen, nicht nur im Stilblock stehen -
+             * im Browser gemessen und dabei gefunden: ohne diese Klasse
+             * trugen die Regeln nur ".d-sec-bilder .d-bild", und damit bekam
+             * JEDE Galerie des Dokuments JEDE gewaehlte Form. Vier Galerien
+             * mit vier Formen sahen alle vier gleich aus - polaroid, gold,
+             * oval und rund uebereinander.
+             *
+             * Dieselbe Falle wie beim Geltungsbereich zweier Designs auf
+             * einer Seite, nur eine Ebene tiefer.
+             */
+            $bildform = (string) ($abschnitt['settings']['photoFrame'] ?? 'keine');
+
             $out .= '<section class="d-sec d-sec-' . e($id) . ' d-sec-' . e($typ)
                 . ' d-sec-v-' . e((string) $abschnitt['variant'])
-                . ($rahmen !== 'keine' ? ' d-sec-r-' . e($rahmen) : '') . '">';
+                . ($rahmen !== 'keine' ? ' d-sec-r-' . e($rahmen) : '')
+                . ($bildform !== 'keine' ? ' d-sec-pf-' . e($bildform) : '') . '">';
 
             /*
              * Der Kasten um Ueberschrift und Inhalt.
@@ -2721,8 +2845,23 @@ final class DesignSections
     {
         $out = '';
 
+        /*
+         * Jedes Bild in einem eigenen Kasten.
+         *
+         * Er kostet nichts, wenn keine Form gewaehlt ist (eine Regel:
+         * position:relative), und er ist die Voraussetzung fuer die, die es
+         * gibt: das Polaroid braucht einen weissen Rand mit breiterem Fuss,
+         * und die eigene Zeichnung legt sich als Auflage DARUEBER. Beides
+         * geht am <img> selbst nicht - ein img hat kein ::after.
+         *
+         * Immer und nicht nur bei gewaehlter Form, aus demselben Grund wie
+         * beim Kasten um den Text: ein Knoten, den es nur manchmal gibt,
+         * waere ein zweiter Bauplan, und jede Regel muesste beide kennen.
+         */
         foreach (self::sectionPhotos($data, $id) as $pfad) {
-            $out .= '<img src="' . e($pfad) . '" alt="" loading="lazy" decoding="async">';
+            $out .= '<span class="d-bild">'
+                . '<img src="' . e($pfad) . '" alt="" loading="lazy" decoding="async">'
+                . '</span>';
         }
 
         return $out === '' ? '' : '<div class="d-sec-bilder">' . $out . '</div>';

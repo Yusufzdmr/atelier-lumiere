@@ -2007,6 +2007,110 @@ Fotoğrafların sunumu — polaroid / gold frame / kâğıt fotoğraf / oval / y
 çerçeve motoru burada da işe yarayacak: fotoğraf çerçevesi ile bölüm çerçevesi
 aynı soruya iki cevap.
 
+## 31 Ağustos — Paket D: fotoğrafların sunumu
+
+Ayhan'ın 8. maddesi. *"Fotoğraflar her zaman normal dikdörtgen resim olarak
+gösterilmemeli … Müşteri fotoğrafını yükler, nasıl gösterileceğini **seçilen
+davetiye tasarımı** belirler."*
+
+Son cümle asıl talimat ve bunun neden grafikerin **ayarı**, sihirbazda bir alan
+olmadığının sebebi: resimlerini tek tek çerçeveye sokan bir çift artık davetiye
+değil kolaj yapıyor.
+
+### Yedi biçim
+
+`keine / polaroid / gold / papier / oval / rund / eigen` — istekteki listenin
+kendisi (çerçevesiz, polaroid, gold frame, kâğıt fotoğraf, oval, yuvarlak,
+özel PNG frame).
+
+**Anahtar `photoFrame`, `frame` değil**: o zaten alınmış — bölümün **metnini**
+saran çerçeve (Paket B), ve onu her tür taşıyor. Tek isimde iki çerçeve, aynı
+soruya iki cevap olurdu ve ikincisi birincinin üstüne yazardı.
+
+Her fotoğraf artık kendi kutusunda (`.d-bild`). Biçim seçilmemişken tek kural
+taşıyor (`position:relative`) ve hiçbir şeye mal olmuyor; ama iki biçim onsuz
+olmuyor: polaroid alt tarafı geniş bir kenar istiyor, özel PNG ise fotoğrafın
+**üstüne** binen bir katman — ikisi de `<img>`'nin kendisinde olmaz, bir `img`
+`::after` taşımaz.
+
+**Polaroid'in alt kenarı asıl mesele:** onsuz beyaz kenarlı bir resim olur,
+polaroid olmaz. Hafif eğik, ve her ikincisi ters yöne — hepsi aynı eğik olsa
+ızgarada hata gibi görünürdü. `nth-child`, rastgele değil: rastgele bir açı her
+sayfa yenilemesinde başka yere zıplardı.
+
+**Oval ve yuvarlak biçimi resme ait, kutuya değil**: içinde köşeli resim olan
+yuvarlak bir kutu, önünde yuvarlak köşeli bir kare demektir.
+
+**Özel PNG `::after` ile üste biniyor**, arka plan olarak değil: bir çerçeve
+PNG'sinin ortası şeffaftır, fotoğrafın arkasında ondan hiçbir şey görünmezdi —
+ve tam olarak anlatılan durum bu.
+
+### Ölçerken bir hata çıktı
+
+Tarayıcıda dört galeriyi dört ayrı biçimle yan yana koydum: **dördü de dördünü
+birden aldı.** Kurallar yalnızca `.d-sec-bilder .d-bild` diyordu, yani
+dokümandaki her galeri her seçilmiş biçimi alıyordu. Polaroid, gold, oval ve
+yuvarlak üst üste.
+
+Bir sayfada iki tasarımın birbirini boyaması sorununun bir kat aşağısı. Biçim
+artık bölüme bir sınıf olarak yazılıyor (`d-sec-pf-<biçim>`) ve kurallar ona
+bağlı. Bir test bunu tutuyor: iki galeri, iki biçim, iki ayrı kural bloğu.
+
+Kodu okuyarak bulunamazdı — kurallar tek başına doğru görünüyor. Ancak yan yana
+ölçünce çıktı.
+
+### Animasyonlu arka planlı tasarımda da denendi
+
+Yusuf'un isteğiyle `video` tasarımında (kartın arkasında film katmanı, koyu
+palet) tekrarlandı:
+
+| Biçim | Ölçülen |
+|---|---|
+| polaroid | dolgu 11.2 / 11.2 / **38.4** px, eğik, ikincisi ters yönde |
+| gold | 1px `rgb(201,162,75)` — o tasarımın kendi accent'i |
+| oval | yarıçap %50, oran 3/4 |
+| rund | yarıçap 9999px, oran 1 |
+| film katmanı | yerinde, etkilenmedi |
+
+Koyu tasarımda polaroid'in kenarı beyaz değil koyu çıkıyor — doğru davranış:
+kenar temanın **kâğıt** rengini alıyor, sabit bir beyaz değil.
+
+### Gift'e resim eklenmedi — bilerek
+
+Paket 0'da `gift`'in hediye/IBAN bölümü olduğunu isimlendirip Ayhan'a da
+söyledik. Yanına ikinci bir fotoğraf alanı koymak, yeni giderdiğimiz
+karışıklığı baştan kurardı. Fotoğrafların yeri `gallery` ve o çalışıyor —
+Paket D onu yedi biçime kavuşturdu. Bir test bunu da sabitliyor: `gift`
+fotoğraf almıyor, `gallery` alıyor.
+
+### Şerit görünümü için küçük düzeltme
+
+Her fotoğraf kendi kutusunu aldığından beri **flex öğesi kutu**, resim değil.
+Resimde ölçülseydi her şerit içeriği kadar geniş olur, kaydırma durağı da
+yanlış düğümde otururdu.
+
+### Test
+
+`php bin/test.php` → **2256 kontrol** (öncesi 2214). Yeni dosya
+`tests/bildformen.php` (38).
+
+Testte bir tuzak da düzeltildi: bölüm kimliğini `bilder` koymuştum, galerinin
+kabının sınıfı da `.d-sec-bilder` — aynı seçici çıkıyor ve test tesadüfü
+ölçüyordu. Kimlik `fotos` yapıldı.
+
+### Yusuf'un gözle bakması gereken
+
+Panelde bir **Fotoğraflar** bölümü seç → **Fotoğraf biçimi** listesi (yedi
+seçenek) ve `eigen` için altında dosya alanı.
+
+### Ayhan'ın listesinden geriye kalan
+
+12 maddenin tamamı karşılandı. Sırada duran tek şey madde 12'nin kendisi —
+"her bölüm farklı görünsün" — ki o bir özellik değil, A'dan D'ye kadar
+yapılanların **kullanılması**: artık her tür için birden fazla görünüm, altı
+yazı rolü, yedi metin çerçevesi, yedi fotoğraf biçimi ve bölüm alanına
+dekorasyon var. Bir sonraki iş kod değil, bunlarla **tasarım yapmak**.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

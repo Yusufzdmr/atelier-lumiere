@@ -634,7 +634,41 @@ final class SectionRegistry
                 // dort ohnehin drei Briefmarken.
                 'streifen' => ['de' => 'Streifen', 'tr' => 'Şerit'],
             ],
-            'settings' => [],
+            'settings' => [
+                /*
+                 * Wie ein Foto gezeigt wird.
+                 *
+                 * "Fotograflar her zaman normal dikdortgen resim olarak
+                 * gosterilmemeli … Musteri fotografini yukler, nasil
+                 * gosterilecegini secilen davetiye tasarimi belirler."
+                 *
+                 * Genau diese Trennung: das Paar laedt hoch, die VORLAGE
+                 * entscheidet die Form. Deshalb eine Einstellung des
+                 * Grafikers und kein Feld im Assistenten - ein Paar, das
+                 * seine Bilder einzeln in Rahmen steckt, baut keine
+                 * Einladung mehr, sondern eine Collage.
+                 *
+                 * Der Name traegt "photo" im Schluessel, weil "frame" schon
+                 * vergeben ist: das ist der Rahmen um den TEXT eines
+                 * Abschnitts (GRUND). Zwei Rahmen mit einem Namen waeren
+                 * zwei Antworten auf dieselbe Frage.
+                 */
+                'photoFrame' => [
+                    'type'    => 'select',
+                    'options' => ['keine', 'polaroid', 'gold', 'papier', 'oval', 'rund', 'eigen'],
+                    'default' => 'keine',
+                    'label'   => ['de' => 'Form der Bilder', 'tr' => 'Fotoğraf biçimi'],
+                ],
+                // Die eigene Zeichnung dazu - sie legt sich UEBER das Bild,
+                // nicht dahinter. Eine Rahmen-PNG mit durchsichtiger Mitte
+                // gibt damit genau das, was sie soll.
+                'photoFrameSrc' => [
+                    'type'    => 'src',
+                    'kind'    => 'bild',
+                    'default' => '',
+                    'label'   => ['de' => 'Eigener Bildrahmen (PNG)', 'tr' => 'Kendi foto çerçeven (PNG)'],
+                ],
+            ],
             'inputs' => [
                 'photos' => [
                     'type'  => 'photos',
