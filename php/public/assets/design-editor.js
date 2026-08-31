@@ -1662,13 +1662,31 @@
       var em = parseFloat(window.getComputedStyle(el).fontSize) || 16;
 
       /*
-       * Der Rahmen steht unter transform:scale - eine gemessene Bewegung
-       * von zehn Pixeln ist dort mehr als zehn gerechnete. Der Faktor kommt
-       * aus demselben Knoten (gemessene Breite gegen gerechnete), damit er
-       * sich sauber herauskuerzt.
+       * Der Rahmen steht unter transform:scale - eine gemessene Bewegung von
+       * zehn Pixeln ist dort mehr als zehn gerechnete.
+       *
+       * Der Faktor kommt vom RAHMEN und nicht vom Zeichen selbst. Am Zeichen
+       * gemessen (Rechteck gegen offsetWidth) waere er auch ohne jede
+       * Skalierung nicht genau eins: das Rechteck ist ein Bruch, offsetWidth
+       * eine ganze Zahl, und aus 18.4/18 wurde ein Prozent Fehler in jeder
+       * Bewegung. Gemessen: zwoelf Pixel ergaben 73 statt 75.
+       *
+       * Im Editorfenster gibt es kein frameElement, und dann ist es exakt
+       * eins - kein Rechnen, kein Rest.
        */
-      var mass = el.getBoundingClientRect();
-      var skala = el.offsetWidth ? mass.width / el.offsetWidth : 1;
+      var skala = 1;
+      try {
+        var fenster = el.ownerDocument.defaultView;
+        var rahmenEl = fenster && fenster.frameElement;
+        if (rahmenEl && rahmenEl.offsetWidth) {
+          skala = rahmenEl.getBoundingClientRect().width / rahmenEl.offsetWidth;
+        }
+      } catch (fehler) {
+        // Ein fremder Ursprung waere hier unmoeglich (der Rahmen zeigt die
+        // eigene Seite), aber ein Editor, der an einer Ausnahme stehenbleibt,
+        // ist schlimmer als einer, der eine Kleinigkeit nicht kann.
+        skala = 1;
+      }
       if (!skala) skala = 1;
 
       zieht = {

@@ -2383,12 +2383,36 @@ etrafındaki sayfaya ne yaptığı" da ölçüldü.
 
 `php bin/test.php` → **2420** (öncesi 2328).
 
-### Gözle bakılacak tek şey
+### Sürükleme tarayıcıda ölçüldü — ve bir hata çıktı
 
-Sürüklemenin kendisi tarayıcıda denenmedi: yerel panele girmek parola istiyor
-ve parolayı ben yazmıyorum. `/de/admin/designs/pruefstand` → 3d'de bir yola
-`/assets/icons/pasta.svg` yaz, canlı önizlemede simgeyi tut ve sürükle; X/Y
-alanları değişmeli.
+Panele giremedim (parolayı ben yazmıyorum), ama ölçüm buna bağlı değilmiş.
+Kendi oturumumla aldığım **gerçek editör sayfası** yerel bir dosya olarak
+sunuldu (`_zieh-probe.html`, ölçümden sonra silindi), canlı bölümler kutusuna
+`/vorschau`'nun **gerçek çıktısı** kondu, ve gerçek `design-editor.js`
+çalıştırıldı. Yani ölçülen DOM ile markup gerçek; eksik olan tek şey oturum.
+
+Ölçülen (sentetik pointer olayları, em = 16 px):
+
+| Ne | Hareket | Beklenen | Çıkan |
+|---|---|---|---|
+| Geri sayım süsü | +16 / +8 px | 140 / 25 | **140 / 25** |
+| Katalog simgesi (`pasta`) | +12 / −6 px | 75 / −37 | **75 / −37** |
+| Sadece dokunma | 0 | değişmemeli | değişmedi |
+| Sınırın ötesine | +2000 px | 400 | 400 |
+
+`cursor:move` ve `touch-action:none` düğümde duruyor, konsolda hata yok.
+
+**Hata buydu:** ilk ölçümde simge 75 yerine **73** verdi. Ölçeği simgenin
+kendisinden alıyordum — `getBoundingClientRect().width / offsetWidth`. Hiç
+ölçekleme yokken bile bu oran tam 1 çıkmıyor: rect kesirli (18.4), offsetWidth
+tam sayı (18), ve aradaki yüzde bir her harekete biniyor.
+
+Artık ölçek **çerçevenin kendisinden** geliyor (`defaultView.frameElement`).
+Editör penceresinde frameElement yok, yani çarpan tam olarak 1 — hesap değil,
+sadece 1. Cihaz görünümündeki ölçekli hâli bu düzeneğe girmiyor (iframe
+oturum istiyor); orayı gözle bir kez görmek iyi olur.
+
+`php bin/test.php` → **2420**.
 
 ## Sıradaki oturum buradan başlasın
 

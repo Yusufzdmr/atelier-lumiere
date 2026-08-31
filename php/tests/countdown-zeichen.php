@@ -252,4 +252,5 @@ assert_contains($skript2, "'[name=\"icon_x_' + kennung + '\"]'", 'Ziehen: und be
  * liefe das Zeichen dort schneller als die Maus.
  */
 assert_contains($skript2, 'window.getComputedStyle(el).fontSize', 'Ziehen: die Umrechnung misst am Knoten');
-assert_contains($skript2, 'mass.width / el.offsetWidth', 'Ziehen: und kuerzt den Massstab des Rahmens heraus');
+assert_contains($skript2, 'rahmenEl.getBoundingClientRect().width / rahmenEl.offsetWidth',
+    'Ziehen: und kuerzt den Massstab des Rahmens heraus - am Rahmen gemessen');
