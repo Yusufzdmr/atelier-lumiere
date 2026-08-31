@@ -1569,6 +1569,213 @@
     });
   });
 
+  /* ====================================================================
+   * Die Zeichen in den Abschnitten ziehen.
+   *
+   * Vier Zahlenfelder sind die richtige Antwort auf "genau minus fuenf
+   * Hundertstel" und die falsche auf "ein bisschen weiter nach links". Auf
+   * der Karte wird seit Monaten gezogen; in den Abschnitten stand bis hier
+   * nur das Formular.
+   *
+   * Zwei Sorten Knoten, ein Griff:
+   *
+   *   .d-cd-el   die freien Zeichen am Countdown, data-cd sagt die Zeile
+   *   .d-ikon    die Katalogzeichen, die Kennung steht in der Klasse
+   *
+   * Gerechnet wird in HUNDERTSTEL EM und nicht in Prozent des Elternkastens
+   * wie bei den Ebenen - weil die Felder es so speichern, und sie speichern
+   * es so, damit das Zeichen mit seiner Zeile waechst. Die Umrechnung nimmt
+   * die Schriftgroesse des Knotens selbst: an ihr misst der Browser das em,
+   * das er hineinschreibt.
+   *
+   * Geschrieben wird ins FELD, nicht ins Dokument. Der Knoten bewegt sich
+   * waehrenddessen nur zum Ansehen; wahr wird es beim Loslassen, und dann
+   * holt die lebende Vorschau ohnehin neu vom Server.
+   * ==================================================================== */
+  (function () {
+    var zieht = null;
+
+    var lebendKasten = function () { return form.querySelector("[data-live-abschnitte]"); };
+
+    var alleWurzeln = function () {
+      var kasten = lebendKasten();
+      return (kasten ? [kasten] : []).concat(rahmenWurzeln());
+    };
+
+    /*
+     * Welche Felder gehoeren zu diesem Knoten - und woran erkennt man ihn in
+     * einer anderen Wurzel wieder? Beides an derselben Stelle, weil beides
+     * dieselbe Frage ist: wer ist das hier.
+     */
+    var felderFuer = function (el) {
+      var cd = el.getAttribute("data-cd");
+      if (cd) {
+        var teil = cd.split(":");
+        if (teil.length !== 2) return null;
+        var name = "cd_" + teil[0] + "_" + teil[1] + "_";
+        return {
+          x: form.querySelector('[name="' + name + 'x"]'),
+          y: form.querySelector('[name="' + name + 'y"]'),
+          gleiche: '[data-cd="' + cd + '"]'
+        };
+      }
+
+      var kennung = "";
+      Array.prototype.forEach.call(el.classList, function (klasse) {
+        if (klasse.indexOf("d-ikon-") === 0) kennung = klasse.slice(7);
+      });
+      if (!kennung) return null;
+
+      /*
+       * Alle Zeichen derselben Kennung bewegen sich mit. Das ist keine
+       * Ungenauigkeit, sondern das Modell: die Vorlage sagt, was eine Torte
+       * IST - kommt sie in zwei Zeilen vor, ist es zweimal dieselbe.
+       */
+      return {
+        x: form.querySelector('[name="icon_x_' + kennung + '"]'),
+        y: form.querySelector('[name="icon_y_' + kennung + '"]'),
+        gleiche: ".d-ikon-" + kennung
+      };
+    };
+
+    var male = function (f, x, y) {
+      var stil = "translate(" + (x / 100) + "em," + (y / 100) + "em)";
+      alleWurzeln().forEach(function (wurzel) {
+        wurzel.querySelectorAll(f.gleiche).forEach(function (knoten) {
+          knoten.style.transform = stil;
+        });
+      });
+    };
+
+    var beimDruecken = function (ereignis) {
+      if (ereignis.button !== 0) return;
+
+      var el = ereignis.target.closest(".d-cd-el, .d-ikon");
+      if (!el) return;
+
+      var f = felderFuer(el);
+      // Ohne Feld nichts zu ziehen: ein Zeichen kann im Rahmen stehen,
+      // waehrend das Formular es nicht kennt - etwa direkt nach dem
+      // Loeschen einer Zeile, bevor gespeichert wurde.
+      if (!f || !f.x || !f.y) return;
+
+      var em = parseFloat(window.getComputedStyle(el).fontSize) || 16;
+
+      /*
+       * Der Rahmen steht unter transform:scale - eine gemessene Bewegung
+       * von zehn Pixeln ist dort mehr als zehn gerechnete. Der Faktor kommt
+       * aus demselben Knoten (gemessene Breite gegen gerechnete), damit er
+       * sich sauber herauskuerzt.
+       */
+      var mass = el.getBoundingClientRect();
+      var skala = el.offsetWidth ? mass.width / el.offsetWidth : 1;
+      if (!skala) skala = 1;
+
+      zieht = {
+        f: f,
+        el: el,
+        em: em,
+        skala: skala,
+        x0: ereignis.clientX,
+        y0: ereignis.clientY,
+        wx: parseInt(f.x.value, 10) || 0,
+        wy: parseInt(f.y.value, 10) || 0,
+        nx: null,
+        ny: null
+      };
+
+      if (el.setPointerCapture) el.setPointerCapture(ereignis.pointerId);
+      ereignis.preventDefault();
+    };
+
+    var beimBewegen = function (ereignis) {
+      if (!zieht) return;
+
+      var dx = (ereignis.clientX - zieht.x0) / zieht.skala / zieht.em * 100;
+      var dy = (ereignis.clientY - zieht.y0) / zieht.skala / zieht.em * 100;
+
+      // Dieselben Grenzen wie im Modell (Design::icons, countdownIcons).
+      // Wer weiter zieht, als gespeichert werden kann, saehe sonst etwas,
+      // das beim Loslassen zurueckspringt.
+      zieht.nx = Math.max(-400, Math.min(400, Math.round(zieht.wx + dx)));
+      zieht.ny = Math.max(-400, Math.min(400, Math.round(zieht.wy + dy)));
+
+      male(zieht.f, zieht.nx, zieht.ny);
+      ereignis.preventDefault();
+    };
+
+    var beende = function (ereignis) {
+      if (!zieht) return;
+
+      var z = zieht;
+      zieht = null;
+
+      if (z.el.hasPointerCapture && ereignis && z.el.hasPointerCapture(ereignis.pointerId)) {
+        z.el.releasePointerCapture(ereignis.pointerId);
+      }
+
+      // Nur angetippt und nicht gezogen: dann gab es nichts zu aendern, und
+      // ein Ereignis ohne Aenderung waere ein Schritt in der Geschichte, den
+      // Strg+Z spaeter zurueckdreht, ohne dass etwas passiert waere.
+      if (z.nx === null) return;
+
+      z.f.x.value = String(z.nx);
+      z.f.y.value = String(z.ny);
+
+      /*
+       * EIN Ereignis fuer beide Felder. Es weckt die lebende Vorschau (die
+       * ohnehin das ganze Formular schickt) und legt einen Schritt in der
+       * Geschichte an - zwei Ereignisse legten zwei an, und Strg+Z brauchte
+       * zweimal denselben Griff.
+       */
+      z.f.x.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    /*
+     * Der Zeiger sagt, dass man es anfassen kann - und touch-action:none,
+     * damit ein Finger auf dem Zeichen nicht die Seite scrollt. Die Regel
+     * geht in das Dokument der Wurzel: im Rahmen ist das ein fremdes, und
+     * eine Regel aus dem Editor gilt dort nicht.
+     */
+    var regelHinein = function (dok) {
+      if (!dok || !dok.head || dok.documentElement.hasAttribute("data-zeichen-regel")) return;
+      dok.documentElement.setAttribute("data-zeichen-regel", "");
+
+      var stil = dok.createElement("style");
+      stil.textContent = ".d-cd-el,.d-ikon{cursor:move;touch-action:none;}";
+      dok.head.appendChild(stil);
+    };
+
+    var anhaengen = function (wurzel) {
+      if (!wurzel || wurzel.hasAttribute("data-zeichen-zieht")) return;
+      wurzel.setAttribute("data-zeichen-zieht", "");
+
+      regelHinein(wurzel.ownerDocument);
+
+      wurzel.addEventListener("pointerdown", beimDruecken);
+      wurzel.addEventListener("pointermove", beimBewegen);
+      wurzel.addEventListener("pointerup", beende);
+      wurzel.addEventListener("pointercancel", beende);
+    };
+
+    var haengen = function () { alleWurzeln().forEach(anhaengen); };
+    haengen();
+
+    /*
+     * Der Rahmen entsteht beim ersten Klick auf ein Geraet und laedt bei
+     * jedem Wechsel neu - dieselben zwei Faelle wie beim Ziehen auf der
+     * Karte, und derselbe Weg.
+     */
+    document.querySelectorAll("[data-ansicht]").forEach(function (knopf) {
+      knopf.addEventListener("click", function () {
+        var kasten = document.querySelector("[data-ansicht-rahmen]");
+        var kind = kasten && kasten.querySelector("iframe");
+        if (kind) kind.addEventListener("load", haengen, { once: true });
+        window.setTimeout(haengen, 60);
+      });
+    });
+  })();
+
   /*
    * Die drei Spalten: links waehlen, rechts erscheint die Tafel.
    *

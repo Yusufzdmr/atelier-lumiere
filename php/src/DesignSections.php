@@ -2523,7 +2523,7 @@ final class DesignSections
             return $out;
         }
 
-        foreach ($liste as $eintrag) {
+        foreach (array_values($liste) as $i => $eintrag) {
             if (!is_array($eintrag)) {
                 continue;
             }
@@ -2535,7 +2535,7 @@ final class DesignSections
                 continue;
             }
 
-            $out[$seite][$anker] .= self::cdEines($eintrag);
+            $out[$seite][$anker] .= self::cdEines($eintrag, $variant . ':' . $i);
         }
 
         return $out;
@@ -2555,9 +2555,16 @@ final class DesignSections
      * wachsen. width allein, die Hoehe folgt aus der Grundregel (height:auto)
      * und damit dem Seitenverhaeltnis der Datei.
      *
+     * Die Kennung im data-Attribut ist fuer den Editor: sie sagt, welche
+     * Zeile des Formulars zu diesem Knoten gehoert, damit sich das Zeichen
+     * ziehen laesst statt in vier Zahlenfelder getippt zu werden. Sie steht
+     * auch auf der versendeten Seite - ein totes Attribut von zwoelf Zeichen
+     * ist billiger als ein zweiter Bauplan fuer die Vorschau, und ein
+     * zweiter Bauplan ist es, der irgendwann auseinanderlaeuft.
+     *
      * @param array<string,mixed> $e
      */
-    private static function cdEines(array $e): string
+    private static function cdEines(array $e, string $kennung = ''): string
     {
         $stil = 'width:' . (((int) $e['size']) / 100) . 'em;';
 
@@ -2575,11 +2582,13 @@ final class DesignSections
             $stil .= 'position:relative;z-index:' . ((int) $e['z']) . ';';
         }
 
+        $marke = $kennung !== '' ? ' data-cd="' . e($kennung) . '"' : '';
+
         $film = (string) ($e['video'] ?? '');
         if ($film !== '') {
             // autoplay, stumm, in der Schleife - wie das Zeichen daneben.
             // Wer den Countdown sieht, hat die Einladung geoeffnet.
-            return '<video class="d-cd-el" style="' . e($stil) . '" src="' . e($film) . '"'
+            return '<video class="d-cd-el"' . $marke . ' style="' . e($stil) . '" src="' . e($film) . '"'
                 . ' autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>';
         }
 
@@ -2588,7 +2597,8 @@ final class DesignSections
             return '';
         }
 
-        return '<img class="d-cd-el" style="' . e($stil) . '" src="' . e($bild) . '" alt="" aria-hidden="true">';
+        return '<img class="d-cd-el"' . $marke . ' style="' . e($stil) . '" src="'
+            . e($bild) . '" alt="" aria-hidden="true">';
     }
 
     /** @param array<string,mixed> $doc */

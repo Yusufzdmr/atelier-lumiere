@@ -219,3 +219,37 @@ assert_contains($steuer, "\$_FILES['cd_datei_' . \$gestalt . '_' . \$i]",
 $skript = (string) file_get_contents(__DIR__ . '/../public/assets/design-editor.js');
 assert_contains($skript, 'data-cd-mehr', 'Skript: der Knopf haengt am Formular');
 assert_contains($skript, 'if (nummer >= 24) return;', 'Skript: und legt nichts an, was beim Speichern wegfiele');
+
+/* --- Und das Ziehen im Editor --- */
+
+/*
+ * Vier Zahlenfelder sind die richtige Antwort auf "genau minus fuenf
+ * Hundertstel" und die falsche auf "ein bisschen weiter nach links".
+ *
+ * Damit sich ein Zeichen ziehen laesst, muss der Editor wissen, welche Zeile
+ * des Formulars zu dem Knoten gehoert. Bei den Katalogzeichen steht das in
+ * der Klasse (d-ikon-pasta); hier gibt es keine Kennung, also traegt der
+ * Knoten die Gestalt und die Nummer.
+ */
+$gezogen = cd_doc(['uhr' => [
+    ['src' => '/uploads/designs/a.png', 'anchor' => 'days'],
+    ['src' => '/uploads/designs/b.png', 'anchor' => 'hours'],
+]]);
+$gezogenHtml = DesignSections::html($gezogen, $daten, 'de', '2026-01-01');
+
+assert_contains($gezogenHtml, 'data-cd="uhr:0"', 'Ziehen: die erste Zeile traegt ihre Nummer');
+assert_contains($gezogenHtml, 'data-cd="uhr:1"', 'Ziehen: die zweite auch');
+
+$skript2 = (string) file_get_contents(__DIR__ . '/../public/assets/design-editor.js');
+
+assert_contains($skript2, '".d-cd-el, .d-ikon"', 'Ziehen: beide Sorten Zeichen haben denselben Griff');
+assert_contains($skript2, "'[name=\"' + name + 'x\"]'", 'Ziehen: geschrieben wird ins Feld');
+assert_contains($skript2, "'[name=\"icon_x_' + kennung + '\"]'", 'Ziehen: und bei den Katalogzeichen ins ihre');
+
+/*
+ * Die Umrechnung nimmt die Schriftgroesse des Knotens: an ihr misst der
+ * Browser das em, das er hineinschreibt. Und den Massstab des Rahmens, sonst
+ * liefe das Zeichen dort schneller als die Maus.
+ */
+assert_contains($skript2, 'window.getComputedStyle(el).fontSize', 'Ziehen: die Umrechnung misst am Knoten');
+assert_contains($skript2, 'mass.width / el.offsetWidth', 'Ziehen: und kuerzt den Massstab des Rahmens heraus');
