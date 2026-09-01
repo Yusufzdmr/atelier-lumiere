@@ -46,8 +46,8 @@ $einsHtml = DesignSections::html($eins, $daten, 'de', '2026-01-01');
 
 assert_contains($einsHtml, '<img class="d-cd-el"', 'Countdown: das Bild steht im Markup');
 assert_contains($einsHtml, 'src="/uploads/designs/herz.png"', 'Countdown: mit seiner Adresse');
-assert_contains(DesignSections::css($eins, '.d-p'), '.d-cd-el{display:inline-block;',
-    'Countdown: die Grundregel steht da, sobald es eines gibt');
+assert_contains(DesignSections::css($eins, '.d-p'), '.d-cd-el,.d-p .d-deko{display:inline-block;',
+    'Countdown: die Grundregel steht da, sobald es eines gibt - und sie gilt auch fuer den Schmuck der Abschnitte');
 
 /*
  * display:inline-block ist kein Geschmack: Tailwinds Preflight setzt img und

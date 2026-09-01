@@ -812,6 +812,27 @@ final class DesignAdminController
                 }
             }
 
+            /*
+             * Und die Dateien des freien Schmucks. Dieselbe Bewegung wie
+             * ueberall: der Upload sagt nur, was im Pfadfeld stehen soll.
+             * Bild ODER Film, die Datei entscheidet selbst - wer einen Film
+             * hinlegt, hat sich fuer ihn entschieden.
+             */
+            $wieviel = max(0, min(8, (int) ($post['sec_deko_n_' . $i] ?? 0)));
+            for ($d = 0; $d < $wieviel; $d++) {
+                $datei = $_FILES['sec_dekodatei_' . $i . '_' . $d] ?? null;
+                if (!is_array($datei) || ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $pfad = Media::nimm($datei, 'zeichen', static fn (array $f): ?string
+                    => Media::storeVideo($f, 'designs') ?? Media::storeGraphic($f, 'designs'));
+
+                if ($pfad !== null) {
+                    $post['sec_deko_' . $i . '_' . $d . '_src'] = $pfad;
+                }
+            }
+
             $blatt = $_FILES['sec_bg_datei_' . $i] ?? null;
             if (!is_array($blatt) || ((int) ($blatt['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_OK) {
                 continue;

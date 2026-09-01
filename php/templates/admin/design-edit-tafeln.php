@@ -273,6 +273,98 @@ foreach ($katalog as $art => $eintrag) {
 
 
       <?php /*
+         Der freie Schmuck dieses Abschnitts.
+
+         "Gerektiginde ayni bolume birden fazla gorsel veya video elementi
+         ekleyebilmeliyim." Am Countdown gibt es das (3d); hier ist dasselbe
+         fuer jeden Abschnitt - Bild oder Film, so viele wie noetig, jedes
+         mit eigener Groesse, Verschiebung, Abstand und Ebene.
+
+         Am ABSCHNITT und nicht an der Art: zwei Textbloecke derselben
+         Vorlage duerfen verschieden geschmueckt sein.
+
+         Eine leere Zeile steht immer unten, damit auch ohne Skript etwas
+         entstehen kann; der Knopf daneben klont sie. Geloescht wird durch
+         Leeren des Pfads - ein eigener Knopf waere ein zweiter Zustand im
+         Formular, und einer, der bis zum Speichern luegt.
+      */ ?>
+      <?php
+        $dekoZeilen = is_array($abschnitt['deko'] ?? null) ? $abschnitt['deko'] : [];
+        $dekoZeilen[] = ['src' => '', 'video' => '', 'anchor' => 'titel', 'side' => 'nach',
+                         'size' => 100, 'x' => 0, 'y' => 0, 'gap' => 0, 'z' => 0];
+        $dekoAnker = ['titel' => ['de' => 'Überschrift', 'tr' => 'Başlık'],
+                      'inhalt' => ['de' => 'Inhalt', 'tr' => 'İçerik']];
+      ?>
+      <div class="b-gruppe">
+        <div class="flex items-center justify-between gap-3">
+          <span class="<?= $label ?>"><?= $tr ? 'süsleme (resim / video)' : 'Schmuck (Bild / Film)' ?></span>
+          <button type="button" class="border border-sand-deep px-2 py-1 text-[0.66rem] uppercase tracking-[0.14em] text-muted hover:text-ink"
+                  data-cd-mehr="deko_<?= $i ?>">+</button>
+        </div>
+
+        <input type="hidden" name="sec_deko_n_<?= $i ?>" value="<?= count($dekoZeilen) ?>"
+               data-cd-zahl="deko_<?= $i ?>">
+
+        <div class="mt-2 space-y-3" data-cd-liste="deko_<?= $i ?>">
+          <?php foreach (array_values($dekoZeilen) as $d => $dk) : ?>
+            <?php
+              $dPfad = (string) (($dk['video'] ?? '') !== '' ? $dk['video'] : ($dk['src'] ?? ''));
+              $dn = 'sec_deko_' . $i . '_' . $d . '_';
+            ?>
+            <div class="space-y-2" data-cd-zeile>
+              <div class="b-gruppe b-zwei">
+                <label class="<?= $label ?>"><?= $tr ? 'dosya' : 'Datei' ?>
+                  <input type="file" class="<?= $feld ?>" name="sec_dekodatei_<?= $i ?>_<?= $d ?>"
+                         accept="image/png,image/webp,image/svg+xml,image/jpeg,video/mp4,video/webm"></label>
+                <label class="<?= $label ?>"><?= $tr ? 'yol (boş = yok)' : 'Pfad (leer = keiner)' ?>
+                  <input class="<?= $feld ?> font-mono text-[0.78rem]"
+                         name="<?= $dn ?>src" value="<?= e($dPfad) ?>"></label>
+              </div>
+
+              <div class="b-gruppe b-zwei">
+                <label class="<?= $label ?>"><?= $tr ? 'nereye' : 'woran' ?>
+                  <select class="<?= $feld ?>" name="<?= $dn ?>anchor">
+                    <?php foreach ($dekoAnker as $wert => $wort) : ?>
+                      <option value="<?= e((string) $wert) ?>" <?= ($dk['anchor'] ?? '') === $wert ? 'selected' : '' ?>>
+                        <?= e($wort[$sprache] ?? (string) $wert) ?></option>
+                    <?php endforeach; ?>
+                  </select></label>
+                <label class="<?= $label ?>"><?= $tr ? 'hangi yanına' : 'welche Seite' ?>
+                  <select class="<?= $feld ?>" name="<?= $dn ?>side">
+                    <option value="vor" <?= ($dk['side'] ?? '') === 'vor' ? 'selected' : '' ?>>
+                      <?= $tr ? 'öncesine' : 'davor' ?></option>
+                    <option value="nach" <?= ($dk['side'] ?? 'nach') !== 'vor' ? 'selected' : '' ?>>
+                      <?= $tr ? 'sonrasına' : 'dahinter' ?></option>
+                  </select></label>
+              </div>
+
+              <div class="b-gruppe b-fuenf">
+                <label class="<?= $label ?>"><?= $tr ? 'boyut' : 'Grösse' ?>
+                  <input type="number" min="10" max="2000" class="<?= $feld ?>"
+                         name="<?= $dn ?>size" value="<?= (int) ($dk['size'] ?? 100) ?>"></label>
+                <label class="<?= $label ?>">X
+                  <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                         name="<?= $dn ?>x" value="<?= (int) ($dk['x'] ?? 0) ?>"></label>
+                <label class="<?= $label ?>">Y
+                  <input type="number" min="-400" max="400" class="<?= $feld ?>"
+                         name="<?= $dn ?>y" value="<?= (int) ($dk['y'] ?? 0) ?>"></label>
+                <label class="<?= $label ?>"><?= $tr ? 'mesafe' : 'Abstand' ?>
+                  <input type="number" min="0" max="400" class="<?= $feld ?>"
+                         name="<?= $dn ?>gap" value="<?= (int) ($dk['gap'] ?? 0) ?>"></label>
+                <label class="<?= $label ?>"><?= $tr ? 'katman' : 'Ebene' ?>
+                  <input type="number" min="-5" max="5" class="<?= $feld ?>"
+                         name="<?= $dn ?>z" value="<?= (int) ($dk['z'] ?? 0) ?>"></label>
+              </div>
+
+              <?php if ($dPfad !== '') : ?>
+                <img class="h-6 w-6 shrink-0 object-contain" src="<?= e($dPfad) ?>" alt="">
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+
+      <?php /*
          Die Rechte des Kunden. edit ist der Hauptschalter, wie bei den
          Ebenen: ist er aus, zaehlt hide nicht - so ist Sperren ein Haken und
          nicht zwei.

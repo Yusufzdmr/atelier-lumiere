@@ -207,6 +207,25 @@ final class DesignSections
                     'en' => (string) ($title['en'] ?? ''),
                 ],
                 'enabled' => (bool) ($eintrag['enabled'] ?? true),
+                /*
+                 * Der freie Schmuck dieses Abschnitts.
+                 *
+                 * "Gerektiginde ayni bolume birden fazla gorsel veya video
+                 * elementi ekleyebilmeliyim." Am Countdown gibt es das seit
+                 * heute; hier ist dasselbe fuer JEDEN Abschnitt - ein Bild
+                 * neben die Ueberschrift, ein Film neben den Inhalt, so
+                 * viele, wie die Vorlage will.
+                 *
+                 * Am Abschnitt und nicht an der Art: zwei Textbloecke in
+                 * derselben Vorlage duerfen verschieden geschmueckt sein.
+                 * Derselbe Grund, aus dem die Einstellungen hier stehen und
+                 * nicht im Katalog.
+                 *
+                 * Acht statt vierundzwanzig: mehr als acht Stueck an einer
+                 * Ueberschrift sind kein Schmuck mehr, sondern ein zweites
+                 * Bild - und dafuer gibt es das Blatt des Abschnitts.
+                 */
+                'deko'    => Design::freieElemente($eintrag['deko'] ?? null, Design::DEKO_ANKER, 8),
                 'style'   => [
                     // Markennamen, keine Werte: der Renderer schreibt
                     // var(--d-<name>). Ein roher Wert ergaebe ungueltiges CSS.
@@ -668,9 +687,17 @@ final class DesignSections
          * Preflight deckelt auf 100% des Kastens, und ein Zeichen darf
          * groesser sein als das Feld, an dem es haengt.
          */
-        if (($doc['countdownIcons'] ?? []) !== []) {
-            $css .= $scope . ' .d-cd-el{display:inline-block;vertical-align:middle;'
-                . 'height:auto;max-width:none;object-fit:contain;}';
+        $freie = ($doc['countdownIcons'] ?? []) !== [];
+        foreach ($doc['sections'] as $abschnitt) {
+            if (($abschnitt['deko'] ?? []) !== []) {
+                $freie = true;
+                break;
+            }
+        }
+
+        if ($freie) {
+            $css .= $scope . ' .d-cd-el,' . $scope . ' .d-deko{display:inline-block;'
+                . 'vertical-align:middle;height:auto;max-width:none;object-fit:contain;}';
         }
 
         // Und die Formen der Bilder, nach derselben Regel: nur die
@@ -2164,9 +2191,24 @@ final class DesignSections
             if ($titel === '') {
                 $titel = (string) ($abschnitt['title']['de'] ?? '');
             }
+            /*
+             * Der Schmuck des Abschnitts - vor und nach dem, woran er haengt.
+             *
+             * Er steht IM Fluss wie die Zeichen am Countdown: ein Bild neben
+             * einer Ueberschrift soll mitrutschen, wenn die Ueberschrift
+             * laenger wird. Wer es woanders haben will, verschiebt es mit x
+             * und y - eine Verschiebung haelt auch dann, wenn die Schrift
+             * waechst, eine feste Koordinate nicht.
+             */
+            $deko = self::dekoZeichen($abschnitt);
+
             if ($titel !== '') {
-                $out .= '<h2 class="d-sec-title">' . e($titel) . '</h2>';
+                $out .= $deko['vor']['titel']
+                    . '<h2 class="d-sec-title">' . e($titel) . '</h2>'
+                    . $deko['nach']['titel'];
             }
+
+            $out .= $deko['vor']['inhalt'];
 
             $out .= match ($typ) {
                 'location'  => self::ort($doc, $data, $locale, $abschnitt['settings']),
@@ -2187,7 +2229,7 @@ final class DesignSections
                 default     => '',
             };
 
-            $out .= '</div></section>';
+            $out .= $deko['nach']['inhalt'] . '</div></section>';
         }
 
         return $out;
@@ -2599,7 +2641,7 @@ final class DesignSections
      *
      * @param array<string,mixed> $e
      */
-    private static function cdEines(array $e, string $kennung = ''): string
+    private static function cdEines(array $e, string $kennung = '', string $klasse = 'd-cd-el'): string
     {
         $stil = 'width:' . (((int) $e['size']) / 100) . 'em;';
 
@@ -2623,7 +2665,7 @@ final class DesignSections
         if ($film !== '') {
             // autoplay, stumm, in der Schleife - wie das Zeichen daneben.
             // Wer den Countdown sieht, hat die Einladung geoeffnet.
-            return '<video class="d-cd-el"' . $marke . ' style="' . e($stil) . '" src="' . e($film) . '"'
+            return '<video class="' . $klasse . '"' . $marke . ' style="' . e($stil) . '" src="' . e($film) . '"'
                 . ' autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>';
         }
 
@@ -2632,8 +2674,46 @@ final class DesignSections
             return '';
         }
 
-        return '<img class="d-cd-el"' . $marke . ' style="' . e($stil) . '" src="'
+        return '<img class="' . $klasse . '"' . $marke . ' style="' . e($stil) . '" src="'
             . e($bild) . '" alt="" aria-hidden="true">';
+    }
+
+    /**
+     * Der Schmuck eines Abschnitts, nach Anker und Seite sortiert.
+     *
+     * Dieselbe Form wie cdZeichen() und aus demselben Grund: der Bauer oben
+     * setzt sie an vier Stellen ein, und an jeder soll eine Zeichenkette
+     * stehen und keine Schleife.
+     *
+     * @param array<string,mixed> $abschnitt
+     * @return array{vor:array<string,string>,nach:array<string,string>}
+     */
+    private static function dekoZeichen(array $abschnitt): array
+    {
+        $leer = ['titel' => '', 'inhalt' => ''];
+        $out  = ['vor' => $leer, 'nach' => $leer];
+
+        $liste = $abschnitt['deko'] ?? [];
+        if (!is_array($liste)) {
+            return $out;
+        }
+
+        foreach (array_values($liste) as $i => $eintrag) {
+            if (!is_array($eintrag)) {
+                continue;
+            }
+
+            $seite = (string) ($eintrag['side'] ?? 'nach');
+            $anker = (string) ($eintrag['anchor'] ?? 'titel');
+
+            if (!isset($out[$seite][$anker])) {
+                continue;
+            }
+
+            $out[$seite][$anker] .= self::cdEines($eintrag, '', 'd-deko');
+        }
+
+        return $out;
     }
 
     /** @param array<string,mixed> $doc */

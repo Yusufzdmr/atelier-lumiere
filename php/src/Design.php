@@ -270,48 +270,7 @@ final class Design
         $out = [];
 
         foreach (self::COUNTDOWN_ANKER as $gestalt => $anker) {
-            $zeilen = is_array($roh[$gestalt] ?? null) ? $roh[$gestalt] : [];
-            $liste  = [];
-
-            foreach ($zeilen as $zeile) {
-                if (!is_array($zeile)) {
-                    continue;
-                }
-
-                $bild = self::safeSrc((string) ($zeile['src'] ?? ''));
-                $film = self::safeSrc((string) ($zeile['video'] ?? ''));
-
-                if ($bild === '' && $film === '') {
-                    continue;
-                }
-
-                $wo = (string) ($zeile['anchor'] ?? '');
-                if (!in_array($wo, $anker, true)) {
-                    $wo = 'days';
-                }
-
-                $liste[] = [
-                    'src'    => $bild,
-                    'video'  => $film,
-                    'anchor' => $wo,
-                    // Links oder rechts vom Feld. Zwei Werte und kein Winkel:
-                    // die Zeile flieszt, und ein Zeichen in ihr steht davor
-                    // oder dahinter. Feiner wird es mit x und y.
-                    'side'   => ($zeile['side'] ?? '') === 'vor' ? 'vor' : 'nach',
-                    'size'   => max(10, min(2000, (int) ($zeile['size'] ?? 100))),
-                    'x'      => max(-400, min(400, (int) ($zeile['x'] ?? 0))),
-                    'y'      => max(-400, min(400, (int) ($zeile['y'] ?? 0))),
-                    'gap'    => max(0, min(400, (int) ($zeile['gap'] ?? 0))),
-                    'z'      => max(-5, min(5, (int) ($zeile['z'] ?? 0))),
-                ];
-
-                // Eine Grenze, die das Panel nie erreicht. Sie steht hier
-                // gegen ein Dokument, das nicht aus dem Panel kommt - eine
-                // Liste ohne Ende waere ein Stilblock ohne Ende.
-                if (count($liste) >= 24) {
-                    break;
-                }
-            }
+            $liste = self::freieElemente($roh[$gestalt] ?? null, $anker);
 
             if ($liste !== []) {
                 $out[$gestalt] = $liste;
@@ -320,6 +279,86 @@ final class Design
 
         return $out;
     }
+
+    /**
+     * Eine Liste freier Elemente pruefen - Bilder und Filme mit Geometrie.
+     *
+     * Eine Stelle fuer zwei Leser: die Zeichen am Countdown haengen an
+     * seinen Feldern, der Schmuck eines Abschnitts an Ueberschrift oder
+     * Inhalt. Was sie unterscheidet, ist die Liste der Anker; alles andere -
+     * welche Datei zaehlt, welche Grenzen gelten, was eine leere Zeile ist -
+     * ist bei beiden dasselbe und soll es bleiben.
+     *
+     * Ohne Datei keine Zeile: anders als bei den Katalogzeichen gibt es hier
+     * keine gezeichnete Fassung, an der eine blosse Geometrie noch etwas
+     * aendern koennte. Und es ist zugleich der Weg zum Loeschen.
+     *
+     * Einheiten wie ueberall: size/x/y/gap in Hundertstel em, damit ein
+     * Element mit der Zeile waechst, neben der es steht.
+     *
+     * @param mixed $roh
+     * @param list<string> $anker
+     * @return list<array<string,mixed>>
+     */
+    public static function freieElemente(mixed $roh, array $anker, int $max = 24): array
+    {
+        $zeilen = is_array($roh) ? $roh : [];
+        $liste  = [];
+
+        foreach ($zeilen as $zeile) {
+            if (!is_array($zeile)) {
+                continue;
+            }
+
+            $bild = self::safeSrc((string) ($zeile['src'] ?? ''));
+            $film = self::safeSrc((string) ($zeile['video'] ?? ''));
+
+            if ($bild === '' && $film === '') {
+                continue;
+            }
+
+            $wo = (string) ($zeile['anchor'] ?? '');
+            if (!in_array($wo, $anker, true)) {
+                // Der erste Anker ist der, den es in jeder Gestalt gibt -
+                // eine Zeile wegzuwerfen, weil ihr Anker nicht passt, hiesse
+                // eine hochgeladene Datei stillschweigend zu loeschen.
+                $wo = (string) ($anker[0] ?? '');
+            }
+
+            $liste[] = [
+                'src'    => $bild,
+                'video'  => $film,
+                'anchor' => $wo,
+                // Links oder rechts vom Feld. Zwei Werte und kein Winkel:
+                // die Zeile flieszt, und ein Zeichen in ihr steht davor
+                // oder dahinter. Feiner wird es mit x und y.
+                'side'   => ($zeile['side'] ?? '') === 'vor' ? 'vor' : 'nach',
+                'size'   => max(10, min(2000, (int) ($zeile['size'] ?? 100))),
+                'x'      => max(-400, min(400, (int) ($zeile['x'] ?? 0))),
+                'y'      => max(-400, min(400, (int) ($zeile['y'] ?? 0))),
+                'gap'    => max(0, min(400, (int) ($zeile['gap'] ?? 0))),
+                'z'      => max(-5, min(5, (int) ($zeile['z'] ?? 0))),
+            ];
+
+            // Eine Grenze, die das Panel nie erreicht. Sie steht hier gegen
+            // ein Dokument, das nicht aus dem Panel kommt - eine Liste ohne
+            // Ende waere ein Stilblock ohne Ende.
+            if (count($liste) >= $max) {
+                break;
+            }
+        }
+
+        return $liste;
+    }
+
+    /**
+     * Woran der Schmuck eines Abschnitts haengen kann.
+     *
+     * Zwei Anker und nicht zehn: die Ueberschrift und der Inhalt sind die
+     * beiden Dinge, die jeder Abschnitt hat. Alles Feinere macht die
+     * Geometrie - x, y und der Abstand.
+     */
+    public const DEKO_ANKER = ['titel', 'inhalt'];
 
     /**
      * Die Rollen mit ihren Werten - die Voreinstellung dort, wo das Dokument
@@ -2074,10 +2113,14 @@ final class Design
          * von eben - siehe die Karte unten.
          */
         $vorher = [];
+        $vorherDeko = [];
         foreach ((array) ($doc['sections'] ?? []) as $abschnitt) {
             if (is_array($abschnitt) && (string) ($abschnitt['id'] ?? '') !== '') {
                 $vorher[(string) $abschnitt['id']] = is_array($abschnitt['settings'] ?? null)
                     ? $abschnitt['settings']
+                    : [];
+                $vorherDeko[(string) $abschnitt['id']] = is_array($abschnitt['deko'] ?? null)
+                    ? $abschnitt['deko']
                     : [];
             }
         }
@@ -2156,8 +2199,51 @@ final class Design
                 }
             }
 
+            /*
+             * Der freie Schmuck dieses Abschnitts.
+             *
+             * Wie beim Countdown wird die Liste NEU GEBAUT und nicht Zeile
+             * fuer Zeile ergaenzt: sie hat keine feste Laenge, das Panel
+             * schickt sie als Ganzes, und was nicht mitkommt, ist weg - das
+             * ist zugleich der Weg zum Loeschen.
+             *
+             * Kommt die Zahl nicht mit (ein Formular ohne diesen Teil), bleibt
+             * der Schmuck stehen, der schon da war. Sonst raeumte jede
+             * Speicherung aus einer anderen Schublade ihn weg.
+             */
+            $deko = $vorherDeko[Security::clean($post['sec_id_' . $i] ?? '', 64)] ?? [];
+
+            if (isset($post['sec_deko_n_' . $i])) {
+                $deko = [];
+                $wieviel = max(0, min(8, (int) $post['sec_deko_n_' . $i]));
+
+                for ($d = 0; $d < $wieviel; $d++) {
+                    $p = 'sec_deko_' . $i . '_' . $d . '_';
+                    $pfad = self::safeSrc((string) ($post[$p . 'src'] ?? ''));
+
+                    if ($pfad === '') {
+                        continue;
+                    }
+
+                    $film = preg_match('/\.(mp4|webm|mov)$/i', $pfad) === 1;
+
+                    $deko[] = [
+                        'src'    => $film ? '' : $pfad,
+                        'video'  => $film ? $pfad : '',
+                        'anchor' => (string) ($post[$p . 'anchor'] ?? 'titel'),
+                        'side'   => (string) ($post[$p . 'side'] ?? 'nach'),
+                        'size'   => (int) ($post[$p . 'size'] ?? 100),
+                        'x'      => (int) ($post[$p . 'x'] ?? 0),
+                        'y'      => (int) ($post[$p . 'y'] ?? 0),
+                        'gap'    => (int) ($post[$p . 'gap'] ?? 0),
+                        'z'      => (int) ($post[$p . 'z'] ?? 0),
+                    ];
+                }
+            }
+
             $abschnitte[] = [
                 'id'      => Security::clean($post['sec_id_' . $i] ?? '', 64),
+                'deko'    => $deko,
                 'defaults' => $vorgaben,
                 'type'    => $typ,
                 // Eine unbekannte Variante faellt in DesignSections::complete()

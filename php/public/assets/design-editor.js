@@ -1585,9 +1585,19 @@
       var neu = zeilen[zeilen.length - 1].cloneNode(true);
 
       neu.querySelectorAll("[name]").forEach(function (feld) {
-        // Die erste Zahl im Namen ist die Nummer der Zeile - bei
-        // cd_datei_uhr_3 steht sie am Ende, bei cd_uhr_3_src in der Mitte.
-        feld.setAttribute("name", feld.getAttribute("name").replace(/_\d+(?=_|$)/, "_" + nummer));
+        /*
+         * Die LETZTE Zahl im Namen ist die Nummer der Zeile.
+         *
+         * Bei cd_datei_uhr_3 steht sie am Ende, bei cd_uhr_3_src in der
+         * Mitte - und beim Schmuck eines Abschnitts stehen ZWEI Zahlen darin
+         * (sec_deko_0_1_src: erst der Abschnitt, dann die Zeile). Die erste
+         * zu nehmen hiesse dort, den Abschnitt umzunummerieren und die Zeile
+         * einem fremden anzuhaengen.
+         *
+         * Das gierige .* am Anfang sorgt dafuer, dass die letzte passende
+         * Stelle getroffen wird.
+         */
+        feld.setAttribute("name", feld.getAttribute("name").replace(/^(.*)_\d+(?=_|$)/, "$1_" + nummer));
         if (feld.type === "file") feld.value = "";
       });
 

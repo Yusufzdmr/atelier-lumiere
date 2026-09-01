@@ -162,6 +162,9 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-falte-inhalt{border-top:1px solid var(--color-sand-deep,#dccebc);padding:1rem;display:grid;gap:1.1rem;}
   .b-gruppe{display:grid;gap:0.7rem;}
   @media (min-width:520px){.b-zwei{grid-template-columns:1fr 1fr;}}
+  /* Fuenf schmale Zahlenfelder nebeneinander: Groesse, X, Y, Abstand,
+     Ebene. Auf dem Telefon untereinander, wie alles andere hier. */
+  @media (min-width:640px){.b-fuenf{grid-template-columns:repeat(5,1fr);}}
 
   /* Die Tafel eines Abschnitts steht offen - sie IST der Inhalt der Spalte,
      und ein Dreieck davor waere ein Klick, der nichts entscheidet. */
