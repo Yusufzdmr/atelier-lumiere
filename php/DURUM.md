@@ -2643,6 +2643,42 @@ Bir de: ölçüm sırasında `pruefstand` tasarımının **etiket alanı** denem
 değeriyle yazıldı ve sonra boşaltıldı. Orada bir etiket olması gerekiyorsa
 tekrar yaz.
 
+## 1 Eylül — canlıya alındı (demo sunucusu)
+
+Bugünün sekiz commit'i `master`'a ve demo sunucusuna alındı, GitHub'a da
+push'landı (`6f2422f..d1eab11`).
+
+**Nasıl:** yerelde `tar czf` (306 dosya, 6,3 MB), `scp`, sunucuda `tar xzf`,
+sonra `chown -R www-data:www-data`. `config.php` ve `public/uploads/` pakete
+**alınmadı** — ikisine de dokunulmadı. Yükleme öncesi yedek:
+`/root/atelier-yedek-20260901-0645.tar.gz` (6,4 MB).
+
+**Şema değişikliği yok.** Bugünün işi yalnız doküman alanları ekledi
+(`countdownIcons`, `icons`), tablo değil — `schema.sql` çalıştırılmadı.
+
+### Yüklemeden sonra ölçülen
+
+| Ne | Sonuç |
+|---|---|
+| Sunucuda `php bin/test.php` | **2538** — yereldekiyle aynı |
+| `/de/preise` · `/en/preise` | 200; `data-preisrechner`, `name="paket"`, `name="extra[]"`, `data-preis-summe` yerinde, **8** `data-cent` |
+| `/de/kontakt?paket=1&extra[]=0` | mesaj alanında "Meine Auswahl:" |
+| `/de/v2/designs` · `/de/admin` · `/de/kontakt` | 200 |
+| `assets/design-editor.js` | 200, 126 KB, yeni sürüm (otomatik kayıt + simge sürükleme işaretleri) |
+| Panel şablonu | `data-stand` var, `3d · ` bölümü var |
+| Komşu site `gidonla.com` | **200** — aynı makinede canlı, dokunulmadı |
+
+### Canlıda gözle bakılacaklar
+
+Ölçüm bunları göremez, tarayıcı ister:
+
+1. **Otomatik kayıt** — tasarım editöründe bir yazıyı değiştir, Kaydet'e
+   basma; sağ üstte "kaydediliyor… → kaydedildi 09:37" yazmalı.
+2. **Simge sürükleme** — cihaz görünümünde (ölçekli çerçeve) bir simgeyi
+   sürükle; yerelde ölçüldü ama ölçekli çerçeve düzeneğe girmedi.
+3. **Fiyat hesaplayıcı** — telefonda bir paket + iki ek seç, toplamın ve
+   "Paket anfragen" düğmesinin nasıl durduğuna bak.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
