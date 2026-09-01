@@ -841,22 +841,48 @@ final class DesignAdminController
         exit;
     }
 
+    /**
+     * Speichern - und die Antwort richtet sich danach, wer gefragt hat.
+     *
+     * Ein Mensch am Knopf bekommt eine Umleitung und sieht danach die Seite.
+     * Das Skript, das nebenbei speichert, bekommt zwei Zeilen JSON und laesst
+     * die Seite in Ruhe: dort steht getippter Text, ein offener Kasten, eine
+     * Auswahl - ein Neuladen mitten im Arbeiten waere schlimmer als kein
+     * Speichern.
+     *
+     * EIN Weg und nicht zwei. Ein zweiter Endpunkt fuers Speichern nebenbei
+     * waere eine zweite Stelle, an der Uploads, Startsaetze und die
+     * Fassungspruefung stimmen muessen - und die zweite laeuft der ersten
+     * irgendwann davon.
+     */
     private function speichere(string $locale, array $design): void
     {
         $ziel = I18n::path('/admin/designs/' . $design['slug'], $locale);
+        $nebenbei = ($_POST['auto'] ?? '') === '1';
 
         if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
-            header('Location: ' . $ziel . '?fehler=csrf', true, 303);
-            exit;
+            $this->fertig($nebenbei, $ziel . '?fehler=csrf', ['fehler' => 'csrf']);
         }
 
-        // Wer das Formular geoeffnet hat, hat eine Fassungsnummer mitbekommen.
-        // Ist sie kleiner als die gespeicherte, hat jemand anders dazwischen
-        // gespeichert - dann wird hier nichts ueberschrieben.
+        /*
+         * Wer das Formular geoeffnet hat, hat eine Fassungsnummer mitbekommen.
+         * Ist sie kleiner als die gespeicherte, hat jemand anders dazwischen
+         * gespeichert - dann wird hier nichts ueberschrieben.
+         *
+         * Genau diese Zeile ist der Grund, warum das Speichern nebenbei
+         * jahrelang nicht kommen sollte: "eine automatische Sicherung
+         * ueberschreibt bei zwei offenen Tabs die Arbeit des einen mit der des
+         * anderen". Sie tut es nicht - solange das Skript die neue Nummer aus
+         * der Antwort uebernimmt und nur DIESER eine Tab damit weiterarbeitet.
+         * Der zweite Tab haelt weiter seine alte Nummer und faellt hier auf,
+         * beim ersten Speichern, ob von Hand oder nebenbei.
+         */
         $gesehen = (int) ($_POST['version'] ?? 0);
         if ($gesehen > 0 && $gesehen < (int) $design['version']) {
-            header('Location: ' . $ziel . '?fehler=veraltet', true, 303);
-            exit;
+            $this->fertig($nebenbei, $ziel . '?fehler=veraltet', [
+                'fehler'  => 'veraltet',
+                'version' => (int) $design['version'],
+            ]);
         }
 
         $doc = Design::fromPost($design, $this->mitHochgeladenenBildern($design, $_POST));
@@ -883,6 +909,17 @@ final class DesignAdminController
         Design::save($doc);
 
         /*
+         * Die Nummer NACH dem Speichern, aus der Zeile und nicht gerechnet.
+         *
+         * Design::save() zaehlt nur hoch, wenn sich wirklich etwas geaendert
+         * hat - ein Speichern ohne Aenderung laesst die Nummer stehen und
+         * entwertet damit auch keinen zweiten Tab. Wer sie hier selbst
+         * hochzaehlte, haette eine zweite Regel neben dieser.
+         */
+        $frisch = Design::findById($doc['id']);
+        $neueVersion = $frisch !== null ? (int) $frisch['version'] : $gesehen;
+
+        /*
          * Gespeichert - und wenn eine Datei nicht durchkam, steht es daneben.
          *
          * Kein "fehler=": gespeichert wurde alles andere sehr wohl, und ein
@@ -891,6 +928,7 @@ final class DesignAdminController
          * nicht geraten werden muss, welche von vieren gemeint ist.
          */
         $ziel .= '?ok=gespeichert';
+        $antwort = ['ok' => true, 'version' => $neueVersion];
 
         if (Media::abgelehnt() !== []) {
             $abgelehnt = Media::abgelehnt();
@@ -898,9 +936,32 @@ final class DesignAdminController
             $ziel .= '&abgelehnt=' . rawurlencode(mb_substr($erste['name'], 0, 60))
                 . '&art=' . rawurlencode($erste['art']);
 
+            $antwort['abgelehnt'] = mb_substr($erste['name'], 0, 60);
+            $antwort['art'] = $erste['art'];
+
             if (count($abgelehnt) > 1) {
                 $ziel .= '&mehr=' . (count($abgelehnt) - 1);
+                $antwort['mehr'] = count($abgelehnt) - 1;
             }
+        }
+
+        $this->fertig($nebenbei, $ziel, $antwort);
+    }
+
+    /**
+     * Der Schluss: eine Umleitung fuer den Menschen, JSON fuer das Skript.
+     *
+     * @param array<string,mixed> $antwort
+     */
+    private function fertig(bool $nebenbei, string $ziel, array $antwort): never
+    {
+        if ($nebenbei) {
+            header('Content-Type: application/json; charset=utf-8');
+            // Eine Antwort, die niemandem sonst gehoert und keinen Klick
+            // ueberlebt - wie die Vorschau daneben.
+            header('Cache-Control: no-store');
+            echo json_encode($antwort, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
         }
 
         header('Location: ' . $ziel, true, 303);

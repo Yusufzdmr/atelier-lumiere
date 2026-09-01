@@ -2557,6 +2557,92 @@ Hangisiydi? İkisi de düzeldi, ama hangisine takıldığını bilmek iyi olur:
 Bir de: **hangi ekrandaydı** — tasarım editörü mü, davetiye editörü mü? İkisi
 de düzeldi, ama cevabı not düşmek ileride işe yarar.
 
+## 1 Eylül — kaydete basmadan: tasarım editöründe otomatik kayıt
+
+> "Kaydete basmak zorunda kalmayım, foto yüklediysem oto kaydetsin, yazıyı
+> değiştirirken oto kaydetsin, ayarlarını falan, en son kaydete basınca yine
+> kaydetsin."
+
+### Burada duran "hayır" ve neden artık geçerli değil
+
+Backlog'da (`2026-08-24-theme-builder-kalanlar.md` §3) şöyle yazıyordu:
+*"Autosave yapılmadı ve yapılmayacak. Editör tek bir form ve tek bir `version`
+kilidiyle çalışıyor; otomatik kayıt iki sekme açıkken birinin işini diğerinin
+üzerine yazar."* Notun sonu da şuydu: *"İstenirse önce kilit modeli
+değişmeli."*
+
+Kilit modeli **değişmedi** — kilide bir **anahtar** eklendi. Sunucu kaydettikten
+sonra yeni sürüm numarasını geri veriyor, o sekme onu kendi gizli alanına
+yazıyor. İkinci sekme hâlâ eski numarayı tutuyor ve ilk kaydında — otomatik ya
+da elle — `veraltet` ile duruyor. Yani kilit **korunuyor**, sadece kaydeden
+sekme kendini güncelliyor.
+
+### Üç yol, üç cevap
+
+| Ne yapılırsa | Ne oluyor |
+|---|---|
+| Yazı/ayar değişince | 1,5 sn sessizlikten sonra **arka planda** kayıt, sayfa tazelenmez |
+| Dosya seçilince | **hemen** kayıt, ve form normal yolundan gider (sayfa tazelenir) |
+| Kaydet'e basılınca | eskisi gibi |
+
+**Arka planda tazeleme yok**, çünkü bu sayfada yazılmakta olan bir metin, açık
+bir kutu, seçili bir satır duruyor; iş ortasında sıçramak kaydetmemekten
+kötüdür.
+
+**Dosya neden ayrı yol:** yüklemeden sonra alanda yeni bir yol, önizlemede yeni
+bir görsel oluyor; ikisini de en dürüst şekilde sayfa yeniden yüklenerek alır.
+Bir yan fayda: dosya alanı böylece boşalıyor. Bugüne kadar iki kez Kaydet'e
+basınca **aynı dosya iki kez** diske yazılıyordu.
+
+**Arka plan kaydı dosyaları taşımıyor** — aynı dosyayı her 1,5 saniyede bir
+yüklemek diske her seferinde yeni bir kopya demekti.
+
+**Kaydet düğmesi bekliyor**, arka planda bir kayıt sürüyorsa: yoksa aynı sürüm
+numarasıyla iki istek yolda olur ve ikincisi, kimse yanlış bir şey yapmadığı
+hâlde "veraltet" görürdü.
+
+**Sekme değişince hemen** kaydediyor (`keepalive`) — bakmayı bırakan kişi
+çalışmayı da bırakmıştır.
+
+**Ve durum yazıyor.** Kaydet'in yanında tek satır: *değişiklik var →
+kaydediliyor… → kaydedildi 09:37*. Sessiz bir otomatik kayıt, bu evin bütün
+gün uğraştığı sessizliklerden bir yenisi olurdu. Bir "hayır" (ör. oturum
+düşmüşse) kırmızıya dönüyor ve iş kirli kalıyor; Kaydet düğmesi hâlâ orada.
+
+### Ölçülen
+
+Sunucu tarafı (gerçek form, `pruefstand`):
+
+| Ne | Sonuç |
+|---|---|
+| `auto=1` ile kayıt | `200 application/json` → `{"ok":true,"version":24}` |
+| Değişiklik olmadan tekrar | yine `24` — boşuna sürüm artmıyor, ikinci sekme boşuna düşmüyor |
+| Eski sürümle (`version=1`) | `{"fehler":"veraltet","version":24}` — **üzerine yazmadı** |
+| Elle kayıt (auto yok) | `303` → sayfaya yönlendirme, eskisi gibi |
+
+Tarayıcı tarafı (gerçek editör HTML'i + gerçek `design-editor.js`, `fetch`
+sahte):
+
+| Ne | Sonuç |
+|---|---|
+| Yazıya dokunulunca | durum anında "geändert" |
+| 1,5 sn sonra | **tek** istek, `auto=1`, 633 alan, **0 dosya** |
+| Cevap `version:99` | gizli alan 25 → **99**, durum "gespeichert 09:37" |
+| Dosya seçilince | form gerçekten submit oldu (sayfa gitti) |
+| Cevap `veraltet` | durum kırmızı "anderswo geändert – bitte neu laden", sürüm alanı **değişmedi**, sonraki yazmalarda **hiç istek yok** |
+
+`php bin/test.php` → **2538**.
+
+### Not
+
+Bu, **tasarım editörü** için. Çiftin davetiye editöründe (`invite-v2-edit`)
+hâlâ Kaydet'e basmak gerekiyor; orada da aynı desen kurulabilir ama kilit
+başka bir alana (`stand` = `updatedAt`) bakıyor, yani ayrı bir iş.
+
+Bir de: ölçüm sırasında `pruefstand` tasarımının **etiket alanı** deneme
+değeriyle yazıldı ve sonra boşaltıldı. Orada bir etiket olması gerekiyorsa
+tekrar yaz.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

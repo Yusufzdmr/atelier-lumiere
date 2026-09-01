@@ -265,6 +265,11 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
                cursor:pointer;padding:0.75rem 1.6rem;font-size:0.66rem;letter-spacing:0.2em;
                text-transform:uppercase;}
   .b-speichern:hover{background:var(--color-gold,#b08d57);}
+  /* Die Standzeile neben dem Knopf. Leer nimmt sie keinen Platz - ohne
+     Skript steht dort nichts, und dann soll auch keine Luecke stehen. */
+  .b-stand{font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;
+           color:var(--color-muted,#8a7f73);white-space:nowrap;}
+  .b-stand[data-warnung]{color:#b91c1c;}
   .b-schritte{display:flex;gap:0.35rem;}
   .b-schritte .b-knopf{padding:0.55rem 0.7rem;}
   .b-schritte .b-knopf[disabled]{opacity:0.35;cursor:default;}
@@ -294,6 +299,23 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
          target="_blank" class="b-knopf">
         <?= $tr ? 'Davetiye oluştur' : 'Einladung anlegen' ?>
       </a>
+      <?php /*
+         Was gerade mit der Arbeit passiert.
+
+         Ohne diese Zeile waere das Speichern nebenbei die naechste stille
+         Sache in diesem Haus: es geschieht etwas, und niemand sagt es. Sie
+         steht neben dem Knopf, weil dort hinsieht, wer sich fragt, ob seine
+         Arbeit sicher ist.
+
+         Ohne Skript bleibt sie leer - dann gibt es auch nichts zu melden,
+         und der Knopf daneben ist der ganze Weg.
+      */ ?>
+      <span class="b-stand" data-stand
+            data-wort-geaendert="<?= $tr ? 'değişiklik var' : 'geändert' ?>"
+            data-wort-laeuft="<?= $tr ? 'kaydediliyor…' : 'speichert…' ?>"
+            data-wort-fertig="<?= $tr ? 'kaydedildi' : 'gespeichert' ?>"
+            data-wort-veraltet="<?= $tr ? 'başka bir yerde değişti — sayfayı tazele' : 'anderswo geändert – bitte neu laden' ?>"
+            data-wort-fehler="<?= $tr ? 'kaydedilemedi — kaydete bas' : 'nicht gespeichert – bitte speichern' ?>"></span>
       <button class="b-speichern"><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
     </div>
   </div>

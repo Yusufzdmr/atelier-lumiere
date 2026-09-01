@@ -260,6 +260,33 @@
    * geladen. Eine beim Start gebaute Liste bliebe fuer immer einelementig.
    * ==================================================================== */
 
+  /*
+   * Das Formular ohne Dateien.
+   *
+   * FormData nimmt sonst jede gewaehlte Datei mit - ein Blatt von drei
+   * Megabyte, bei jedem Halt im Tippen. Die Vorschau braucht sie nicht (der
+   * kleine Kasten neben dem Feld zeigt die gewaehlte Datei schon), und das
+   * Speichern nebenbei darf sie nicht mitnehmen: dieselbe Datei bei jedem
+   * Halt hochzuladen legte sie jedes Mal neu auf die Platte.
+   *
+   * Eine Datei geht deshalb den anderen Weg - siehe unten, wo ein Dateifeld
+   * das Formular ganz normal abschickt.
+   */
+  var formularOhneDateien = function () {
+    var daten = new FormData();
+
+    form.querySelectorAll("input, select, textarea").forEach(function (feld) {
+      var name = feld.getAttribute("name");
+      if (!name || feld.disabled) return;
+      if (feld.type === "file") return;
+      if ((feld.type === "checkbox" || feld.type === "radio") && !feld.checked) return;
+
+      daten.append(name, feld.value);
+    });
+
+    return daten;
+  };
+
   var rahmenWurzeln = function () {
     var kasten = document.querySelector("[data-ansicht-rahmen]");
     if (!kasten || kasten.hidden) return [];
@@ -1794,6 +1821,234 @@
     });
   })();
 
+
+  /* ====================================================================
+   * Speichern nebenbei.
+   *
+   * "Kaydete basmak zorunda kalmayim, foto yukledeysem oto kaydetsin,
+   * yaziyi degistirirken oto kaydetsin, ayarlarini falan, en son kaydete
+   * basinca yine kaydetsin."
+   *
+   * Hier stand jahrelang ein Nein, und es hatte einen Grund: der Editor ist
+   * EIN Formular mit EINER Fassungsnummer, und eine automatische Sicherung
+   * ueberschriebe bei zwei offenen Tabs die Arbeit des einen mit der des
+   * anderen. Die Nummer ist genau dafuer da.
+   *
+   * Der Grund faellt weg, wenn die Nummer mitwaechst: der Server antwortet
+   * mit der neuen, dieser Tab uebernimmt sie, und ein ZWEITER Tab haelt
+   * weiter seine alte. Dessen naechstes Speichern - von Hand oder nebenbei -
+   * faellt auf, wie es soll. Das Schloss bleibt, es bekommt nur einen
+   * Schluessel, der nachgezogen wird.
+   *
+   * Drei Wege, drei Antworten:
+   *
+   *   getippt / gewaehlt   nach kurzer Ruhe, im Hintergrund, ohne Neuladen
+   *   Datei gewaehlt       sofort, und das Formular geht den normalen Weg
+   *                        (die Seite laedt neu und zeigt den neuen Pfad)
+   *   Knopf gedrueckt      wie immer
+   *
+   * Kein Neuladen beim Speichern nebenbei: auf dieser Seite steht getippter
+   * Text, ein offener Kasten, eine gewaehlte Zeile. Ein Sprung mittendrin
+   * waere schlimmer als kein Speichern.
+   * ==================================================================== */
+  (function () {
+    var stand = document.querySelector("[data-stand]");
+    var versionsFeld = form.querySelector('[name="version"]');
+    if (!versionsFeld) return;
+
+    var RUHE = 1500;
+
+    var laeuft = false;
+    var schmutzig = false;
+    var wartend = null;
+    var gesperrt = false;   // veraltet: ab hier nichts mehr schreiben
+    var willAbschicken = false;
+
+    var wort = function (name) {
+      return stand ? (stand.getAttribute("data-wort-" + name) || "") : "";
+    };
+
+    var melde = function (name, warnung) {
+      if (!stand) return;
+      stand.textContent = wort(name);
+      if (warnung) {
+        stand.setAttribute("data-warnung", "");
+      } else {
+        stand.removeAttribute("data-warnung");
+      }
+    };
+
+    var uhrzeit = function () {
+      var d = new Date();
+      return (d.getHours() < 10 ? "0" : "") + d.getHours() + ":"
+        + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+    };
+
+    var sichere = function () {
+      if (gesperrt || laeuft || !schmutzig) return;
+
+      laeuft = true;
+      schmutzig = false;
+      melde("laeuft", false);
+
+      var daten = formularOhneDateien();
+      daten.append("auto", "1");
+
+      window.fetch(window.location.pathname, {
+        method: "POST",
+        body: daten,
+        credentials: "same-origin"
+      }).then(function (antwort) {
+        return antwort.ok ? antwort.json() : null;
+      }).then(function (ergebnis) {
+        if (!ergebnis) {
+          /*
+           * Der Server hat nein gesagt, ohne es zu erklaeren. Die Arbeit
+           * bleibt schmutzig, der naechste Anlauf versucht es wieder -
+           * verloren geht nichts, der Knopf steht ja daneben. Aber gesagt
+           * wird es: ein stilles "geaendert" saehe aus wie eben getippt,
+           * und die Zeile hier ist die einzige Auskunft darueber, ob die
+           * Arbeit sicher ist.
+           */
+          schmutzig = true;
+          melde("fehler", true);
+          return;
+        }
+
+        if (ergebnis.fehler === "veraltet") {
+          /*
+           * Jemand anders hat gespeichert. Ab hier wird nichts mehr
+           * geschrieben - weder nebenbei noch aus Versehen: was hier steht,
+           * wuerde die fremde Arbeit ueberschreiben. Das Formular bleibt,
+           * wie es ist, damit nichts Getipptes verlorengeht.
+           */
+          gesperrt = true;
+          melde("veraltet", true);
+          return;
+        }
+
+        if (ergebnis.fehler) {
+          // Ein abgelaufenes Zeichen (csrf) zum Beispiel. Nicht gesperrt:
+          // ein Anlauf spaeter kann durchkommen, und bis dahin steht die
+          // Arbeit im Formular und der Knopf daneben.
+          schmutzig = true;
+          melde("fehler", true);
+          return;
+        }
+
+        if (ergebnis.version) versionsFeld.value = String(ergebnis.version);
+
+        if (stand) {
+          stand.removeAttribute("data-warnung");
+          stand.textContent = wort("fertig") + " " + uhrzeit();
+        }
+
+        /*
+         * Eine Datei, die der Server nicht angenommen hat, darf auch hier
+         * nicht schweigen - dieselbe Regel wie auf dem normalen Weg. Sie
+         * kommt nur ueber das Speichern von Hand mit; nebenbei gehen keine
+         * Dateien mit. Der Fall bleibt trotzdem moeglich (eine Zeile, die
+         * einen Pfad traegt), also steht die Antwort hier.
+         */
+        if (ergebnis.abgelehnt && stand) {
+          stand.setAttribute("data-warnung", "");
+          stand.textContent = ergebnis.abgelehnt;
+        }
+      }).catch(function () {
+        // Netz weg: schmutzig lassen, der naechste Anlauf holt es nach - und
+        // solange steht rot da, dass gerade nichts gesichert ist.
+        schmutzig = true;
+        melde("fehler", true);
+      }).then(function () {
+        laeuft = false;
+
+        // Der Knopf hat gewartet, weil sonst zwei Anfragen mit derselben
+        // Fassungsnummer unterwegs waeren und die zweite als "veraltet"
+        // zurueckkaeme - ein Fehler, den niemand verursacht hat.
+        if (willAbschicken) {
+          willAbschicken = false;
+          form.submit();
+          return;
+        }
+
+        if (schmutzig) spaeter();
+      });
+    };
+
+    var spaeter = function () {
+      if (gesperrt) return;
+      if (wartend) window.clearTimeout(wartend);
+      wartend = window.setTimeout(sichere, RUHE);
+    };
+
+    var beruehrt = function () {
+      if (gesperrt) return;
+      schmutzig = true;
+      if (!laeuft) melde("geaendert", false);
+      spaeter();
+    };
+
+    form.addEventListener("input", beruehrt);
+
+    /*
+     * Ein Dateifeld geht den normalen Weg - mit Neuladen.
+     *
+     * "Foto yukledeysem oto kaydetsin": auch dafuer muss niemand mehr auf den
+     * Knopf. Aber nicht im Hintergrund: nach dem Hochladen steht ein neuer
+     * Pfad im Feld und ein neues Bild in der Vorschau, und beides holt die
+     * Seite am ehrlichsten, indem sie neu laedt. Und das Dateifeld ist danach
+     * leer - sonst reiste dieselbe Datei bei jedem weiteren Speichern noch
+     * einmal mit und laege jedes Mal neu auf der Platte.
+     */
+    form.addEventListener("change", function (ereignis) {
+      if (gesperrt) return;
+
+      var feld = ereignis.target;
+      if (feld && feld.type === "file" && feld.files && feld.files.length) {
+        schmutzig = false;
+        if (wartend) window.clearTimeout(wartend);
+        melde("laeuft", false);
+        if (laeuft) { willAbschicken = true; return; }
+        form.submit();
+        return;
+      }
+
+      beruehrt();
+    });
+
+    /*
+     * Der Knopf wartet, wenn gerade nebenbei gespeichert wird: sonst waeren
+     * zwei Anfragen mit derselben Fassungsnummer unterwegs, und die zweite
+     * bekaeme "veraltet" zu sehen, ohne dass jemand etwas falsch gemacht hat.
+     */
+    form.addEventListener("submit", function (ereignis) {
+      if (!laeuft) return;
+      ereignis.preventDefault();
+      willAbschicken = true;
+    });
+
+    /*
+     * Wer den Tab wechselt oder das Fenster schliesst, hat aufgehoert zu
+     * arbeiten - dann jetzt und nicht in anderthalb Sekunden. keepalive,
+     * damit die Anfrage die Seite ueberlebt.
+     */
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "hidden" || gesperrt || !schmutzig || laeuft) return;
+
+      var daten = formularOhneDateien();
+      daten.append("auto", "1");
+      schmutzig = false;
+
+      try {
+        window.fetch(window.location.pathname, {
+          method: "POST", body: daten, credentials: "same-origin", keepalive: true
+        });
+      } catch (fehler) {
+        schmutzig = true;
+      }
+    });
+  })();
+
   /*
    * Die drei Spalten: links waehlen, rechts erscheint die Tafel.
    *
@@ -2433,30 +2688,6 @@
     if (liveKasten && liveAdresse) {
       var laeuft = null;
       var nochmal = false;
-
-      /*
-       * Ohne Dateien.
-       *
-       * FormData nimmt sonst jede gewaehlte Datei mit - ein Blatt von drei
-       * Megabyte, bei jedem Halt im Tippen. Zu sehen waere davon ohnehin
-       * nichts Zusaetzliches: der kleine Kasten neben dem Feld zeigt die
-       * gewaehlte Datei schon, und in die grosse Vorschau kommt sie mit dem
-       * Speichern.
-       */
-      var formularOhneDateien = function () {
-        var daten = new FormData();
-
-        form.querySelectorAll("input, select, textarea").forEach(function (feld) {
-          var name = feld.getAttribute("name");
-          if (!name || feld.disabled) return;
-          if (feld.type === "file") return;
-          if ((feld.type === "checkbox" || feld.type === "radio") && !feld.checked) return;
-
-          daten.append(name, feld.value);
-        });
-
-        return daten;
-      };
 
       /*
        * Die Felder in der Vorschau stilllegen - und das ist keine Kosmetik.

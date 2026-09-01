@@ -43,8 +43,17 @@ davetiye "yayında" sayılıyor.
 Commit `f50dbd5`. Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, ve hem bölüm hem katman
 listesinde sürükleyerek sıralama. Oklar duruyor: telefonda HTML5 sürükleme yok.
 
-**Autosave yapılmadı** ve yapılmayacak (spec §19 istese de). Sebep: editör tek
-bir form ve tek bir `version` kilidiyle çalışıyor. Otomatik kayıt, iki sekme
-açık olduğunda birinin işini diğerinin üzerine yazar — kilit tam olarak bunu
-engellemek için var. İstenirse önce kilit modeli değişmeli.
+**Autosave — 01.09.2026'da yapıldı.** Burada "yapılmayacak" yazıyordu ve
+gerekçesi şuydu: editör tek bir form ve tek bir `version` kilidiyle çalışıyor,
+otomatik kayıt iki sekme açıkken birinin işini diğerinin üzerine yazar. Not şöyle
+bitiyordu: *"İstenirse önce kilit modeli değişmeli."*
+
+Kilit modeli değişmedi — **kilide bir anahtar eklendi**. Sunucu her kayıttan
+sonra yeni sürüm numarasını JSON ile geri veriyor, o sekme onu üstüne yazıyor,
+ikinci sekme kendi eski numarasını tutmaya devam ediyor ve ilk kaydında
+(otomatik ya da elle) "veraltet" ile duruyor. Yani kilit korunuyor.
+
+Yusuf'un isteği: *"kaydete basmak zorunda kalmayım, foto yüklediysem oto
+kaydetsin, yazıyı değiştirirken oto kaydetsin, ayarlarını falan, en son kaydete
+basınca yine kaydetsin."* Ayrıntı ve ölçüm: `php/DURUM.md`.
 
