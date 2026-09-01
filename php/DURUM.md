@@ -2803,6 +2803,38 @@ zeminli bir PNG/SVG koy, ya da aynı satırdaki **"Grösse %"** değerini büyü
 (300–500 arası mekân adının yanında iyi durur). Sürükleyerek de yerini
 kaydırabilirsin — canlı önizlemede simgeyi tutup çekmek X/Y alanlarına yazıyor.
 
+## 1 Eylül — her bölüme serbest süsleme
+
+Ayhan'ın listesindeki 2. maddenin açık kalan yarısı: *"Gerektiğinde aynı
+bölüme birden fazla görsel veya video elementi ekleyebilmeliyim."* Geri
+sayımda vardı; başka her bölümde yalnızca **iki** görsel yeri vardı — arka
+plan yaprağı ve çerçeve, ikisi de bir yüzeyi kaplar, hiçbiri bir kelimenin
+yanında durmaz.
+
+Artık her bölümün kendi listesi var: **8 taneye kadar** resim ya da video, her
+biri için **anchor** (başlık / içerik), **hangi yanına**, boyut, X/Y, mesafe ve
+katman. Ölçüler yine **em** cinsinden — yanında durduğu yazı büyüyünce o da
+büyüyor.
+
+**Bölüme ait, türe değil:** aynı şablondaki iki metin bloğu farklı
+süslenebilsin diye. Ayarların da katalogda değil bölümde durmasının sebebi
+aynı.
+
+**İki anchor, on tane değil:** başlık ve içerik, her bölümün sahip olduğu iki
+şey. Gerisini geometri hallediyor. Tanınmayan anchor ilkine düşüyor — satırı
+atmak, yüklenmiş dosyayı sessizce silmek olurdu.
+
+Doğrulayıcı tek yerde toplandı (`Design::freieElemente`): geri sayım ve
+bölümler aynı kuralları kullanıyor, farkları yalnızca anchor listesi.
+
+**Ve inşa sırasında bir hata çıktı:** "+" düğmesi alan adındaki **ilk** sayıyı
+güncelliyordu. Geri sayımda tek sayı var (`cd_uhr_0_src`), burada iki
+(`sec_deko_0_1_src` — önce bölüm, sonra satır); ilkini alsaydı bölümü
+numaralandırıp yeni satırı **başka bir bölüme** yapıştırırdı. Artık sonuncuyu
+alıyor.
+
+`php bin/test.php` → **2588**. Canlıya alındı, sayfalar 200, `gidonla.com` 200.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
