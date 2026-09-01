@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Atelier\Design;
 use Atelier\DesignSections;
 use Atelier\DesignWizard;
 use Atelier\SectionRegistry;
@@ -399,3 +400,75 @@ assert_true(
     !str_contains(DesignSections::html($fremdFilm, ['venue' => 'V', 'address' => 'S 4', 'slug' => 'p'], 'de'), 'fremd.example'),
     'Karte: eine fremde Filmadresse faellt weg'
 );
+
+/* --- Eine hochgeladene Karte IST die Entscheidung fuer sie --- */
+
+/*
+ * "Harita kismina resim atim." - "Olmadi."
+ *
+ * Das eigene Kartenbild wirkt nur, wenn die Auswahl daneben auf "eigen"
+ * steht. Wer die Datei hinlegt und die Auswahl nicht anfasst, sah danach
+ * genau dasselbe wie vorher: die gerechnete Karte. Kein Fehler, kein
+ * Hinweis - der schlimmste Fall in diesem Haus.
+ *
+ * Also entscheidet die Datei. Dieselbe Regel wie beim Film, der gegen das
+ * Bild gewinnt: wer etwas hochlaedt, hat sich dafuer entschieden.
+ */
+$vorlage = Design::complete([
+    'id' => 'p', 'slug' => 'p',
+    'sections' => [['id' => 'ort-1', 'type' => 'location', 'settings' => ['karte' => 'blatt']]],
+]);
+
+$formular = [
+    'sections_da' => '1', 'sec_reihe' => '0',
+    'sec_id_0' => 'ort-1', 'sec_type_0' => 'location', 'sec_variant_0' => 'default',
+    'sec_on_0' => '1', 'sec_set_karte_0' => 'blatt',
+    'sec_set_mapSrc_0' => '/uploads/designs/handgezeichnet.png',
+];
+
+$mitBild = Design::fromPost($vorlage, $formular);
+assert_same('eigen', $mitBild['sections'][0]['settings']['karte'],
+    'Karte: eine neu hochgeladene Zeichnung schaltet die Auswahl selbst um');
+assert_contains(
+    DesignSections::html($mitBild, ['venue' => 'V', 'address' => 'Seestrasse 4', 'slug' => 'p'], 'de'),
+    'handgezeichnet.png',
+    'Karte: und sie ist danach auch zu sehen'
+);
+
+/*
+ * NUR wenn der Wert neu ist. Sonst liesse sich nie wieder mit "blatt"
+ * speichern, solange irgendwo eine alte Zeichnung liegt - und das waere
+ * derselbe Fehler noch einmal, nur andersherum: ein Feld, das nicht tut, was
+ * dasteht.
+ */
+$zurueck = Design::fromPost($mitBild, $formular);
+assert_same('blatt', $zurueck['sections'][0]['settings']['karte'],
+    'Karte: ein Wert, der schon dastand, entscheidet nichts mehr');
+
+// Und derselbe Weg fuer den Film.
+$mitFilm = Design::fromPost($vorlage, ['sections_da' => '1', 'sec_reihe' => '0',
+    'sec_id_0' => 'ort-1', 'sec_type_0' => 'location', 'sec_variant_0' => 'default',
+    'sec_on_0' => '1', 'sec_set_karte_0' => 'rechteck',
+    'sec_set_mapVideo_0' => '/uploads/designs/karte.webm']);
+assert_same('eigen', $mitFilm['sections'][0]['settings']['karte'],
+    'Karte: ein neuer Film ebenso');
+
+/* --- Und eine abgelehnte Datei schweigt nicht mehr --- */
+
+/*
+ * Bis hierher stand an jeder Upload-Stelle "if ($pfad !== null)", und der
+ * andere Fall war eine leere Zeile. Eine HEIC vom iPhone oder ein Bild ueber
+ * sechs Megabyte verschwand wortlos.
+ */
+$steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
+
+assert_contains($steuer, 'private function nimm(array $datei, string $art, callable $pruefung)',
+    'Upload: eine Stelle, die sich das Nein merkt');
+assert_contains($steuer, "\$ziel .= '&abgelehnt=' . rawurlencode(",
+    'Upload: und sie kommt beim Menschen an');
+assert_true(!str_contains($steuer, "Media::storeGraphic(\$file, 'designs');"),
+    'Upload: keine Stelle prueft mehr an der Meldung vorbei');
+
+$tafel = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit.php');
+assert_contains($tafel, "\$_GET['abgelehnt']", 'Panel: die Meldung steht im Editor');
+assert_contains($tafel, 'HEIC', 'Panel: und sie nennt den haeufigsten Grund beim Namen');

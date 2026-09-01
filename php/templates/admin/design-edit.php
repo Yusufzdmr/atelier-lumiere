@@ -301,6 +301,44 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   <?php if ($ok === 'gespeichert') : ?>
     <p class="b-meldung"><?= $tr ? 'Kaydedildi.' : 'Gespeichert.' ?></p>
   <?php endif; ?>
+
+  <?php /*
+     Eine Datei, die nicht angenommen wurde.
+
+     Sie steht NEBEN "Gespeichert" und nicht statt dessen: gespeichert wurde
+     alles andere sehr wohl. Bis hierher schwieg diese Stelle - wer eine HEIC
+     vom iPhone oder ein Bild ueber sechs Megabyte waehlte, sah danach genau
+     dasselbe wie vorher, ohne ein Wort. "Harita kismina resim atim." -
+     "Olmadi."
+
+     Der Name steht dabei, damit bei vier Dateifeldern nicht geraten werden
+     muss, welche gemeint ist. Und der Grund gleich mit: die Aufzaehlung ist
+     genau die, die Media prueft.
+  */ ?>
+  <?php $abgelehnt = (string) ($_GET['abgelehnt'] ?? ''); ?>
+  <?php if ($abgelehnt !== '') : ?>
+    <?php
+      $dateiArt = (string) ($_GET['art'] ?? 'bild');
+      $mehr = (int) ($_GET['mehr'] ?? 0);
+      $erlaubt = match ($dateiArt) {
+          'video' => $tr
+              ? 'MP4, WebM ya da MOV olmalı.'
+              : 'Erlaubt sind MP4, WebM und MOV.',
+          'audio' => $tr
+              ? 'MP3, M4A, OGG ya da WAV olmalı.'
+              : 'Erlaubt sind MP3, M4A, OGG und WAV.',
+          default => $tr
+              ? 'PNG, JPEG, WebP ya da SVG olmalı, en fazla 6 MB. iPhone\'un HEIC formatı tanınmıyor — telefonda "En uyumlu" ayarını seç ya da önce dönüştür.'
+              : 'Erlaubt sind PNG, JPEG, WebP und SVG bis 6 MB. Das HEIC-Format vom iPhone wird nicht erkannt – am Telefon „Maximal kompatibel“ wählen oder vorher umwandeln.',
+      };
+    ?>
+    <p class="b-meldung b-meldung-fehler">
+      <?= $tr ? 'Bu dosya alınmadı: ' : 'Diese Datei wurde nicht angenommen: ' ?>
+      <strong><?= e($abgelehnt) ?></strong><?= $mehr > 0 ? ' (' . ($tr ? '+' . $mehr . ' tane daha' : 'und ' . $mehr . ' weitere') . ')' : '' ?>.
+      <?= e($erlaubt) ?>
+      <?= $tr ? 'Diğer her şey kaydedildi.' : 'Alles andere ist gespeichert.' ?>
+    </p>
+  <?php endif; ?>
   <?php if ($fehler === 'veraltet') : ?>
     <p class="b-meldung b-meldung-fehler">
       <?= $tr

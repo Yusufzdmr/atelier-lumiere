@@ -2036,6 +2036,22 @@ final class Design
             $reihe = range(0, 39);
         }
 
+        /*
+         * Der Stand VOR diesem Absenden, nach Kennung.
+         *
+         * Gebraucht wird er fuer eine einzige Frage: ist ein Wert gerade neu
+         * dazugekommen? Ein Wert, der schon dastand, ist keine Entscheidung
+         * von eben - siehe die Karte unten.
+         */
+        $vorher = [];
+        foreach ((array) ($doc['sections'] ?? []) as $abschnitt) {
+            if (is_array($abschnitt) && (string) ($abschnitt['id'] ?? '') !== '') {
+                $vorher[(string) $abschnitt['id']] = is_array($abschnitt['settings'] ?? null)
+                    ? $abschnitt['settings']
+                    : [];
+            }
+        }
+
         $abschnitte = [];
         foreach ($reihe as $i) {
             if (!isset($post['sec_type_' . $i])) {
@@ -2065,6 +2081,34 @@ final class Design
                 }
                 if (isset($post[$name])) {
                     $einstellungen[$schluessel] = $post[$name];
+                }
+            }
+
+            /*
+             * Eine hochgeladene Karte IST die Entscheidung fuer sie.
+             *
+             * "Harita kismina resim atim." - "Olmadi."
+             *
+             * Das eigene Kartenbild wirkt nur, wenn die Auswahl daneben auf
+             * "eigen" steht. Wer die Datei hinlegt und die Auswahl nicht
+             * anfasst, sieht danach genau dasselbe wie vorher: die gerechnete
+             * Karte. Kein Fehler, kein Hinweis - der schlimmste Fall in
+             * diesem Haus, und hier hat er einen Kunden eine Nacht gekostet.
+             *
+             * Also entscheidet die Datei. Dieselbe Regel wie beim Film, der
+             * gegen das Bild gewinnt: wer etwas hochlaedt, hat sich dafuer
+             * entschieden.
+             *
+             * NUR wenn der Wert neu ist. Sonst liesse sich nie wieder mit
+             * "blatt" speichern, solange irgendwo eine alte Zeichnung liegt -
+             * und das waere derselbe Fehler noch einmal, nur andersherum: ein
+             * Feld, das nicht tut, was dasteht.
+             */
+            $stand = $vorher[Security::clean($post['sec_id_' . $i] ?? '', 64)] ?? [];
+            foreach (['mapSrc', 'mapVideo'] as $feld) {
+                $wert = trim((string) ($einstellungen[$feld] ?? ''));
+                if ($wert !== '' && $wert !== trim((string) ($stand[$feld] ?? ''))) {
+                    $einstellungen['karte'] = 'eigen';
                 }
             }
 
