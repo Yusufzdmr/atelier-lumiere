@@ -10,6 +10,22 @@
   "use strict";
 
   var envelope = document.querySelector("[data-envelope]");
+
+  /*
+   * Der Vorspann ohne Umschlag davor.
+   *
+   * "Ben zaten video acilisi koymusum, neden bir de zarf acilisi var."
+   * Sagt die Vorlage "kein Kuvert", steht hier kein Knopf und keine
+   * Aufforderung - der Film faengt von allein an. Er ist stumm und laeuft im
+   * Bild, und genau das laesst jeder Browser ohne Fingerdruck zu.
+   *
+   * Der Kasten traegt dann, was sonst am Kuvert steht: die Art der
+   * Kartenbewegung und die Dauer. Gelesen wird von dem der beiden, den es
+   * gibt - deshalb "quelle" und nicht zweimal dieselbe Zeile.
+   */
+  var sofort = document.querySelector("[data-intro-video][data-sofort]");
+  var quelle = envelope || sofort;
+
   var music = document.querySelector("[data-music]");
 
   // Wie lange der Vorspann in die Karte uebergeht. Kein Feld im Panel:
@@ -18,7 +34,7 @@
   var UEBERGANG_MS = 600;
 
   /* ---------------------------- Umschlag ---------------------------- */
-  if (envelope) {
+  if (quelle) {
     // Sofort, nicht erst beim Oeffnen: solange das Kuvert zu ist, sind die
     // bewegten Ebenen der Karte noch nicht da. Ohne diese Zeile stuenden sie
     // waehrend des ganzen Vorspanns sichtbar hinter dem Film und spraengen
@@ -67,8 +83,8 @@
 
     scrollSperre(true);
 
-    var open = envelope.querySelector("[data-envelope-open]");
-    var kind = envelope.getAttribute("data-animation") || "seal";
+    var open = envelope ? envelope.querySelector("[data-envelope-open]") : null;
+    var kind = quelle.getAttribute("data-animation") || "seal";
 
     var opened = false;
 
@@ -80,7 +96,7 @@
       // dann das Kuvert, dann die Karte. Die Szene laeuft ueber allem und
       // meldet sich nicht zurueck – wir warten ihre bekannte Dauer ab.
       var intro = document.querySelector("[data-intro]");
-      var introMs = Number(envelope.getAttribute("data-intro-ms")) || 0;
+      var introMs = Number(quelle.getAttribute("data-intro-ms")) || 0;
 
       // Der Filmvorspann des Themas. Er ersetzt die gezeichnete Szene, wenn
       // das Thema einen mitbringt - und er sagt selbst, wie lange er dauert,
@@ -216,7 +232,7 @@
       }
 
       // Ab hier laeuft alles wie bisher, nur um die Szene versetzt.
-      envelope.style.pointerEvents = "none";
+      if (envelope) envelope.style.pointerEvents = "none";
       setTimeout(function () {
         /*
          * Aufklappen - oder stumm verschwinden.
@@ -232,21 +248,25 @@
          * Absicht bleibt aber gueltig, und sie steht hier - an der Stelle,
          * an der bekannt ist, ob der Film wirklich lief.
          */
-        if (filmLief) {
-          envelope.style.display = "none";
-        } else {
-          envelope.setAttribute("data-open", "true");
+        if (envelope) {
+          if (filmLief) {
+            envelope.style.display = "none";
+          } else {
+            envelope.setAttribute("data-open", "true");
+          }
         }
         // Der Film ist durch, die Karte kommt - ab hier darf gewischt werden.
         scrollSperre(false);
       }, introMs);
 
-      setTimeout(function () {
-        envelope.style.opacity = "0";
-      }, introMs + 1900);
-      setTimeout(function () {
-        envelope.style.display = "none";
-      }, introMs + 2600);
+      if (envelope) {
+        setTimeout(function () {
+          envelope.style.opacity = "0";
+        }, introMs + 1900);
+        setTimeout(function () {
+          envelope.style.display = "none";
+        }, introMs + 2600);
+      }
 
       var card = document.querySelector(".t-card");
       if (card && kind !== "none") {
@@ -327,9 +347,35 @@
      */
     var introKlick = document.querySelector("[data-intro-video]");
     if (introKlick) introKlick.addEventListener("click", reveal);
-    envelope.addEventListener("click", function (event) {
-      if (event.target === envelope) reveal();
-    });
+
+    if (envelope) {
+      envelope.addEventListener("click", function (event) {
+        if (event.target === envelope) reveal();
+      });
+    } else {
+      /*
+       * Kein Kuvert: es faengt von allein an.
+       *
+       * Aber erst, wenn die Laenge des Films bekannt ist. reveal() rechnet
+       * mit introFilm.duration, und die steht beim Laden der Seite noch
+       * nicht fest - ohne diese Zeile faende es eine 0 vor und schnitte
+       * jeden Film beim Notnagel von sechs Sekunden ab.
+       *
+       * Der zweite Anlauf nach zweieinhalb Sekunden ist fuer den Fall, dass
+       * die Metadaten nie kommen (Format vom Server nicht ausgeliefert). Dann
+       * greift drinnen derselbe Notnagel wie bisher - besser eine Einladung,
+       * die zu frueh oeffnet, als eine, die nie oeffnet. reveal() laesst sich
+       * ohnehin nur einmal ausfuehren.
+       */
+      var film = introKlick && introKlick.querySelector("[data-intro-film]");
+
+      if (!film || film.readyState >= 1) {
+        reveal();
+      } else {
+        film.addEventListener("loadedmetadata", reveal, { once: true });
+        setTimeout(reveal, 2500);
+      }
+    }
   } else {
     // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen. Die
     // Marke wird hier NIE auf "false" gesetzt - es gibt nichts, worauf zu

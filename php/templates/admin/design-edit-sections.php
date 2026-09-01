@@ -692,6 +692,31 @@ use function Atelier\e;
                  class="<?= $feld ?> font-mono text-[0.78rem]"></label>
 
         <?php /*
+           Der Umschlag davor - oder keiner.
+
+           "Ben zaten video acilisi koymusum, neden bir de zarf acilisi var."
+           Genau: wer einen Film als Oeffnung hinlegt, hat die Oeffnung schon
+           gebaut, und ein gezeichnetes Kuvert davor ist eine zweite.
+
+           Der Haken steht HIER und nicht bei der Bewegung: er gehoert zu der
+           Frage, die man sich beim Vorspann stellt, und nicht zu der, wie die
+           Karte hereinkommt.
+
+           An heisst wie bisher. Aus heisst: kein Kuvert, kein "Tippen zum
+           Öffnen" - der Film faengt von allein an (stumm und im Bild, das
+           laesst jeder Browser zu), und ohne Film liegt die Karte einfach da.
+        */ ?>
+        <label class="mt-4 flex items-start gap-3 text-[0.72rem] leading-relaxed text-muted">
+          <input type="checkbox" name="intro_kuvert" class="mt-1 h-4 w-4 shrink-0"
+                 <?= ($design['intro']['kuvert'] ?? true) ? 'checked' : '' ?>>
+          <span>
+            <?= $tr
+              ? 'Zarf açılışı göster (kapatırsan davetiye doğrudan açılır — video varsa video başlar)'
+              : 'Umschlag davor zeigen (aus: die Einladung öffnet direkt – mit Film fängt der Film an)' ?>
+          </span>
+        </label>
+
+        <?php /*
            Das Standbild bekommt denselben Kasten wie alles andere.
 
            Es war das einzige Medienfeld ohne einen: zwei Felder, ein Pfad -

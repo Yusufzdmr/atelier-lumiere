@@ -2679,6 +2679,66 @@ sonra `chown -R www-data:www-data`. `config.php` ve `public/uploads/` pakete
 3. **Fiyat hesaplayıcı** — telefonda bir paket + iki ek seç, toplamın ve
    "Paket anfragen" düğmesinin nasıl durduğuna bak.
 
+## 1 Eylül — zarf açılışı kaldırılabilir oldu
+
+> "Ben zaten video açılışı koymuşum, neden bir de zarf açılışı var? Onu
+> kaldırma ekle — kaldır video açılışı olanlardan mesela."
+
+Haklı: video açılışı koyan kişi açılışı zaten kurmuştur, önüne çizilmiş bir
+zarf koymak **ikinci bir açılış** olur.
+
+### Neden bugüne kadar hep duruyordu
+
+30 Ağustos'ta tam tersi vardı: film varsa zarf hiç basılmıyordu. Geri alındı,
+çünkü varsayım yanlıştı — **iOS'ta bir video, kimse başlatmadan ilk karesini
+çizmiyor**, ve o zaman davetiye bomboş bir yüzey oluyordu ("davetiyeye girince
+bembeyaz bir görüntü geliyor"). Zarf o gün "her zaman basılır" oldu, çünkü
+tıklanacak tek şey oydu.
+
+Şimdiki çözüm ikisini de bozmuyor: **şablon karar veriyor.** Yeni alan
+`intro.kuvert`, varsayılanı **açık** — yani hiçbir mevcut tasarım değişmiyor.
+
+### Kapalıyken ne oluyor
+
+- Zarf, kapağı, mührü ve "Tippen zum Öffnen" satırı **hiç basılmıyor**.
+- Film varsa **kendiliğinden başlıyor**: sessiz ve `playsinline`, bunu her
+  tarayıcı parmak beklemeden oynatıyor.
+- Film kutusu **baştan opak**. Şeffaf olsaydı film örtene kadar kart saniyelerce
+  görünürdü — hata gibi durur. Üç çıkışı var: film biter, film hata verir, süre
+  dolar; üçü de kutuyu söndürüyor. Yani 30 Ağustos'un beyaz ekranı geri gelmiyor,
+  en kötü hâlde kart hemen açılıyor.
+- Film yoksa kart doğrudan orada.
+- Kart hareketinin türü ve süre artık film kutusunda duruyor (`data-animation`,
+  `data-intro-ms`) — script hangisi varsa ondan okuyor, iki yerde aynı iki sayı
+  durmuyor.
+
+### Panelde
+
+Vorspann bölümünün hemen altında tek bir kutucuk: **"Zarf açılışı göster"**.
+Kapatınca davetiye doğrudan açılıyor. Ayrı bir "açılış türü" listesi değil,
+çünkü soru gerçekten evet/hayır.
+
+### Ölçülen
+
+| Ne | Sonuç |
+|---|---|
+| `film` tasarımı, zarf kapalı | markup'ta `d-envelope` **yok**, "Tippen zum Öffnen" **yok**, `data-sofort data-animation="none" data-intro-ms="0"` var |
+| Film kutusu | başlangıç opaklığı **1** |
+| Film çözülemeyince (otomasyon tarayıcısı) | kutu gizlendi, kart açık, `data-karte-frei=true`, kaydırma serbest — **en kötü hâl bile açılıyor** |
+| `elysee` (zarflı, filmsiz) | zarf yerinde, kaydırma kilitli; tıklayınca `data-open=true`, kilit kalkıyor |
+| `php bin/test.php` | **2556** |
+
+**Ölçüm ortamı uyarısı, tekrar:** otomasyon tarayıcısında sekme arka planda
+(`document.hidden = true`), bu yüzden video hiç çözülmüyor **ve** WAAPI
+animasyonları hiç ilerlemiyor (`document.timeline.currentTime = 0`). Kartın
+opaklığının 0 kalması bundan; kodla ilgisi yok. Gerçek tarayıcıda bir kez
+bakılmalı.
+
+### Uygulanan
+
+`film` tasarımında zarf kapatıldı (video açılışı olan tek tasarım oydu).
+Panelde tek kutucukla geri açılır.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

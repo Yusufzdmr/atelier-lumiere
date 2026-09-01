@@ -33,10 +33,25 @@
  * @var bool $fest
  * @var string $introVideo   Oeffnungsfilm des Themas, leer = die gezeichnete Klappe
  * @var string $introPoster
+ * @var bool   $mitKuvert     wird hier aus $design gelesen, nicht uebergeben
  */
 
 use function Atelier\e;
 use Atelier\Design;
+
+/*
+ * Steht ein Umschlag davor?
+ *
+ * "Ben zaten video acilisi koymusum, neden bir de zarf acilisi var." Wer
+ * einen Film als Oeffnung hinlegt, hat die Oeffnung schon gebaut - ein
+ * gezeichnetes Kuvert davor ist eine zweite.
+ *
+ * Hier gelesen und nicht von der aufrufenden Seite uebernommen wie ratio
+ * oder tempo: an denen wird gerechnet, hier steht nur ein Ja oder Nein im
+ * Dokument. Zwei Seiten, die dasselbe Ja weiterreichen muessten, waeren zwei
+ * Stellen, an denen es fehlen kann.
+ */
+$mitKuvert = (bool) ($design['intro']['kuvert'] ?? true);
 ?>
 <style><?= $styles ?></style>
 
@@ -281,10 +296,39 @@ use Atelier\Design;
            auch fuer das EINblenden gilt und das Skript sie sonst zweimal
            setzen muesste.
         */ ?>
+        <?php /*
+           Ohne Kuvert traegt dieser Kasten, was sonst am Kuvert steht: die
+           Art der Kartenbewegung und die Dauer des Vorspanns. Das Skript
+           liest sie von dem der beiden, den es findet - so gibt es keine
+           zweite Stelle, an der dieselben zwei Zahlen stehen.
+
+           data-sofort sagt: hier wartet niemand auf einen Finger.
+        */ ?>
+        <?php /*
+           Deckkraft: mit Kuvert null, ohne Kuvert eins.
+
+           Mit Kuvert liegt der Kasten ueber dem Knopf und darf ihn weder
+           verdecken noch den Finger abfangen - erst wenn der Film laeuft,
+           dreht invitation.js ihn auf.
+
+           Ohne Kuvert gibt es keinen Knopf darunter, sondern die Karte. Ein
+           durchsichtiger Kasten liesse sie sekundenlang sehen, bevor der Film
+           sie zudeckt - das saehe aus wie ein Fehler. Also deckt er von
+           Anfang an, und darunter steht die Grundfarbe der Vorlage (und das
+           Standbild, wenn es eines gibt).
+
+           Gefahrlos, weil er drei Auswege hat: der Film endet, der Film
+           meldet einen Fehler, oder die Zeit laeuft ab - jeder davon blendet
+           ihn aus. Genau daran hing die weisse Flaeche vom 30. August, und
+           genau deshalb steht sie hier aufgeschrieben.
+        */ ?>
         <div class="fixed inset-0 z-40 flex items-center justify-center"
              style="background: var(--d-bg, #0b0a09);
-                    opacity:0; pointer-events:none; transition: opacity 600ms ease;"
-             data-intro-video>
+                    opacity:<?= $mitKuvert ? '0' : '1' ?>;
+                    pointer-events:<?= $mitKuvert ? 'none' : 'auto' ?>;
+                    transition: opacity 600ms ease;"
+             data-intro-video
+             <?= $mitKuvert ? '' : 'data-sofort data-animation="' . e($karteAn) . '" data-intro-ms="' . $introMs . '"' ?>>
           <?php /*
              Derselbe Kasten wie die Karte: volle Breite bis max-w-2xl, das
              Seitenverhaeltnis des Dokuments, object-cover. Nur so liegt das
@@ -335,6 +379,7 @@ use Atelier\Design;
          Film, faellt es beim Uebergang stumm weg. Der Unterschied ist, dass
          die Entscheidung dort getroffen wird, wo man WEISS, ob der Film lief.
       */ ?>
+      <?php if ($mitKuvert) : ?>
       <div class="d-envelope idle-<?= e($idle) ?> absolute inset-0 z-30 flex flex-col items-center justify-center gap-9 px-6"
            data-envelope
            data-animation="<?= e($karteAn) ?>"
@@ -371,5 +416,6 @@ use Atelier\Design;
           <?= $locale === 'de' ? 'Tippen zum Öffnen' : 'Tap to open' ?>
         </p>
       </div>
+      <?php endif; ?>
   </div>
 

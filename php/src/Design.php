@@ -436,7 +436,7 @@ final class Design
             //
             // Achtung, zwei Bedeutungen von "intro": animation.intro ist die
             // Auftaktbewegung, dieser Block ist der Film davor.
-            'intro'     => ['video' => '', 'poster' => ''],
+            'intro'     => ['video' => '', 'poster' => '', 'kuvert' => true],
             /*
              * Der Grund unter den Abschnitten.
              *
@@ -502,6 +502,23 @@ final class Design
         $doc['intro'] = [
             'video'  => self::safeSrc((string) ($intro['video'] ?? '')),
             'poster' => self::safeSrc((string) ($intro['poster'] ?? '')),
+            /*
+             * Der Umschlag davor - oder keiner.
+             *
+             * "Ben zaten video acilisi koymusum, neden bir de zarf acilisi
+             * var." Genau: wer einen Film als Oeffnung hinlegt, hat die
+             * Oeffnung schon gebaut, und ein gezeichnetes Kuvert davor ist
+             * eine zweite.
+             *
+             * Voreinstellung ist WAHR, und das ist keine Vorliebe: jede
+             * bestehende Vorlage hat dieses Feld nicht, und keine von ihnen
+             * soll sich beim naechsten Speichern anders oeffnen als gestern.
+             *
+             * Ohne Kuvert und MIT Film faengt der Film von allein an - er ist
+             * stumm und laeuft im Bild, und das laesst jeder Browser zu.
+             * Ohne Kuvert und ohne Film liegt die Karte einfach da.
+             */
+            'kuvert' => (bool) ($intro['kuvert'] ?? true),
             /*
              * Wie lange der Film laeuft, bevor die Karte kommt.
              *
@@ -1673,6 +1690,19 @@ final class Design
             if ($wert !== null) {
                 $doc['intro'][$teil] = $wert;
             }
+        }
+
+        /*
+         * Der Haken fuer den Umschlag.
+         *
+         * Am Pfadfeld daneben festgemacht und nicht an einem eigenen Marker:
+         * die beiden stehen in derselben Schublade des Editors, und wer die
+         * Schublade schickt, schickt beide. Ein Haken, der fehlt, ist dann
+         * eine Aussage ("weg damit") und kein Zufall - dieselbe Regel wie
+         * bei den Rechten der Abschnitte.
+         */
+        if (isset($post['intro_video'])) {
+            $doc['intro']['kuvert'] = isset($post['intro_kuvert']);
         }
 
         // Leer abschicken ist erlaubt und heisst "wieder so lang wie der
