@@ -2734,10 +2734,17 @@ animasyonları hiç ilerlemiyor (`document.timeline.currentTime = 0`). Kartın
 opaklığının 0 kalması bundan; kodla ilgisi yok. Gerçek tarayıcıda bir kez
 bakılmalı.
 
-### Uygulanan
+### Uygulanan — ve canlıda üç tasarım çıktı
 
-`film` tasarımında zarf kapatıldı (video açılışı olan tek tasarım oydu).
-Panelde tek kutucukla geri açılır.
+Yerelde tek tasarım vardı (`film`); **canlıda üç tane**: `23augtest`, `25aug`
+ve `film`. Üçünde de zarf kapatıldı, üçünün sayfası da 200 ve markup'ta
+`d-envelope` yok, `data-sofort` var. Panelde tek kutucukla geri açılır.
+
+**Bir davetiye eski anlık görüntüde kaldı:** `25aug` tasarımına bağlı
+**yayındaki 1 davetiye** hâlâ zarflı açılıyor — gönderilmiş davetiye şablonun
+donmuş kopyasını taşıyor, bu bilerek böyle. Tasarım editöründeki "yayındakileri
+tazele" düğmesi onu günceller; misafirlerin elindeki davetiyeyi değiştirdiği
+için o düğmeye ben basmadım.
 
 ## Sıradaki oturum buradan başlasın
 
