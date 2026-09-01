@@ -584,41 +584,6 @@ final class DesignAdminController
      * @param array<string,mixed> $post
      * @return array<string,mixed>
      */
-    /**
-     * Was der Upload nicht angenommen hat.
-     *
-     * @var list<array{name:string,art:string}>
-     */
-    private array $abgelehnt = [];
-
-    /**
-     * Eine Datei annehmen - und sich merken, wenn sie nicht durchkommt.
-     *
-     * Bis hierher stand an jeder dieser Stellen "if ($pfad !== null)", und
-     * der andere Fall war eine leere Zeile. Wer eine HEIC vom iPhone waehlte
-     * oder ein Bild ueber sechs Megabyte, sah danach genau dasselbe wie
-     * vorher: nichts. "Harita kismina resim atim." - "Olmadi."
-     *
-     * Die Pruefung bleibt, wo sie war (Media), und sie sieht weiter in die
-     * Datei und nicht auf den Namen. Neu ist nur, dass ihr Nein ankommt.
-     *
-     * @param array<string,mixed> $datei
-     * @param callable(array<string,mixed>):?string $pruefung
-     */
-    private function nimm(array $datei, string $art, callable $pruefung): ?string
-    {
-        $pfad = $pruefung($datei);
-
-        if ($pfad === null) {
-            $this->abgelehnt[] = [
-                'name' => (string) ($datei['name'] ?? ''),
-                'art'  => $art,
-            ];
-        }
-
-        return $pfad;
-    }
-
     private function mitHochgeladenenBildern(array $design, array $post): array
     {
         foreach (Design::complete($design)['layers'] as $ebene) {
@@ -636,7 +601,7 @@ final class DesignAdminController
                 // Zeichnung null zurueck. storeGraphic putzt das SVG und behaelt
                 // bei allem anderen den Alphakanal, den eine Ebene ueber der Karte
                 // braucht.
-                $pfad = $this->nimm($file, 'bild', static fn (array $f): ?string => Media::storeGraphic($f, 'designs'));
+                $pfad = Media::nimm($file, 'bild', static fn (array $f): ?string => Media::storeGraphic($f, 'designs'));
                 if ($pfad !== null) {
                     $post['src_' . $id] = $pfad;
                 }
@@ -649,7 +614,7 @@ final class DesignAdminController
                     // storeVideo prueft die Art am Dateiinhalt und laesst nur
                     // mp4/webm/mov durch. Kein Umkodieren - der Server kann es
                     // nicht, und die Vorgabe im Panel sagt das auch so.
-                    $pfad = $this->nimm($film, 'video', static fn (array $f): ?string => Media::storeVideo($f, 'designs'));
+                    $pfad = Media::nimm($film, 'video', static fn (array $f): ?string => Media::storeVideo($f, 'designs'));
                     if ($pfad !== null) {
                         $post['src_' . $id] = $pfad;
                     }
@@ -660,7 +625,7 @@ final class DesignAdminController
                     // store und nicht storeGraphic: ein Standbild ist ein Foto,
                     // kein Schmuck - Transparenz braucht es nicht, und 1600 px
                     // reichen hinter einem Film allemal.
-                    $pfad = $this->nimm($bild, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
+                    $pfad = Media::nimm($bild, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
                     if ($pfad !== null) {
                         $post['posterpfad_' . $id] = $pfad;
                     }
@@ -687,7 +652,7 @@ final class DesignAdminController
                 continue;
             }
 
-            $pfad = $this->nimm($datei, 'zeichen', static fn (array $f): ?string
+            $pfad = Media::nimm($datei, 'zeichen', static fn (array $f): ?string
                 => Media::storeVideo($f, 'designs') ?? Media::storeGraphic($f, 'designs'));
             if ($pfad !== null) {
                 $post['icon_src_' . $kennung] = $pfad;
@@ -712,7 +677,7 @@ final class DesignAdminController
                     continue;
                 }
 
-                $pfad = $this->nimm($datei, 'zeichen', static fn (array $f): ?string
+                $pfad = Media::nimm($datei, 'zeichen', static fn (array $f): ?string
                     => Media::storeVideo($f, 'designs') ?? Media::storeGraphic($f, 'designs'));
                 if ($pfad !== null) {
                     $post['cd_' . $gestalt . '_' . $i . '_src'] = $pfad;
@@ -725,7 +690,7 @@ final class DesignAdminController
         // Feld stehen soll.
         $vorspann = $_FILES['intro_datei'] ?? null;
         if (is_array($vorspann) && ((int) ($vorspann['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
-            $pfad = $this->nimm($vorspann, 'video', static fn (array $f): ?string => Media::storeVideo($f, 'designs'));
+            $pfad = Media::nimm($vorspann, 'video', static fn (array $f): ?string => Media::storeVideo($f, 'designs'));
             if ($pfad !== null) {
                 $post['intro_video'] = $pfad;
             }
@@ -733,7 +698,7 @@ final class DesignAdminController
 
         $vorspannBild = $_FILES['intro_poster_datei'] ?? null;
         if (is_array($vorspannBild) && ((int) ($vorspannBild['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
-            $pfad = $this->nimm($vorspannBild, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
+            $pfad = Media::nimm($vorspannBild, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
             if ($pfad !== null) {
                 $post['intro_poster'] = $pfad;
             }
@@ -743,7 +708,7 @@ final class DesignAdminController
         // Unterschied, und beide sagen nur, was im Pfadfeld stehen soll.
         $schluss = $_FILES['sectionsbg_end_datei'] ?? null;
         if (is_array($schluss) && ((int) ($schluss['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
-            $pfad = $this->nimm($schluss, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
+            $pfad = Media::nimm($schluss, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
             if ($pfad !== null) {
                 $post['sectionsbg_end'] = $pfad;
             }
@@ -751,7 +716,7 @@ final class DesignAdminController
 
         $grund = $_FILES['sectionsbg_datei'] ?? null;
         if (is_array($grund) && ((int) ($grund['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
-            $pfad = $this->nimm($grund, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
+            $pfad = Media::nimm($grund, 'bild', static fn (array $f): ?string => Media::store($f, 'designs'));
             if ($pfad !== null) {
                 $post['sectionsbg'] = $pfad;
             }
@@ -797,7 +762,7 @@ final class DesignAdminController
 
                 // Jede Pruefung sieht in die Datei und nicht auf ihren Namen.
                 $art = (string) ($schema['kind'] ?? 'bild');
-                $pfad = $this->nimm($datei, $art, static fn (array $f): ?string => match ($art) {
+                $pfad = Media::nimm($datei, $art, static fn (array $f): ?string => match ($art) {
                     'audio' => Media::storeAudio($f, 'designs'),
                     'video' => Media::storeVideo($f, 'designs'),
                     default => Media::storeGraphic($f, 'designs'),
@@ -816,7 +781,7 @@ final class DesignAdminController
             // storeGraphic wie bei den Ebenen: SVG wird geputzt durchgereicht,
             // alles andere behaelt seinen Alphakanal - ein Blatt mit
             // durchsichtigen Raendern soll die Papierfarbe darunter zeigen.
-            $pfad = $this->nimm($blatt, 'bild', static fn (array $f): ?string => Media::storeGraphic($f, 'designs'));
+            $pfad = Media::nimm($blatt, 'bild', static fn (array $f): ?string => Media::storeGraphic($f, 'designs'));
             if ($pfad !== null) {
                 $post['sec_bg_' . $i] = $pfad;
             }
@@ -927,13 +892,14 @@ final class DesignAdminController
          */
         $ziel .= '?ok=gespeichert';
 
-        if ($this->abgelehnt !== []) {
-            $erste = $this->abgelehnt[0];
+        if (Media::abgelehnt() !== []) {
+            $abgelehnt = Media::abgelehnt();
+            $erste = $abgelehnt[0];
             $ziel .= '&abgelehnt=' . rawurlencode(mb_substr($erste['name'], 0, 60))
                 . '&art=' . rawurlencode($erste['art']);
 
-            if (count($this->abgelehnt) > 1) {
-                $ziel .= '&mehr=' . (count($this->abgelehnt) - 1);
+            if (count($abgelehnt) > 1) {
+                $ziel .= '&mehr=' . (count($abgelehnt) - 1);
             }
         }
 

@@ -33,6 +33,9 @@
  * @var string $csrf
  * @var string $error
  * @var bool   $ok
+ * @var string $abgelehnt                Dateiname, den Media nicht angenommen hat
+ * @var int    $abgelehntMehr
+ * @var string $abgelehntArt             bild oder audio - der Satz danach richtet sich danach
  */
 
 use function Atelier\e;
@@ -158,6 +161,25 @@ if ($darfDesign) {
 
 <?php if ($ok) : ?>
   <p class="mx-auto mb-8 max-w-2xl border-l-2 border-gold px-5 py-4 text-sm text-ink"><?= e($t('editSaved')) ?></p>
+<?php endif; ?>
+
+<?php /*
+   Eine Datei, die wir nicht uebernehmen konnten.
+
+   Sie steht NEBEN "Gespeichert" und nicht statt dessen - alles andere ist ja
+   gespeichert. Bis hierher schwieg diese Stelle: das Paar waehlte ein Foto,
+   drueckte Speichern, sah "Gespeichert" und danach dieselbe Karte wie vorher.
+   Eine HEIC vom iPhone erkennt getimagesize() nicht, und genau hier kommt sie
+   am haeufigsten an.
+
+   Der Dateiname steht dabei: wer vier Bilder auf einmal waehlt, soll nicht
+   raten muessen, welches fehlt.
+*/ ?>
+<?php if ($abgelehnt !== '') : ?>
+  <p class="mx-auto mb-8 max-w-2xl border border-ink px-5 py-4 text-sm text-ink">
+    <?= e($t('fileRejected')) ?> <strong><?= e($abgelehnt) ?></strong><?= $abgelehntMehr > 0 ? ' (+' . $abgelehntMehr . ')' : '' ?>.
+    <?= e($t($abgelehntArt === 'audio' ? 'fileRejectedWhyAudio' : 'fileRejectedWhy')) ?>
+  </p>
 <?php endif; ?>
 
 <?php if ($error !== '') : ?>

@@ -594,9 +594,10 @@ final class InviteV2Controller
                 if ((string) $feld['type'] === 'audio') {
                     $bisher = DesignSections::sectionTrack($alt, (string) $sid);
 
-                    $neu = Media::storeAudio(
+                    $neu = Media::nimm(
                         (array) ($_FILES['sec_' . $schluessel . '_' . $sid] ?? []),
-                        'einladungen/v2/' . $slug
+                        'audio',
+                        static fn (array $f): ?string => Media::storeAudio($f, 'einladungen/v2/' . $slug)
                     );
 
                     if ($neu !== null) {
@@ -646,7 +647,11 @@ final class InviteV2Controller
                         break;
                     }
                     // Media::store() sieht in die Datei, nicht auf ihren Namen.
-                    $pfad = Media::store($datei, 'einladungen/v2/' . $slug);
+                    // Und wenn sie ihr nicht gefaellt, sagt nimm() es weiter -
+                    // hier laedt eine Braut ihre Fotos hoch, und genau hier
+                    // kommt eine HEIC vom iPhone am haeufigsten an.
+                    $pfad = Media::nimm($datei, 'bild', static fn (array $f): ?string
+                        => Media::store($f, 'einladungen/v2/' . $slug));
                     if ($pfad !== null) {
                         $behalten[] = $pfad;
                     }
@@ -778,7 +783,8 @@ final class InviteV2Controller
                 }
             } elseif ($rechte['photo']) {
                 // Media::store() sieht in die Datei, nicht auf ihren Namen.
-                $pfad = Media::store($_FILES['layer_src_' . $id] ?? [], 'einladungen/v2/' . $slug);
+                $pfad = Media::nimm((array) ($_FILES['layer_src_' . $id] ?? []), 'bild',
+                    static fn (array $f): ?string => Media::store($f, 'einladungen/v2/' . $slug));
                 if ($pfad !== null) {
                     $eintrag['src'] = $pfad;
 
@@ -1618,8 +1624,34 @@ final class InviteV2Controller
                  * Umleitung: er traegt InvitationsV2::draftValues($_POST) und
                  * eine Umleitung wuerfe genau das wieder weg.
                  */
-                $ziel = I18n::path('/v2/einladung/' . $slug . '/' . $key . '/bearbeiten');
-                header('Location: ' . $ziel . '?ok=gespeichert', true, 303);
+                $ziel = I18n::path('/v2/einladung/' . $slug . '/' . $key . '/bearbeiten')
+                    . '?ok=gespeichert';
+
+                /*
+                 * Eine Datei, die nicht angenommen wurde, faehrt mit.
+                 *
+                 * Bis hierher verschwand sie wortlos: das Paar waehlte ein
+                 * Foto, drueckte Speichern, sah "Gespeichert" - und dieselbe
+                 * Karte wie vorher. Eine HEIC vom iPhone erkennt
+                 * getimagesize() nicht, ein Bild ueber sechs Megabyte faellt
+                 * am Limit, und beides sah aus wie nichts.
+                 *
+                 * Neben "Gespeichert" und nicht statt dessen: alles andere
+                 * ist ja gespeichert.
+                 */
+                $abgelehnt = Media::abgelehnt();
+                if ($abgelehnt !== []) {
+                    $ziel .= '&abgelehnt=' . rawurlencode(mb_substr((string) $abgelehnt[0]['name'], 0, 60))
+                        // Die Art dazu: ein Lied wird anders abgelehnt als ein
+                        // Foto, und ein Satz ueber JPG hilft niemandem, der
+                        // gerade eine Tondatei gewaehlt hat.
+                        . '&art=' . rawurlencode((string) $abgelehnt[0]['art']);
+                    if (count($abgelehnt) > 1) {
+                        $ziel .= '&mehr=' . (count($abgelehnt) - 1);
+                    }
+                }
+
+                header('Location: ' . $ziel, true, 303);
                 exit;
             }
         }
@@ -1629,12 +1661,20 @@ final class InviteV2Controller
         $okParam = $_GET['ok'] ?? null;
         $ok      = is_string($okParam) && $okParam === 'gespeichert';
 
+        // Dieselbe Adresse traegt, was nicht angenommen wurde.
+        $abgelehntName = Security::clean((string) ($_GET['abgelehnt'] ?? ''), 60);
+        $abgelehntMehr = max(0, min(99, (int) ($_GET['mehr'] ?? 0)));
+        $abgelehntArt  = ((string) ($_GET['art'] ?? '')) === 'audio' ? 'audio' : 'bild';
+
         $scope  = '.d-' . $doc['id'];
         $values = Design::bindValues($data, $locale);
         $namen  = trim(((string) ($data['bride'] ?? '')) . ' & ' . ((string) ($data['groom'] ?? '')), ' &');
 
         View::page('pages/invite-v2-edit', [
             'locale' => $locale,
+            'abgelehnt'     => $abgelehntName,
+            'abgelehntMehr' => $abgelehntMehr,
+            'abgelehntArt'  => $abgelehntArt,
             // Ohne $path meldet layout.php eine undefinierte Variable im
             // Sprachumschalter. Der Schluessel gehoert NICHT hinein: der
             // Umschalter schriebe ihn sonst in eine sichtbare Adresse.

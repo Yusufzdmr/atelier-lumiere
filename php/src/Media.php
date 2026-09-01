@@ -16,6 +16,60 @@ final class Media
     private const MAX_WIDTH = 1600;
     private const QUALITY = 82;
 
+    /**
+     * Was eine Pruefung nicht angenommen hat - fuer die Meldung danach.
+     *
+     * @var list<array{name:string,art:string}>
+     */
+    private static array $abgelehnt = [];
+
+    /**
+     * Eine Datei annehmen - und sich merken, wenn sie nicht durchkommt.
+     *
+     * An jeder Aufrufstelle stand bisher "if ($pfad !== null)", und der
+     * andere Fall war eine leere Zeile. Wer eine HEIC vom iPhone waehlte
+     * oder ein Bild ueber sechs Megabyte, sah danach genau dasselbe wie
+     * vorher: nichts. "Harita kismina resim atim." - "Olmadi."
+     *
+     * Der Sammler steht HIER und nicht in den Steuerungen: durch diese Tuer
+     * geht jeder Upload des Hauses, und zwei Steuerungen mit derselben
+     * kleinen Liste waeren zwei Orte, an denen sie kaputtgehen kann.
+     *
+     * Die Pruefung bleibt, wo sie war, und sieht weiter in die Datei und
+     * nicht auf den Namen. Neu ist nur, dass ihr Nein ankommt.
+     *
+     * @param array<string,mixed> $datei
+     * @param callable(array<string,mixed>):?string $pruefung
+     */
+    public static function nimm(array $datei, string $art, callable $pruefung): ?string
+    {
+        $pfad = $pruefung($datei);
+
+        if ($pfad === null) {
+            // Eine Zeile ohne Datei ist keine Ablehnung: das Formular schickt
+            // jedes Dateifeld mit, auch die leeren.
+            $fehler = (int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($fehler !== UPLOAD_ERR_NO_FILE) {
+                self::$abgelehnt[] = [
+                    'name' => (string) ($datei['name'] ?? ''),
+                    'art'  => $art,
+                ];
+            }
+        }
+
+        return $pfad;
+    }
+
+    /**
+     * Die abgelehnten Dateien dieses Aufrufs.
+     *
+     * @return list<array{name:string,art:string}>
+     */
+    public static function abgelehnt(): array
+    {
+        return self::$abgelehnt;
+    }
+
     /** Ordner im Dateisystem, in dem die Uploads liegen. */
     public static function dir(string $sub = ''): string
     {

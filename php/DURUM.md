@@ -2490,6 +2490,73 @@ Backlog'da bir madde daha var ama o **Ayhan'a üç soru** bekliyor
 iletişim sayfasında mı, kalbin içi harita mı yoksa işaret mi kalp olacak,
 kaydırma/zum şart mı. Sorular sorulmadan başlanmaz.
 
+## 1 Eylül — "Harita kısmına resim atım. Olmadı."
+
+Ayhan gece 01:53'te iki satır yazdı. Tek bir hata gibi görünen şeyin altından
+**iki ayrı sessizlik** çıktı, ve ikisi de bu evin en pahalı hata biçimi:
+hiçbir şey söylemeden hiçbir şey yapmak.
+
+### 1 · Dosyayı koyan kişi kararı da vermiş oluyor
+
+Kendi harita resmi (`mapSrc`) yalnızca yanındaki seçim **"eigen"** iken
+görünüyordu. Dosyayı koyup seçime dokunmayan kişi kaydettikten sonra tam
+olarak öncekini görüyor: hesaplanan haritayı. Ne hata, ne uyarı. Alandaki
+"(für 'eigen')" ibaresi bir dipnot, cevap değil.
+
+Artık **dosya karar veriyor**: yeni bir `mapSrc` ya da `mapVideo` geldiğinde
+`karte` kendiliğinden `eigen` oluyor. Bu evde zaten iki kez geçerli olan
+kural: "yükleyen kişi ona karar vermiştir" (film resme karşı kazanıyor).
+
+**Yalnızca değer yeniyse.** Yoksa eski bir çizim duruyorken bir daha asla
+"blatt" ile kaydedilemezdi — aynı hatanın tersi: yazdığını yapmayan bir alan.
+
+### 2 · Reddedilen dosya artık susmuyor
+
+Her yükleme yerinde `if ($pfad !== null)` yazıyordu; öteki hâlin karşılığı boş
+bir satırdı. `Media` dosyanın adına değil **içine** bakıyor: iPhone'un HEIC'ini
+`getimagesize()` tanımıyor, 6 MB üstü resim sınırda düşüyor — ikisi de hiçbir
+şey olmamış gibi görünüyordu.
+
+Sayacı `Media::nimm()` içine koydum, kontrolcülere değil: **evin bütün
+yüklemeleri o kapıdan geçiyor**, ve aynı küçük listeyi iki kontrolcüde tutmak
+onun bozulabileceği iki yer demekti. Boş dosya alanı reddedilmiş sayılmıyor
+(`UPLOAD_ERR_NO_FILE`), yoksa her kayıtta uyarı çıkardı.
+
+Mesaj **"Kaydedildi"nin yanında** duruyor, yerine değil: geri kalan her şey
+gerçekten kaydedildi. Dosyayı adıyla söylüyor (dört dosya alanı varken hangisi
+olduğu tahmin edilmesin diye) ve sebebi de: HEIC.
+
+### 3 · Aynı sessizlik çiftin editöründe de vardı
+
+Ve orası daha önemli: **gelinin fotoğraflarını yüklediği yer**, yani HEIC'in en
+sık geldiği yer. `InviteV2Controller` de aynı kapıdan geçiyor artık; mesaj
+davetiye editöründe üç dilde duruyor, ve **türe göre**: fotoğraf reddedilirse
+JPG/PNG/WebP, ses reddedilirse MP3/M4A/OGG/WAV yazıyor.
+
+### Ölçülen (yerel sunucu, gerçek formlar)
+
+| Ne | Sonuç |
+|---|---|
+| PNG → harita alanı, seçim "blatt" | `ok=gespeichert`; belgede `karte=eigen` + yol |
+| `IMG_4711.HEIC` → aynı alan | `ok=gespeichert&abgelehnt=IMG_4711.HEIC&art=bild` |
+| Panelde görünen | "Diese Datei wurde nicht angenommen: IMG_4711.HEIC … HEIC … Alles andere ist gespeichert." |
+| `IMG_2210.HEIC` → çiftin editörü (ses alanı) | `…&abgelehnt=IMG_2210.HEIC&art=audio` |
+| Çiftin gördüğü | "Bitte MP3, M4A, OGG oder WAV. Alles andere ist gespeichert." |
+
+`php bin/test.php` → **2513**.
+
+### Ayhan'a sorulacak tek şey
+
+Hangisiydi? İkisi de düzeldi, ama hangisine takıldığını bilmek iyi olur:
+
+- Dosyayı yükledi ve **hiçbir şey değişmedi** → 1. madde (seçim "eigen"
+  değildi) — artık kendiliğinden geçiyor.
+- Dosyayı seçti, kaydetti ve **yolu boş kaldı** → 2. madde (dosya
+  reddedildi, muhtemelen iPhone HEIC) — artık sebebini yazıyor.
+
+Bir de: **hangi ekrandaydı** — tasarım editörü mü, davetiye editörü mü? İkisi
+de düzeldi, ama cevabı not düşmek ileride işe yarar.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

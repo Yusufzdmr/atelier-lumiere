@@ -461,9 +461,17 @@ assert_same('eigen', $mitFilm['sections'][0]['settings']['karte'],
  * sechs Megabyte verschwand wortlos.
  */
 $steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
+$medien = (string) file_get_contents(__DIR__ . '/../src/Media.php');
 
-assert_contains($steuer, 'private function nimm(array $datei, string $art, callable $pruefung)',
+/*
+ * Der Sammler steht in Media und nicht in den Steuerungen: durch diese Tuer
+ * geht jeder Upload des Hauses, und zwei Steuerungen mit derselben kleinen
+ * Liste waeren zwei Orte, an denen sie kaputtgehen kann.
+ */
+assert_contains($medien, 'public static function nimm(array $datei, string $art, callable $pruefung)',
     'Upload: eine Stelle, die sich das Nein merkt');
+assert_contains($medien, 'if ($fehler !== UPLOAD_ERR_NO_FILE)',
+    'Upload: ein leeres Dateifeld ist keine Ablehnung');
 assert_contains($steuer, "\$ziel .= '&abgelehnt=' . rawurlencode(",
     'Upload: und sie kommt beim Menschen an');
 assert_true(!str_contains($steuer, "Media::storeGraphic(\$file, 'designs');"),
@@ -472,3 +480,44 @@ assert_true(!str_contains($steuer, "Media::storeGraphic(\$file, 'designs');"),
 $tafel = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit.php');
 assert_contains($tafel, "\$_GET['abgelehnt']", 'Panel: die Meldung steht im Editor');
 assert_contains($tafel, 'HEIC', 'Panel: und sie nennt den haeufigsten Grund beim Namen');
+
+/*
+ * Und dieselbe Auskunft im Editor des PAARES.
+ *
+ * Dort laedt eine Braut ihre Fotos hoch, und genau dort kommt eine HEIC vom
+ * iPhone am haeufigsten an. Bis hierher sah sie "Gespeichert" und danach
+ * dieselbe Karte wie vorher.
+ */
+$v2 = (string) file_get_contents(__DIR__ . '/../src/Controllers/InviteV2Controller.php');
+assert_contains($v2, "Media::nimm(\$datei, 'bild'", 'Paar: die Fotos gehen durch dieselbe Tuer');
+assert_contains($v2, "\$ziel .= '&abgelehnt=' . rawurlencode(", 'Paar: und ein Nein faehrt mit');
+assert_true(!str_contains($v2, "Media::store(\$datei, 'einladungen/v2/'"),
+    'Paar: keine Stelle prueft mehr an der Meldung vorbei');
+
+$v2Tafel = (string) file_get_contents(__DIR__ . '/../templates/pages/invite-v2-edit.php');
+assert_contains($v2Tafel, "\$t('fileRejected')", 'Paar: die Meldung steht auf der Seite');
+
+$woerter = require __DIR__ . '/../data/dict.php';
+foreach (['de', 'en', 'tr'] as $sprache) {
+    foreach (['fileRejected', 'fileRejectedWhy'] as $wort) {
+        assert_true(($woerter[$sprache]['invitation2'][$wort] ?? '') !== '',
+            'Paar: ' . $sprache . '.invitation2.' . $wort . ' steht da');
+    }
+    assert_contains((string) $woerter[$sprache]['invitation2']['fileRejectedWhy'], 'HEIC',
+        'Paar: und sie nennt den haeufigsten Grund beim Namen (' . $sprache . ')');
+}
+
+/*
+ * Und der Satz richtet sich nach der Art: ein Lied wird anders abgelehnt als
+ * ein Foto, und ein Satz ueber JPG hilft niemandem, der gerade eine Tondatei
+ * gewaehlt hat.
+ */
+assert_contains($v2, "'&art=' . rawurlencode((string) \$abgelehnt[0]['art'])",
+    'Paar: die Art faehrt mit');
+assert_contains($v2Tafel, "\$abgelehntArt === 'audio' ? 'fileRejectedWhyAudio' : 'fileRejectedWhy'",
+    'Paar: und die Seite waehlt danach ihren Satz');
+
+foreach (['de', 'en', 'tr'] as $sprache) {
+    assert_true(($woerter[$sprache]['invitation2']['fileRejectedWhyAudio'] ?? '') !== '',
+        'Paar: der Tonsatz steht in ' . $sprache);
+}
