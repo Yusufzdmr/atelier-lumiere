@@ -116,12 +116,18 @@ final class DesignController
          */
         $beispieldaten = self::BEISPIEL + [
             'families' => ['bride' => 'Familie Berger', 'groom' => 'Familie Lindqvist'],
-            'program'  => [
-                ['time' => '15:30', 'title' => $locale === 'de' ? 'Trauung' : 'Ceremony'],
-                ['time' => '17:00', 'title' => $locale === 'de' ? 'Empfang' : 'Reception'],
-                ['time' => '19:30', 'title' => $locale === 'de' ? 'Dinner' : 'Dinner'],
-                ['time' => '22:00', 'title' => $locale === 'de' ? 'Tanz' : 'Dancing'],
-            ],
+            /*
+             * Die Zeilen tragen die Zeichen, die die VORLAGE belegt hat.
+             *
+             * "3c simgeler kismina yukledim ama gelmedi bir sey." Der Grund
+             * war hier und im Panel derselbe: die Beispielzeilen trugen gar
+             * kein Zeichen, also kam in keiner Vorschau je eines vor.
+             *
+             * Die Reihe steht in DesignAdminController::beispielAblauf() und
+             * wird von dort geholt - zwei Beispielablaeufe waeren zwei
+             * Auskuenfte ueber dieselbe Vorlage.
+             */
+            'program'  => DesignAdminController::beispielAblauf($design, $locale),
         ];
 
         /*

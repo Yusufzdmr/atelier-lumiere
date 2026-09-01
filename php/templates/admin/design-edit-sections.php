@@ -208,10 +208,19 @@ use function Atelier\e;
 <?= $auf($tr ? '3c · Simgeler' : '3c · Zeichen') ?>
   <input type="hidden" name="icons_da" value="1">
 
+  <?php /*
+     Wo diese Zeichen ueberhaupt vorkommen - und das ist der Satz, der bis
+     heute fehlte.
+
+     "3c simgeler kismina yukledim ama gelmedi bir sey." Die Datei war da,
+     gespeichert und hier zu sehen; gedruckt wurde sie nirgends, weil kein
+     Ablauf sie gewaehlt hatte. Wer das nicht weiss, sucht den Fehler in der
+     Datei.
+  */ ?>
   <p class="mb-4 text-[0.72rem] text-muted">
     <?= $tr
-      ? 'Çift sihirbazda simgeyi seçer; burada o simgenin neye benzediğine sen karar verirsin. Boş bırakılan simge çizili hâliyle kalır.'
-      : 'Das Paar wählt das Zeichen im Assistenten; hier steht, wie es aussieht. Was leer bleibt, behält die gezeichnete Fassung.' ?>
+      ? 'Bu simgeler günün programında, menüde ve kıyafet kuralında görünür — hangisinin nerede çıkacağını çift seçer. Tek istisna “Konum”: onun için dosya yüklersen mekân adının yanında da görünür. Boş bırakılan simge çizili hâliyle kalır, ve önizlemedeki program satırları senin doldurduğun simgeleri gösterir.'
+      : 'Diese Zeichen erscheinen im Ablauf des Tages, in der Speisekarte und bei der Kleiderordnung – welches wo vorkommt, wählt das Paar. Eine Ausnahme ist „Ort“: liegt dafür eine Datei, steht sie auch neben dem Saalnamen. Was leer bleibt, behält die gezeichnete Fassung, und die Zeilen des Ablaufs in der Vorschau zeigen genau die Zeichen, die hier belegt sind.' ?>
   </p>
 
   <?php foreach (SectionRegistry::icons() as $kennung => $eintrag) : ?>

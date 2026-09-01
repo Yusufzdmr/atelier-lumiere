@@ -191,3 +191,62 @@ assert_contains($tafel, 'foreach (SectionRegistry::icons() as $kennung', 'Panel:
 $steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
 assert_contains($steuer, "Media::storeVideo(\$f, 'designs') ?? Media::storeGraphic(\$f, 'designs')",
     'Panel: erst der Film, dann das Bild - die Datei entscheidet selbst');
+
+/* --- "Yukledim ama gelmedi bir sey" --- */
+
+/*
+ * Die Datei war da, gespeichert und im Panel zu sehen - gedruckt wurde sie
+ * nirgends. Die Kennung "konum" gab es bis hierher ausschliesslich als Wahl
+ * fuer eine ZEILE DES ABLAUFS, und wer sie nie waehlt, sieht sie nie. Ein
+ * Feld, dessen Wirkung von einer fremden Entscheidung abhaengt, ist ein
+ * Knopf, der nichts tut.
+ */
+$ortDoc = DesignSections::complete([
+    'id' => 'p', 'slug' => 'p',
+    'icons' => ['konum' => ['src' => '/uploads/designs/meinort.webp']],
+    'sections' => [['id' => 'ort-1', 'type' => 'location']],
+]);
+$ortHtml = DesignSections::html($ortDoc, ['venue' => 'Imza', 'address' => 'Weg 3', 'slug' => 'p'], 'de', '2026-01-01');
+
+assert_contains($ortHtml, '<p class="d-sec-venue"><img class="d-ikon d-ikon-konum"',
+    'Ort: das eigene Zeichen steht neben dem Saalnamen');
+assert_contains(DesignSections::css($ortDoc, '.d-p'), '.d-sec-venue .d-ikon{margin-inline-end:',
+    'Ort: und es klebt nicht am ersten Buchstaben');
+
+/*
+ * NUR mit eigener Datei. Faellt es auf die gezeichnete Fassung zurueck,
+ * bekaeme jede bestehende Vorlage ueber Nacht ein Symbol neben ihrem
+ * Saalnamen - eine Aenderung, die niemand bestellt hat.
+ */
+$ortOhne = DesignSections::complete([
+    'id' => 'p', 'slug' => 'p',
+    'sections' => [['id' => 'ort-1', 'type' => 'location']],
+]);
+$ohneHtml = DesignSections::html($ortOhne, ['venue' => 'Imza', 'address' => 'Weg 3', 'slug' => 'p'], 'de', '2026-01-01');
+assert_true(!str_contains($ohneHtml, 'd-ikon'), 'Ort: ohne eigene Datei aendert sich nichts');
+
+/* --- Und die Vorschau zeigt, was die Vorlage belegt hat --- */
+
+/*
+ * Der zweite Grund fuer "gelmedi bir sey": die Beispielzeilen des Ablaufs
+ * trugen gar kein Zeichen, also kam in keiner Vorschau je eines vor.
+ */
+$ablauf = \Atelier\Controllers\DesignAdminController::beispielAblauf($ortDoc, 'de');
+assert_same('konum', $ablauf[0]['icon'], 'Vorschau: sie nimmt die Zeichen der Vorlage');
+assert_same('Ort', $ablauf[0]['title'], 'Vorschau: und deren Namen aus dem Katalog');
+
+// Ohne eigene Zeichen drei Zeilen mit den gezeichneten des Hauses - eine
+// Vorschau ganz ohne Zeichen waere wieder die alte Auskunft.
+$leerAblauf = \Atelier\Controllers\DesignAdminController::beispielAblauf($ortOhne, 'de');
+assert_same(3, count($leerAblauf), 'Vorschau: sonst drei Beispielzeilen');
+assert_same('nikah', $leerAblauf[0]['icon'], 'Vorschau: und die tragen auch Zeichen');
+
+// Beide Vorschauen holen dieselbe Reihe - zwei Beispielablaeufe waeren zwei
+// Auskuenfte ueber dieselbe Vorlage.
+$oeffentlich = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignController.php');
+assert_contains($oeffentlich, 'DesignAdminController::beispielAblauf($design, $locale)',
+    'Vorschau: die oeffentliche Seite fragt dieselbe Stelle');
+
+// Und im Panel steht jetzt, wo diese Zeichen ueberhaupt vorkommen.
+assert_contains($tafel, 'günün programında, menüde ve kıyafet kuralında',
+    'Panel: es sagt, wo die Zeichen erscheinen');

@@ -1233,6 +1233,19 @@ final class DesignSections
              * abgeschrieben wird und nicht gelesen - dieselbe Ueberlegung wie
              * bei der Kontonummer eine Zeile weiter.
              */
+            /*
+             * Ein Zeichen neben dem Saalnamen bekommt Luft.
+             *
+             * Ohne diese Zeile klebt die hochgeladene Zeichnung am ersten
+             * Buchstaben - die Geometrie der Vorlage faengt bei null an, und
+             * null ist hier die falsche Voreinstellung: in einer Zeile des
+             * Ablaufs sitzt das Zeichen in einem eigenen Kaestchen, am Ort
+             * steht es mitten im Text.
+             *
+             * Traegt die Vorlage einen eigenen Abstand ein, gewinnt er - die
+             * Regel dafuer steht weiter unten und damit spaeter.
+             */
+            . $scope . ' .d-sec-venue .d-ikon{margin-inline-end:0.35em;vertical-align:-0.08em;}'
             . $scope . ' .d-sec-hashtag{margin-top:1.2rem;'
             . self::typoText('small', '0.9rem')
             // Die eigene Sperrung steht NACH der Rolle: sie ist der Grund,
@@ -2156,7 +2169,7 @@ final class DesignSections
             }
 
             $out .= match ($typ) {
-                'location'  => self::ort($data, $locale, $abschnitt['settings']),
+                'location'  => self::ort($doc, $data, $locale, $abschnitt['settings']),
                 'countdown' => self::countdown($doc, $data, $locale, (string) $abschnitt['variant']),
                 'date'      => self::datum($data, $locale, (string) $abschnitt['variant']),
                 'family'    => self::familien($data),
@@ -2272,14 +2285,36 @@ final class DesignSections
      * @param array<string,mixed> $data
      * @param array<string,mixed> $settings
      */
-    private static function ort(array $data, string $locale, array $settings = []): string
+    /** @param array<string,mixed> $doc */
+    private static function ort(array $doc, array $data, string $locale, array $settings = []): string
     {
         $adresse = trim((string) ($data['address'] ?? ''));
         $ort = trim((string) ($data['venue'] ?? ''));
 
         $out = '';
         if ($ort !== '') {
-            $out .= '<p class="d-sec-venue">' . e($ort) . '</p>';
+            /*
+             * Das Zeichen des Ortes - wenn die Vorlage eines hinterlegt hat.
+             *
+             * "3c simgeler kismina yukledim ama gelmedi bir sey." Das Bild war
+             * da, gespeichert und im Panel zu sehen; nur gedruckt wurde es
+             * nirgends. Die Kennung "konum" gab es bis hierher ausschliesslich
+             * als Wahl fuer eine ZEILE DES ABLAUFS - und wer sie nie waehlt,
+             * sieht sie nie. Ein Feld, dessen Wirkung woanders von einer
+             * fremden Entscheidung abhaengt, ist ein Knopf, der nichts tut.
+             *
+             * NUR mit eigener Datei. Faellt es auf die gezeichnete Fassung des
+             * Hauses zurueck, bekaeme jede bestehende Vorlage ueber Nacht ein
+             * Symbol neben ihren Saalnamen - eine Aenderung, die niemand
+             * bestellt hat. So aendert sich genau dort etwas, wo jemand eine
+             * Datei hingelegt hat.
+             */
+            $eigen = is_array($doc['icons']['konum'] ?? null) ? $doc['icons']['konum'] : [];
+            $marke = ((string) ($eigen['src'] ?? '')) !== '' || ((string) ($eigen['video'] ?? '')) !== ''
+                ? self::zeichen($doc, 'konum')
+                : '';
+
+            $out .= '<p class="d-sec-venue">' . $marke . e($ort) . '</p>';
         }
         // Nur wenn sie da ist: seit hatInhalt auch den Saalnamen allein
         // gelten laesst, kann die Strasse fehlen - ein leerer Absatz waere

@@ -367,11 +367,7 @@ final class DesignAdminController
         $sel   = '.d-' . $doc['id'];
         $daten = self::BEISPIEL + [
             'families' => ['bride' => 'Familie Berger', 'groom' => 'Familie Lindqvist'],
-            'program'  => [
-                ['time' => '15:30', 'title' => $locale === 'de' ? 'Trauung' : 'Tören'],
-                ['time' => '17:00', 'title' => $locale === 'de' ? 'Empfang' : 'Karşılama'],
-                ['time' => '19:30', 'title' => 'Dinner'],
-            ],
+            'program'  => self::beispielAblauf($doc, $locale),
         ];
 
         // Kein Formular in der Vorschau: die Zusage schickt hier niemand ab.
@@ -379,6 +375,49 @@ final class DesignAdminController
 
         echo '<style>' . DesignSections::css($doc, $sel) . '</style>'
            . DesignSections::flaeche($doc, ltrim($sel, '.'), $abschnitte, 'mx-auto max-w-2xl', 'de');
+    }
+
+    /**
+     * Die Zeilen des Ablaufs fuer eine VORSCHAU.
+     *
+     * "3c simgeler kismina yukledim ama gelmedi bir sey."
+     *
+     * Der Grund war hier: die Beispielzeilen trugen gar keine Zeichen. Wer
+     * eine Torte hochlud, sah danach dieselbe Vorschau wie vorher - nicht
+     * weil etwas kaputt war, sondern weil in der Vorschau nie ein einziges
+     * Zeichen vorkam.
+     *
+     * Also zeigt sie jetzt die, die die VORLAGE belegt hat: was jemand
+     * hochlaedt, steht sofort in der Zeile daneben. Belegt sie nichts,
+     * bleiben drei Zeilen mit gezeichneten Zeichen des Hauses - eine
+     * Vorschau ohne jedes Zeichen waere wieder die alte Auskunft.
+     *
+     * @param array<string,mixed> $doc
+     * @return list<array<string,string>>
+     */
+    public static function beispielAblauf(array $doc, string $locale): array
+    {
+        $eigene = array_keys(is_array($doc['icons'] ?? null) ? $doc['icons'] : []);
+
+        // Ohne eigene: drei Zeilen, wie sie auf jeder Einladung stehen koennten.
+        if ($eigene === []) {
+            $eigene = ['nikah', 'giris', 'yemek'];
+        }
+
+        // Sechs reichen: die Vorschau soll zeigen, nicht alles auffuehren.
+        $zeiten = ['15:30', '17:00', '19:30', '21:00', '22:30', '23:45'];
+        $out = [];
+
+        foreach (array_slice($eigene, 0, 6) as $i => $kennung) {
+            $titel = SectionRegistry::iconTitle((string) $kennung, $locale === 'de' ? 'de' : 'en');
+            $out[] = [
+                'time'  => $zeiten[$i] ?? '',
+                'title' => $titel !== '' ? $titel : (string) $kennung,
+                'icon'  => (string) $kennung,
+            ];
+        }
+
+        return $out;
     }
 
     /**
