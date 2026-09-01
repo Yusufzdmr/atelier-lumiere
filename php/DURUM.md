@@ -2746,6 +2746,63 @@ donmuş kopyasını taşıyor, bu bilerek böyle. Tasarım editöründeki "yayı
 tazele" düğmesi onu günceller; misafirlerin elindeki davetiyeyi değiştirdiği
 için o düğmeye ben basmadım.
 
+## 1 Eylül — "3c'ye yükledim ama gelmedi bir şey"
+
+Yusuf `1.9` tasarımında **3C · Simgeler** altındaki **"Ort / konum"** satırına
+bir WhatsApp fotoğrafı yükledi. İki ekran görüntüsü geldi: dosya **oradaydı** —
+yol alanında `/uploads/designs/dfd19a6f27c9b0e3`, yanında küçük önizleme,
+altında "Gespeichert."
+
+Yani yükleme çalışıyordu. **Basılmıyordu.**
+
+### Sebep: etkisi başkasının kararına bağlı bir alan
+
+`konum` kimliği bugüne kadar **yalnızca günün programındaki bir satırın**
+seçeneğiydi — ve o satırı çift seçer. Çift hiç seçmezse şablon sahibi
+yüklediği şeyi hiçbir yerde göremez. Etkisi başka birinin kararına bağlı olan
+bir alan, hiçbir şey yapmayan bir düğmedir.
+
+Üstüne bir de: **önizlemenin örnek program satırlarında hiç simge yoktu.** Yani
+ne yüklerse yüklesin, önizleme değişmiyordu.
+
+### İki yer, iki cevap
+
+**1 · Mekân kendi simgesini gösteriyor.** `konum` için şablonda **kendi dosyası**
+varsa, salon adının yanında basılıyor. Sadece kendi dosyası varsa: çizili ev
+simgesine düşseydi, mevcut her tasarımın salon adının yanında bir gecede bir
+sembol belirirdi — kimsenin istemediği bir değişiklik. Bir temel kural da hava
+veriyor (`margin-inline-end:0.35em`), yoksa ilk harfe yapışıyor; panelden
+girilen "Abstand" hâlâ kazanıyor.
+
+**2 · Önizleme artık simge gösteriyor.** Örnek program satırları, **şablonun
+kendi doldurduğu** kimlikleri kullanıyor — katalogdaki adlarıyla. Hiçbiri
+dolu değilse üç satır çizili simgeyle duruyor (hiç simgesiz bir önizleme yine
+eski cevap olurdu). Panel ve halka açık önizleme **aynı** yerden alıyor
+(`DesignAdminController::beispielAblauf`) — iki örnek akış, aynı şablon
+hakkında iki ayrı cevap demek olurdu.
+
+**3 · Ve panelde eksik olan cümle var artık:** bu simgeler nerede görünür
+(program, menü, kıyafet kuralı — ve mekân), ve önizlemedeki satırların
+doldurulmuş simgeleri gösterdiği. Bunu bilmeyen hatayı dosyada arar.
+
+### Ölçülen (canlı, tasarım 19)
+
+| Ne | Sonuç |
+|---|---|
+| `/de/v2/designs/19` | 200; `d-ikon-konum` **2 kez** (mekân + program satırı) |
+| Mekân satırı | `<p class="d-sec-venue"><img class="d-ikon d-ikon-konum" src="…dfd19a6f27c9b0e3.webp">Schloss Hohenstein` |
+| Görselin ekrandaki boyu | **18×18 px** (dosya 1400×1026) |
+| Kendi dosyası olmayan tasarım | mekânda hiç `d-ikon` yok — hiçbir şey değişmedi |
+| `php bin/test.php` | **2565**, sunucuda da aynı |
+
+### Yusuf'a not
+
+Yüklenen şey bir **fotoğraf** (WhatsApp JPEG, 1400×1026) ve simge yeri
+18×18 piksel — o boyutta fotoğraf leke gibi görünür. İki seçenek: ya saydam
+zeminli bir PNG/SVG koy, ya da aynı satırdaki **"Grösse %"** değerini büyüt
+(300–500 arası mekân adının yanında iyi durur). Sürükleyerek de yerini
+kaydırabilirsin — canlı önizlemede simgeyi tutup çekmek X/Y alanlarına yazıyor.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
