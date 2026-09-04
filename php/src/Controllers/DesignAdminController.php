@@ -5,6 +5,7 @@ namespace Atelier\Controllers;
 
 use Atelier\Admin;
 use Atelier\Design;
+use Atelier\DesignImages;
 use Atelier\DesignSections;
 use Atelier\DesignVideos;
 use Atelier\I18n;
@@ -84,6 +85,7 @@ final class DesignAdminController
             'filter'     => $filter,
             'themen'     => Themes::all(),
             'videos'     => DesignVideos::all(),
+            'images'     => DesignImages::all(),
             'csrf'       => Security::csrf(),
         ]);
     }
@@ -117,6 +119,12 @@ final class DesignAdminController
         }
         if (str_starts_with($was, 'video-loeschen-')) {
             $this->zurueck($locale, $this->videoLoeschen(substr($was, strlen('video-loeschen-'))));
+        }
+        if ($was === 'bilder-kaydet') {
+            $this->zurueck($locale, $this->bilderSpeichern());
+        }
+        if (str_starts_with($was, 'bild-loeschen-')) {
+            $this->zurueck($locale, $this->bildLoeschen(substr($was, strlen('bild-loeschen-'))));
         }
 
         $this->zurueck($locale, 'fehler=unbekannt');
@@ -471,6 +479,7 @@ final class DesignAdminController
              * abtippen oder dieselbe Datei ein zweites Mal hochladen.
              */
             'videos'   => DesignVideos::all(),
+            'images'   => DesignImages::all(),
             'styles'   => Design::css($design, $scope),
             'seite'    => Design::html($design, $werte, $locale, 'page'),
             'karte'    => Design::html($design, $werte, $locale, 'card'),
@@ -1089,6 +1098,62 @@ final class DesignAdminController
     {
         DesignVideos::save(array_values(array_filter(
             DesignVideos::all(),
+            static fn (array $row): bool => $row['id'] !== $id
+        )));
+
+        return 'ok=gespeichert';
+    }
+
+    /**
+     * Die Bildbibliothek speichern - bestehende Zeilen und hoechstens ein
+     * neues Bild. Derselbe Weg wie videosSpeichern(), storeGraphic() statt
+     * storeVideo(): ein Hintergrund ist eine Zeichnung/ein Blatt, kein Foto,
+     * und storeGraphic() behaelt Transparenz statt sie in JPEG zu ersaufen.
+     */
+    private function bilderSpeichern(): string
+    {
+        $rows = [];
+        for ($i = 0; $i < DesignImages::MAX; $i++) {
+            if (!isset($_POST['img_id_' . $i])) {
+                continue;
+            }
+            $rows[] = [
+                'id'       => (string) $_POST['img_id_' . $i],
+                'label'    => (string) ($_POST['img_label_' . $i] ?? ''),
+                'src'      => (string) ($_POST['img_src_' . $i] ?? ''),
+                'category' => (string) ($_POST['img_cat_' . $i] ?? ''),
+            ];
+        }
+
+        $datei = $_FILES['img_neu_datei'] ?? null;
+        if (is_array($datei) && ((int) ($datei['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_OK) {
+            $pfad = Media::storeGraphic($datei, 'designs');
+            if ($pfad !== null) {
+                $rows[] = [
+                    'id'       => '',
+                    'label'    => (string) ($_POST['img_neu_label'] ?? ''),
+                    'src'      => $pfad,
+                    'category' => '',
+                ];
+            }
+        }
+
+        DesignImages::save($rows);
+
+        return 'ok=gespeichert';
+    }
+
+    /**
+     * Ein Bild aus der Bibliothek nehmen.
+     *
+     * Die Datei bleibt liegen - dieselbe Ueberlegung wie beim Video: eine
+     * Vorlage, die diesen Pfad schon als Blatt eingetragen hat, zeigt
+     * weiterhin darauf. Nur aus der Auswahlliste verschwindet er.
+     */
+    private function bildLoeschen(string $id): string
+    {
+        DesignImages::save(array_values(array_filter(
+            DesignImages::all(),
             static fn (array $row): bool => $row['id'] !== $id
         )));
 

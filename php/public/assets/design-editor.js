@@ -269,6 +269,28 @@
     });
   });
 
+  /*
+   * Ein Blatt aus der Bildbibliothek waehlen - fuer jeden Abschnitt jeder
+   * Vorlage dieselbe Handvoll Zeilen, statt einer eigenen je Abschnitt.
+   *
+   * data-blattwahl traegt den NAMEN des Pfadfelds (z. B. "sec_bg_3"), nicht
+   * eine feste Kennung - jeder Abschnitt hat sein eigenes Feld, und eine
+   * Liste je Abschnitt zu schreiben waere dieselbe Handvoll Zeilen mehrfach.
+   * Geschrieben wird mit "input" und nicht direkt: der Vorschaukasten
+   * daneben (data-vorschau-pfad) hoert schon auf genau dieses Ereignis am
+   * selben Feld - dieselbe Bahn wie beim Filmfeld, kein zweiter Zeichner.
+   */
+  form.querySelectorAll("[data-blattwahl]").forEach(function (wahl) {
+    var ziel = wahl.getAttribute("data-blattwahl") || "";
+    var feld = ziel !== "" ? form.querySelector('[name="' + ziel + '"]') : null;
+    if (!feld) return;
+
+    wahl.addEventListener("change", function () {
+      feld.value = wahl.value;
+      feld.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+
   /* ======================================================================
    * Zwei Kaesten, dieselbe Karte.
    *

@@ -2956,6 +2956,41 @@ kuvert-açma yolu, kod tekrarı değil), ve test artık tam tanımı
 yeni satır eklenmedi). Canlıda "Bild" tasarımıyla doğrulandı: Telefon
 düğmesine bas → çerçeve içinde kart doğrudan açık geliyor, konsolda hata yok.
 
+### Yeni: Bildbibliothek — arka planlar bölümler arasında seçilebilir
+
+Yusuf: "sistemde olan arkaplanları seçilebilir yap arkaplan diye her bir
+sayfa için yapabilelim ayrı ayrı sürekli yüklicem mi admin panelinde."
+Sorunun kendisi: her bölümün ("Wo und wann", "Ablauf des Tages" vb.) kendi
+"Blatt" (arka plan) alanı var, ve aynı görseli birden fazla bölümde
+kullanmak istersen ya her seferinde yeniden yüklemen, ya da yol adresini
+elle kopyalayıp yapıştırman gerekiyordu.
+
+Çözüm zaten vardı, başka bir malzeme için: **Filmbibliothek**
+(`DesignVideos`) — çiftin açılış filmi seçtiği, bir kere yüklenen, her
+tasarımda tekrar seçilebilen bir kütüphane. Aynı deseni birebir kopyaladım:
+
+- **`src/DesignImages.php`** — `DesignVideos.php`'nin eşi (`id`, `label`,
+  `src`, `category`), `site_content`'te `designImages` altında duruyor.
+- **Panel → Designs (v2) altında yeni "Bildbibliothek" bölümü** —
+  Filmbibliothek'in hemen altında, aynı yükle/adlandır/kategorile/sil deseni.
+  `Media::storeGraphic()` kullanıyor (Süsleme'deki gibi — şeffaflık korunur,
+  JPEG'e çevrilmez).
+- **Her bölümün "Blatt hochladen" alanının üstüne** "Aus der Ablage wählen"
+  seçmecesi eklendi (`design-edit-tafeln.php`). Tek bir JS bloğu
+  (`data-blattwahl`, alanın ADINI taşıyor — sabit bir kimlik değil) yedi
+  bölümün hepsine birden hizmet ediyor; seçim `sec_bg_<i>` alanına yazıyor,
+  zaten var olan `data-vorschau-pfad` mekanizması (Vorspann filminde de
+  kullanılan) küçük önizlemeyi kendiliğinden tazeliyor — sıfır yeni kod o
+  taraf için.
+
+Uçtan uca doğrulandı: bir görsel yükle → kütüphaneye kaydet → farklı bir
+tasarımın "Wo und wann" bölümünde açılır menüden seç → önizleme anında
+değişiyor → otomatik kayıt veritabanına yazıyor (`Design::find()` ile
+doğrulandı).
+
+`php bin/test.php` → **2616** (yeni dosya `tests/design_images.php`, 19
+kontrol). Henüz sunucuya alınmadı — kod hazır, bir sonraki deploy'a girsin.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

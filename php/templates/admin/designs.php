@@ -14,6 +14,7 @@
  * @var string $filter
  * @var list<array<string,mixed>> $themen
  * @var list<array{id:string,label:string,mp4:string,webm:string,poster:string,category:string}> $videos
+ * @var list<array{id:string,label:string,src:string,category:string}> $images
  * @var string $csrf
  * @var string $locale
  */
@@ -345,6 +346,73 @@ $meldungen = [
     </div>
 
     <button name="was" value="videos-kaydet"
+            class="bg-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
+      <?= $tr ? 'Kitaplığı kaydet' : 'Bibliothek speichern' ?>
+    </button>
+  </form>
+</section>
+
+<?php /*
+   Die Bildbibliothek. Dasselbe Muster wie die Filmbibliothek darueber -
+   "sistemde olan arkaplanlari secilebilir yap ... surekli yuklicem mi admin
+   panelinde": ein Hintergrund, einmal hier abgelegt, steht danach in jedem
+   Abschnitt jeder Vorlage zur Auswahl (design-edit-tafeln.php, "Aus der
+   Ablage waehlen"), statt bei jedem Abschnitt neu hochgeladen zu werden.
+*/ ?>
+<section class="mt-16 border-t border-sand-deep pt-10">
+  <h3 class="font-display text-lg text-ink"><?= $tr ? 'Görsel kitaplığı' : 'Bildbibliothek' ?></h3>
+  <p class="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+    <?= $tr
+      ? 'Buradaki görseller, herhangi bir bölümün "arka plan" alanında seçenek olarak çıkar — aynı görseli her bölüme ayrı ayrı yüklemek gerekmez.'
+      : 'Diese Bilder bietet der Editor bei jedem Abschnitt als Blatt zur Auswahl an - dieselbe Datei muss nicht je Abschnitt neu hochgeladen werden.' ?>
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
+    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+
+    <?php foreach ($images as $i => $bild) : ?>
+      <div class="flex flex-wrap items-start gap-5 border-t border-sand-deep pt-5 first:border-0 first:pt-0">
+        <input type="hidden" name="img_id_<?= (int) $i ?>" value="<?= e($bild['id']) ?>">
+        <input type="hidden" name="img_src_<?= (int) $i ?>" value="<?= e($bild['src']) ?>">
+
+        <img src="<?= e($bild['src']) ?>" alt="" class="h-20 w-14 shrink-0 border border-sand-deep bg-sand object-cover">
+
+        <label class="min-w-[14rem] flex-1 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+          <?= $tr ? 'Adı' : 'Name' ?>
+          <input name="img_label_<?= (int) $i ?>" value="<?= e($bild['label']) ?>" maxlength="80"
+                 class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink"></label>
+
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted">
+          <?= $tr ? 'Kategori' : 'Kategorie' ?>
+          <select name="img_cat_<?= (int) $i ?>"
+                  class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink">
+            <option value="">—</option>
+            <?php foreach (Design::CATEGORIES as $k) : ?>
+              <option value="<?= e($k) ?>" <?= $bild['category'] === $k ? 'selected' : '' ?>><?= e($k) ?></option>
+            <?php endforeach; ?>
+          </select></label>
+
+        <button name="was" value="bild-loeschen-<?= e($bild['id']) ?>"
+                class="self-end pb-2 text-[0.66rem] uppercase tracking-[0.16em] text-muted hover:text-red-700"
+                data-confirm="<?= $tr ? 'Bu görsel silinsin mi?' : 'Dieses Bild entfernen?' ?>">
+          <?= $tr ? 'Sil' : 'Entfernen' ?>
+        </button>
+      </div>
+    <?php endforeach; ?>
+
+    <div class="border-t border-sand-deep pt-5">
+      <div class="text-[0.66rem] uppercase tracking-[0.16em] text-muted"><?= $tr ? 'Yeni görsel' : 'Neues Bild' ?></div>
+      <div class="mt-3 grid gap-4 sm:grid-cols-2">
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted"><?= $tr ? 'Adı' : 'Name' ?>
+          <input name="img_neu_label" maxlength="80"
+                 class="mt-1 w-full border border-sand-deep bg-cream px-3 py-2 text-sm normal-case tracking-normal text-ink"></label>
+        <label class="text-[0.66rem] uppercase tracking-[0.16em] text-muted">PNG / JPG / WebP / SVG
+          <input type="file" name="img_neu_datei" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                 class="mt-1 w-full text-[0.8rem] text-muted"></label>
+      </div>
+    </div>
+
+    <button name="was" value="bilder-kaydet"
             class="bg-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
       <?= $tr ? 'Kitaplığı kaydet' : 'Bibliothek speichern' ?>
     </button>

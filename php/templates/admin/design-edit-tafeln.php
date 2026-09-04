@@ -240,7 +240,8 @@ foreach ($katalog as $art => $eintrag) {
       <div class="b-gruppe">
         <div class="flex items-start gap-4">
           <div class="w-16 shrink-0">
-            <div class="flex aspect-square items-center justify-center overflow-hidden border border-sand-deep bg-sand">
+            <div class="flex aspect-square items-center justify-center overflow-hidden border border-sand-deep bg-sand"
+                 data-vorschau-fuer="sec_bg_datei_<?= $i ?>" data-vorschau-pfad="sec_bg_<?= $i ?>">
               <?php if ($blatt['bg'] !== '') : ?>
                 <img src="<?= e($blatt['bg']) ?>" alt="" class="h-full w-full object-cover">
               <?php else : ?>
@@ -252,7 +253,29 @@ foreach ($katalog as $art => $eintrag) {
           </div>
 
           <div class="w-full">
-            <label class="<?= $label ?>"><?= $tr ? 'arka plan yükle' : 'Blatt hochladen' ?>
+            <?php /*
+               Aus der Bildbibliothek waehlen, statt noch einmal hochzuladen.
+               Derselbe Weg wie beim Vorspann-Film (Filmbibliothek): "sistemde
+               olan arkaplanlari secilebilir yap ... surekli yuklicem mi admin
+               panelinde." Die Auswahl schreibt nur in das Pfadfeld darunter -
+               data-blattwahl traegt dessen Namen, ein Skript an einer Stelle
+               bedient damit jeden Abschnitt jeder Vorlage.
+            */ ?>
+            <?php if (($images ?? []) !== []) : ?>
+              <label class="<?= $label ?>"><?= $tr ? 'Yüklü görsellerden seç' : 'Aus der Ablage wählen' ?>
+                <select class="<?= $feld ?>" data-blattwahl="sec_bg_<?= $i ?>">
+                  <option value=""><?= $tr ? '— görsel yok —' : '— kein Bild —' ?></option>
+                  <?php foreach ($images as $bild) : ?>
+                    <option value="<?= e((string) $bild['src']) ?>"
+                            <?= (string) $bild['src'] === (string) $blatt['bg'] ? 'selected' : '' ?>>
+                      <?= e(($bild['label'] !== '' ? $bild['label'] : $bild['id'])
+                            . ($bild['category'] !== '' ? ' · ' . $bild['category'] : '')) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select></label>
+            <?php endif; ?>
+
+            <label class="<?= $label ?> mt-3 block"><?= $tr ? 'ya da yükle' : 'oder hochladen' ?>
               <input type="file" name="sec_bg_datei_<?= $i ?>" class="<?= $feld ?>"
                      accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
 
