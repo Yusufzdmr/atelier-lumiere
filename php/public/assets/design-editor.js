@@ -1577,10 +1577,13 @@
       if (!zeilen.length) return;
 
       var nummer = zeilen.length;
-      // Vierundzwanzig ist die Grenze des Modells (Design::countdownIcons).
-      // Sie steht hier noch einmal, damit der Knopf nichts anlegt, was beim
-      // Speichern stillschweigend wegfiele.
-      if (nummer >= 24) return;
+      // Die Grenze kommt vom Knopf selbst (data-cd-max): 24 beim Countdown
+      // (Design::countdownIcons), 8 beim Schmuck eines Abschnitts
+      // (Design::freieElemente mit $max=8). Ein fest verdrahtetes "24" hier
+      // liesse den Abschnitts-Knopf Zeilen anlegen, die beim Speichern
+      // stillschweigend wegfielen - genau das soll die Zahl verhindern.
+      var grenze = parseInt(knopf.getAttribute("data-cd-max"), 10) || 24;
+      if (nummer >= grenze) return;
 
       var neu = zeilen[zeilen.length - 1].cloneNode(true);
 

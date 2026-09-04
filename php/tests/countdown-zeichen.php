@@ -211,6 +211,7 @@ assert_contains($tafel, 'foreach (Design::COUNTDOWN_ANKER as $gestalt', 'Panel: 
 assert_contains($tafel, 'cd_datei_<?= e((string) $gestalt) ?>_<?= $i ?>', 'Panel: ein Dateifeld je Zeile');
 assert_contains($tafel, 'name="cd_n_<?= e((string) $gestalt) ?>"', 'Panel: und die Zahl der Zeilen');
 assert_contains($tafel, 'data-cd-mehr', 'Panel: der Knopf fuer eine Zeile mehr');
+assert_contains($tafel, 'data-cd-max="24"', 'Panel: die Grenze steht am Knopf, nicht nur im Skript');
 
 $steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
 assert_contains($steuer, "\$_FILES['cd_datei_' . \$gestalt . '_' . \$i]",
@@ -218,7 +219,9 @@ assert_contains($steuer, "\$_FILES['cd_datei_' . \$gestalt . '_' . \$i]",
 
 $skript = (string) file_get_contents(__DIR__ . '/../public/assets/design-editor.js');
 assert_contains($skript, 'data-cd-mehr', 'Skript: der Knopf haengt am Formular');
-assert_contains($skript, 'if (nummer >= 24) return;', 'Skript: und legt nichts an, was beim Speichern wegfiele');
+assert_contains($skript, 'getAttribute("data-cd-max")', 'Skript: die Grenze kommt vom Knopf');
+assert_contains($skript, 'if (nummer >= grenze) return;',
+    'Skript: und legt nichts an, was beim Speichern wegfiele - je Liste, nicht pauschal 24');
 
 /* --- Und das Ziehen im Editor --- */
 

@@ -2835,6 +2835,51 @@ alıyor.
 
 `php bin/test.php` → **2588**. Canlıya alındı, sayfalar 200, `gidonla.com` 200.
 
+## 4 Eylül — Ayhan'ın dört şikâyeti: biri kod, biri karar, ikisi eksik ayrıntı
+
+WhatsApp'tan toplu geldi: "yeni bir şey ekledikten sonra çalışmıyor", "bazı
+yerlerde resim yükleyemiyorum", "düğme var ama olmuyor, hata veriyor",
+"resimleri 1000'den fazla büyütemiyorum", ve "eski zarf açılma hâlâ geliyor,
+istemiyorum". Ekli WhatsApp görseli bu işle ilgisizdi (başka bir müşterinin
+inşaat sitesi) — dikkate alınmadı.
+
+### Bulunan ve düzeltilen: bölüm süslemesinde sessiz veri kaybı
+
+1 Eylül'de eklenen "her bölüme serbest süsleme" (8 öğeye kadar resim/film,
+`Design::freieElemente(..., Design::DEKO_ANKER, 8)`) ile aynı günün "+"
+düğmesi düzeltmesi ("Schmuck, wo bisher nur ein Blatt lag") aynı JS
+işleyicisini (`data-cd-mehr`) hem geri sayımın 24 öğelik listesiyle hem
+bölümün 8 öğelik listesiyle paylaşıyordu — ama sınır **JS'te sabit 24**
+olarak kalmıştı (`design-editor.js`, "Vierundzwanzig ist die Grenze des
+Modells"). Sonuç: bir bölümde "+" düğmesine 9. kez basılınca satır **görünüşte**
+ekleniyor, dosya seçilip "Gespeichert." de görünüyor — ama `Design::fromPost()`
+8'den sonrasını sessizce atıyordu. Tam olarak "biryer düzeliyor biryer
+bozuluyor" ve "yüklüyorum ama gelmedi" hissi.
+
+Düzeltme: sınır artık düğmenin kendi `data-cd-max` alanında duruyor (geri
+sayımda 24, bölüm süslemesinde 8), JS sabit sayıyı değil bu alanı okuyor.
+`countdown-zeichen.php` ve `deko.php`'ye bunu doğrulayan birer satır eklendi.
+`php bin/test.php` → **2591** (yerelde doğrulandı; sunucuya henüz alınmadı,
+bkz. aşağıdaki not).
+
+### Karar Yusuf'ta: "eski zarf açılma" muhtemelen 25aug'daki donmuş davetiye
+
+1 Eylül'ün notu ("zarf açılışı kaldırılabilir oldu") bunu zaten anlatıyor:
+`25aug` tasarımına bağlı **yayındaki bir davetiye** hâlâ eski anlık görüntüde
+ve zarfla açılıyor, çünkü gönderilmiş davetiyeler tasarım değişince
+**bilerek** değişmiyor (Faz 3B sözü). Editördeki "yayındakileri tazele"
+düğmesi bunu günceller — basılmadı, çünkü **misafirlerin elindeki
+davetiyeyi** değiştiriyor. Ayhan'ın "istemiyorum" dediği muhtemelen bu
+davetiye. Basılsın mı, karar Ayhan'ın/Yusuf'un: misafirlere giden bağlantı
+aynı kalıyor, yalnızca açılış değişiyor.
+
+### Eksik ayrıntı: "1000'den fazla büyütemiyorum" ve "hata veren düğme"
+
+İkisi de yerde kod taramasıyla eşleşmedi. Bölüm süslemesinin "boyut" alanı
+zaten `min="10" max="2000"` (yüzde, piksel değil) — hiçbir yerde `max="1000"`
+yok. Hangi sayfada/panelde, hangi düğmede olduğu ve varsa ekran görüntüsü
+gerekiyor; tahminle dokunmadım.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

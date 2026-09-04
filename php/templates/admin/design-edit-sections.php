@@ -332,7 +332,7 @@ use function Atelier\e;
           <?= e((string) ($cdGestalten[$gestalt][$tr ? 'tr' : 'de'] ?? $gestalt)) ?>
           <small class="ml-1 opacity-50"><?= e((string) $gestalt) ?></small>
         </span>
-        <button type="button" class="<?= $cdKnopf ?>" data-cd-mehr="<?= e((string) $gestalt) ?>">+</button>
+        <button type="button" class="<?= $cdKnopf ?>" data-cd-mehr="<?= e((string) $gestalt) ?>" data-cd-max="24">+</button>
       </div>
 
       <input type="hidden" name="cd_n_<?= e((string) $gestalt) ?>" value="<?= count($zeilen) ?>"

@@ -114,6 +114,15 @@ assert_contains($tafel, 'name="sec_deko_n_<?= $i ?>"', 'Panel: die Zahl der Zeil
 assert_contains($tafel, 'sec_dekodatei_<?= $i ?>_<?= $d ?>', 'Panel: ein Dateifeld je Zeile');
 assert_contains($tafel, 'data-cd-mehr="deko_<?= $i ?>"', 'Panel: und der Knopf fuer eine Zeile mehr');
 
+/*
+ * Die Grenze am Knopf muss zu der in Design::freieElemente($eintrag['deko']
+ * ?? null, Design::DEKO_ANKER, 8) passen - sonst legt der Knopf im Panel eine
+ * neunte Zeile an, die beim Speichern stillschweigend wegfaellt: Datei
+ * ausgewaehlt, "Gespeichert." gesehen, und trotzdem nichts zu sehen. Anders
+ * als am Countdown (24) ist die Grenze hier 8.
+ */
+assert_contains($tafel, 'data-cd-max="8"', 'Panel: der Knopf kennt seine eigene Grenze (8, nicht 24 wie am Countdown)');
+
 $steuer = (string) file_get_contents(__DIR__ . '/../src/Controllers/DesignAdminController.php');
 assert_contains($steuer, "\$_FILES['sec_dekodatei_' . \$i . '_' . \$d]",
     'Panel: der Controller nimmt die Datei entgegen');

@@ -299,7 +299,7 @@ foreach ($katalog as $art => $eintrag) {
         <div class="flex items-center justify-between gap-3">
           <span class="<?= $label ?>"><?= $tr ? 'süsleme (resim / video)' : 'Schmuck (Bild / Film)' ?></span>
           <button type="button" class="border border-sand-deep px-2 py-1 text-[0.66rem] uppercase tracking-[0.14em] text-muted hover:text-ink"
-                  data-cd-mehr="deko_<?= $i ?>">+</button>
+                  data-cd-mehr="deko_<?= $i ?>" data-cd-max="8">+</button>
         </div>
 
         <input type="hidden" name="sec_deko_n_<?= $i ?>" value="<?= count($dekoZeilen) ?>"
