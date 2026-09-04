@@ -1714,6 +1714,25 @@
         };
       }
 
+      /*
+       * Der Schmuck eines Abschnitts - "sistemde ... surukle birak
+       * yapabilirsem iyi olur". Ein eigenes Attribut statt data-cd: der
+       * Feldname traegt ZWEI Zahlen (sec_deko_<abschnitt>_<i>_x), nicht eine,
+       * und beide muessen an ihrem eigenen Platz bleiben - der Abschnitt
+       * zuerst, die Zeile danach, genau wie im Formular selbst.
+       */
+      var secdeko = el.getAttribute("data-secdeko");
+      if (secdeko) {
+        var secteil = secdeko.split(":");
+        if (secteil.length !== 2) return null;
+        var secname = "sec_deko_" + secteil[0] + "_" + secteil[1] + "_";
+        return {
+          x: form.querySelector('[name="' + secname + 'x"]'),
+          y: form.querySelector('[name="' + secname + 'y"]'),
+          gleiche: '[data-secdeko="' + secdeko + '"]'
+        };
+      }
+
       var kennung = "";
       Array.prototype.forEach.call(el.classList, function (klasse) {
         if (klasse.indexOf("d-ikon-") === 0) kennung = klasse.slice(7);
@@ -1744,7 +1763,7 @@
     var beimDruecken = function (ereignis) {
       if (ereignis.button !== 0) return;
 
-      var el = ereignis.target.closest(".d-cd-el, .d-ikon");
+      var el = ereignis.target.closest(".d-cd-el, .d-ikon, .d-deko");
       if (!el) return;
 
       var f = felderFuer(el);
@@ -1854,7 +1873,7 @@
       dok.documentElement.setAttribute("data-zeichen-regel", "");
 
       var stil = dok.createElement("style");
-      stil.textContent = ".d-cd-el,.d-ikon{cursor:move;touch-action:none;}";
+      stil.textContent = ".d-cd-el,.d-ikon,.d-deko{cursor:move;touch-action:none;}";
       dok.head.appendChild(stil);
     };
 

@@ -245,9 +245,18 @@ assert_contains($gezogenHtml, 'data-cd="uhr:1"', 'Ziehen: die zweite auch');
 
 $skript2 = (string) file_get_contents(__DIR__ . '/../public/assets/design-editor.js');
 
-assert_contains($skript2, '".d-cd-el, .d-ikon"', 'Ziehen: beide Sorten Zeichen haben denselben Griff');
+assert_contains($skript2, '".d-cd-el, .d-ikon, .d-deko"', 'Ziehen: drei Sorten Zeichen haben denselben Griff');
 assert_contains($skript2, "'[name=\"' + name + 'x\"]'", 'Ziehen: geschrieben wird ins Feld');
 assert_contains($skript2, "'[name=\"icon_x_' + kennung + '\"]'", 'Ziehen: und bei den Katalogzeichen ins ihre');
+
+/*
+ * Und der Schmuck eines Abschnitts - "surukle birak yapabilirsem iyi olur".
+ * Ein eigenes Attribut und keine data-cd: der Feldname traegt zwei Zahlen
+ * (sec_deko_<abschnitt>_<i>_x), data-cd nur eine.
+ */
+assert_contains($skript2, 'el.getAttribute("data-secdeko")', 'Ziehen: der Schmuck eines Abschnitts hat seinen eigenen Griff');
+assert_contains($skript2, '"sec_deko_" + secteil[0] + "_" + secteil[1] + "_"',
+    'Ziehen: geschrieben wird in Abschnitt UND Zeile, nicht nur eine Zahl');
 
 /*
  * Die Umrechnung nimmt die Schriftgroesse des Knotens: an ihr misst der

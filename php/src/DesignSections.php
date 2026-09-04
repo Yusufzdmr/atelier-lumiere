@@ -357,14 +357,24 @@ final class DesignSections
         $heute = $heute !== '' ? $heute : date('Y-m-d');
 
         $out = [];
-        foreach ($doc['sections'] as $abschnitt) {
+        /*
+         * Die urspruengliche Nummer bleibt am Schluessel haengen (kein []).
+         *
+         * html() braucht sie: das Formular nennt den Schmuck eines
+         * Abschnitts nach seiner Stelle im Dokument (sec_deko_<i>_...), und
+         * die stimmt nur, solange kein ausgeblendeter Abschnitt sie
+         * verschiebt. array_column() und count() - die einzigen Leser
+         * dieser Liste ausserhalb von html() - fragen nicht nach
+         * Schluesseln, nur nach Werten.
+         */
+        foreach ($doc['sections'] as $originalIndex => $abschnitt) {
             if (!$abschnitt['enabled']) {
                 continue;
             }
             if (!self::hatInhalt($abschnitt, $data, $heute)) {
                 continue;
             }
-            $out[] = $abschnitt;
+            $out[$originalIndex] = $abschnitt;
         }
 
         return $out;
@@ -2134,7 +2144,7 @@ final class DesignSections
     {
         $out = '';
 
-        foreach (self::visible($doc, $data, $heute) as $abschnitt) {
+        foreach (self::visible($doc, $data, $heute) as $abschnittIndex => $abschnitt) {
             $id = (string) $abschnitt['id'];
             $typ = (string) $abschnitt['type'];
 
@@ -2200,7 +2210,7 @@ final class DesignSections
              * und y - eine Verschiebung haelt auch dann, wenn die Schrift
              * waechst, eine feste Koordinate nicht.
              */
-            $deko = self::dekoZeichen($abschnitt);
+            $deko = self::dekoZeichen($abschnitt, $abschnittIndex);
 
             if ($titel !== '') {
                 $out .= $deko['vor']['titel']
@@ -2641,8 +2651,12 @@ final class DesignSections
      *
      * @param array<string,mixed> $e
      */
-    private static function cdEines(array $e, string $kennung = '', string $klasse = 'd-cd-el'): string
-    {
+    private static function cdEines(
+        array $e,
+        string $kennung = '',
+        string $klasse = 'd-cd-el',
+        string $markerAttr = 'data-cd'
+    ): string {
         $stil = 'width:' . (((int) $e['size']) / 100) . 'em;';
 
         if ((int) $e['x'] !== 0 || (int) $e['y'] !== 0) {
@@ -2659,7 +2673,7 @@ final class DesignSections
             $stil .= 'position:relative;z-index:' . ((int) $e['z']) . ';';
         }
 
-        $marke = $kennung !== '' ? ' data-cd="' . e($kennung) . '"' : '';
+        $marke = $kennung !== '' ? ' ' . $markerAttr . '="' . e($kennung) . '"' : '';
 
         $film = (string) ($e['video'] ?? '');
         if ($film !== '') {
@@ -2688,7 +2702,7 @@ final class DesignSections
      * @param array<string,mixed> $abschnitt
      * @return array{vor:array<string,string>,nach:array<string,string>}
      */
-    private static function dekoZeichen(array $abschnitt): array
+    private static function dekoZeichen(array $abschnitt, int $abschnittIndex): array
     {
         $leer = ['titel' => '', 'inhalt' => ''];
         $out  = ['vor' => $leer, 'nach' => $leer];
@@ -2710,7 +2724,19 @@ final class DesignSections
                 continue;
             }
 
-            $out[$seite][$anker] .= self::cdEines($eintrag, '', 'd-deko');
+            /*
+             * Eine eigene Markierung, keine data-cd: "sec_deko_<abschnitt>_<i>_"
+             * hat zwei Zahlen, "cd_<gestalt>_<i>_" nur eine - dieselbe
+             * Kennung in dieselbe Auswertung zu geben, haette die falsche
+             * Zahl fuer den falschen Namen genommen. Fuer den Griff beim
+             * Ziehen (design-editor.js) ist es deshalb ein eigenes Attribut.
+             */
+            $out[$seite][$anker] .= self::cdEines(
+                $eintrag,
+                $abschnittIndex . ':' . $i,
+                'd-deko',
+                'data-secdeko'
+            );
         }
 
         return $out;

@@ -45,6 +45,13 @@ assert_contains($html, 'position:relative;z-index:2;', 'Schmuck: und eigener Ebe
 // Transparente Filme wie ueberall: die WebM wird nicht umkodiert.
 assert_contains($html, 'autoplay muted loop playsinline', 'Schmuck: der Film laeuft von allein und stumm');
 
+/*
+ * Und ein Griff zum Ziehen - "surukle birak yapabilirsem iyi olur". Erster
+ * Abschnitt (Index 0), erste Zeile (Index 0): data-secdeko="0:0".
+ */
+assert_contains($html, 'data-secdeko="0:0"', 'Schmuck: die erste Zeile traegt Abschnitt und Zeile');
+assert_contains($html, 'data-secdeko="0:1"', 'Schmuck: die zweite auch');
+
 /* --- Die Seite entscheidet, wo es steht --- */
 
 $vorTitel = strpos($html, 'd-deko');
