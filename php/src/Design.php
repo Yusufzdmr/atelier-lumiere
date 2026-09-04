@@ -180,6 +180,14 @@ final class Design
      * das war die Bitte ("yazinin font boyutunu buyuttugumde gorsel de
      * yaziyla beraber dogru konumda hareket etmeli").
      *
+     * Die Grenze ist 2000, nicht 1000: "Konum" ist das einzige Zeichen mit
+     * eigenem Auftritt neben dem Saalnamen (SectionRegistry, Kommentar bei
+     * 'map'), und wer dort ein Foto statt eines gezeichneten Symbols
+     * hinterlegt, will es oft gross - "Max büyüklük 1000 oluyor, daha büyük
+     * olmasını isterim" kam genau daher. Dieselbe Zahl wie beim freien
+     * Schmuck eines Abschnitts (freieElemente); es gab keinen Grund, warum
+     * ein Zeichen bei der Haelfte von dessen Grenze enden sollte.
+     *
      * @param array<string,mixed> $doc
      * @return array<string,array<string,mixed>>
      */
@@ -197,7 +205,7 @@ final class Design
             $satz = [
                 'src'   => $bild,
                 'video' => $film,
-                'size'  => max(10, min(1000, (int) ($eigen['size'] ?? 100))),
+                'size'  => max(10, min(2000, (int) ($eigen['size'] ?? 100))),
                 'x'     => max(-400, min(400, (int) ($eigen['x'] ?? 0))),
                 'y'     => max(-400, min(400, (int) ($eigen['y'] ?? 0))),
                 'gap'   => max(0, min(400, (int) ($eigen['gap'] ?? 0))),
