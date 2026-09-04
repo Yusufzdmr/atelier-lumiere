@@ -263,7 +263,7 @@ use function Atelier\e;
 
       <div class="grid gap-2 sm:grid-cols-5">
         <label class="<?= $label ?>"><?= $tr ? 'boyut %' : 'Grösse %' ?>
-          <input type="number" min="10" max="2000" class="<?= $feld ?>"
+          <input type="number" min="10" max="4000" class="<?= $feld ?>"
                  name="icon_size_<?= e((string) $kennung) ?>"
                  value="<?= (int) ($z['size'] ?? 100) ?>"></label>
         <label class="<?= $label ?>">X
@@ -375,7 +375,7 @@ use function Atelier\e;
 
             <div class="grid gap-2 sm:grid-cols-5">
               <label class="<?= $label ?>"><?= $tr ? 'boyut (em/100)' : 'Grösse (em/100)' ?>
-                <input type="number" min="10" max="2000" class="<?= $feld ?>"
+                <input type="number" min="10" max="4000" class="<?= $feld ?>"
                        name="<?= $n ?>size" value="<?= (int) ($z['size'] ?? 100) ?>"></label>
               <label class="<?= $label ?>">X
                 <input type="number" min="-400" max="400" class="<?= $feld ?>"

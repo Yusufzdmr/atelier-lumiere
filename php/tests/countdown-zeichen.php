@@ -154,7 +154,7 @@ assert_contains($geoHtml, 'position:relative;z-index:2;', 'Geometrie: die Lage i
 
 // Grenzen wie ueberall: was danebenliegt, wird gedeckelt statt abgelehnt.
 $rand = cd_doc(['uhr' => [['src' => '/uploads/designs/a.png', 'size' => 99999, 'x' => -9999, 'z' => 99]]]);
-assert_same(2000, $rand['countdownIcons']['uhr'][0]['size'], 'Grenzen: zu gross wird gedeckelt');
+assert_same(4000, $rand['countdownIcons']['uhr'][0]['size'], 'Grenzen: zu gross wird gedeckelt');
 assert_same(-400, $rand['countdownIcons']['uhr'][0]['x'], 'Grenzen: zu weit links auch');
 assert_same(5, $rand['countdownIcons']['uhr'][0]['z'], 'Grenzen: und die Stapellage');
 

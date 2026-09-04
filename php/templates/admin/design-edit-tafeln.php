@@ -363,7 +363,7 @@ foreach ($katalog as $art => $eintrag) {
 
               <div class="b-gruppe b-fuenf">
                 <label class="<?= $label ?>"><?= $tr ? 'boyut' : 'Grösse' ?>
-                  <input type="number" min="10" max="2000" class="<?= $feld ?>"
+                  <input type="number" min="10" max="4000" class="<?= $feld ?>"
                          name="<?= $dn ?>size" value="<?= (int) ($dk['size'] ?? 100) ?>"></label>
                 <label class="<?= $label ?>">X
                   <input type="number" min="-400" max="400" class="<?= $feld ?>"

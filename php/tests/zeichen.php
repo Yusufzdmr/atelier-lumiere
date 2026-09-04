@@ -118,7 +118,7 @@ foreach (array_keys(SectionRegistry::icons()) as $kennung) {
 // statt eines gezeichneten Symbols traegt, und ein Foto will man dort
 // gross - "Max büyüklük 1000 oluyor, daha büyük olmasını isterim".
 $rand = z_doc(['pasta' => ['src' => '/u.png', 'size' => 99999, 'x' => -9999, 'z' => 99]]);
-assert_same(2000, $rand['icons']['pasta']['size'], 'Zeichen: zu gross wird gedeckelt');
+assert_same(4000, $rand['icons']['pasta']['size'], 'Zeichen: zu gross wird gedeckelt');
 assert_same(-400, $rand['icons']['pasta']['x'], 'Zeichen: zu weit links auch');
 assert_same(5, $rand['icons']['pasta']['z'], 'Zeichen: und die Stapellage');
 

@@ -180,13 +180,15 @@ final class Design
      * das war die Bitte ("yazinin font boyutunu buyuttugumde gorsel de
      * yaziyla beraber dogru konumda hareket etmeli").
      *
-     * Die Grenze ist 2000, nicht 1000: "Konum" ist das einzige Zeichen mit
+     * Die Grenze ist 4000, nicht 1000: "Konum" ist das einzige Zeichen mit
      * eigenem Auftritt neben dem Saalnamen (SectionRegistry, Kommentar bei
      * 'map'), und wer dort ein Foto statt eines gezeichneten Symbols
      * hinterlegt, will es oft gross - "Max büyüklük 1000 oluyor, daha büyük
-     * olmasını isterim" kam genau daher. Dieselbe Zahl wie beim freien
-     * Schmuck eines Abschnitts (freieElemente); es gab keinen Grund, warum
-     * ein Zeichen bei der Haelfte von dessen Grenze enden sollte.
+     * olmasını isterim" kam genau daher. Erst auf 2000 angehoben, dann auf
+     * Wunsch noch einmal verdoppelt ("2000 sınırı verdiğimiz var ya onu 4000
+     * yapsana"). Dieselbe Zahl wie beim freien Schmuck eines Abschnitts
+     * (freieElemente); es gab keinen Grund, warum ein Zeichen bei dessen
+     * Grenze enden sollte.
      *
      * @param array<string,mixed> $doc
      * @return array<string,array<string,mixed>>
@@ -205,7 +207,7 @@ final class Design
             $satz = [
                 'src'   => $bild,
                 'video' => $film,
-                'size'  => max(10, min(2000, (int) ($eigen['size'] ?? 100))),
+                'size'  => max(10, min(4000, (int) ($eigen['size'] ?? 100))),
                 'x'     => max(-400, min(400, (int) ($eigen['x'] ?? 0))),
                 'y'     => max(-400, min(400, (int) ($eigen['y'] ?? 0))),
                 'gap'   => max(0, min(400, (int) ($eigen['gap'] ?? 0))),
@@ -341,7 +343,11 @@ final class Design
                 // die Zeile flieszt, und ein Zeichen in ihr steht davor
                 // oder dahinter. Feiner wird es mit x und y.
                 'side'   => ($zeile['side'] ?? '') === 'vor' ? 'vor' : 'nach',
-                'size'   => max(10, min(2000, (int) ($zeile['size'] ?? 100))),
+                // 4000 und nicht 2000: dieselbe Grenze wie bei den
+                // Katalogzeichen (icons()) - "2000 sınırı verdiğimiz var ya
+                // onu 4000 yapsana". Ein Foto statt eines gezeichneten
+                // Symbols will manchmal gross sein.
+                'size'   => max(10, min(4000, (int) ($zeile['size'] ?? 100))),
                 'x'      => max(-400, min(400, (int) ($zeile['x'] ?? 0))),
                 'y'      => max(-400, min(400, (int) ($zeile['y'] ?? 0))),
                 'gap'    => max(0, min(400, (int) ($zeile['gap'] ?? 0))),
