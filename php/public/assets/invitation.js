@@ -12,6 +12,22 @@
   var envelope = document.querySelector("[data-envelope]");
 
   /*
+   * Schon aufgemacht, in diesem Besuch.
+   *
+   * Das RSVP-Formular ist ein normales POST - die Seite laedt danach neu,
+   * und ohne diese Zeile stand das Kuvert wieder zu: "Danke, eure Antwort
+   * ist angekommen" hinter einem versiegelten Umschlag, den man gerade erst
+   * geoeffnet hatte. sessionStorage und nicht localStorage: wer die
+   * Einladung an einem anderen Tag noch einmal aufruft, soll sie wieder
+   * oeffnen duerfen - nur nicht innerhalb desselben Besuchs zweimal.
+   */
+  var kuvertSchluessel = "al-kuvert-offen:" + location.pathname;
+  var schonOffen = false;
+  try {
+    schonOffen = window.sessionStorage.getItem(kuvertSchluessel) === "1";
+  } catch (e) {}
+
+  /*
    * Der Vorspann ohne Umschlag davor.
    *
    * "Ben zaten video acilisi koymusum, neden bir de zarf acilisi var."
@@ -34,7 +50,7 @@
   var UEBERGANG_MS = 600;
 
   /* ---------------------------- Umschlag ---------------------------- */
-  if (quelle) {
+  if (quelle && !schonOffen) {
     // Sofort, nicht erst beim Oeffnen: solange das Kuvert zu ist, sind die
     // bewegten Ebenen der Karte noch nicht da. Ohne diese Zeile stuenden sie
     // waehrend des ganzen Vorspanns sichtbar hinter dem Film und spraengen
@@ -91,6 +107,9 @@
     var reveal = function () {
       if (opened) return;
       opened = true;
+      try {
+        window.sessionStorage.setItem(kuvertSchluessel, "1");
+      } catch (e) {}
 
       // Reihenfolge: erst die Eroeffnungsszene (falls das Thema eine hat),
       // dann das Kuvert, dann die Karte. Die Szene laeuft ueber allem und
@@ -377,9 +396,21 @@
       }
     }
   } else {
-    // Keine Huelle (z. B. Vorschau im Panel): dann gleich losbewegen. Die
-    // Marke wird hier NIE auf "false" gesetzt - es gibt nichts, worauf zu
-    // warten waere.
+    // Kuvert und Vorspann waren schon auf, dieser Besuch hat sie nur nicht
+    // mehr im Gedaechtnis der Seite (Neuladen nach dem RSVP). Sie stehen im
+    // Markup trotzdem, sonst nie gesehen von diesem Skript - also weg damit,
+    // ohne Bewegung, statt sie ein zweites Mal aufgehen zu lassen.
+    if (quelle && schonOffen) {
+      if (envelope) envelope.style.display = "none";
+      var introBoxSchon = document.querySelector("[data-intro-video]");
+      if (introBoxSchon) introBoxSchon.style.display = "none";
+      var introSchon = document.querySelector("[data-intro]");
+      if (introSchon) introSchon.style.display = "none";
+    }
+
+    // Keine Huelle (z. B. Vorschau im Panel) oder schon offen: dann gleich
+    // losbewegen. Die Marke wird hier NIE auf "false" gesetzt - es gibt
+    // nichts, worauf zu warten waere.
     document.documentElement.setAttribute("data-karte-frei", "true");
     var ruhig = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!ruhig) {

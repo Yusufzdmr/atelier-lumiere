@@ -99,6 +99,26 @@ assert_contains($skript, 'film.addEventListener("loadedmetadata", reveal, { once
 assert_contains($skript, 'setTimeout(reveal, 2500);',
     'Skript: und spaetestens dann, wenn sie nie bekannt wird');
 
+/*
+ * Nach dem RSVP steht das Kuvert nicht wieder zu.
+ *
+ * Das Formular ist ein normales POST - die Seite laedt danach neu, und ohne
+ * ein Gedaechtnis darueber, dass in diesem Besuch schon geoeffnet wurde,
+ * druckt der Server wieder das geschlossene Kuvert. Gemeldet als "eski zarf
+ * acilma hala geliyor, istemiyorum": man dankt fuer die Antwort und steht
+ * vor einem versiegelten Umschlag, den man gerade erst aufgemacht hat.
+ * sessionStorage und nicht localStorage: an einem anderen Tag darf die
+ * Einladung wieder oeffnen, nur nicht zweimal im selben Besuch.
+ */
+assert_contains($skript, 'var kuvertSchluessel = "al-kuvert-offen:" + location.pathname;',
+    'Skript: das Kuvert merkt sich, unter welcher Adresse es schon offen war');
+assert_contains($skript, 'if (quelle && !schonOffen) {',
+    'Skript: schon offen ueberspringt Kuvert und Vorspann komplett');
+assert_contains($skript, 'window.sessionStorage.setItem(kuvertSchluessel, "1");',
+    'Skript: reveal() traegt das Merkmal ein, bevor irgendetwas aufgeht');
+assert_contains($skript, 'if (quelle && schonOffen) {',
+    'Skript: beim Neuladen wird das gerenderte Kuvert dann ausgeblendet, nicht ein zweites Mal geoeffnet');
+
 /* --- Das Panel bietet es an --- */
 
 $tafel = (string) file_get_contents(__DIR__ . '/../templates/admin/design-edit-sections.php');
