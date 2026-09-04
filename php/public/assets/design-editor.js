@@ -50,6 +50,34 @@
 
     var feld = form.querySelector('[name="intro_video"]');
 
+    /*
+     * Nach dem Speichern nicht wieder davor.
+     *
+     * Speichern ist ein Neuladen der Seite (kein fetch) - und dann rendert
+     * das Formular den Vorspann erneut ueber der Karte, unabhaengig davon,
+     * ob er hier gerade weggeklickt wurde. Wer eine Ebene der ersten Karte
+     * bearbeitet, speichert, und landet wieder vor demselben schwarzen
+     * Rechteck: "acilis videosundan sonra gelen ilk kart duezenlenmiyor" -
+     * es liess sich editieren, nur nicht SEHEN, weil der Vorspann jedes Mal
+     * neu davor lag und der Hinweis darunter klein ist.
+     *
+     * sessionStorage und nicht ein Merkmal im Dokument: das Wegklicken ist
+     * eine Sache dieses Besuchs im Editor, keine Einstellung der Vorlage.
+     * Je Vorlage ein eigener Schluessel (Pfad der Seite), sonst wuerde das
+     * Wegklicken einer Vorlage auch bei einer anderen gelten.
+     *
+     * Gespeichert wird der WERT des Feldes, nicht nur "weg oder nicht": ein
+     * neuer Film nach dem Speichern soll wieder gezeigt werden, auch wenn
+     * der alte einmal weggeklickt wurde - sonst saehe man nie, was man
+     * gerade erst hochgeladen hat.
+     */
+    var vorspannSchluessel = "al-editor-vorspann-weg:" + location.pathname;
+    var schonWeg = false;
+    try {
+      schonWeg = feld && window.sessionStorage.getItem(vorspannSchluessel) === feld.value.trim();
+    } catch (e) {}
+    if (schonWeg) vorspann.hidden = true;
+
     var stelle = function () {
       var wert = feld ? feld.value.trim() : "";
       var film = vorspann.querySelector("video");
@@ -76,9 +104,13 @@
     };
 
     // Wegnehmen. Er kommt wieder, sobald jemand den Film wechselt - das ist
-    // der einzige Moment, in dem man ihn wieder sehen will.
+    // der einzige Moment, in dem man ihn wieder sehen will (stelle() setzt
+    // hidden dann selbst zurueck, ohne auf den Schluessel zu schauen).
     vorspann.addEventListener("click", function () {
       vorspann.hidden = true;
+      try {
+        window.sessionStorage.setItem(vorspannSchluessel, feld ? feld.value.trim() : "1");
+      } catch (e) {}
     });
 
     if (feld) feld.addEventListener("input", stelle);

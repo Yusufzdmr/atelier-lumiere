@@ -226,3 +226,17 @@ assert_contains($editorHaupt, 'data-vorspann', 'Editor: der Vorspann hat seinen 
 assert_contains($editorHaupt, 'z-index:60', 'Editor: und liegt darueber - als Stil, nicht als erfundene Klasse');
 assert_contains($js, 'data-vorspann', 'Skript: haengt daran');
 assert_contains($js, 'vorspann.hidden = true', 'Skript: ein Klick nimmt ihn weg');
+
+/*
+ * Und bleibt weg, ueber ein Speichern hinweg.
+ *
+ * Speichern ist ein Neuladen der Seite - das Formular rendert den Vorspann
+ * dann erneut ueber der Karte, auch wenn er gerade eben weggeklickt wurde.
+ * Gemeldet als "acilis videosundan sonra gelen ilk kart duezenlenmiyor":
+ * editierbar war die Karte, nur nicht zu SEHEN, weil derselbe schwarze
+ * Kasten nach jedem Speichern wieder davor lag.
+ */
+assert_contains($js, 'sessionStorage.getItem(vorspannSchluessel)',
+    'Skript: beim Laden nachsehen, ob dieser Besuch den Vorspann schon weggeklickt hat');
+assert_contains($js, 'window.sessionStorage.setItem(vorspannSchluessel',
+    'Skript: und beim Wegklicken eintragen, welcher Film es war');

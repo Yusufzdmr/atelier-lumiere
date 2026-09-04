@@ -2903,6 +2903,35 @@ yükleme gerekirse git zaten asıl kaynak). Sunucuda `php bin/test.php` →
 **2595**, yerelle birebir. `/de/admin`, `/de/v2/designs`,
 `/de/v2/designs/bild` üçü de 200. Komşu `gidonla.com` dokunulmadı, 200.
 
+### Sunucuda bulunan, düzeltmeyi bekleyen: 25aug'daki donmuş davetiye
+
+Sunucudaki `invitations_v2` tablosuna bakıldı (yalnızca okuma): **hiçbir**
+yayındaki davetiyenin `design_snapshot`'ı henüz tazelenmemiş — `medine-ayhan`
+(`25aug` tasarımı, muhtemelen Ayhan'ın kendi davetiyesi) hâlâ `kuvert=true`
+donmuş hâlde, tasarımın kendisi `kuvert=false` olduğu hâlde. Düzeltme tek
+satır (`InvitationsV2::refreshDesign`), ama sunucudaki veritabanına SSH
+üzerinden elle yazmak Claude Code'un otomatik izin sınıflandırıcısı
+tarafından engellendi (canlı veritabanına elden müdahale, haklı bir
+temkinlilik). Yusuf'a hazır komut verildi, panelden "yayındakileri tazele"
+düğmesi de aynı işi görür (`/de/admin/designs/25aug`).
+
+### Bulunan ve düzeltilen: tasarım editöründe Vorspann her kaydetmede geri geliyordu
+
+Ayhan: "açılış videosundan sonra gelen ilk kart düzenlenmiyor." Sebep: bir
+video Vorspann'ı olan tasarımlarda editördeki "Karte" önizlemesi, kartın
+üstünde siyah bir kutu (`data-vorspann`) ile açılıyor — tıklanınca kalkıyor,
+ama **kaydetmek bir sayfa yenilemesi**, ve form her seferinde Vorspann'ı
+yeniden basıyor. Yani kart düzenlenebiliyordu, sadece her kaydetmeden sonra
+tekrar siyah bir kutunun ardında kayboluyordu — ipucu metni de küçük
+(`0.6rem`), fark edilmesi zor.
+
+Düzeltme: `design-editor.js` artık bu ziyarette hangi Vorspann'ın
+kapatıldığını `sessionStorage`'da tutuyor (sayfa yoluna göre, alandaki
+değere göre — yeni bir film seçilince yine gösteriliyor). `design_admin_vorschau.php`'ye
+doğrulayan iki satır eklendi. `php bin/test.php` → **2597**. Canlı ortamda
+"film" tasarımıyla uçtan uca doğrulandı: kapat → sayfayı yenile → kart
+doğrudan görünüyor, kutu geri gelmiyor.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
