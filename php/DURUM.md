@@ -2880,6 +2880,29 @@ zaten `min="10" max="2000"` (yüzde, piksel değil) — hiçbir yerde `max="1000
 yok. Hangi sayfada/panelde, hangi düğmede olduğu ve varsa ekran görüntüsü
 gerekiyor; tahminle dokunmadım.
 
+**Sonradan çözüldü (aynı gün, akşam):** Ayhan bir ekran görüntüsü attı — kendi
+ekranından, "Bild" tasarımının panelinde, **3C · Zeichen** sekmesinde "Konum"
+zeichen'inin "Grösse %" alanı, kırmızı uyarı: "Wert muss kleiner als oder
+gleich 1000 sein." Kod: `Design::icons()` içindeki `size` alanı `min(1000,
+...)` idi, komşu alan (`freieElemente`, bölüm süslemesi) zaten `min(2000,
+...)`. Sebep hiçbir yerde yazılı değildi. İkisi eşitlendi (2000), hem form
+hem sunucu tarafında. Muhtemel gerçek isteği de not edildi: "haritayı kapatıp
+yerine kendi resmimi koymak" için zaten `location` bölümünün kendi
+ayarlarında `karte: 'eigen'` + `mapSrc` + `mapSize` (s/m/l/**voll**) var —
+Ayhan'ın "Konum" zeichen'ini harita yerine kullanmaya çalışmış olması
+muhtemel, çünkü asıl özelliği bulamamış.
+
+`php bin/test.php` → **2595**.
+
+### Canlıya alındı (VPS demo, 4 Eylül akşamı)
+
+Üç commit birden (`73b4472`, `eea3d3e`, `9180287`) — sadece 10 dosya, `tar` +
+`scp` + sunucuda `tar xzf` + `chown -R www-data:www-data`. Yedek:
+`/root/atelier-yedek-20260904-1318/` (tek düzey, alt klasörsüz — geri
+yükleme gerekirse git zaten asıl kaynak). Sunucuda `php bin/test.php` →
+**2595**, yerelle birebir. `/de/admin`, `/de/v2/designs`,
+`/de/v2/designs/bild` üçü de 200. Komşu `gidonla.com` dokunulmadı, 200.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)
