@@ -2932,6 +2932,30 @@ doğrulayan iki satır eklendi. `php bin/test.php` → **2597**. Canlı ortamda
 "film" tasarımıyla uçtan uca doğrulandı: kapat → sayfayı yenile → kart
 doğrudan görünüyor, kutu geri gelmiyor.
 
+### Bulunan ve düzeltilen: Telefon/Tablet/Schreibtisch düğmeleri hata veriyordu
+
+Ayhan panelden bildirdi: `Uncaught ReferenceError: kuvertAuf is not defined`
+(`design-editor.js:2520`). Sebep 27 Ağustos'a kadar gidiyor: o gün
+`abschnitteZeigen()` ile birlikte `kuvertAuf()` fonksiyonu da kaldırılmış
+("Nicht verstecken - umstellen" commit'i, gereksiz hâle gelen bir gizleme
+hilesini temizlerken) — ama fonksiyonu çağıran iki satır (Geräte düğmelerinin
+tıklama işleyicisinde) silinmemiş. Sonuç: panelde **Telefon, Tablet ya da
+Schreibtisch** düğmesine her basışta konsola hata düşüyordu — sayfa çökmüyordu
+ama çerçeve içindeki kart hep kapalı zarfın arkasında kalıyordu, çünkü onu
+otomatik açması gereken kod hiç çalışmıyordu.
+
+İlginç bir ayrıntı: `tests/design_editor_ziehen.php` zaten `kuvertAuf`
+dizesini arıyordu — ama yalnızca dizeyi, tanımı değil. Kırık çağrı satırları
+dizeyi barındırdığı için test **yeşil kalmaya devam etti**, fonksiyon
+silinmiş olsa bile. Düzeltme: `kuvertAuf` fonksiyonu eski hâliyle geri
+kondu (hâlâ duran `oeffneRahmen()`'i kullanıyor — Abschnittswahl'ın kendi
+kuvert-açma yolu, kod tekrarı değil), ve test artık tam tanımı
+(`var kuvertAuf = function`) arıyor, yalnızca dizeyi değil.
+
+`php bin/test.php` → **2597** (aynı sayı — mevcut bir doğrulama sıkılaştırıldı,
+yeni satır eklenmedi). Canlıda "Bild" tasarımıyla doğrulandı: Telefon
+düğmesine bas → çerçeve içinde kart doğrudan açık geliyor, konsolda hata yok.
+
 ## Sıradaki oturum buradan başlasın
 
 ### Bu akşam nerede bırakıldı (17 Ağustos akşamı)

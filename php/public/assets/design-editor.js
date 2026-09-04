@@ -2486,6 +2486,31 @@
       rahmen.style.height = Math.round(hoehe * faktor) + "px";
     };
 
+    /*
+     * Das Kuvert im Rahmen aufmachen, wenn jemand auf ein Geraet umschaltet.
+     *
+     * Ohne das steckt die Karte hinter einer geschlossenen Huelle, und
+     * invitation.js sperrt das Scrollen, bis sie aufgeht - im Rahmen sieht
+     * man dann nur ein stillstehendes Kuvert, egal was man anfasst.
+     *
+     * oeffneRahmen() steht weiter unten (dieselbe Funktion, die auch die
+     * Abschnittsauswahl benutzt) - hier reicht der Aufruf, ohne auf ein
+     * Ergebnis zu warten. Kein Kuvert (Vorspann-Design, kein Kuvert-Feld) ist
+     * kein Fehler: oeffneRahmen() prueft das selbst und tut dann nichts.
+     */
+    var kuvertAuf = function () {
+      var kind = rahmen.querySelector("iframe");
+      if (!kind) return;
+
+      var doc;
+      try { doc = kind.contentDocument; } catch (fehler) { return; }
+      // Frisch gebaut traegt der Rahmen noch about:blank - dann ist hier
+      // nichts zu finden, und der Versuch sagt das von selbst.
+      if (!doc || !doc.querySelector("[data-envelope]")) return;
+
+      oeffneRahmen(doc, function () {});
+    };
+
     geraete.forEach(function (knopf) {
       knopf.addEventListener("click", function () {
         geraete.forEach(function (k) { k.removeAttribute("data-aktiv"); });

@@ -431,7 +431,15 @@ assert_contains($js, 'var knotenIn', 'Skript: die Ebene wird in der angefassten 
  * entscheiden. Geklickt wird das Kuvert, den Rest macht invitation.js.
  */
 assert_contains($js, 'var oeffneRahmen', 'Skript: den Weg zum Aufmachen gibt es schon');
-assert_contains($js, 'kuvertAuf', 'Skript: und das Umschalten nimmt ihn auch');
+/*
+ * Die DEFINITION und nicht nur eine Erwaehnung: am 27. August wurde
+ * abschnitteZeigen() zusammen mit kuvertAuf() entfernt, aber nur die
+ * Funktion - die beiden Aufrufstellen beim Geraetewechsel blieben stehen.
+ * "kuvertAuf" kam als bloße Zeichenkette (in den Aufrufen) weiterhin vor,
+ * die Pruefung hier bestand also, waehrend jeder Klick auf Telefon/Tablet/
+ * Schreibtisch im Panel mit "kuvertAuf is not defined" abbrach.
+ */
+assert_contains($js, 'var kuvertAuf = function', 'Skript: und das Umschalten nimmt ihn auch - als eigene Definition, nicht nur als Aufruf');
 
 /*
  * Sechs: der Doppelklick auf den Text gilt in jeder Wurzel.
