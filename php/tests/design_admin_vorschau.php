@@ -253,3 +253,16 @@ assert_contains($js, 'form.querySelector(\'[data-ansicht][data-aktiv]:not([data-
     'Skript: prueft, ob schon ein Geraet aktiv ist');
 assert_contains($js, 'form.querySelector(\'[data-ansicht="390"]\')',
     'Skript: sonst wird zuerst Telefon angeklickt - Telefon zuerst');
+
+/*
+ * Und der Stand bleibt ueber ein Neuladen hinweg - "sayfayi yenileyince
+ * kaldigi yerden devam etsin". Speichern ist ein Neuladen; ohne ein
+ * Gedaechtnis stand man danach immer wieder vor der Vorlagentafel in der
+ * Kartenansicht.
+ */
+assert_contains($js, 'var standSchluessel = "al-editor-stand:" + location.pathname;',
+    'Skript: der Stand haengt an der Seite, nicht global');
+assert_contains($js, 'schreibeStand({ panel: zeile.getAttribute("data-sec-zeile") });',
+    'Skript: welche Tafel offen war, wird gemerkt');
+assert_contains($js, 'schreibeStand({ ansicht: knopf.getAttribute("data-ansicht") });',
+    'Skript: und welches Geraet gewaehlt war');

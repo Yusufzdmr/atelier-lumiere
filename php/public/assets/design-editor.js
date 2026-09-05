@@ -2790,6 +2790,72 @@
       zeigeAbschnitt(welche);
     });
 
+    /* ==================================================================
+     * Der Stand ueber ein Neuladen hinweg.
+     *
+     * "Sayfayi yenileyince kaldigi yerden devam etsin." Speichern ist ein
+     * Neuladen der Seite (kein fetch) - bisher stand man danach immer
+     * wieder vor der Vorlagentafel in der Kartenansicht, egal woran man
+     * gerade gearbeitet hat.
+     *
+     * Nur die ANSICHT (welche Tafel, welches Geraet) - das Formular selbst
+     * speichert schon fuer sich (Autosave), und ein zweiter Ort dafuer
+     * waere eine zweite Wahrheit.
+     * ================================================================== */
+    (function () {
+      var standSchluessel = "al-editor-stand:" + location.pathname;
+
+      var liesStand = function () {
+        try {
+          return JSON.parse(window.sessionStorage.getItem(standSchluessel) || "{}");
+        } catch (fehler) {
+          return {};
+        }
+      };
+
+      var schreibeStand = function (teil) {
+        try {
+          var stand = liesStand();
+          Object.keys(teil).forEach(function (schluessel) { stand[schluessel] = teil[schluessel]; });
+          window.sessionStorage.setItem(standSchluessel, JSON.stringify(stand));
+        } catch (fehler) {}
+      };
+
+      form.querySelectorAll("[data-sec-waehl]").forEach(function (knopf) {
+        knopf.addEventListener("click", function () {
+          var zeile = knopf.closest("[data-sec-zeile]");
+          if (!zeile) return;
+          schreibeStand({ panel: zeile.getAttribute("data-sec-zeile") });
+        });
+      });
+
+      geraete.forEach(function (knopf) {
+        knopf.addEventListener("click", function () {
+          schreibeStand({ ansicht: knopf.getAttribute("data-ansicht") });
+        });
+      });
+
+      /*
+       * Erst das Geraet, dann die Tafel: eine wiederhergestellte Tafel kann
+       * ihrerseits auf ein Geraet umschalten (zeigeAbschnitt, "Telefon
+       * zuerst"), wenn keins aktiv ist - stand hier schon das richtige,
+       * bleibt es dabei, statt kurz auf Telefon zu springen und dann
+       * wieder weg.
+       */
+      var stand = liesStand();
+
+      if (stand.ansicht && stand.ansicht !== "karte") {
+        var geraet = form.querySelector('[data-ansicht="' + stand.ansicht + '"]');
+        if (geraet) geraet.click();
+      }
+
+      if (stand.panel) {
+        var wiederZeile = form.querySelector('[data-sec-zeile="' + stand.panel + '"]');
+        var wiederKnopf = wiederZeile ? wiederZeile.querySelector("[data-sec-waehl]") : null;
+        if (wiederKnopf) wiederKnopf.click();
+      }
+    })();
+
     /* --- Die Abschnitte unter der Karte, lebend ------------------------- */
 
     /*
