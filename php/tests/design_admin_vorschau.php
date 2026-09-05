@@ -240,3 +240,16 @@ assert_contains($js, 'sessionStorage.getItem(vorspannSchluessel)',
     'Skript: beim Laden nachsehen, ob dieser Besuch den Vorspann schon weggeklickt hat');
 assert_contains($js, 'window.sessionStorage.setItem(vorspannSchluessel',
     'Skript: und beim Wegklicken eintragen, welcher Film es war');
+
+/*
+ * Links einen Abschnitt waehlen springt jetzt selbst zum Geraet.
+ *
+ * "Solda bolumlere tikladigimda o bolume gitsin istiyorum": stand die Karte
+ * in der Mitte (kein Rahmen, also kein iframe), fand mitAbschnitt() nichts
+ * und tat schweigend nichts - der Kommentar darueber versprach "die Mitte
+ * holt sich von selbst die Ansicht", das Skript tat es nur nicht.
+ */
+assert_contains($js, 'form.querySelector(\'[data-ansicht][data-aktiv]:not([data-ansicht="karte"])\')',
+    'Skript: prueft, ob schon ein Geraet aktiv ist');
+assert_contains($js, 'form.querySelector(\'[data-ansicht="390"]\')',
+    'Skript: sonst wird zuerst Telefon angeklickt - Telefon zuerst');

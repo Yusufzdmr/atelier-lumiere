@@ -2715,6 +2715,21 @@
       var name = kennung ? kennung.value.trim() : "";
       if (name === "") return;
 
+      /*
+       * Steht kein Geraet in der Mitte, gibt es auch keinen Rahmen (er
+       * entsteht erst beim ersten Klick auf eines) - mitAbschnitt() faende
+       * dann nichts und taete schweigend nichts, obwohl der Kommentar
+       * darueber genau das Gegenteil verspricht. "Solda bolumlere
+       * tikladigimda o bolume gitsin istiyorum": ohne aktives Geraet zuerst
+       * Telefon anklicken (Telefon zuerst - Einladungen werden auf
+       * Telefonen geoeffnet), dann suchen. Ein aktives Geraet bleibt, wie es
+       * war.
+       */
+      if (!form.querySelector('[data-ansicht][data-aktiv]:not([data-ansicht="karte"])')) {
+        var telefon = form.querySelector('[data-ansicht="390"]');
+        if (telefon) telefon.click();
+      }
+
       mitAbschnitt(name, function (knoten, doc) {
         oeffneRahmen(doc, function () {
           knoten.scrollIntoView({ block: "center" });
