@@ -274,3 +274,13 @@ assert_contains($js, 'schreibeStand({ ansicht: knopf.getAttribute("data-ansicht"
  */
 assert_contains($js, 'document.documentElement.style.overflow = welche === "karte" ? "" : "hidden";',
     'Skript: die aeussere Bildlaufleiste wird gesperrt, solange ein Geraet steht');
+
+/*
+ * Groesse/X/Y/Abstand/Ebene tippen zeigt sich sofort - live am Objekt
+ * ueberprueft: icon_size_konum getippt, .d-ikon-konum aendert width, ohne
+ * zu speichern. "Yaptigim degisiklik olmuyor ya da aninda olmuyor."
+ */
+assert_contains($js, 'var stilAusFeldern = function (nameFuer)', 'Skript: eine Rechnung fuer alle drei Sorten Zeichen');
+assert_contains($js, '/^icon_(?:size|x|y|gap|z)_(.+)$/', 'Skript: hoert auf die Katalogzeichen');
+assert_contains($js, '/^sec_deko_(\\d+)_(\\d+)_(?:size|x|y|gap|z)$/', 'Skript: und auf den Schmuck eines Abschnitts');
+assert_contains($js, '/^cd_(.+)_(\\d+)_(?:size|x|y|gap|z)$/', 'Skript: und auf die freien Zeichen am Countdown');

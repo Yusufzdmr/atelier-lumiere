@@ -1905,6 +1905,89 @@
         window.setTimeout(haengen, 60);
       });
     });
+
+    /*
+     * Grösse/X/Y/Abstand/Ebene tippen zeigt sich sofort.
+     *
+     * "Suesleme resim/videosunun boelumue kaplasin dedim, yaptigim
+     * degisiklik olmuyor ya da aninda olmuyor." Das Ziehen oben bewegt
+     * schon live - wer die Zahl aber direkt eintippt (fuer Groesse und
+     * Ebene gibt es ohnehin keinen Ziehgriff), sah nichts, bis gespeichert
+     * und neu geladen war.
+     *
+     * Dieselbe Rechnung wie DesignSections::cdEines() auf dem Server -
+     * zwei Quellen derselben Wahrheit waeren sonst irgendwann
+     * auseinandergelaufen.
+     */
+    var leseZahl = function (name) {
+      var feld = form.querySelector('[name="' + name + '"]');
+      return feld ? (parseInt(feld.value, 10) || 0) : 0;
+    };
+
+    var stilAusFeldern = function (nameFuer) {
+      var size = leseZahl(nameFuer("size")) || 100;
+      var x = leseZahl(nameFuer("x"));
+      var y = leseZahl(nameFuer("y"));
+      var gap = leseZahl(nameFuer("gap"));
+      var z = leseZahl(nameFuer("z"));
+
+      return {
+        width: (size / 100) + "em",
+        transform: (x !== 0 || y !== 0) ? "translate(" + (x / 100) + "em," + (y / 100) + "em)" : "",
+        marginInline: gap !== 0 ? (gap / 100) + "em" : "",
+        position: z !== 0 ? "relative" : "",
+        zIndex: z !== 0 ? String(z) : ""
+      };
+    };
+
+    /*
+     * Jede Eigenschaft einzeln setzen, nicht ueber ein einziges Attribut:
+     * ein Knoten koennte von woanders eine eigene Reihenfolge im "style"
+     * mitbringen, und Eigenschaft-fuer-Eigenschaft aendert nur, was hier
+     * gemeint ist.
+     */
+    var wendeStilAn = function (auswahl, stil) {
+      alleWurzeln().forEach(function (wurzel) {
+        wurzel.querySelectorAll(auswahl).forEach(function (knoten) {
+          knoten.style.width = stil.width;
+          knoten.style.transform = stil.transform;
+          knoten.style.marginInline = stil.marginInline;
+          knoten.style.position = stil.position;
+          knoten.style.zIndex = stil.zIndex;
+        });
+      });
+    };
+
+    form.addEventListener("input", function (ereignis) {
+      var name = ereignis.target.getAttribute("name") || "";
+      var teile;
+
+      teile = name.match(/^icon_(?:size|x|y|gap|z)_(.+)$/);
+      if (teile) {
+        var ken = teile[1];
+        wendeStilAn(".d-ikon-" + ken, stilAusFeldern(function (art) { return "icon_" + art + "_" + ken; }));
+        return;
+      }
+
+      teile = name.match(/^sec_deko_(\d+)_(\d+)_(?:size|x|y|gap|z)$/);
+      if (teile) {
+        var si = teile[1], sd = teile[2];
+        wendeStilAn(
+          '[data-secdeko="' + si + ":" + sd + '"]',
+          stilAusFeldern(function (art) { return "sec_deko_" + si + "_" + sd + "_" + art; })
+        );
+        return;
+      }
+
+      teile = name.match(/^cd_(.+)_(\d+)_(?:size|x|y|gap|z)$/);
+      if (teile) {
+        var ge = teile[1], gi = teile[2];
+        wendeStilAn(
+          '[data-cd="' + ge + ":" + gi + '"]',
+          stilAusFeldern(function (art) { return "cd_" + ge + "_" + gi + "_" + art; })
+        );
+      }
+    });
   })();
 
 
