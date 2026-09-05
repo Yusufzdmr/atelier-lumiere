@@ -266,3 +266,11 @@ assert_contains($js, 'schreibeStand({ panel: zeile.getAttribute("data-sec-zeile"
     'Skript: welche Tafel offen war, wird gemerkt');
 assert_contains($js, 'schreibeStand({ ansicht: knopf.getAttribute("data-ansicht") });',
     'Skript: und welches Geraet gewaehlt war');
+
+/*
+ * Nur eine Bildlaufleiste, waehrend ein Geraet steht - "ayri kaydirma
+ * teknolojisi var onun bir ustunde ayri". Die aeussere Seite wird gesperrt,
+ * solange der Rahmen (mit seiner eigenen) zu sehen ist.
+ */
+assert_contains($js, 'document.documentElement.style.overflow = welche === "karte" ? "" : "hidden";',
+    'Skript: die aeussere Bildlaufleiste wird gesperrt, solange ein Geraet steht');

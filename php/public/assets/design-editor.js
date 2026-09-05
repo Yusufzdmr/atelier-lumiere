@@ -2559,6 +2559,21 @@
 
         var welche = knopf.getAttribute("data-ansicht");
 
+        /*
+         * Zwei Kaesten, zwei Kaydirmas - "ayri kaydirma teknolojisi var
+         * onun bir ustunde ayri". Der Rahmen zeigt eine ganze Seite und
+         * traegt ihre eigene Bildlaufleiste; steht die AEUSSERE Seite
+         * daneben auch noch hoeher als das Fenster, scrollt das Mausrad je
+         * nach Zeigerposition mal die eine, mal die andere - zwei
+         * Bildlaeufe uebereinander, wo einer reichen sollte.
+         *
+         * Nur die AEUSSERE wird gesperrt, und nur solange ein Geraet
+         * steht: links und rechts scrollen ohnehin fuer sich (eigene
+         * Kaesten), verloren geht also nichts - nur das Wandern der
+         * Seite selbst, waehrend man im Rahmen liest.
+         */
+        document.documentElement.style.overflow = welche === "karte" ? "" : "hidden";
+
         if (welche === "karte") {
           karte.hidden = false;
           rahmen.hidden = true;
