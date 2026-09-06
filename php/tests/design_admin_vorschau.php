@@ -271,9 +271,20 @@ assert_contains($js, 'schreibeStand({ ansicht: knopf.getAttribute("data-ansicht"
  * Nur eine Bildlaufleiste, waehrend ein Geraet steht - "ayri kaydirma
  * teknolojisi var onun bir ustunde ayri". Die aeussere Seite wird gesperrt,
  * solange der Rahmen (mit seiner eigenen) zu sehen ist.
+ *
+ * Aber nur ab derselben Breite, ab der es ueberhaupt zwei eigene Kaesten
+ * gibt (design-edit.php: @media (min-width:1120px)). Darunter stehen die
+ * Spalten untereinander, und die AEUSSERE Seite ist die einzige
+ * Bildlaufleiste, die es gibt - sie zu sperren nahm dort jeden Weg zum
+ * Rest der Seite, und "Telefon" merkt sich der Stand ueber ein Neuladen
+ * hinweg: nach dem Speichern kam man auf einem Telefon vor einer Seite
+ * an, die sich nirgends mehr ruehrte, ohne selbst etwas angeklickt zu
+ * haben - "sayfayi kaydiramiyoruz".
  */
-assert_contains($js, 'document.documentElement.style.overflow = welche === "karte" ? "" : "hidden";',
-    'Skript: die aeussere Bildlaufleiste wird gesperrt, solange ein Geraet steht');
+assert_contains($js, 'window.matchMedia("(min-width:1120px)").matches',
+    'Skript: die Sperre fragt erst, ob es ueberhaupt zwei eigene Kaesten gibt');
+assert_contains($js, 'document.documentElement.style.overflow = (welche === "karte" || !zweiKaesten) ? "" : "hidden";',
+    'Skript: die aeussere Bildlaufleiste wird nur dort gesperrt, solange ein Geraet steht');
 
 /*
  * Groesse/X/Y/Abstand/Ebene tippen zeigt sich sofort - live am Objekt

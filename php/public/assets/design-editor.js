@@ -2654,8 +2654,20 @@
          * steht: links und rechts scrollen ohnehin fuer sich (eigene
          * Kaesten), verloren geht also nichts - nur das Wandern der
          * Seite selbst, waehrend man im Rahmen liest.
+         *
+         * Und nur ab derselben Breite, ab der es ueberhaupt zwei eigene
+         * Kaesten gibt (design-edit.php: @media (min-width:1120px)).
+         * Darunter stehen die Spalten untereinander, nichts scrollt in
+         * sich selbst - die AEUSSERE Seite ist dort die einzige
+         * Bildlaufleiste, die es gibt. Sie zu sperren nahm dort jeden
+         * Weg zum Rest der Seite, und "Telefon" merkt sich der Stand
+         * ueber ein Neuladen hinweg (sessionStorage): nach dem
+         * Speichern kam man auf einem Telefon vor einer Seite an, die
+         * sich nirgends mehr ruehrte, ohne selbst etwas angeklickt zu
+         * haben - "sayfayi kaydiramiyoruz".
          */
-        document.documentElement.style.overflow = welche === "karte" ? "" : "hidden";
+        var zweiKaesten = window.matchMedia && window.matchMedia("(min-width:1120px)").matches;
+        document.documentElement.style.overflow = (welche === "karte" || !zweiKaesten) ? "" : "hidden";
 
         if (welche === "karte") {
           karte.hidden = false;
