@@ -119,6 +119,18 @@ foreach ($katalog as $art => $eintrag) {
           </select></label>
       </div>
 
+      <?php if ($neu) : ?>
+        <?php /*
+           Ein eigener Knopf hier, statt auf das Speichern ganz unten zu
+           verweisen: derselbe Knopf (b-speichern, dieselbe Klasse wie
+           "Kaydet") in EINEM Formular - kein zweiter Weg, kein AJAX, nur
+           naeher an der Stelle, an der man gerade steht. Kimlik und Tür
+           reichen zum Anlegen; Titel, Farbe, Blatt und alles andere lassen
+           sich danach an der jetzt echten Zeile in der Liste nachtragen.
+        */ ?>
+        <button class="b-speichern"><?= $tr ? '+ Ekle' : '+ Anlegen' ?></button>
+      <?php endif; ?>
+
       <?php /*
          Die Gestalt steht IMMER als Auswahl da, auch wenn die Art nur eine
          kennt oder noch keine gewaehlt ist. Sonst muesste das Skript ein Feld
