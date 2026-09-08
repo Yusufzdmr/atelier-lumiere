@@ -30,6 +30,7 @@
  * @var string $initialen
  * @var list<array{kind:string,element:string,detail:string}> $warnings
  * @var string $abschnitte
+ * @var string $googleFontsHref  leer, wenn das Dokument keine Google-Schrift benutzt
  */
 
 use function Atelier\e;
@@ -37,6 +38,9 @@ use Atelier\Design;
 use Atelier\DesignSections;
 use Atelier\View;
 ?>
+<?php if ($googleFontsHref !== '') : ?>
+  <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+<?php endif; ?>
 <?= View::partial('partials/design-stage', [
     'design'    => $design,
     'scope'     => $scope,

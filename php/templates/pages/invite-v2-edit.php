@@ -304,6 +304,17 @@ if ($darfDesign) {
         <div>
           <h3 class="wz-heading"><?= e($locale === 'de' ? 'Farben & Schrift' : 'Colors & type') ?></h3>
 
+          <?php /*
+             Alle Google-Schriften, nicht nur die gewaehlten - aus demselben
+             Grund wie im Assistenten (invite-v2-wizard.php): die Karte rechts
+             wechselt per Skript zwischen den Optionen, ohne die Seite neu zu
+             laden, also muss jede Schrift schon geladen sein.
+          */ ?>
+          <?php $googleFontsHref = Design::googleFontsHref(array_keys(Design::FONT_CHOICES)); ?>
+          <?php if ($googleFontsHref !== '') : ?>
+            <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+          <?php endif; ?>
+
           <div class="grid gap-6 sm:grid-cols-2">
             <?php foreach ($choices['palette'] as $marke => $eintrag) : ?>
               <?php
@@ -315,7 +326,8 @@ if ($darfDesign) {
                   <?= e($eintrag['label'][$locale] ?? $eintrag['label']['de'] ?? $marke) ?>
                 </label>
                 <input id="p-<?= e((string) $marke) ?>" type="color" name="palette_<?= e((string) $marke) ?>"
-                       value="<?= e($wert) ?>" class="<?= $field ?> h-12">
+                       value="<?= e($wert) ?>" class="<?= $field ?> h-12"
+                       data-live-var="--d-<?= e(Design::key((string) $marke)) ?>">
               </div>
             <?php endforeach; ?>
           </div>
@@ -328,8 +340,9 @@ if ($darfDesign) {
               ?>
               <div>
                 <label class="<?= $label ?>" for="s-<?= e((string) $marke) ?>"><?= e((string) $marke) ?></label>
-                <select id="s-<?= e((string) $marke) ?>" name="fonts_<?= e((string) $marke) ?>" class="<?= $field ?>">
-                  <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                <select id="s-<?= e((string) $marke) ?>" name="fonts_<?= e((string) $marke) ?>" class="<?= $field ?>"
+                        data-live-var="--df-<?= e(Design::key((string) $marke)) ?>" data-live-quote="1">
+                  <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
                     <option value="<?= e($familie) ?>" <?= $wert === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                   <?php endforeach; ?>
                 </select>
@@ -359,14 +372,17 @@ if ($darfDesign) {
                   <div class="<?= $label ?>"><?= e($ebeneName((string) $id)) ?></div>
 
                   <?php if ($rechte['color']) : ?>
-                    <input type="color" name="layer_color_<?= e((string) $id) ?>" value="<?= e($farbeVon((string) $id)) ?>" class="mt-3 h-10 w-full border border-sand-deep bg-cream">
+                    <input type="color" name="layer_color_<?= e((string) $id) ?>" value="<?= e($farbeVon((string) $id)) ?>" class="mt-3 h-10 w-full border border-sand-deep bg-cream"
+                           data-live-el="<?= e((string) $id) ?>"
+                           data-live-kind="<?= ((string) ($ebene((string) $id)['type'] ?? '')) === 'shape' ? 'background' : 'color' ?>">
                   <?php endif; ?>
 
                   <?php if ($rechte['font']) : ?>
                     <?php $fontVorher = is_string($eigen['font'] ?? null) ? $eigen['font'] : ''; ?>
-                    <select name="layer_font_<?= e((string) $id) ?>" class="<?= $field ?>">
+                    <select name="layer_font_<?= e((string) $id) ?>" class="<?= $field ?>"
+                            data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                       <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
-                      <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                      <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
                         <option value="<?= e($familie) ?>" <?= $fontVorher === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                       <?php endforeach; ?>
                     </select>
@@ -548,7 +564,14 @@ if ($darfDesign) {
        endet nach der Schritt-Umschaltung mit return, wenn es keinen
        [data-preview]-Knoten findet.
     */ ?>
-    <div class="<?= e($scope) ?> wz-card mx-auto w-full max-w-xs"
+    <?php /*
+       data-live-card und nicht data-preview: dieser Name loest invite-v2.js'
+       paint()/preview() nicht aus (siehe Kommentar oben, "Absichtlich OHNE
+       data-preview") - das Skript unten (data-live-var/-el) haengt nur an
+       Farbe und Schrift, ruehrt Text- oder Datumsfelder nicht an und faellt
+       darum nicht in dieselbe Falle.
+    */ ?>
+    <div class="<?= e($scope) ?> wz-card mx-auto w-full max-w-xs" data-live-card
          style="position:relative;container-type:inline-size;"><?= $karte ?></div>
 
     <?php /*
@@ -611,6 +634,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var form = document.querySelector('[data-wizard]');
   if (!form) return;
+
+  /*
+   * Farbe und Schrift live, ohne paint()/preview() zu wecken.
+   *
+   * Dasselbe Verfahren wie im Assistenten (invite-v2-wizard.php,
+   * "Die Karte folgt auch dem Design-Schritt"), aber eigens hier
+   * geschrieben statt von dort aufgerufen: es haengt an [data-live-card],
+   * nicht an [data-preview], und ruehrt nur CSS-Werte an (--d-<marke>,
+   * --df-<marke>, Farbe/Schrift einzelner Ebenen) - nie einen Textknoten.
+   * Genau das unterscheidet es von paint(), das Datum und Ort neu
+   * formatieren wuerde und dabei die serverseitig korrekte Anzeige
+   * ueberschriebe (siehe der lange Kommentar bei der Karte weiter unten).
+   */
+  var liveKarte = document.querySelector('[data-live-card]');
+  if (liveKarte) {
+    document.querySelectorAll('[data-live-var]').forEach(function (feld) {
+      var marke = feld.getAttribute('data-live-var');
+      var zitat = feld.hasAttribute('data-live-quote');
+      feld.addEventListener('input', function () {
+        liveKarte.style.setProperty(marke, zitat ? '"' + feld.value + '"' : feld.value);
+      });
+      feld.addEventListener('change', function () {
+        liveKarte.style.setProperty(marke, zitat ? '"' + feld.value + '"' : feld.value);
+      });
+    });
+
+    document.querySelectorAll('[data-live-el]').forEach(function (feld) {
+      var ziel = liveKarte.querySelector('.d-el-' + feld.getAttribute('data-live-el'));
+      if (!ziel) return;
+      var art = feld.getAttribute('data-live-kind');
+      var setz = function () {
+        if (art === 'color') { ziel.style.color = feld.value; return; }
+        if (art === 'background') { ziel.style.background = feld.value; return; }
+        if (art === 'font') { ziel.style.fontFamily = feld.value ? '"' + feld.value + '"' : ''; return; }
+      };
+      feld.addEventListener('input', setz);
+      feld.addEventListener('change', setz);
+    });
+  }
 
   /*
    * Das Bildfeld: Platte, Knopf, Dateiname - dasselbe wie im Assistenten,

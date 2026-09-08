@@ -131,9 +131,13 @@ final class Http
             'script-src ' . implode(' ', $scripts),
             // Die Themen bringen ihre Farben als Stilblock mit; die gehen
             // vorher durch Themes::safeCss().
-            "style-src 'self' 'unsafe-inline'",
+            //
+            // Google Fonts kam am 08.09.2026 dazu (Design::FONT_CHOICES):
+            // fonts.googleapis.com liefert nur das CSS, fonts.gstatic.com
+            // die Dateien selbst - zwei Hosts, weil Google sie trennt.
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: https:",
-            "font-src 'self'",
+            "font-src 'self' https://fonts.gstatic.com",
             'connect-src ' . implode(' ', $connects),
             'frame-src ' . implode(' ', $frames),
             "media-src 'self' https:",

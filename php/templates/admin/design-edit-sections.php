@@ -55,12 +55,18 @@ use function Atelier\e;
 <?= $zu ?>
 
 <?= $auf($tr ? '3 · Yazı tipleri' : '3 · Schriften') ?>
+  <?php /* Alle Google-Schriften, damit die lebende Vorschau (design-editor.js,
+           data-schriftfeld) jede Option sofort zeigen kann. */ ?>
+  <?php $googleFontsHref = Design::googleFontsHref(array_keys(Design::FONT_CHOICES)); ?>
+  <?php if ($googleFontsHref !== '') : ?>
+    <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+  <?php endif; ?>
   <?php foreach ($design['fonts'] as $marke => $eintrag) : ?>
     <div class="space-y-3 border-b border-sand-deep pb-4">
       <div class="grid gap-4 sm:grid-cols-5">
         <label class="<?= $label ?>"><?= e($marke) ?>
           <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>">
-            <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+            <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
               <option value="<?= e($familie) ?>" <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
             <?php endforeach; ?>
           </select></label>

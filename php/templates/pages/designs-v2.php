@@ -14,6 +14,7 @@
  * @var list<string> $kategorien
  * @var string $filter
  * @var string $locale
+ * @var string $googleFontsHref  leer, wenn keine gezeigte Vorlage eine Google-Schrift benutzt
  */
 
 use Atelier\Design;
@@ -23,6 +24,9 @@ use function Atelier\e;
 $p  = static fn (string $to): string => I18n::path($to, $locale);
 $de = $locale === 'de';
 ?>
+<?php if ($googleFontsHref !== '') : ?>
+  <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+<?php endif; ?>
 <style><?= $styles ?></style>
 
 <section class="mx-auto max-w-7xl px-6 pb-24 pt-32">

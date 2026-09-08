@@ -1372,6 +1372,12 @@ final class InviteV2Controller
             // nichts mit den Maengeln einer Vorlage zu tun. Waere der Wert gar
             // nicht gesetzt, stuende dort eine leere Box: null !== [] ist wahr.
             'warnings' => [],
+            // Nur was diese eine Einladung tatsaechlich benutzt, nicht die
+            // ganze Liste aus Design::FONT_CHOICES wie im Assistenten/Editor
+            // (dort muss jede Option sofort umschaltbar sein, hier steht das
+            // Dokument schon fest) - ein Gast laedt also hoechstens die
+            // Google-Schriften, die er auch sieht.
+            'googleFontsHref' => Design::googleFontsHref(Design::fontsInUse($doc)),
             'seite'  => Design::html($doc, $values, $locale, 'page'),
             'kuvert' => Design::html($doc, $values, $locale, 'envelope'),
             'karte'  => Design::html($doc, $values, $locale, 'card'),

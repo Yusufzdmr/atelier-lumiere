@@ -383,6 +383,19 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
         <?php endif; ?>
 
         <?php if ($key === 'design') : ?>
+          <?php /*
+             Alle Google-Schriften der Liste, nicht nur die gewaehlten: die
+             Karte rechts wechselt per JS zwischen den Optionen
+             (data-live-var/-el, weiter unten), ohne die Seite neu zu laden -
+             also muss jede Schrift schon da sein, bevor jemand sie waehlt.
+             Auf der echten Einladung (invite-v2-show.php) laedt stattdessen
+             nur, was das fertige Dokument tatsaechlich benutzt.
+          */ ?>
+          <?php $googleFontsHref = Design::googleFontsHref(array_keys(Design::FONT_CHOICES)); ?>
+          <?php if ($googleFontsHref !== '') : ?>
+            <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+          <?php endif; ?>
+
           <?php foreach ($choices['palette'] as $marke => $eintrag) : ?>
             <div>
               <label class="<?= $label ?>" for="p-<?= e($marke) ?>">
@@ -399,7 +412,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
               <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>"
                       data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
-                <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
                   <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
                   <option value="<?= e($familie) ?>" <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                 <?php endforeach; ?>
@@ -422,7 +435,7 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>"
                         data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
-                  <?php foreach (['Cormorant Garamond', 'Jost', 'Great Vibes'] as $familie) : ?>
+                  <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
                     <option value="<?= e($familie) ?>" <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                   <?php endforeach; ?>
                 </select>

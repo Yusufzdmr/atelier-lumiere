@@ -1124,6 +1124,83 @@ final class Design
     }
 
     /**
+     * Schriften, die im Assistenten, im Bearbeiten-Formular und im
+     * Themen-Editor zur Wahl stehen - eine Liste, nicht vier (vorher standen
+     * dieselben drei Namen einzeln in design-edit-sections.php,
+     * invite-v2-edit.php (zweimal) und invite-v2-wizard.php (zweimal)).
+     *
+     * Die ersten drei liegen selbst gehostet (assets/fonts.css) - ohne
+     * Verbindung zu Google bei jedem Aufruf (DURUM.md: "Fazlası her
+     * açılışta Google'a bağlanmak olurdu"). Alles danach kommt von Google
+     * Fonts - eine bewusste Umkehr dieser Entscheidung, auf Wunsch
+     * getroffen am 08.09.2026. Was tatsaechlich geladen wird, entscheidet
+     * googleFontsHref(): nur die Marken, die ein Dokument auch benutzt,
+     * nicht die ganze Liste - siehe fontsInUse().
+     *
+     * @var array<string,array{source:string,weights?:string}>
+     */
+    public const FONT_CHOICES = [
+        'Cormorant Garamond' => ['source' => 'local'],
+        'Jost'                => ['source' => 'local'],
+        'Great Vibes'         => ['source' => 'local'],
+        'Playfair Display'    => ['source' => 'google', 'weights' => '400;500;600;700'],
+        'EB Garamond'         => ['source' => 'google', 'weights' => '400;500;600'],
+        'Marcellus'           => ['source' => 'google', 'weights' => '400'],
+        'Montserrat'          => ['source' => 'google', 'weights' => '400;500;600;700'],
+        'Josefin Sans'        => ['source' => 'google', 'weights' => '400;500;600'],
+        'Parisienne'          => ['source' => 'google', 'weights' => '400'],
+    ];
+
+    /**
+     * Die Adresse fuer Google Fonts CSS2, nur mit den Familien, die auch
+     * gebraucht werden - leer, wenn keine dabei ist (dann wird gar kein
+     * <link> gedruckt).
+     *
+     * @param list<string> $families
+     */
+    public static function googleFontsHref(array $families): string
+    {
+        $teile = [];
+        foreach (array_unique($families) as $familie) {
+            $eintrag = self::FONT_CHOICES[$familie] ?? null;
+            if ($eintrag === null || $eintrag['source'] !== 'google') {
+                continue;
+            }
+            $teile[] = 'family=' . rawurlencode($familie) . ':wght@' . $eintrag['weights'];
+        }
+
+        if ($teile === []) {
+            return '';
+        }
+
+        return 'https://fonts.googleapis.com/css2?' . implode('&', $teile) . '&display=swap';
+    }
+
+    /**
+     * Welche Schriftfamilien ein fertiges Dokument tatsaechlich benutzt.
+     *
+     * Jede Marke (Rolle wie "display" oder eine vom Kunden erzeugte wie
+     * "kunde-name-1") traegt ihre Familie in doc.fonts - auch die, die eine
+     * Ebene per layer_font_ selbst gewaehlt hat (DesignWizard::personalize
+     * legt dafuer eine eigene Marke an). Ein Scan von doc.fonts reicht also,
+     * ohne die Ebenenliste ein zweites Mal zu lesen.
+     *
+     * @param array<string,mixed> $doc
+     * @return list<string>
+     */
+    public static function fontsInUse(array $doc): array
+    {
+        $out = [];
+        foreach ((array) ($doc['fonts'] ?? []) as $eintrag) {
+            $familie = (string) ($eintrag['family'] ?? '');
+            if ($familie !== '') {
+                $out[] = $familie;
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
+    /**
      * Die Elemente eines Designs als Markup.
      *
      * @param array<string,mixed> $doc

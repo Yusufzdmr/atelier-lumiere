@@ -44,7 +44,11 @@ $tempo = (int) $design['animation']['speed'];
 $introMs = (int) round(((float) ($design['intro']['seconds'] ?? 0)) * 1000);
 // Die ruhige Dauerbewegung des Kuverts - dieselbe Klasse wie im Original.
 $idle = (string) $design['animation']['idle'];
+$googleFontsHref = Design::googleFontsHref(Design::fontsInUse($design));
 ?>
+<?php if ($googleFontsHref !== '') : ?>
+  <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+<?php endif; ?>
 <?= View::partial('partials/design-stage', [
     'design'    => $design,
     'scope'     => $scope,

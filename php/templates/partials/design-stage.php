@@ -386,9 +386,18 @@ $mitKuvert = (bool) ($design['intro']['kuvert'] ?? true);
            data-intro-ms="<?= $introMs ?>"
            style="background: var(--d-bg);">
 
+        <?php /*
+           Gleiche Breite und gleiches Seitenverhaeltnis wie die Karte
+           (max-w-2xl, $ratio statt fest 8/5 max-w-sm) - auf Kundenwunsch
+           ("ilk sayfa diger sayfalara bakarak tam yaprak olsun"): die erste
+           Seite soll wie die folgenden ein volles Blatt sein, nicht ein
+           eigens kleiner gehaltenes Kuvert. Die Klappe (.t-flap) bleibt ein
+           Dreieck ueber 46% der Hoehe - bei einem hochformatigen $ratio faellt
+           sie entsprechend steiler aus als bei 8/5.
+        */ ?>
         <button type="button" data-envelope-open
-                class="t-envelope relative w-full max-w-sm border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
-                style="aspect-ratio: 8 / 5; background: var(--d-envelope);
+                class="t-envelope relative w-full max-w-2xl border shadow-[0_30px_60px_-25px_rgba(0,0,0,.45)]"
+                style="aspect-ratio: <?= e($ratio) ?>; background: var(--d-envelope);
                        border-color: var(--d-envelopeedge);"
                 aria-label="<?= $locale === 'de' ? 'Einladung öffnen' : 'Open the invitation' ?>">
 

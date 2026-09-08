@@ -59,8 +59,10 @@ final class DesignController
         }
 
         $styles = '';
+        $schriften = [];
         foreach ($designs as $design) {
             $styles .= Design::css($design, '.d-' . $design['id']);
+            $schriften = array_merge($schriften, Design::fontsInUse($design));
         }
 
         View::page('pages/designs-v2', [
@@ -76,6 +78,9 @@ final class DesignController
             ]),
             'designs' => $designs,
             'styles'  => $styles,
+            // Ueber alle Kacheln hinweg, einmal: jede Google-Schrift, die
+            // irgendeine der gezeigten Vorlagen benutzt.
+            'googleFontsHref' => Design::googleFontsHref($schriften),
             'values'  => Design::bindValues(self::BEISPIEL, $locale),
             'kategorien' => $kategorien,
             'filter'     => $filter,
