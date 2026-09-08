@@ -1080,6 +1080,26 @@ use function Atelier\e;
                      class="<?= $klein ?>"
                      data-schriftgroesse="<?= e((string) $ebene['id']) ?>"
                      data-schriftmarke="<?= e((string) $ebene['style']['font']) ?>"></label>
+
+            <?php /*
+               "her yazının tipini ayrı belirleyebileyim": bis heute war die
+               Schriftmarke einer Textebene nirgends im Panel zu erreichen -
+               sie stand im Dokument (style.font), aber nur die Groesse liess
+               sich hier aendern. Die Liste sind die Marken DIESES Dokuments
+               (display/body/script oder was der Grafiker sonst angelegt hat),
+               nicht Design::FONT_CHOICES - eine Ebene zeigt auf eine Marke,
+               nicht auf einen Familiennamen (siehe Design::css()).
+            */ ?>
+            <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
+              <select name="style_font_<?= e((string) $ebene['id']) ?>" class="<?= $klein ?>"
+                      data-schriftfont="<?= e((string) $ebene['id']) ?>">
+                <option value="" <?= $ebene['style']['font'] === '' ? 'selected' : '' ?>>
+                  <?= $tr ? '— miras —' : '— erben —' ?></option>
+                <?php foreach (array_keys($design['fonts']) as $marke) : ?>
+                  <option value="<?= e($marke) ?>" <?= $ebene['style']['font'] === $marke ? 'selected' : '' ?>>
+                    <?= e($marke) ?> (<?= e((string) $design['fonts'][$marke]['family']) ?>)</option>
+                <?php endforeach; ?>
+              </select></label>
           <?php endif; ?>
 
           <label class="<?= $label ?>"><?= $tr ? 'çapa' : 'Anker' ?>

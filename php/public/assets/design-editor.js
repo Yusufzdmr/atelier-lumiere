@@ -528,6 +528,29 @@
     });
   });
 
+  /*
+   * Die Schriftmarke einer einzelnen Zeile ("her yazının tipini ayrı
+   * belirleyebileyim").
+   *
+   * Dieselbe Regel wie ueberall hier: das Skript schreibt nur, was
+   * Design::css() serverseitig auch schriebe (font-family:var(--df-<marke>)
+   * oder gar keine Regel bei "erben"), als Inline-Stil auf denselben Knoten.
+   * Die Groesse daneben rechnet gegen --dfs-<marke> - deshalb wird bei einem
+   * Markenwechsel auch data-schriftmarke am Groessenfeld nachgezogen, sonst
+   * rechnete ein Tastendruck danach noch mit der alten Marke.
+   */
+  form.querySelectorAll("[data-schriftfont]").forEach(function (feld) {
+    feld.addEventListener("change", function () {
+      var id = feld.getAttribute("data-schriftfont");
+      var marke = feld.value;
+      knotenAlle(id).forEach(function (ziel) {
+        ziel.style.fontFamily = marke ? "var(--df-" + marke + ")" : "";
+      });
+      var groessenfeld = form.querySelector('[data-schriftgroesse="' + id + '"]');
+      if (groessenfeld) groessenfeld.setAttribute("data-schriftmarke", marke);
+    });
+  });
+
   // Fester Text: der Knoten in der Vorschau traegt die Klasse d-el-<id>.
   form.querySelectorAll("[data-textfeld]").forEach(function (feld) {
     feld.addEventListener("input", function () {

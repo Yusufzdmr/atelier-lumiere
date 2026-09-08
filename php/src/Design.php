@@ -2140,6 +2140,14 @@ final class Design
             if (isset($post['style_size_' . $id])) {
                 $doc['layers'][$i]['style']['size'] = (int) $post['style_size_' . $id];
             }
+            // Die Schriftmarke gehoert ebenfalls zum Stil, aus demselben Grund
+            // wie die Groesse direkt darueber - im Formular steht sie bei der
+            // Anordnung, weil man sie dort sucht. Leer heisst "keine eigene
+            // Marke", nicht "loeschen": Design::css() schreibt dann gar keine
+            // font-family-Regel und ueberlaesst es der Kaskade.
+            if (isset($post['style_font_' . $id])) {
+                $doc['layers'][$i]['style']['font'] = (string) $post['style_font_' . $id];
+            }
             // Die Spiegelungen sind Haken und werden wie die Rechte gelesen:
             // da heisst an, weg heisst aus. Das darf hier stehen, weil genau
             // ein Formular diese Funktion aufruft - der Assistent des Paares
