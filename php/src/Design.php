@@ -1149,12 +1149,12 @@ final class Design
         'Cormorant Garamond' => ['source' => 'local', 'stack' => 'serif'],
         'Jost'                => ['source' => 'local', 'stack' => 'sans-serif'],
         'Great Vibes'         => ['source' => 'local', 'stack' => 'cursive'],
-        'Playfair Display'    => ['source' => 'google', 'weights' => '400;500;600;700', 'stack' => 'serif'],
-        'EB Garamond'         => ['source' => 'google', 'weights' => '400;500;600', 'stack' => 'serif'],
-        'Marcellus'           => ['source' => 'google', 'weights' => '400', 'stack' => 'serif'],
-        'Montserrat'          => ['source' => 'google', 'weights' => '400;500;600;700', 'stack' => 'sans-serif'],
-        'Josefin Sans'        => ['source' => 'google', 'weights' => '400;500;600', 'stack' => 'sans-serif'],
-        'Parisienne'          => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
+        'Playfair Display'    => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'EB Garamond'         => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Marcellus'           => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Montserrat'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
+        'Josefin Sans'        => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
+        'Parisienne'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
     ];
 
     /** Vorschau-Stil fuer eine <option>: die Familie selbst als Schrift. */
