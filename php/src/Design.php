@@ -1137,19 +1137,32 @@ final class Design
      * googleFontsHref(): nur die Marken, die ein Dokument auch benutzt,
      * nicht die ganze Liste - siehe fontsInUse().
      *
-     * @var array<string,array{source:string,weights?:string}>
+     * 'stack' ist die Ausweichschrift der GATTUNG (serif/sans-serif/cursive),
+     * nicht des Namens - jede Auswahlliste im Haus schreibt sie als
+     * style="font-family:'<Familie>', <stack>" auf ihre <option>, damit eine
+     * Schrift schon in der Liste so aussieht, wie sie aussieht ("hepsinin
+     * tipi aynı, basmadan görsem").
+     *
+     * @var array<string,array{source:string,weights?:string,stack:string}>
      */
     public const FONT_CHOICES = [
-        'Cormorant Garamond' => ['source' => 'local'],
-        'Jost'                => ['source' => 'local'],
-        'Great Vibes'         => ['source' => 'local'],
-        'Playfair Display'    => ['source' => 'google', 'weights' => '400;500;600;700'],
-        'EB Garamond'         => ['source' => 'google', 'weights' => '400;500;600'],
-        'Marcellus'           => ['source' => 'google', 'weights' => '400'],
-        'Montserrat'          => ['source' => 'google', 'weights' => '400;500;600;700'],
-        'Josefin Sans'        => ['source' => 'google', 'weights' => '400;500;600'],
-        'Parisienne'          => ['source' => 'google', 'weights' => '400'],
+        'Cormorant Garamond' => ['source' => 'local', 'stack' => 'serif'],
+        'Jost'                => ['source' => 'local', 'stack' => 'sans-serif'],
+        'Great Vibes'         => ['source' => 'local', 'stack' => 'cursive'],
+        'Playfair Display'    => ['source' => 'google', 'weights' => '400;500;600;700', 'stack' => 'serif'],
+        'EB Garamond'         => ['source' => 'google', 'weights' => '400;500;600', 'stack' => 'serif'],
+        'Marcellus'           => ['source' => 'google', 'weights' => '400', 'stack' => 'serif'],
+        'Montserrat'          => ['source' => 'google', 'weights' => '400;500;600;700', 'stack' => 'sans-serif'],
+        'Josefin Sans'        => ['source' => 'google', 'weights' => '400;500;600', 'stack' => 'sans-serif'],
+        'Parisienne'          => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
     ];
+
+    /** Vorschau-Stil fuer eine <option>: die Familie selbst als Schrift. */
+    public static function fontOptionStyle(string $familie): string
+    {
+        $stack = self::FONT_CHOICES[$familie]['stack'] ?? 'serif';
+        return "font-family:'" . $familie . "', " . $stack . ";";
+    }
 
     /**
      * Die Adresse fuer Google Fonts CSS2, nur mit den Familien, die auch

@@ -414,7 +414,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                       data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
                 <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
                   <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
-                  <option value="<?= e($familie) ?>" <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                  <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                          <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -436,7 +437,8 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                         data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
                   <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-                    <option value="<?= e($familie) ?>" <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                    <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                            <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
                   <?php endforeach; ?>
                 </select>
               <?php endif; ?>

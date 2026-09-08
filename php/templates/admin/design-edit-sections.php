@@ -95,7 +95,8 @@ use function Atelier\e;
         <label class="<?= $label ?>"><?= e($marke) ?>
           <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>">
             <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-              <option value="<?= e($familie) ?>" <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+              <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                      <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
             <?php endforeach; ?>
           </select></label>
         <?php /*
@@ -137,7 +138,7 @@ use function Atelier\e;
       <label class="<?= $label ?>"><?= $tr ? 'aile' : 'Familie' ?>
         <select name="neue_font_aile" class="<?= $feld ?>">
           <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-            <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+            <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"><?= e($familie) ?></option>
           <?php endforeach; ?>
         </select></label>
     </div>
