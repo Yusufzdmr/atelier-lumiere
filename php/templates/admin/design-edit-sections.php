@@ -33,6 +33,9 @@ use function Atelier\e;
 <?= $zu ?>
 
 <?= $auf($tr ? '2 · Renkler' : '2 · Farben') ?>
+  <?php if ($design['palette'] === []) : ?>
+    <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda henüz renk markası yok.' : 'Diese Vorlage hat noch keine Farbmarke.' ?></p>
+  <?php endif; ?>
   <div class="grid gap-5 sm:grid-cols-2">
     <?php foreach ($design['palette'] as $marke => $eintrag) : ?>
       <?php $istHex = preg_match('/^#[0-9a-fA-F]{6}$/', (string) $eintrag['value']) === 1; ?>
@@ -52,6 +55,28 @@ use function Atelier\e;
       </div>
     <?php endforeach; ?>
   </div>
+
+  <?php /*
+     Eine leere Vorlage ("Leere Vorlage - von vorn anfangen") hatte bis heute
+     KEINEN Weg zu einer ersten Farbmarke: fromPost() las nur Marken, die
+     schon existierten. Derselbe Grundsatz wie bei einer neuen Ebene - eine
+     Kennung genuegt zum Anlegen, Farbwahl und Beschriftung lassen sich danach
+     an der jetzt echten Marke aendern (siehe der Farbwaehler oben).
+  */ ?>
+  <div class="mt-6 border-t border-sand-deep pt-5">
+    <div class="<?= $label ?>"><?= $tr ? 'Yeni renk markası' : 'Neue Farbmarke' ?></div>
+    <div class="mt-3 grid gap-4 sm:grid-cols-4">
+      <label class="<?= $label ?>"><?= $tr ? 'kimlik' : 'Kennung' ?>
+        <input name="neue_palette_kimlik" value="" class="<?= $feld ?>" placeholder="<?= $tr ? 'ör. accent2' : 'z. B. accent2' ?>"></label>
+      <label class="<?= $label ?>"><?= $tr ? 'başlangıç değeri' : 'Startwert' ?>
+        <input name="neue_palette_deger" value="" class="<?= $feld ?> font-mono text-[0.8rem]" placeholder="#B08D57"></label>
+      <label class="<?= $label ?>"><?= $tr ? 'etiket DE' : 'Beschriftung DE' ?>
+        <input name="neue_palette_label_de" value="" class="<?= $feld ?>"></label>
+      <label class="<?= $label ?>"><?= $tr ? 'etiket TR' : 'Beschriftung TR' ?>
+        <input name="neue_palette_label_tr" value="" class="<?= $feld ?>"></label>
+    </div>
+    <button class="b-speichern mt-4"><?= $tr ? '+ Ekle' : '+ Anlegen' ?></button>
+  </div>
 <?= $zu ?>
 
 <?= $auf($tr ? '3 · Yazı tipleri' : '3 · Schriften') ?>
@@ -60,6 +85,9 @@ use function Atelier\e;
   <?php $googleFontsHref = Design::googleFontsHref(array_keys(Design::FONT_CHOICES)); ?>
   <?php if ($googleFontsHref !== '') : ?>
     <link rel="stylesheet" href="<?= e($googleFontsHref) ?>">
+  <?php endif; ?>
+  <?php if ($design['fonts'] === []) : ?>
+    <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda henüz yazı markası yok.' : 'Diese Vorlage hat noch keine Schriftmarke.' ?></p>
   <?php endif; ?>
   <?php foreach ($design['fonts'] as $marke => $eintrag) : ?>
     <div class="space-y-3 border-b border-sand-deep pb-4">
@@ -94,6 +122,27 @@ use function Atelier\e;
       </label>
     </div>
   <?php endforeach; ?>
+
+  <?php /*
+     Derselbe Grundsatz wie bei den Farben: "Leere Vorlage" hatte keinen Weg
+     zu einer ersten Schriftmarke, fromPost() las nur, was schon da war.
+     Aile-Liste kommt aus Design::FONT_CHOICES - dieselbe wie im Assistenten,
+     Bearbeiten-Formular und hier oben bei bestehenden Marken.
+  */ ?>
+  <div class="mt-6 border-t border-sand-deep pt-5">
+    <div class="<?= $label ?>"><?= $tr ? 'Yeni yazı markası' : 'Neue Schriftmarke' ?></div>
+    <div class="mt-3 grid gap-4 sm:grid-cols-2">
+      <label class="<?= $label ?>"><?= $tr ? 'kimlik' : 'Kennung' ?>
+        <input name="neue_font_kimlik" value="" class="<?= $feld ?>" placeholder="<?= $tr ? 'ör. subtitle' : 'z. B. subtitle' ?>"></label>
+      <label class="<?= $label ?>"><?= $tr ? 'aile' : 'Familie' ?>
+        <select name="neue_font_aile" class="<?= $feld ?>">
+          <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
+            <option value="<?= e($familie) ?>"><?= e($familie) ?></option>
+          <?php endforeach; ?>
+        </select></label>
+    </div>
+    <button class="b-speichern mt-4"><?= $tr ? '+ Ekle' : '+ Anlegen' ?></button>
+  </div>
 <?= $zu ?>
 
 <?php /*
@@ -412,6 +461,13 @@ use function Atelier\e;
 <?= $zu ?>
 
 <?= $auf($tr ? '4 · Metinler' : '4 · Texte') ?>
+  <?php if ($textEbenen === []) : ?>
+    <p class="text-sm text-muted">
+      <?= $tr
+        ? 'Bu tasarımda henüz yazı katmanı yok. "5 · Görseller" altındaki "Yeni görsel/video katmanı" ile bir tane ekle, buraya öyle gelir.'
+        : 'Diese Vorlage hat noch keine Textebene. Eine entsteht unter "5 · Bilder" bei "Neue Bild- oder Videoebene" - dann steht sie hier.' ?>
+    </p>
+  <?php endif; ?>
   <?php foreach ($textEbenen as $ebene) : ?>
     <div class="grid gap-4 sm:grid-cols-2">
       <label class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?> · DE

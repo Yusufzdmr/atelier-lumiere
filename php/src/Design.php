@@ -1863,6 +1863,50 @@ final class Design
             ));
         }
 
+        /*
+         * Eine neue Farb- oder Schriftmarke.
+         *
+         * Bis heute konnte fromPost() nur Marken AENDERN, die schon im
+         * Dokument standen - eine "Leere Vorlage" (self::complete() ohne
+         * Thema) hat leere palette/fonts-Felder und kam nie an eine erste
+         * Marke heran. Derselbe Grundsatz wie bei einer neuen Ebene: eine
+         * Kennung genuegt zum Anlegen, alles andere aendert man danach an der
+         * jetzt echten Marke - deshalb VOR den beiden Schleifen unten, die
+         * genau das tun.
+         *
+         * self::key() und nicht die rohe Eingabe: derselbe Slug, den jede
+         * andere Marke im Haus traegt (siehe key()-Kommentar). Schon
+         * vorhandene Kennung heisst still nichts tun, nicht ueberschreiben -
+         * wer "accent" eintippt, waehrend es das schon gibt, verliert sonst
+         * die bestehende Marke.
+         */
+        $neueFarbe = self::key($text('neue_palette_kimlik') ?? '');
+        if ($neueFarbe !== '' && !isset($doc['palette'][$neueFarbe])) {
+            $neuerWert = trim((string) ($post['neue_palette_deger'] ?? ''));
+            $doc['palette'][$neueFarbe] = [
+                // Leer heisst nicht "durchsichtig": dasselbe Gold, das der
+                // Farbwaehler oben zeigt, wenn ein Wert (noch) kein Hex ist.
+                'value'    => $neuerWert === '' ? '#B08D57' : self::safeColor($neuerWert),
+                'label'    => [
+                    'de' => ($text('neue_palette_label_de') ?: $neueFarbe),
+                    'tr' => ($text('neue_palette_label_tr') ?: $neueFarbe),
+                ],
+                'customer' => false,
+            ];
+        }
+
+        $neueSchrift = self::key($text('neue_font_kimlik') ?? '');
+        if ($neueSchrift !== '' && !isset($doc['fonts'][$neueSchrift])) {
+            $doc['fonts'][$neueSchrift] = [
+                'family'     => self::safeFont((string) ($post['neue_font_aile'] ?? '')),
+                'size'       => 100,
+                'weight'     => 400,
+                'tracking'   => 0,
+                'lineHeight' => 120,
+                'customer'   => false,
+            ];
+        }
+
         foreach (array_keys($doc['palette']) as $marke) {
             $wert = $text('palette_' . $marke);
             if ($wert !== null && $wert !== '') {
