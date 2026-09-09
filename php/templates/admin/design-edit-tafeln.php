@@ -30,6 +30,7 @@
  * @var list<array<string,mixed>> $sekmeler
  */
 
+use Atelier\Design;
 use Atelier\DesignSections;
 use Atelier\SectionRegistry;
 use Atelier\View;
@@ -160,6 +161,36 @@ foreach ($katalog as $art => $eintrag) {
       </div>
 
       <?php /*
+         Renk ve yazı markası burada, başlığın hemen altında - eskiden bu
+         çift "Blatt"tan (arka plan görseli) hemen önce duruyordu, tüm metin
+         alanlarından sayfalarca uzakta. "yazı ayarları ... her bir text
+         kısmının yanında ... bölümleri ayarlarken orada da olsun" isteğiyle
+         taşındı; sec_color_<i>/sec_font_<i> aynı isimlerle kaldığı için
+         Design::fromPost() için hiçbir şey değişmedi.
+
+         Yazı markası artık serbest metin değil, bu DOKÜMANIN markalarını
+         (display/body/script gibi) listeleyen bir açılır liste - katman
+         düzenleyicisindeki ("4 · Metinler") ile aynı kural: seçenekler
+         kendi aileleriyle görünür (fontOptionStyle), boş bırakmak "gövde"
+         rolünden miras alır (DesignSections::css()).
+      */ ?>
+      <div class="b-gruppe b-zwei">
+        <label class="<?= $label ?>"><?= $tr ? 'renk markası' : 'Farbmarke' ?>
+          <input class="<?= $feld ?>" name="sec_color_<?= $i ?>"
+                 value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="accent"></label>
+        <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
+          <select class="<?= $feld ?>" name="sec_font_<?= $i ?>">
+            <option value="" <?= $abschnitt['style']['font'] === '' ? 'selected' : '' ?>>
+              <?= $tr ? '— miras (gövde) —' : '— erben (Fließtext) —' ?></option>
+            <?php foreach (array_keys($design['fonts']) as $marke) : ?>
+              <option value="<?= e($marke) ?>" <?= $abschnitt['style']['font'] === $marke ? 'selected' : '' ?>
+                      style="<?= e(Design::fontOptionStyle((string) $design['fonts'][$marke]['family'])) ?>">
+                <?= e($marke) ?> (<?= e((string) $design['fonts'][$marke]['family']) ?>)</option>
+            <?php endforeach; ?>
+          </select></label>
+      </div>
+
+      <?php /*
          Was in diesem Abschnitt STEHEN KOENNTE.
 
          Der Titel gehoert der Vorlage, der Text dem Paar - das war die
@@ -228,14 +259,6 @@ foreach ($katalog as $art => $eintrag) {
         <?php endforeach; ?>
       <?php endforeach; ?>
 
-      <div class="b-gruppe b-zwei">
-        <label class="<?= $label ?>"><?= $tr ? 'renk markası' : 'Farbmarke' ?>
-          <input class="<?= $feld ?>" name="sec_color_<?= $i ?>"
-                 value="<?= e((string) $abschnitt['style']['color']) ?>" placeholder="accent"></label>
-        <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
-          <input class="<?= $feld ?>" name="sec_font_<?= $i ?>"
-                 value="<?= e((string) $abschnitt['style']['font']) ?>" placeholder="body"></label>
-      </div>
       <?php /*
          Das eigene Blatt des Abschnitts.
 
