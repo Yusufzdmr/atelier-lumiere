@@ -412,10 +412,14 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
               <label class="<?= $label ?>" for="s-<?= e($marke) ?>"><?= e($marke) ?></label>
               <select id="s-<?= e($marke) ?>" name="fonts_<?= e($marke) ?>" class="<?= $field ?>"
                       data-live-var="--df-<?= e(Design::key($marke)) ?>" data-live-quote="1">
-                <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-                  <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
-                  <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
-                          <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                <?php $fontWahl = $old('fonts_' . $marke) !== '' ? $old('fonts_' . $marke) : (string) $eintrag['family']; ?>
+                <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
+                  <optgroup label="<?= e(Design::fontGroupLabel($stack, $locale)) ?>">
+                    <?php foreach ($familyler as $familie) : ?>
+                      <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                              <?= $fontWahl === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                    <?php endforeach; ?>
+                  </optgroup>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -436,9 +440,13 @@ $inputTypes = ['date' => 'date', 'time' => 'time'];
                 <select name="layer_font_<?= e($id) ?>" class="<?= $field ?>"
                         data-live-el="<?= e((string) $id) ?>" data-live-kind="font">
                   <option value=""><?= e($locale === 'de' ? '— wie im Design —' : '— as the design has it —') ?></option>
-                  <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-                    <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
-                            <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                  <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
+                    <optgroup label="<?= e(Design::fontGroupLabel($stack, $locale)) ?>">
+                      <?php foreach ($familyler as $familie) : ?>
+                        <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                                <?= $old('layer_font_' . $id) === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                      <?php endforeach; ?>
+                    </optgroup>
                   <?php endforeach; ?>
                 </select>
               <?php endif; ?>

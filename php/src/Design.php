@@ -1155,6 +1155,21 @@ final class Design
         'Montserrat'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
         'Josefin Sans'        => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
         'Parisienne'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        // 09.09.2026 dazugekommen ("bir de daha fazla yazı tipi"), vier Buendel
+        // nach Beispielbild ausgewaehlt: duennes Serif, ausladendes und duennes
+        // Skript, modernes Sans. Dieselbe Regel wie oben - Bereich statt fester
+        // Zahlen bei den Gewichten (siehe fontOptionStyle-Kommentar 08.09.2026).
+        'Prata'               => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Italiana'            => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Bodoni Moda'         => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Cinzel'              => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        'Poppins'             => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
+        'Raleway'             => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
+        'Sacramento'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        'Alex Brush'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        'Pinyon Script'       => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        'Tangerine'           => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        'Petit Formal Script' => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
     ];
 
     /** Vorschau-Stil fuer eine <option>: die Familie selbst als Schrift. */
@@ -1162,6 +1177,35 @@ final class Design
     {
         $stack = self::FONT_CHOICES[$familie]['stack'] ?? 'serif';
         return "font-family:'" . $familie . "', " . $stack . ";";
+    }
+
+    /**
+     * FONT_CHOICES nach Gattung sortiert, fuer <optgroup> in jeder Auswahlliste
+     * ("her birini kategori şeklinde düzgünce ayır" - bei zwanzig Namen in
+     * einer flachen Liste findet man seine Schrift nicht mehr). 'stack' ist
+     * dieselbe Gattung, die fontOptionStyle() schon als Ausweichschrift
+     * benutzt - keine zweite Angabe, die aus dem Takt geraten könnte.
+     *
+     * @return array<string,list<string>>
+     */
+    public static function fontGroups(): array
+    {
+        $gruppen = [];
+        foreach (self::FONT_CHOICES as $familie => $eintrag) {
+            $gruppen[$eintrag['stack']][] = $familie;
+        }
+        return $gruppen;
+    }
+
+    /** Beschriftung einer Gattung - dieselben drei Woerter an sechs Stellen. */
+    public static function fontGroupLabel(string $stack, string $sprache): string
+    {
+        $namen = [
+            'serif'       => ['tr' => 'Serif',       'de' => 'Serif',         'en' => 'Serif'],
+            'sans-serif'  => ['tr' => 'Sans-serif',  'de' => 'Sans-serif',    'en' => 'Sans-serif'],
+            'cursive'     => ['tr' => 'El yazısı',   'de' => 'Schreibschrift', 'en' => 'Script'],
+        ];
+        return $namen[$stack][$sprache] ?? $stack;
     }
 
     /**

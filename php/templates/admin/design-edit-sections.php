@@ -94,9 +94,13 @@ use function Atelier\e;
       <div class="grid gap-4 sm:grid-cols-5">
         <label class="<?= $label ?>"><?= e($marke) ?>
           <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>">
-            <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-              <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
-                      <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+            <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
+              <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
+                <?php foreach ($familyler as $familie) : ?>
+                  <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                          <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+                <?php endforeach; ?>
+              </optgroup>
             <?php endforeach; ?>
           </select></label>
         <?php /*
@@ -137,8 +141,12 @@ use function Atelier\e;
         <input name="neue_font_kimlik" value="" class="<?= $feld ?>" placeholder="<?= $tr ? 'ör. subtitle' : 'z. B. subtitle' ?>"></label>
       <label class="<?= $label ?>"><?= $tr ? 'aile' : 'Familie' ?>
         <select name="neue_font_aile" class="<?= $feld ?>">
-          <?php foreach (array_keys(Design::FONT_CHOICES) as $familie) : ?>
-            <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"><?= e($familie) ?></option>
+          <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
+            <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
+              <?php foreach ($familyler as $familie) : ?>
+                <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"><?= e($familie) ?></option>
+              <?php endforeach; ?>
+            </optgroup>
           <?php endforeach; ?>
         </select></label>
     </div>
@@ -469,22 +477,74 @@ use function Atelier\e;
         : 'Diese Vorlage hat noch keine Textebene. Eine entsteht unter "5 · Bilder" bei "Neue Bild- oder Videoebene" - dann steht sie hier.' ?>
     </p>
   <?php endif; ?>
+  <?php
+  /*
+     Yazı markası ve büyüklüğü metnin HEMEN yanında ("yazı ayarları direkt
+     textlerin yanında olsun, her bir text kısmının yanında daha iyi ve
+     kolay olur"): eskiden bu iki alan "5c · Yerleşim ve sıra" altında,
+     metinden sayfalarca uzaktaydı - hangi metnin fontunu değiştirdiğini
+     görmek için aşağı inip kimliği eşlemen gerekiyordu. data-schriftfont
+     ve data-schriftgroesse aynı kalıyor, design-editor.js DOM'daki yerine
+     değil bu iki niteliğe bakıyor - taşımak canlı önizlemeyi bozmuyor.
+
+     Seçenekler burada da kendi yazı tipiyle görünüyor (fontOptionStyle):
+     "dropdownda yazı tipi neyse o şekilde olsun" istendi, ve bu liste
+     markaların AİLESİNE bakıyor - Bölüm 3'teki aile listesinden farklı bir
+     dropdown, aynı kural.
+  */
+  $markaSecenekleri = static function (array $ebene) use ($design, $tr, $feld): string {
+      $html = '<select name="style_font_' . e((string) $ebene['id']) . '" class="' . $feld . '"'
+          . ' data-schriftfont="' . e((string) $ebene['id']) . '">';
+      $html .= '<option value="' . ($ebene['style']['font'] === '' ? '" selected' : '"') . '>'
+          . ($tr ? '— miras —' : '— erben —') . '</option>';
+      foreach (array_keys($design['fonts']) as $marke) {
+          $secili = $ebene['style']['font'] === $marke ? ' selected' : '';
+          $aile = (string) $design['fonts'][$marke]['family'];
+          $html .= '<option value="' . e($marke) . '"' . $secili
+              . ' style="' . e(Design::fontOptionStyle($aile)) . '">'
+              . e($marke) . ' (' . e($aile) . ')</option>';
+      }
+      return $html . '</select>';
+  };
+  ?>
   <?php foreach ($textEbenen as $ebene) : ?>
-    <div class="grid gap-4 sm:grid-cols-2">
-      <label class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?> · DE
-        <input name="text_de_<?= e($ebene['id']) ?>" value="<?= e($ebene['text']['de']) ?>"
-               class="<?= $feld ?>" data-textfeld="<?= e($ebene['id']) ?>"></label>
-      <label class="<?= $label ?>">EN
-        <input name="text_en_<?= e($ebene['id']) ?>" value="<?= e($ebene['text']['en']) ?>" class="<?= $feld ?>"></label>
+    <div class="space-y-3 border-b border-sand-deep pb-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="<?= $label ?>"><?= e($ebene['label'] ?: $ebene['id']) ?> · DE
+          <input name="text_de_<?= e($ebene['id']) ?>" value="<?= e($ebene['text']['de']) ?>"
+                 class="<?= $feld ?>" data-textfeld="<?= e($ebene['id']) ?>"></label>
+        <label class="<?= $label ?>">EN
+          <input name="text_en_<?= e($ebene['id']) ?>" value="<?= e($ebene['text']['en']) ?>" class="<?= $feld ?>"></label>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
+          <?= $markaSecenekleri($ebene) ?></label>
+        <label class="<?= $label ?>"><?= $tr ? 'yazı büyüklüğü' : 'Schriftgröße' ?>
+          <input type="number" name="style_size_<?= e((string) $ebene['id']) ?>"
+                 value="<?= (int) $ebene['style']['size'] ?>" min="1" max="500"
+                 class="<?= $feld ?>"
+                 data-schriftgroesse="<?= e((string) $ebene['id']) ?>"
+                 data-schriftmarke="<?= e((string) $ebene['style']['font']) ?>"></label>
+      </div>
     </div>
   <?php endforeach; ?>
   <?php if ($bindEbenen !== []) : ?>
-    <p class="<?= $label ?>"><?= $tr ? 'Çiftin verisinden gelenler (düzenlenemez):' : 'Kommt aus den Daten des Paares (nicht editierbar):' ?></p>
-    <ul class="space-y-1 text-sm text-muted">
-      <?php foreach ($bindEbenen as $ebene) : ?>
-        <li><?= e($ebene['label'] ?: $ebene['id']) ?> — <code><?= e((string) $ebene['bind']) ?></code></li>
-      <?php endforeach; ?>
-    </ul>
+    <p class="<?= $label ?>"><?= $tr
+      ? 'Çiftin verisinden gelenler (metin düzenlenemez, yazı tipi burada ayarlanır):'
+      : 'Kommt aus den Daten des Paares (Text nicht editierbar, Schrift hier einstellbar):' ?></p>
+    <?php foreach ($bindEbenen as $ebene) : ?>
+      <div class="grid items-end gap-4 border-b border-sand-deep pb-3 sm:grid-cols-3">
+        <p class="text-sm text-ink"><?= e($ebene['label'] ?: $ebene['id']) ?> — <code><?= e((string) $ebene['bind']) ?></code></p>
+        <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
+          <?= $markaSecenekleri($ebene) ?></label>
+        <label class="<?= $label ?>"><?= $tr ? 'yazı büyüklüğü' : 'Schriftgröße' ?>
+          <input type="number" name="style_size_<?= e((string) $ebene['id']) ?>"
+                 value="<?= (int) $ebene['style']['size'] ?>" min="1" max="500"
+                 class="<?= $feld ?>"
+                 data-schriftgroesse="<?= e((string) $ebene['id']) ?>"
+                 data-schriftmarke="<?= e((string) $ebene['style']['font']) ?>"></label>
+      </div>
+    <?php endforeach; ?>
   <?php endif; ?>
 <?= $zu ?>
 
@@ -1065,42 +1125,13 @@ use function Atelier\e;
                      data-kasten="<?= e((string) $ebene['id']) ?>" data-mass="<?= e($mass) ?>"></label>
           <?php endforeach; ?>
 
-          <?php if ($ebene['type'] === 'text') : ?>
-            <?php /*
-              Die Groesse DIESER Zeile - Zehntelprozent der Kartenbreite, wie
-              Design::css() sie schreibt. Bis hierher stand die Zahl im
-              Dokument und wurde gedruckt, war aber nirgends zu erreichen:
-              eine Ebene liess sich verschieben, drehen und faerben, nur nicht
-              groesser machen. Die Marke oben skaliert alles in ihrer Schrift
-              auf einmal, hier steht die einzelne Zeile.
-            */ ?>
-            <label class="<?= $label ?>"><?= $tr ? 'yazı büyüklüğü' : 'Schriftgröße' ?>
-              <input type="number" name="style_size_<?= e((string) $ebene['id']) ?>"
-                     value="<?= (int) $ebene['style']['size'] ?>" min="1" max="500"
-                     class="<?= $klein ?>"
-                     data-schriftgroesse="<?= e((string) $ebene['id']) ?>"
-                     data-schriftmarke="<?= e((string) $ebene['style']['font']) ?>"></label>
-
-            <?php /*
-               "her yazının tipini ayrı belirleyebileyim": bis heute war die
-               Schriftmarke einer Textebene nirgends im Panel zu erreichen -
-               sie stand im Dokument (style.font), aber nur die Groesse liess
-               sich hier aendern. Die Liste sind die Marken DIESES Dokuments
-               (display/body/script oder was der Grafiker sonst angelegt hat),
-               nicht Design::FONT_CHOICES - eine Ebene zeigt auf eine Marke,
-               nicht auf einen Familiennamen (siehe Design::css()).
-            */ ?>
-            <label class="<?= $label ?>"><?= $tr ? 'yazı markası' : 'Schriftmarke' ?>
-              <select name="style_font_<?= e((string) $ebene['id']) ?>" class="<?= $klein ?>"
-                      data-schriftfont="<?= e((string) $ebene['id']) ?>">
-                <option value="" <?= $ebene['style']['font'] === '' ? 'selected' : '' ?>>
-                  <?= $tr ? '— miras —' : '— erben —' ?></option>
-                <?php foreach (array_keys($design['fonts']) as $marke) : ?>
-                  <option value="<?= e($marke) ?>" <?= $ebene['style']['font'] === $marke ? 'selected' : '' ?>>
-                    <?= e($marke) ?> (<?= e((string) $design['fonts'][$marke]['family']) ?>)</option>
-                <?php endforeach; ?>
-              </select></label>
-          <?php endif; ?>
+          <?php /*
+            Yazı büyüklüğü ve yazı markası artık burada değil: "4 · Metinler"
+            altında, metnin hemen yanında (data-schriftgroesse ve
+            data-schriftfont oradaki alanlarda aynı isimlerle duruyor,
+            design-editor.js için hiçbir şey değişmedi). "her bir text
+            kısmının yanında daha iyi ve kolay olur" isteğiyle taşındı.
+          */ ?>
 
           <label class="<?= $label ?>"><?= $tr ? 'çapa' : 'Anker' ?>
             <select name="box_anchor_<?= e((string) $ebene['id']) ?>" class="<?= $klein ?>"
