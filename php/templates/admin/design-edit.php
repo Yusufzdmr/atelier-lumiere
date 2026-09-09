@@ -319,7 +319,7 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
             data-wort-fertig="<?= $tr ? 'kaydedildi' : 'gespeichert' ?>"
             data-wort-veraltet="<?= $tr ? 'başka bir yerde değişti — sayfayı tazele' : 'anderswo geändert – bitte neu laden' ?>"
             data-wort-fehler="<?= $tr ? 'kaydedilemedi — kaydete bas' : 'nicht gespeichert – bitte speichern' ?>"></span>
-      <button class="b-speichern"><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
+      <button class="b-speichern" data-kaydet-ana><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
     </div>
   </div>
 
@@ -612,7 +612,7 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   </div>
 
   <div class="b-fuss">
-    <button class="b-speichern"><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
+    <button class="b-speichern" data-kaydet-ana><?= $tr ? 'Kaydet' : 'Speichern' ?></button>
     <?php /*
        Zurueck und vor.
 

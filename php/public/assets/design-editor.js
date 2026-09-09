@@ -2055,6 +2055,7 @@
     var wartend = null;
     var gesperrt = false;   // veraltet: ab hier nichts mehr schreiben
     var willAbschicken = false;
+    var willKaydetSofort = false;
 
     var wort = function (name) {
       return stand ? (stand.getAttribute("data-wort-" + name) || "") : "";
@@ -2163,6 +2164,14 @@
           return;
         }
 
+        // Auf den Kaydet-Knopf gewartet, waehrend nebenbei schon lief -
+        // jetzt sofort, nicht erst nach RUHE.
+        if (willKaydetSofort) {
+          willKaydetSofort = false;
+          sichere();
+          return;
+        }
+
         if (schmutzig) spaeter();
       });
     };
@@ -2209,14 +2218,50 @@
     });
 
     /*
-     * Der Knopf wartet, wenn gerade nebenbei gespeichert wird: sonst waeren
-     * zwei Anfragen mit derselben Fassungsnummer unterwegs, und die zweite
-     * bekaeme "veraltet" zu sehen, ohne dass jemand etwas falsch gemacht hat.
+     * "Kaydete bastığında sayfayı yenileyip her şeyi başa alıyor": der
+     * Kaydet-Knopf schickte bisher IMMER normal ab - ein Neuladen, das jeden
+     * offenen Kasten schliesst, jede Bildlaufposition und jede Geraeteansicht
+     * vergisst. Dabei speichert das Formular laengst nebenbei (oben) - der
+     * Knopf muss nur denselben Weg nehmen, statt einen zweiten zu gehen.
+     *
+     * Nur DIESER Knopf (data-kaydet-ana, an den zwei echten "Kaydet"-Knoepfen
+     * - siehe design-edit.php): ein "+ Ekle" schickt dasselbe Formular ab,
+     * braucht aber die neue Zeile aus der Antwort des Servers - die kommt nur
+     * ueber ein echtes Neuladen, nebenbei liefert nur JSON. ereignis.submitter
+     * sagt, welcher Knopf es war; ohne ihn (Enter in einem Feld, alter
+     * Browser) bleibt es beim gewohnten Weg.
+     *
+     * Eine gewaehlte Datei ebenso: dieselbe Regel wie beim Dateifeld oben,
+     * formularOhneDateien() liesse sie sonst still unter den Tisch fallen.
      */
+    var hatGewaehlteDatei = function () {
+      var da = false;
+      form.querySelectorAll('input[type="file"]').forEach(function (feld) {
+        if (feld.files && feld.files.length) da = true;
+      });
+      return da;
+    };
+
     form.addEventListener("submit", function (ereignis) {
-      if (!laeuft) return;
+      var knopf = ereignis.submitter;
+
+      if (!knopf || !knopf.hasAttribute("data-kaydet-ana") || hatGewaehlteDatei()) {
+        // "+ Ekle", Datei-Upload oder kein bekannter Absender: der alte,
+        // sichere Weg - warten, falls nebenbei gerade laeuft, sonst normal
+        // abschicken.
+        if (!laeuft) return;
+        ereignis.preventDefault();
+        willAbschicken = true;
+        return;
+      }
+
       ereignis.preventDefault();
-      willAbschicken = true;
+      if (gesperrt) return;
+
+      schmutzig = true;
+      if (laeuft) { willKaydetSofort = true; return; }
+      if (wartend) window.clearTimeout(wartend);
+      sichere();
     });
 
     /*
