@@ -1149,27 +1149,42 @@ final class Design
         'Cormorant Garamond' => ['source' => 'local', 'stack' => 'serif'],
         'Jost'                => ['source' => 'local', 'stack' => 'sans-serif'],
         'Great Vibes'         => ['source' => 'local', 'stack' => 'cursive'],
-        'Playfair Display'    => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'EB Garamond'         => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'Marcellus'           => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
+        // 09.09.2026: "100..900" fuer JEDEN Google-Font war die falsche Lehre
+        // aus dem 08.09.2026-Fund. Google clampt eine Gewichtsspanne NICHT auf
+        // das, was eine Familie wirklich hat - liegt die angefragte Spanne
+        // (oder ein einzelnes Gewicht bei einer statischen Familie) ausserhalb
+        // dessen, was die Familie liefert, meldet ein einzelner Font 400
+        // "Missing font family", und in einer Sammelanfrage (mehrere family=
+        // Parameter, wie hier) faellt genau DIESE Familie still aus der
+        // Antwort - kein Fehler, nur ein Font, den kein Browser je anfragt.
+        // Getroffen hat es hier fast alles ausser Montserrat/Raleway: kein
+        // <option> im Formular log, aber jede Schriftmarke, die auf einen der
+        // anderen zeigte, blieb beim Ausweichfont haengen ("canlı değişmiyor").
+        //
+        // Der Bereich unten ist keine Annahme mehr, sondern aus
+        // https://fonts.google.com/metadata/fonts gelesen: Semikolon-Liste,
+        // wo eine Familie GAR KEINE Gewichtsachse hat (jedes Gewicht ein
+        // eigenes statisches Dateipaar), Bereich nur, wo sie eine echte
+        // "wght"-Achse hat UND der Bereich genau ihrem min/max entspricht.
+        'Playfair Display'    => ['source' => 'google', 'weights' => '400..900', 'stack' => 'serif'],
+        'EB Garamond'         => ['source' => 'google', 'weights' => '400..800', 'stack' => 'serif'],
+        'Marcellus'           => ['source' => 'google', 'weights' => '400', 'stack' => 'serif'],
         'Montserrat'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
-        'Josefin Sans'        => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
-        'Parisienne'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
-        // 09.09.2026 dazugekommen ("bir de daha fazla yazı tipi"), vier Buendel
-        // nach Beispielbild ausgewaehlt: duennes Serif, ausladendes und duennes
-        // Skript, modernes Sans. Dieselbe Regel wie oben - Bereich statt fester
-        // Zahlen bei den Gewichten (siehe fontOptionStyle-Kommentar 08.09.2026).
-        'Prata'               => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'Italiana'            => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'Bodoni Moda'         => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'Cinzel'              => ['source' => 'google', 'weights' => '100..900', 'stack' => 'serif'],
-        'Poppins'             => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
+        'Josefin Sans'        => ['source' => 'google', 'weights' => '100..700', 'stack' => 'sans-serif'],
+        'Parisienne'          => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
+        'Prata'               => ['source' => 'google', 'weights' => '400', 'stack' => 'serif'],
+        'Italiana'            => ['source' => 'google', 'weights' => '400', 'stack' => 'serif'],
+        'Bodoni Moda'         => ['source' => 'google', 'weights' => '400..900', 'stack' => 'serif'],
+        'Cinzel'              => ['source' => 'google', 'weights' => '400..900', 'stack' => 'serif'],
+        // Keine Gewichtsachse (statisch), aber alle neun Gewichte einzeln da -
+        // Semikolonliste statt Bereich, siehe Kommentar oben.
+        'Poppins'             => ['source' => 'google', 'weights' => '100;200;300;400;500;600;700;800;900', 'stack' => 'sans-serif'],
         'Raleway'             => ['source' => 'google', 'weights' => '100..900', 'stack' => 'sans-serif'],
-        'Sacramento'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
-        'Alex Brush'          => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
-        'Pinyon Script'       => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
-        'Tangerine'           => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
-        'Petit Formal Script' => ['source' => 'google', 'weights' => '100..900', 'stack' => 'cursive'],
+        'Sacramento'          => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
+        'Alex Brush'          => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
+        'Pinyon Script'       => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
+        'Tangerine'           => ['source' => 'google', 'weights' => '400;700', 'stack' => 'cursive'],
+        'Petit Formal Script' => ['source' => 'google', 'weights' => '400', 'stack' => 'cursive'],
     ];
 
     /** Vorschau-Stil fuer eine <option>: die Familie selbst als Schrift. */
