@@ -89,6 +89,52 @@ use function Atelier\e;
   <?php if ($design['fonts'] === []) : ?>
     <p class="text-sm text-muted"><?= $tr ? 'Bu tasarımda henüz yazı markası yok.' : 'Diese Vorlage hat noch keine Schriftmarke.' ?></p>
   <?php endif; ?>
+  <?php
+  /*
+     "body script ve display nereyi etkiliyor onları da göster": bir marka
+     adı (display/body/script - grafikerin kendi seçtiği kimlikler, ATELIER
+     iceriginde sabit bir anlamlari yok) burada ailesini degistirdiginde
+     nerenin degisecegini soylemiyordu - onu bulmak icin 3b, 4 ve Boluemler
+     sekmelerini tek tek acip her secili degeri okumak gerekiyordu.
+     markaKullanimi() DOGRUDAN secili oldugu yerleri sayiyor (yazi rolleri,
+     metin katmanlari, bolumler) - "miras" diyen bir yer buraya girmiyor,
+     cunku hangi markaya miras kaldigini hesaplamak CSS'in kendi zincirini
+     (typo rolue -> .d-sec govde kurali -> tarayicinin genel govde yazisi)
+     burada ikinci kez yazmak olurdu, ve o iki yer birbirinden kayarsa yalan
+     soyler. Bos donen bir marka hala kullanilabilir - sadece kimse ona
+     DOGRUDAN isaret etmiyor demektir.
+  */
+  $markaKullanimi = static function (string $marke) use ($design, $tr): array {
+      $liste = [];
+
+      foreach (Design::TYPO as $rolle => $stand) {
+          if ((string) ($design['typo'][$rolle]['font'] ?? '') === $marke) {
+              $liste[] = (string) ($stand['label'][$tr ? 'tr' : 'de'] ?? $rolle)
+                  . ' (' . ($tr ? 'yazı rolü' : 'Textrolle') . ')';
+          }
+      }
+
+      foreach ($design['layers'] as $ebene) {
+          if (!in_array((string) $ebene['type'], ['text', 'button'], true)) {
+              continue;
+          }
+          if ((string) $ebene['style']['font'] === $marke) {
+              $liste[] = (string) ($ebene['label'] !== '' ? $ebene['label'] : $ebene['id'])
+                  . ' (' . ($tr ? 'katman' : 'Ebene') . ')';
+          }
+      }
+
+      foreach ($design['sections'] as $abschnitt) {
+          if ((string) $abschnitt['style']['font'] === $marke) {
+              $ad = (string) ($abschnitt['title']['de'] ?? '');
+              $ad = $ad !== '' ? $ad : (string) $abschnitt['id'];
+              $liste[] = $ad . ' (' . ($tr ? 'bölüm' : 'Abschnitt') . ')';
+          }
+      }
+
+      return $liste;
+  };
+  ?>
   <?php foreach ($design['fonts'] as $marke => $eintrag) : ?>
     <div class="space-y-3 border-b border-sand-deep pb-4">
       <div class="grid gap-4 sm:grid-cols-5">
@@ -121,6 +167,17 @@ use function Atelier\e;
         <label class="<?= $label ?>"><?= $tr ? 'satır yüksekliği' : 'Zeilenhöhe' ?>
           <input name="font_line_<?= e($marke) ?>" type="number" value="<?= (int) $eintrag['lineHeight'] ?>" class="<?= $feld ?>"></label>
       </div>
+      <?php $kullanim = $markaKullanimi((string) $marke); ?>
+      <p class="text-[0.72rem] leading-relaxed text-muted">
+        <span class="uppercase tracking-[0.12em] text-ink"><?= $tr ? 'kullanıldığı yerler' : 'wird benutzt von' ?>:</span>
+        <?php if ($kullanim === []) : ?>
+          <?= $tr
+            ? 'hiçbir yerde doğrudan seçili değil — sadece "— miras —" diyen bir yer üzerinden dolaylı etkili olabilir.'
+            : 'nirgends direkt ausgewählt — wirkt höchstens dort, wo "— erben —" steht.' ?>
+        <?php else : ?>
+          <?= e(implode(' · ', $kullanim)) ?>
+        <?php endif; ?>
+      </p>
       <label class="flex items-center gap-2 text-[0.66rem] text-muted">
         <input type="checkbox" name="font_customer_<?= e($marke) ?>" <?= $eintrag['customer'] ? 'checked' : '' ?>>
         <?= $tr ? 'müşteri değiştirebilir' : 'Kunde darf ändern' ?>
