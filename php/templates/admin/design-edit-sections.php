@@ -137,18 +137,27 @@ use function Atelier\e;
   ?>
   <?php foreach ($design['fonts'] as $marke => $eintrag) : ?>
     <div class="space-y-3 border-b border-sand-deep pb-4">
-      <div class="grid gap-4 sm:grid-cols-5">
-        <label class="<?= $label ?>"><?= e($marke) ?>
-          <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>" data-font-picker>
-            <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
-              <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
-                <?php foreach ($familyler as $familie) : ?>
-                  <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
-                          <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
-                <?php endforeach; ?>
-              </optgroup>
-            <?php endforeach; ?>
-          </select></label>
+      <?php /*
+        Die Familie steht jetzt ALLEIN in ihrer Zeile, nicht mehr als eine
+        von fuenf Spalten: die rechte Randspalte ist fest 372px breit
+        (b-schale in design-edit.php) - fuenf nebeneinander liess "Playfair
+        Display" auf zwei Zeilen umbrechen und "Laufweite"/"Zeilenhoehe" zu
+        "LAUFWEITEZEILENHÖHE" zusammenlaufen. Volle Breite zeigt einen Namen
+        auf einer Zeile und laesst die eigene Liste (design-editor.js,
+        data-font-picker) sich an derselben Breite ausrichten.
+      */ ?>
+      <label class="<?= $label ?>"><?= e($marke) ?>
+        <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>" data-font-picker>
+          <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
+            <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
+              <?php foreach ($familyler as $familie) : ?>
+                <option value="<?= e($familie) ?>" style="<?= e(Design::fontOptionStyle($familie)) ?>"
+                        <?= $eintrag['family'] === $familie ? 'selected' : '' ?>><?= e($familie) ?></option>
+              <?php endforeach; ?>
+            </optgroup>
+          <?php endforeach; ?>
+        </select></label>
+      <div class="grid gap-3 grid-cols-2">
         <?php /*
           Die Groesse der Marke ist ein FAKTOR in Prozent, keine Punktzahl:
           100 laesst alles, wie es ist, 120 macht jede Zeile dieser Schrift

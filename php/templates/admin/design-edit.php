@@ -128,7 +128,15 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   }
 
   .b-liste{list-style:none;margin:0;padding:0;display:grid;gap:0.35rem;}
-  .b-zeile{display:flex;align-items:center;gap:0.35rem;padding:0.45rem 0.5rem;
+  /* gap/padding knapper als vorher: die Randspalte ist fest 248px breit
+     (b-schale oben), und die Reihe aus Auge, Text, vier Knoepfen brauchte
+     mit den alten Massen 254px - passte nur, solange kein senkrechter
+     Rollbalken etwas davon wegnahm. Stand die Liste laenger als das
+     Fenster (praktisch immer), nahm der Balken der Spalte selbst ihre
+     eigenen ~17px, und dieselben 254px liefen dann rechts aus dem Rahmen -
+     "sol panel kaydırmak gerekiyor tam gözüksün" (10.09.2026). Knapper
+     gefasst reicht die Reihe jetzt ohne Kuerzung ODER Querrollbalken. */
+  .b-zeile{display:flex;align-items:center;gap:0.2rem;padding:0.45rem 0.35rem;
            border:1px solid var(--color-sand-deep,#dccebc);}
   .b-zeile[data-aktiv]{border-color:var(--color-ink,#14110f);background:var(--color-sand,#ede4d8);}
   .b-zeile[data-weg]{opacity:0.4;}
@@ -150,7 +158,7 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-greifer small{display:block;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;
                    color:var(--color-muted,#7a6f65);}
   .b-knopf{border:1px solid var(--color-sand-deep,#dccebc);background:transparent;cursor:pointer;
-           padding:0.1rem 0.4rem;font-size:0.7rem;line-height:1.5;color:var(--color-muted,#7a6f65);}
+           padding:0.1rem 0.3rem;font-size:0.7rem;line-height:1.5;color:var(--color-muted,#7a6f65);}
   .b-knopf:hover{color:var(--color-ink,#14110f);}
   .b-auge{display:inline-flex;align-items:center;cursor:pointer;padding:0 0.15rem;}
   .b-auge input{margin:0;}
@@ -292,7 +300,12 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   /* Der Pfeil ist ein Zeichen, kein Bild - so bleibt der Knopf leicht. */
   .b-schriftwahl-knopf::after{content:"▾";position:absolute;right:0.7rem;top:50%;
                                transform:translateY(-50%);font-size:0.7rem;color:var(--color-muted,#7a6f65);}
-  .b-schriftwahl-liste{position:fixed;z-index:60;overflow-y:auto;max-height:min(60vh,22rem);
+  /* overscroll-behavior:contain - sonst wandert eine Wischgeste, die am
+     Rand der Liste ankommt, an die Seite weiter (dasselbe Mittel wie bei
+     .b-buehne/.b-spalte-fest oben) und macht "kapanıyor, kaydıramıyorum"
+     aus einem einzigen Finger, der die Liste nur zu Ende scrollen wollte. */
+  .b-schriftwahl-liste{position:fixed;z-index:60;overflow-y:auto;overscroll-behavior:contain;
+                        max-height:min(60vh,22rem);
                         background:var(--color-cream,#faf7f2);
                         border:1px solid var(--color-sand-deep,#dccebc);
                         box-shadow:0 10px 24px -10px rgba(0,0,0,.35);}
