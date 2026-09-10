@@ -300,12 +300,14 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   /* Der Pfeil ist ein Zeichen, kein Bild - so bleibt der Knopf leicht. */
   .b-schriftwahl-knopf::after{content:"▾";position:absolute;right:0.7rem;top:50%;
                                transform:translateY(-50%);font-size:0.7rem;color:var(--color-muted,#7a6f65);}
-  /* overscroll-behavior:contain - sonst wandert eine Wischgeste, die am
-     Rand der Liste ankommt, an die Seite weiter (dasselbe Mittel wie bei
-     .b-buehne/.b-spalte-fest oben) und macht "kapanıyor, kaydıramıyorum"
-     aus einem einzigen Finger, der die Liste nur zu Ende scrollen wollte. */
-  .b-schriftwahl-liste{position:fixed;z-index:60;overflow-y:auto;overscroll-behavior:contain;
-                        max-height:min(60vh,22rem);
+  /* Im Textfluss statt position:fixed (Grund: design-editor.js, "ZWEITER
+     ANLAUF" beim Schriftwahl-Block) - sie schiebt, was darunter steht,
+     einfach weiter nach unten, wie es ein aufgeklapptes <details> auf
+     dieser Seite auch tut. overscroll-behavior:contain bleibt trotzdem:
+     eine Wischgeste, die am Rand der Liste ankommt, soll dort enden und
+     nicht an die Seite weiterwandern. */
+  .b-schriftwahl-liste{margin-top:0.35rem;overflow-y:auto;overscroll-behavior:contain;
+                        max-height:min(50vh,22rem);
                         background:var(--color-cream,#faf7f2);
                         border:1px solid var(--color-sand-deep,#dccebc);
                         box-shadow:0 10px 24px -10px rgba(0,0,0,.35);}

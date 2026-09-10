@@ -3599,6 +3599,17 @@
    * Listener oben (data-schriftfeld, folgt()) sehen weiterhin genau dasselbe
    * Element und Ereignis. Ersetzt wird nur sein AUSSEHEN: ein Knopf und eine
    * eigene Liste aus echten DOM-Knoten, die kein Betriebssystem uebernimmt.
+   *
+   * ZWEITER ANLAUF (10.09.2026): die erste Fassung stellte die Liste mit
+   * position:fixed frei ins Fenster - und drei Mobil-Fehler in Folge
+   * (Breite, Scroll-in-der-Liste, Naehe zum unteren Rand) waren alle
+   * Symptome DESSELBEN Grundproblems: eine Position relativ zum Fenster
+   * auszurechnen, ohne das Fenster selbst pruefen zu koennen. Jetzt haengt
+   * die Liste stattdessen EINFACH im Textfluss, gleich hinter dem Knopf -
+   * wie ein <details> auf dieser Seite auch. Es gibt nichts mehr
+   * auszurechnen: keine Fensterbreite, keine Fensterhoehe, kein Scroll-
+   * Sonderfall - sie wandert einfach mit der Seite, wie jedes andere
+   * Element auch.
    */
   form.querySelectorAll("select[data-font-picker]").forEach(function (select) {
     var wrapper = document.createElement("div");
@@ -3610,10 +3621,6 @@
     knopf.setAttribute("aria-haspopup", "listbox");
     knopf.setAttribute("aria-expanded", "false");
 
-    // In body und nicht im Wrapper: die rechte Spalte scrollt fuer sich
-    // (b-spalte-fest, position:sticky + overflow-y:auto ab 1120px) - eine
-    // Liste DARIN wuerde am eigenen Rand abgeschnitten, statt frei zu
-    // schweben. position:fixed unten braucht dafuer den eigenen Ort.
     var liste = document.createElement("div");
     liste.className = "b-schriftwahl-liste";
     liste.setAttribute("role", "listbox");
@@ -3666,84 +3673,23 @@
       knopfAktualisieren();
     };
 
-    // Mindestbreite statt Knopfbreite: die Tafel "3 · Schriften" steht in
-    // einem schmalen Fuenferraster (rund 70px je Feld) - "Petit Formal
-    // Script" darauf zu zwingen hiesse, jeden Namen umzubrechen und die
-    // Liste ueber die Felder darunter wachsen zu lassen ("Bild" mit „Great
-    // Vibes" gewaehlt: schmal, mehrzeilig, reichte bis unter „Wird benutzt
-    // von" - 10.09.2026, Screenshot). Die Breite folgt jetzt dem laengsten
-    // Namen, nicht dem Knopf; links bleibt sie im Fenster, auch wenn der
-    // Knopf nahe am rechten Rand steht.
-    var MINDESTBREITE = 240;
-    // Darunter lohnt sich "nach unten" nicht mehr - eine Liste mit nur
-    // 120px Luft zeigt kaum mehr als eine Zeile.
-    var MINDESTHOEHE = 130;
-
-    // "Display" ist die letzte Schriftmarke der Tafel - auf einem
-    // Telefonbildschirm steht ihr Knopf oft schon nahe am unteren Rand.
-    // Immer nach unten zu oeffnen liess die Liste dann GROESSTENTEILS
-    // ausserhalb des sichtbaren Fensters stehen: technisch offen (liste.
-    // hidden blieb false), aber nichts davon zu sehen - "sadece Display'in
-    // kendi font listesi açılmıyor/hemen kapanıyor" (10.09.2026), waehrend
-    // Script/Label weiter oben auf derselben Tafel ganz normal blieben.
-    // Jetzt dreht sich die Liste um, wenn unten zu wenig Platz ist, und
-    // die Hoehe folgt dem tatsaechlich verfuegbaren Platz statt einer
-    // festen Grenze.
-    var positionieren = function () {
-      var feld = wrapper.getBoundingClientRect();
-      var breite = Math.max(feld.width, MINDESTBREITE);
-      var links = Math.min(feld.left, window.innerWidth - breite - 8);
-      links = Math.max(8, links);
-      liste.style.left = links + "px";
-      liste.style.width = breite + "px";
-
-      var platzUnten = window.innerHeight - feld.bottom - 10;
-      var platzOben = feld.top - 10;
-
-      if (platzUnten < MINDESTHOEHE && platzOben > platzUnten) {
-        liste.style.top = "";
-        liste.style.bottom = (window.innerHeight - feld.top + 2) + "px";
-        liste.style.maxHeight = Math.max(80, Math.min(platzOben, 352)) + "px";
-      } else {
-        liste.style.bottom = "";
-        liste.style.top = (feld.bottom + 2) + "px";
-        liste.style.maxHeight = Math.max(80, Math.min(platzUnten, 352)) + "px";
-      }
-    };
-
-    // Schliesst bei Scroll/Resize statt mitzuwandern - eine feste Liste, die
-    // ihre eigene Position nicht nachfuehrt, stuende sonst irgendwo frei im
-    // Fenster, sobald die Spalte daneben weiterscrollt.
-    //
-    // ABER: ein scroll-Ereignis lauft in der FANGPHASE (capture:true) durch
-    // jeden Knoten hindurch, auch durch die Liste selbst - ihr eigenes
-    // overflow-y:auto zaehlt hier genauso wie ein Scrollen der Seite. Ohne
-    // die Pruefung unten schloss die Liste sich selbst, sobald man IN ihr
-    // blaetterte, um einen der zwanzig Namen weiter unten zu sehen
-    // ("aşağı veya yukarı kaydırmaya çalışınca kapanıyor", 10.09.2026).
     var ausserhalbKlick, schliesse;
-    schliesse = function (ereignis) {
+    schliesse = function () {
       if (liste.hidden) return;
-      if (ereignis && ereignis.target && liste.contains(ereignis.target)) return;
       liste.hidden = true;
       knopf.setAttribute("aria-expanded", "false");
       document.removeEventListener("click", ausserhalbKlick, true);
-      window.removeEventListener("scroll", schliesse, true);
-      window.removeEventListener("resize", schliesse);
     };
 
     ausserhalbKlick = function (ereignis) {
-      if (wrapper.contains(ereignis.target) || liste.contains(ereignis.target)) return;
+      if (wrapper.contains(ereignis.target)) return;
       schliesse();
     };
 
     var oeffne = function () {
-      positionieren();
       liste.hidden = false;
       knopf.setAttribute("aria-expanded", "true");
       document.addEventListener("click", ausserhalbKlick, true);
-      window.addEventListener("scroll", schliesse, true);
-      window.addEventListener("resize", schliesse);
 
       var gewaehlt = optionKnoepfe.filter(function (eintrag) {
         return eintrag.getAttribute("aria-selected") === "true";
@@ -3781,7 +3727,7 @@
 
     select.parentNode.insertBefore(wrapper, select);
     wrapper.appendChild(knopf);
-    document.body.appendChild(liste);
+    wrapper.appendChild(liste);
 
     // Nicht entfernt, nur unsichtbar und aus der Tab-Reihenfolge: der Wert,
     // der name= und jeder bestehende change-Listener bleiben am <select> -
