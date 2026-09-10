@@ -3675,15 +3675,40 @@
     // Namen, nicht dem Knopf; links bleibt sie im Fenster, auch wenn der
     // Knopf nahe am rechten Rand steht.
     var MINDESTBREITE = 240;
+    // Darunter lohnt sich "nach unten" nicht mehr - eine Liste mit nur
+    // 120px Luft zeigt kaum mehr als eine Zeile.
+    var MINDESTHOEHE = 130;
 
+    // "Display" ist die letzte Schriftmarke der Tafel - auf einem
+    // Telefonbildschirm steht ihr Knopf oft schon nahe am unteren Rand.
+    // Immer nach unten zu oeffnen liess die Liste dann GROESSTENTEILS
+    // ausserhalb des sichtbaren Fensters stehen: technisch offen (liste.
+    // hidden blieb false), aber nichts davon zu sehen - "sadece Display'in
+    // kendi font listesi açılmıyor/hemen kapanıyor" (10.09.2026), waehrend
+    // Script/Label weiter oben auf derselben Tafel ganz normal blieben.
+    // Jetzt dreht sich die Liste um, wenn unten zu wenig Platz ist, und
+    // die Hoehe folgt dem tatsaechlich verfuegbaren Platz statt einer
+    // festen Grenze.
     var positionieren = function () {
       var feld = wrapper.getBoundingClientRect();
       var breite = Math.max(feld.width, MINDESTBREITE);
       var links = Math.min(feld.left, window.innerWidth - breite - 8);
       links = Math.max(8, links);
       liste.style.left = links + "px";
-      liste.style.top = (feld.bottom + 2) + "px";
       liste.style.width = breite + "px";
+
+      var platzUnten = window.innerHeight - feld.bottom - 10;
+      var platzOben = feld.top - 10;
+
+      if (platzUnten < MINDESTHOEHE && platzOben > platzUnten) {
+        liste.style.top = "";
+        liste.style.bottom = (window.innerHeight - feld.top + 2) + "px";
+        liste.style.maxHeight = Math.max(80, Math.min(platzOben, 352)) + "px";
+      } else {
+        liste.style.bottom = "";
+        liste.style.top = (feld.bottom + 2) + "px";
+        liste.style.maxHeight = Math.max(80, Math.min(platzUnten, 352)) + "px";
+      }
     };
 
     // Schliesst bei Scroll/Resize statt mitzuwandern - eine feste Liste, die
