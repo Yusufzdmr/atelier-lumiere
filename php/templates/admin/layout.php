@@ -42,7 +42,17 @@ $overviewTab = static function () use ($locale, $current, $link): string {
 };
 ?>
 <!doctype html>
-<html lang="<?= e(I18n::htmlLang()) ?>">
+<?php /*
+   overscroll-contain auf html UND body: Android Chrome haengt sein
+   natives "Ziehen zum Aktualisieren" an den DOKUMENTRAND, nicht nur an
+   den Bildlauf des Koerpers - nur eine Stelle zu sperren reichte in der
+   Praxis nicht. Ohne das laedt ein Finger, der am oberen Rand nach unten
+   zieht (etwa um die eigene Schriftliste zu Ende zu scrollen), die ganze
+   Seite neu - unsichtbar fuer ein Skript, weil der Browser das VOR jedem
+   JavaScript entscheidet. "mobilde fonta tıklayınca yeniliyor
+   değiştirmeye çalışırken" (10.09.2026).
+*/ ?>
+<html lang="<?= e(I18n::htmlLang()) ?>" class="overscroll-contain">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -51,7 +61,7 @@ $overviewTab = static function () use ($locale, $current, $link): string {
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/style.css')) ?>">
 </head>
-<body class="min-h-screen bg-cream antialiased"
+<body class="min-h-screen bg-cream antialiased overscroll-contain"
       data-toast-ok="<?= $de ? 'Gespeichert.' : 'Kaydedildi.' ?>"
       data-toast-deleted="<?= $de ? 'Gelöscht.' : 'Silindi.' ?>">
 
