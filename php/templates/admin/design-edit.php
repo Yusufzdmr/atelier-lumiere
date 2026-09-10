@@ -279,6 +279,31 @@ $videoEbenen = array_filter($design['layers'], static fn (array $l): bool => $l[
   .b-meldung{border-left:2px solid var(--color-gold,#b08d57);padding:0.75rem 1rem;font-size:0.86rem;
              margin-bottom:1rem;}
   .b-meldung-fehler{border-left-color:#b91c1c;color:#b91c1c;}
+
+  /* Schriftwahl: ersetzt <select> optisch, damit die Schriftvorschau auch am
+     Telefon steht - siehe font-picker-Block in design-editor.js fuer das
+     Warum. Der Knopf sieht aus wie $feld (Rahmen, Groesse), damit er sich
+     neben Zahlenfeldern und Textfeldern nicht abhebt. */
+  .b-schriftwahl{position:relative;}
+  .b-schriftwahl-knopf{display:block;width:100%;border:1px solid var(--color-sand-deep,#dccebc);
+                        background:transparent;text-align:left;cursor:pointer;
+                        padding:0.5rem 1.6rem 0.5rem 0.75rem;font-size:0.875rem;color:var(--color-ink,#14110f);}
+  .b-schriftwahl-knopf:focus-visible{outline:1px solid var(--color-gold,#b08d57);outline-offset:1px;}
+  /* Der Pfeil ist ein Zeichen, kein Bild - so bleibt der Knopf leicht. */
+  .b-schriftwahl-knopf::after{content:"▾";position:absolute;right:0.7rem;top:50%;
+                               transform:translateY(-50%);font-size:0.7rem;color:var(--color-muted,#7a6f65);}
+  .b-schriftwahl-liste{position:fixed;z-index:60;overflow-y:auto;max-height:min(60vh,22rem);
+                        background:var(--color-cream,#faf7f2);
+                        border:1px solid var(--color-sand-deep,#dccebc);
+                        box-shadow:0 10px 24px -10px rgba(0,0,0,.35);}
+  .b-schriftwahl-liste[hidden]{display:none;}
+  .b-schriftwahl-gruppe-titel{padding:0.4rem 0.75rem;font-size:0.6rem;letter-spacing:0.14em;
+                               text-transform:uppercase;color:var(--color-muted,#7a6f65);}
+  .b-schriftwahl-option{display:block;width:100%;border:0;background:transparent;cursor:pointer;
+                         text-align:left;padding:0.45rem 0.75rem;font-size:0.9rem;color:var(--color-ink,#14110f);}
+  .b-schriftwahl-option:hover,.b-schriftwahl-option:focus-visible{background:var(--color-sand,#ede4d8);}
+  .b-schriftwahl-option[aria-selected="true"]{background:var(--color-sand,#ede4d8);
+                                               box-shadow:inset 2px 0 0 var(--color-gold,#b08d57);}
 </style>
 
 <form method="post" enctype="multipart/form-data" data-design-form>

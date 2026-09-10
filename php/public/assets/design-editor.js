@@ -3584,4 +3584,166 @@
       setTimeout(rahmenNachziehen, 60);
     });
   });
+
+  /*
+   * Schriftwahl: <select> zeigt jede Schrift schon in der Liste in ihrer
+   * eigenen Schriftart (Design::fontOptionStyle in Design.php) - "hepsinin
+   * tipi aynı, basmadan görsem". Das funktioniert am Schreibtisch, weil der
+   * Browser das Aufklappmenue selbst zeichnet. Am Telefon uebernimmt das
+   * Betriebssystem die Liste (iOS-Rad, Android-Blatt) und zeigt jede
+   * <option> in der Systemschrift - jedes style="font-family:..." kommt dort
+   * nie an. Ergebnis: "sadece benim bilgisayarımda şekilleri gözüküyor, ne
+   * telefonumda ne müşterinin telefonunda" (10.09.2026).
+   *
+   * Das <select> bleibt bestehen - Wert, name=, die vorhandenen change-
+   * Listener oben (data-schriftfeld, folgt()) sehen weiterhin genau dasselbe
+   * Element und Ereignis. Ersetzt wird nur sein AUSSEHEN: ein Knopf und eine
+   * eigene Liste aus echten DOM-Knoten, die kein Betriebssystem uebernimmt.
+   */
+  form.querySelectorAll("select[data-font-picker]").forEach(function (select) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "b-schriftwahl";
+
+    var knopf = document.createElement("button");
+    knopf.type = "button";
+    knopf.className = "b-schriftwahl-knopf";
+    knopf.setAttribute("aria-haspopup", "listbox");
+    knopf.setAttribute("aria-expanded", "false");
+
+    // In body und nicht im Wrapper: die rechte Spalte scrollt fuer sich
+    // (b-spalte-fest, position:sticky + overflow-y:auto ab 1120px) - eine
+    // Liste DARIN wuerde am eigenen Rand abgeschnitten, statt frei zu
+    // schweben. position:fixed unten braucht dafuer den eigenen Ort.
+    var liste = document.createElement("div");
+    liste.className = "b-schriftwahl-liste";
+    liste.setAttribute("role", "listbox");
+    liste.hidden = true;
+
+    var optionKnoepfe = [];
+
+    Array.prototype.forEach.call(select.children, function (gruppe) {
+      if (gruppe.tagName !== "OPTGROUP") return;
+
+      var titel = document.createElement("div");
+      titel.className = "b-schriftwahl-gruppe-titel";
+      titel.textContent = gruppe.label;
+      liste.appendChild(titel);
+
+      Array.prototype.forEach.call(gruppe.children, function (option) {
+        if (option.tagName !== "OPTION") return;
+
+        var eintrag = document.createElement("button");
+        eintrag.type = "button";
+        eintrag.className = "b-schriftwahl-option";
+        eintrag.setAttribute("role", "option");
+        eintrag.setAttribute("data-wert", option.value);
+        eintrag.setAttribute("style", option.getAttribute("style") || "");
+        eintrag.textContent = option.textContent;
+        eintrag.addEventListener("click", function () {
+          waehle(option.value);
+          schliesse();
+          knopf.focus();
+        });
+        liste.appendChild(eintrag);
+        optionKnoepfe.push(eintrag);
+      });
+    });
+
+    var knopfAktualisieren = function () {
+      var gewaehlt = select.options[select.selectedIndex] || null;
+      knopf.textContent = gewaehlt ? gewaehlt.textContent : "";
+      knopf.setAttribute("style", gewaehlt ? (gewaehlt.getAttribute("style") || "") : "");
+      optionKnoepfe.forEach(function (eintrag) {
+        var gleich = !!gewaehlt && eintrag.getAttribute("data-wert") === gewaehlt.value;
+        eintrag.setAttribute("aria-selected", gleich ? "true" : "false");
+      });
+    };
+
+    var waehle = function (wert) {
+      if (select.value === wert) return;
+      select.value = wert;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      knopfAktualisieren();
+    };
+
+    var positionieren = function () {
+      var feld = wrapper.getBoundingClientRect();
+      liste.style.left = feld.left + "px";
+      liste.style.top = (feld.bottom + 2) + "px";
+      liste.style.width = feld.width + "px";
+    };
+
+    // Schliesst bei Scroll/Resize statt mitzuwandern - eine feste Liste, die
+    // ihre eigene Position nicht nachfuehrt, stuende sonst irgendwo frei im
+    // Fenster, sobald die Spalte daneben weiterscrollt.
+    var ausserhalbKlick, schliesse;
+    schliesse = function () {
+      if (liste.hidden) return;
+      liste.hidden = true;
+      knopf.setAttribute("aria-expanded", "false");
+      document.removeEventListener("click", ausserhalbKlick, true);
+      window.removeEventListener("scroll", schliesse, true);
+      window.removeEventListener("resize", schliesse);
+    };
+
+    ausserhalbKlick = function (ereignis) {
+      if (wrapper.contains(ereignis.target) || liste.contains(ereignis.target)) return;
+      schliesse();
+    };
+
+    var oeffne = function () {
+      positionieren();
+      liste.hidden = false;
+      knopf.setAttribute("aria-expanded", "true");
+      document.addEventListener("click", ausserhalbKlick, true);
+      window.addEventListener("scroll", schliesse, true);
+      window.addEventListener("resize", schliesse);
+
+      var gewaehlt = optionKnoepfe.filter(function (eintrag) {
+        return eintrag.getAttribute("aria-selected") === "true";
+      })[0];
+      (gewaehlt || optionKnoepfe[0] || knopf).focus();
+    };
+
+    knopf.addEventListener("click", function () {
+      if (liste.hidden) oeffne(); else schliesse();
+    });
+
+    knopf.addEventListener("keydown", function (ereignis) {
+      if (ereignis.key === "ArrowDown" || ereignis.key === "Enter" || ereignis.key === " ") {
+        ereignis.preventDefault();
+        oeffne();
+      }
+    });
+
+    liste.addEventListener("keydown", function (ereignis) {
+      var index = optionKnoepfe.indexOf(document.activeElement);
+      if (ereignis.key === "ArrowDown") {
+        ereignis.preventDefault();
+        (optionKnoepfe[index + 1] || optionKnoepfe[0]).focus();
+      } else if (ereignis.key === "ArrowUp") {
+        ereignis.preventDefault();
+        (optionKnoepfe[index - 1] || optionKnoepfe[optionKnoepfe.length - 1]).focus();
+      } else if (ereignis.key === "Escape") {
+        ereignis.preventDefault();
+        schliesse();
+        knopf.focus();
+      } else if (ereignis.key === "Tab") {
+        schliesse();
+      }
+    });
+
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.appendChild(knopf);
+    document.body.appendChild(liste);
+
+    // Nicht entfernt, nur unsichtbar und aus der Tab-Reihenfolge: der Wert,
+    // der name= und jeder bestehende change-Listener bleiben am <select> -
+    // nur der Knopf soll den Zeiger und die Tabtaste bekommen.
+    select.style.display = "none";
+    select.setAttribute("aria-hidden", "true");
+    select.tabIndex = -1;
+
+    knopfAktualisieren();
+  });
 })();

@@ -139,7 +139,7 @@ use function Atelier\e;
     <div class="space-y-3 border-b border-sand-deep pb-4">
       <div class="grid gap-4 sm:grid-cols-5">
         <label class="<?= $label ?>"><?= e($marke) ?>
-          <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>">
+          <select name="font_family_<?= e($marke) ?>" class="<?= $feld ?>" data-schriftfeld="<?= e($marke) ?>" data-font-picker>
             <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
               <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
                 <?php foreach ($familyler as $familie) : ?>
@@ -197,7 +197,7 @@ use function Atelier\e;
       <label class="<?= $label ?>"><?= $tr ? 'kimlik' : 'Kennung' ?>
         <input name="neue_font_kimlik" value="" class="<?= $feld ?>" placeholder="<?= $tr ? 'ör. subtitle' : 'z. B. subtitle' ?>"></label>
       <label class="<?= $label ?>"><?= $tr ? 'aile' : 'Familie' ?>
-        <select name="neue_font_aile" class="<?= $feld ?>">
+        <select name="neue_font_aile" class="<?= $feld ?>" data-font-picker>
           <?php foreach (Design::fontGroups() as $stack => $familyler) : ?>
             <optgroup label="<?= e(Design::fontGroupLabel($stack, $tr ? 'tr' : 'de')) ?>">
               <?php foreach ($familyler as $familie) : ?>
