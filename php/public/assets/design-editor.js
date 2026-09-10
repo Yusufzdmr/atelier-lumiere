@@ -3689,9 +3689,17 @@
     // Schliesst bei Scroll/Resize statt mitzuwandern - eine feste Liste, die
     // ihre eigene Position nicht nachfuehrt, stuende sonst irgendwo frei im
     // Fenster, sobald die Spalte daneben weiterscrollt.
+    //
+    // ABER: ein scroll-Ereignis lauft in der FANGPHASE (capture:true) durch
+    // jeden Knoten hindurch, auch durch die Liste selbst - ihr eigenes
+    // overflow-y:auto zaehlt hier genauso wie ein Scrollen der Seite. Ohne
+    // die Pruefung unten schloss die Liste sich selbst, sobald man IN ihr
+    // blaetterte, um einen der zwanzig Namen weiter unten zu sehen
+    // ("aşağı veya yukarı kaydırmaya çalışınca kapanıyor", 10.09.2026).
     var ausserhalbKlick, schliesse;
-    schliesse = function () {
+    schliesse = function (ereignis) {
       if (liste.hidden) return;
+      if (ereignis && ereignis.target && liste.contains(ereignis.target)) return;
       liste.hidden = true;
       knopf.setAttribute("aria-expanded", "false");
       document.removeEventListener("click", ausserhalbKlick, true);
