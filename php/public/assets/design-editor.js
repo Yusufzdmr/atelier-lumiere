@@ -3666,11 +3666,45 @@
       });
     };
 
+    /*
+     * Verankert den Knopf an seinem Platz, waehrend die neue Schrift laedt.
+     *
+     * Am Telefon (unter 1120px) steht die Kartenvorschau VOR der Tafel mit
+     * den Einstellungen - eine Spalte nach der anderen, keine drei
+     * nebeneinander. Eine neue Schriftmarke aendert also nicht nur die
+     * Karte, sie kann ihre HOEHE aendern (andere Laufweite, ein Umbruch
+     * mehr) - und das schiebt alles darunter, diese Tafel eingeschlossen,
+     * nach unten. Das Fenster scrollt dabei nicht mit: an derselben
+     * Bildschirmstelle steht danach etwas ganz anderes, oft ein Abschnitt
+     * weiter oben auf der Karte (RSVP, "Kommt ihr?") - als waere die Tafel
+     * zugeklappt oder die Seite neu geladen ("hala aynı sanki tıklayınca
+     * sayfa yenileniyormuş gibi kapatıyor", 10.09.2026 - im Bildschirm-
+     * mitschnitt bestaetigt: die Liste OEFFNETE sich richtig, erst NACH
+     * der Wahl sprang die Ansicht weg).
+     *
+     * Die Schrift laedt asynchron (document.fonts), darum reicht ein
+     * einzelner Ausgleich nicht - einer sofort (falls sich etwas schon
+     * durch den Zahlenwert selbst verschiebt) und einer, sobald die
+     * Schriftdatei tatsaechlich da ist und die Karte neu umbricht.
+     */
     var waehle = function (wert) {
       if (select.value === wert) return;
       select.value = wert;
+
+      var vorher = wrapper.getBoundingClientRect().top;
+      var ausgleichen = function () {
+        var nachher = wrapper.getBoundingClientRect().top;
+        var versatz = nachher - vorher;
+        if (Math.abs(versatz) > 0.5) window.scrollBy(0, versatz);
+      };
+
       select.dispatchEvent(new Event("change", { bubbles: true }));
       knopfAktualisieren();
+
+      window.requestAnimationFrame(ausgleichen);
+      if (window.document.fonts && window.document.fonts.ready) {
+        window.document.fonts.ready.then(ausgleichen);
+      }
     };
 
     var ausserhalbKlick, schliesse;
