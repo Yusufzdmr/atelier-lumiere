@@ -3666,11 +3666,24 @@
       knopfAktualisieren();
     };
 
+    // Mindestbreite statt Knopfbreite: die Tafel "3 · Schriften" steht in
+    // einem schmalen Fuenferraster (rund 70px je Feld) - "Petit Formal
+    // Script" darauf zu zwingen hiesse, jeden Namen umzubrechen und die
+    // Liste ueber die Felder darunter wachsen zu lassen ("Bild" mit „Great
+    // Vibes" gewaehlt: schmal, mehrzeilig, reichte bis unter „Wird benutzt
+    // von" - 10.09.2026, Screenshot). Die Breite folgt jetzt dem laengsten
+    // Namen, nicht dem Knopf; links bleibt sie im Fenster, auch wenn der
+    // Knopf nahe am rechten Rand steht.
+    var MINDESTBREITE = 240;
+
     var positionieren = function () {
       var feld = wrapper.getBoundingClientRect();
-      liste.style.left = feld.left + "px";
+      var breite = Math.max(feld.width, MINDESTBREITE);
+      var links = Math.min(feld.left, window.innerWidth - breite - 8);
+      links = Math.max(8, links);
+      liste.style.left = links + "px";
       liste.style.top = (feld.bottom + 2) + "px";
-      liste.style.width = feld.width + "px";
+      liste.style.width = breite + "px";
     };
 
     // Schliesst bei Scroll/Resize statt mitzuwandern - eine feste Liste, die
