@@ -20,6 +20,7 @@ use Atelier\Controllers\InviteV2Controller;
 use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
 use Atelier\Controllers\SelectionController;
+use Atelier\Controllers\AlbumistController;
 use Atelier\Controllers\SitemapController;
 use Atelier\Controllers\TextAdminController;
 use Atelier\I18n;
@@ -193,6 +194,14 @@ $router->post('/{locale}/admin/designs/{slug}/vorschau', $admin_(static fn (arra
 $router->any('/{locale}/admin/designs/{slug}', $admin_(static fn (array $p) => (new DesignAdminController())->edit($p)));
 $router->any('/{locale}/admin/systemcheck', $admin_(static fn (array $p) => (new AdminController($p['locale']))->preflight()));
 $router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (new AdminController($p['locale']))->integrations()));
+
+// Albümcü: kalıcı giriş, sadece hazır galerileri gösterir. "abmelden" ve
+// "zip" {code} tek-parça deseninden ÖNCE kayıtlı — yoksa "abmelden" bir
+// galeri kodu gibi okunur (bkz. /galerie/abmelden'in aynı sırası).
+$router->any('/{locale}/albumcu', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->index()));
+$router->get('/{locale}/albumcu/abmelden', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->logout()));
+$router->get('/{locale}/albumcu/{code}/zip', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->zip($p)));
+$router->get('/{locale}/albumcu/{code}', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->show($p)));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
 $router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));
