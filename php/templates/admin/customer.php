@@ -116,7 +116,6 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
            * Dateinamen darunter und einem Knopf, der die volle Auflösung holt.
            */
           $chosen = $gallery === null ? [] : \Atelier\Galleries::selectedPhotos($gallery, $selection);
-          $full = array_values(array_filter($chosen, static fn (array $p): bool => $p['original'] !== null));
           ?>
           <?php if ($chosen !== []) : ?>
             <div class="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
@@ -130,55 +129,6 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
                   <figcaption class="mt-1 break-all font-mono text-[0.6rem] text-muted"><?= e($photo['name']) ?></figcaption>
                 </figure>
               <?php endforeach; ?>
-            </div>
-
-            <?php /* ------------------- Link für den Albumhersteller ------------------- */ ?>
-            <?php $share = (array) (($gallery ?? [])["share"] ?? []); ?>
-            <div class="mt-6 border-t border-sand-deep pt-5">
-              <div class="text-[0.62rem] uppercase tracking-[0.18em] text-gold">
-                <?= $de ? 'Für den Albumhersteller' : 'Albümcü için' ?>
-              </div>
-
-              <?php if (($share['token'] ?? '') === '') : ?>
-                <p class="mt-2 text-[0.82rem] leading-relaxed text-muted">
-                  <?= $de
-                    ? 'Erzeugt einen geheimen Link. Wer ihn hat, sieht genau diese Bilder und lädt sie als ZIP – ohne Zugang zur Galerie.'
-                    : 'Gizli bir bağlantı üretir. Bağlantıya sahip olan tam bu fotoğrafları görür ve ZIP olarak indirir — galeriye erişmeden.' ?>
-                </p>
-                <form method="post" class="mt-3">
-                  <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                  <input type="hidden" name="was" value="freigabe">
-                  <button class="border border-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
-                    <?= $de ? 'Link erzeugen (30 Tage)' : 'Bağlantı üret (30 gün)' ?>
-                  </button>
-                </form>
-              <?php else : ?>
-                <?php $shareUrl = \Atelier\Config::url() . \Atelier\I18n::sitePath('/auswahl/' . (string) $share['token'], $locale); ?>
-                <div class="mt-3 flex flex-wrap items-center gap-3">
-                  <code class="min-w-0 flex-1 break-all border border-sand-deep bg-cream px-4 py-3 text-[0.76rem] text-ink"><?= e($shareUrl) ?></code>
-                  <button type="button" data-copy="<?= e($shareUrl) ?>"
-                          class="border border-ink px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream">
-                    <?= $de ? 'Kopieren' : 'Kopyala' ?>
-                  </button>
-                  <a href="<?= e(\Atelier\I18n::sitePath('/auswahl/' . (string) $share['token'] . '/zip', $locale)) ?>"
-                     class="border border-gold px-5 py-3 text-[0.66rem] uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold hover:text-white">
-                    ZIP
-                  </a>
-                </div>
-                <div class="mt-3 flex flex-wrap items-center gap-4">
-                  <span class="text-[0.75rem] text-muted">
-                    <?= $de ? 'Gültig bis' : 'Geçerlilik' ?>: <?= e(Dates::short((string) ($share['expires'] ?? ''))) ?>
-                    · <?= count($full) ?>/<?= count($chosen) ?> <?= $de ? 'in voller Auflösung' : 'tam çözünürlükte' ?>
-                  </span>
-                  <form method="post" class="ml-auto">
-                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                    <input type="hidden" name="was" value="freigabe-aus">
-                    <button class="text-[0.66rem] uppercase tracking-[0.18em] text-muted underline-offset-4 hover:text-ink hover:underline">
-                      <?= $de ? 'Link abschalten' : 'Bağlantıyı kapat' ?>
-                    </button>
-                  </form>
-                </div>
-              <?php endif; ?>
             </div>
           <?php endif; ?>
         </div>

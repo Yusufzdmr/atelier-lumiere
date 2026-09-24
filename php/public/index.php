@@ -19,7 +19,6 @@ use Atelier\Controllers\InviteController;
 use Atelier\Controllers\InviteV2Controller;
 use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
-use Atelier\Controllers\SelectionController;
 use Atelier\Controllers\AlbumistController;
 use Atelier\Controllers\SitemapController;
 use Atelier\Controllers\TextAdminController;
@@ -94,11 +93,6 @@ $router->get('/{locale}/ratgeber', $page_(static fn (array $p) => $page->blog())
 $router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->post($p)));
 $router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
 $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
-
-// Auswahl fuer den Albumhersteller: geheimer, befristeter Link ohne Login.
-// "zip" steht vor dem allgemeinen Muster, sonst wird es als Token gelesen.
-$router->get('/{locale}/auswahl/{token}/zip', $page_(static fn (array $p) => (new SelectionController())->zip($p)));
-$router->get('/{locale}/auswahl/{token}', $page_(static fn (array $p) => (new SelectionController())->show($p)));
 
 // Das Schaufenster steht bewusst NICHT unter /einladung/: dort greift das
 // Muster {slug}, und ein Paar, das seine Einladung "designs" nennt, haette

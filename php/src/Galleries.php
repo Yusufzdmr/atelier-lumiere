@@ -87,8 +87,6 @@ final class Galleries
         return $photos;
     }
 
-    /* --------------------------- Auswahl teilen --------------------------- */
-
     /**
      * Die ausgewaehlten Bilder als Liste – mit dem Original, wo es eines gibt.
      *
@@ -157,63 +155,6 @@ final class Galleries
             'original' => $original,
             'name'     => basename($original ?? $url),
         ];
-    }
-
-    /**
-     * Ein Link fuer den Albumhersteller.
-     *
-     * Der Fotograf soll die Auswahl nicht herunterladen, um sie weiterzugeben.
-     * Stattdessen bekommt der Drucker eine eigene Adresse, sieht dort genau die
-     * ausgesuchten Bilder und laedt sie als ZIP – ohne Zugang zur Galerie und
-     * ohne das Passwort des Paares.
-     *
-     * Befristet, weil ein Link, der ewig gilt, irgendwann irgendwo steht.
-     */
-    public static function shareCreate(string $code, int $days = 30): array
-    {
-        $share = [
-            'token'   => bin2hex(random_bytes(16)),
-            'expires' => date('Y-m-d', strtotime('+' . max(1, min(365, $days)) . ' days')),
-            'created' => date('c'),
-        ];
-
-        self::update($code, ['share' => $share]);
-
-        return $share;
-    }
-
-    public static function shareRevoke(string $code): void
-    {
-        self::update($code, ['share' => null]);
-    }
-
-    /**
-     * Galerie zu einem Freigabe-Token – nur solange er gilt.
-     *
-     * @return array<string,mixed>|null
-     */
-    public static function shareFind(string $token): ?array
-    {
-        $token = preg_replace('/[^a-f0-9]/', '', mb_strtolower(trim($token))) ?? '';
-        if (strlen($token) !== 32) {
-            return null;
-        }
-
-        foreach (Db::jsonList('SELECT data FROM galleries') as $gallery) {
-            $share = $gallery['share'] ?? null;
-            if (!is_array($share) || !hash_equals((string) ($share['token'] ?? ''), $token)) {
-                continue;
-            }
-
-            $expires = (string) ($share['expires'] ?? '');
-            if ($expires !== '' && $expires < date('Y-m-d')) {
-                return null;
-            }
-
-            return $gallery;
-        }
-
-        return null;
     }
 
     /* --------------------------- Tercihler ------------------------------- */
