@@ -36,6 +36,34 @@ final class Galleries
     }
 
     /**
+     * Anmeldung prüfen, inklusive Rolle – das Paar mit seinem Passwort,
+     * Gäste mit einem zweiten, separaten (nur wenn eines gesetzt ist).
+     * Gäste sehen dieselbe Galerie, aber nur zum Ansehen.
+     *
+     * @return array{gallery:array<string,mixed>,role:string}|null
+     */
+    public static function authRole(string $code, string $password): ?array
+    {
+        $gallery = self::find($code);
+        if ($gallery === null) {
+            return null;
+        }
+
+        $password = trim($password);
+
+        if (hash_equals((string) ($gallery['password'] ?? ''), $password)) {
+            return ['gallery' => $gallery, 'role' => 'couple'];
+        }
+
+        $guest = (string) ($gallery['guestPassword'] ?? '');
+        if ($guest !== '' && hash_equals($guest, $password)) {
+            return ['gallery' => $gallery, 'role' => 'guest'];
+        }
+
+        return null;
+    }
+
+    /**
      * Bildliste in der Reihenfolge, auf die sich die Auswahl bezieht.
      *
      * @param array<string,mixed> $gallery
@@ -100,6 +128,35 @@ final class Galleries
         }
 
         return $out;
+    }
+
+    /**
+     * Das Titelbild – eine einzelne Position, getrennt von der Herz-Auswahl.
+     *
+     * @param array<string,mixed> $gallery
+     * @return array{nr:int,url:string,original:?string,name:string}|null
+     */
+    public static function coverPhoto(array $gallery, ?array $selection): ?array
+    {
+        if ($selection === null || ($selection['cover'] ?? null) === null) {
+            return null;
+        }
+
+        $index = (int) $selection['cover'];
+        $photos = self::photos($gallery);
+        if (!isset($photos[$index])) {
+            return null;
+        }
+
+        $url = (string) $photos[$index]['full'];
+        $original = $photos[$index]['upload'] ? Media::originalPath($url) : null;
+
+        return [
+            'nr'       => $index + 1,
+            'url'      => $url,
+            'original' => $original,
+            'name'     => basename($original ?? $url),
+        ];
     }
 
     /**
@@ -230,12 +287,13 @@ final class Galleries
     }
 
     /** @param list<int> $picks */
-    public static function saveSelection(string $code, string $couple, array $picks, string $note = ''): void
+    public static function saveSelection(string $code, string $couple, array $picks, string $note = '', ?int $cover = null): void
     {
         $selection = [
             'code'   => self::normalize($code),
             'couple' => $couple,
             'picks'  => array_values(array_unique(array_map('intval', $picks))),
+            'cover'  => $cover,
             'note'   => $note,
             'at'     => date('c'),
         ];
@@ -383,6 +441,10 @@ final class Galleries
             '',
             'Bildnummern: ' . $numbers,
         ];
+
+        if (($selection['cover'] ?? null) !== null) {
+            $body[] = 'Titelbild: Nr. ' . ((int) $selection['cover'] + 1);
+        }
 
         if (($selection['note'] ?? '') !== '') {
             $body[] = '';

@@ -15,6 +15,7 @@
   var csrf = root.getAttribute("data-csrf") || "";
   var endpoint = root.getAttribute("data-endpoint") || "";
   var storeKey = "al-picks-" + code;
+  var coverKey = "al-cover-" + code;
 
   var text = {
     sent: (document.querySelector("[data-sent-text]") || {}).textContent || "",
@@ -23,6 +24,7 @@
   };
 
   var buttons = Array.prototype.slice.call(root.querySelectorAll("[data-pick]"));
+  var coverButtons = Array.prototype.slice.call(root.querySelectorAll("[data-cover-pick]"));
   var thumbs = Array.prototype.slice.call(root.querySelectorAll("[data-photo]"));
   var counter = root.querySelector("[data-count]");
   var status = root.querySelector("[data-status]");
@@ -42,11 +44,22 @@
     return initial ? initial.split(",").map(Number) : [];
   }
 
+  function storedCover() {
+    try {
+      var raw = localStorage.getItem(coverKey);
+      if (raw !== null) return raw === "" ? null : Number(raw);
+    } catch (e) {}
+    var initial = root.getAttribute("data-cover") || "";
+    return initial === "" ? null : Number(initial);
+  }
+
   var picks = stored();
+  var cover = storedCover();
 
   function persist() {
     try {
       localStorage.setItem(storeKey, JSON.stringify(picks));
+      localStorage.setItem(coverKey, cover === null ? "" : String(cover));
     } catch (e) {}
   }
 
@@ -57,6 +70,13 @@
       button.setAttribute("aria-pressed", active ? "true" : "false");
       var heart = button.querySelector("[data-heart]");
       if (heart) heart.style.color = active ? "#B08D57" : "#7A6F65";
+    });
+    coverButtons.forEach(function (button) {
+      var index = Number(button.getAttribute("data-cover-pick"));
+      var active = cover === index;
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      var star = button.querySelector("[data-star]");
+      if (star) star.style.color = active ? "#B08D57" : "#7A6F65";
     });
     if (counter) counter.textContent = String(picks.length);
   }
@@ -70,9 +90,22 @@
     if (status) status.textContent = "";
   }
 
+  function toggleCover(index) {
+    cover = cover === index ? null : index;
+    persist();
+    paint();
+    if (status) status.textContent = "";
+  }
+
   buttons.forEach(function (button) {
     button.addEventListener("click", function () {
       toggle(Number(button.getAttribute("data-pick")));
+    });
+  });
+
+  coverButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      toggleCover(Number(button.getAttribute("data-cover-pick")));
     });
   });
 
@@ -123,11 +156,13 @@
     var prevButton = box.querySelector("[data-prev]");
     var nextButton = box.querySelector("[data-next]");
     var pickButton = box.querySelector("[data-lightbox-pick]");
+    var coverButton = box.querySelector("[data-lightbox-cover]");
 
     if (closeButton) closeButton.addEventListener("click", close);
     if (prevButton) prevButton.addEventListener("click", function () { step(-1); });
     if (nextButton) nextButton.addEventListener("click", function () { step(1); });
     if (pickButton) pickButton.addEventListener("click", function () { if (current !== null) toggle(current); });
+    if (coverButton) coverButton.addEventListener("click", function () { if (current !== null) toggleCover(current); });
 
     box.addEventListener("click", function (event) {
       if (event.target === box) close();
@@ -159,6 +194,7 @@
           code: code,
           csrf: csrf,
           picks: picks,
+          cover: cover === null ? "" : cover,
           note: noteField ? noteField.value : "",
         }),
       })

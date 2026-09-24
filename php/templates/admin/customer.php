@@ -101,6 +101,14 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
             </p>
           <?php endif; ?>
 
+          <?php $cover = $gallery === null ? null : \Atelier\Galleries::coverPhoto($gallery, $selection); ?>
+          <?php if ($cover !== null) : ?>
+            <div class="mt-3 flex items-center gap-3 border-t border-sand-deep pt-3">
+              <img src="<?= e($cover['url']) ?>" alt="" class="h-14 w-11 object-cover">
+              <span class="text-[0.8rem] text-ink"><?= $de ? 'Titelbild' : 'Kapak fotoğrafı' ?>: Nr. <?= (int) $cover['nr'] ?></span>
+            </div>
+          <?php endif; ?>
+
           <?php
           /*
            * Nummern allein sagen nichts: „3, 7, 12“ hilft weder beim Setzen des
@@ -257,6 +265,11 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
             <label class="<?= $label ?>" for="c-pass"><?= $de ? 'Neues Passwort' : 'Yeni parola' ?></label>
             <input id="c-pass" name="password" class="<?= $input ?>"
                    placeholder="<?= $de ? 'leer = unverändert' : 'boş = değişmez' ?>">
+          </div>
+          <div>
+            <label class="<?= $label ?>" for="c-guest"><?= $de ? 'Gast-Passwort (nur ansehen)' : 'Misafir parolası (sadece izleme)' ?></label>
+            <input id="c-guest" name="guestPassword" value="<?= e((string) ($gallery['guestPassword'] ?? '')) ?>" class="<?= $input ?>"
+                   placeholder="<?= $de ? 'leer = kein Gastzugang' : 'boş = misafir girişi kapalı' ?>">
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>

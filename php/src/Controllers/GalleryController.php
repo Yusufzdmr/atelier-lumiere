@@ -98,6 +98,7 @@ final class GalleryController
             'photos'             => $photos,
             'selection'          => $selection,
             'preferencesFilled'  => Galleries::preferences($code) !== null,
+            'readOnly'           => $this->isGuest($code),
             'dateLong'           => Dates::long((string) ($gallery['date'] ?? '')),
             'csrf'               => Security::csrf(),
         ]);
@@ -148,6 +149,12 @@ final class GalleryController
                 'csrf'       => Security::csrf(),
             ]);
             return;
+        }
+
+        // Gäste sehen nur die Bilder – die Vorlieben sind Sache des Paares.
+        if ($this->isGuest($code)) {
+            header('Location: ' . I18n::path('/galerie/' . $code), true, 303);
+            exit;
         }
 
         if ($method === 'POST') {
@@ -282,7 +289,7 @@ final class GalleryController
             return;
         }
 
-        if (!$this->isAuthorized($code)) {
+        if (!$this->isAuthorized($code) || $this->isGuest($code)) {
             http_response_code(403);
             echo json_encode(['ok' => false, 'error' => 'auth']);
             return;
@@ -298,7 +305,14 @@ final class GalleryController
         $picks = array_slice(array_map('intval', (array) ($body['picks'] ?? [])), 0, 400);
         $note = Security::clean($body['note'] ?? '', 800);
 
-        Galleries::saveSelection($code, (string) ($gallery['couple'] ?? ''), $picks, $note);
+        $photoCount = count(Galleries::photos($gallery));
+        $cover = $body['cover'] ?? null;
+        $cover = is_numeric($cover) ? (int) $cover : null;
+        if ($cover !== null && ($cover < 0 || $cover >= $photoCount)) {
+            $cover = null;
+        }
+
+        Galleries::saveSelection($code, (string) ($gallery['couple'] ?? ''), $picks, $note, $cover);
 
         echo json_encode(['ok' => true, 'count' => count($picks)]);
     }
@@ -328,13 +342,13 @@ final class GalleryController
         $code = Galleries::normalize(Security::clean($_POST['code'] ?? '', 64));
         $password = Security::clean($_POST['password'] ?? '', 64);
 
-        $gallery = Galleries::auth($code, $password);
-        if ($gallery === null) {
+        $result = Galleries::authRole($code, $password);
+        if ($result === null) {
             return null;
         }
 
         Security::session();
-        $_SESSION['gallery'][$code] = true;
+        $_SESSION['gallery'][$code] = $result['role'];
         session_regenerate_id(true);
 
         // Relativ umleiten: so bleibt die Sitzung auch dann gültig, wenn die
@@ -346,6 +360,13 @@ final class GalleryController
     {
         Security::session();
         return !empty($_SESSION['gallery'][$code]);
+    }
+
+    /** Gast: darf ansehen, aber nichts ändern – kein Herz, kein Titelbild, kein Absenden. */
+    private function isGuest(string $code): bool
+    {
+        Security::session();
+        return ($_SESSION['gallery'][$code] ?? null) === 'guest';
     }
 
     /**

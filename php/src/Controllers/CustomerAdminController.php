@@ -227,10 +227,14 @@ final class CustomerAdminController
 
         // Was zur Galerie gehört, gehört nicht in die Kundenakte.
         Galleries::update($code, [
-            'date'     => $patch['date'],
-            'venue'    => $patch['venue'],
-            'expires'  => Customers::date($_POST['expires'] ?? ''),
-            'videoUrl' => Security::clean($_POST['video'] ?? '', 300),
+            'date'          => $patch['date'],
+            'venue'         => $patch['venue'],
+            'expires'       => Customers::date($_POST['expires'] ?? ''),
+            'videoUrl'      => Security::clean($_POST['video'] ?? '', 300),
+            // Leer heißt hier bewusst „aus“ – anders als beim Paarpasswort,
+            // wo leer „unverändert“ heißt. Ein Gastzugang, der sich nicht
+            // abschalten lässt, wäre keiner.
+            'guestPassword' => Security::clean($_POST['guestPassword'] ?? '', 64),
         ]);
     }
 

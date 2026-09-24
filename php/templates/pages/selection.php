@@ -10,6 +10,7 @@
  * @var array<string,mixed> $gallery
  * @var array<string,mixed>|null $selection
  * @var list<array{nr:int,url:string,original:?string,name:string}> $photos
+ * @var array{nr:int,url:string,original:?string,name:string}|null $cover
  * @var string $token
  * @var string $dateLong
  */
@@ -58,6 +59,16 @@ $share = (array) ($gallery['share'] ?? []);
           ? 'Von ' . count($photos) . ' Bildern liegen ' . count($withOriginal) . ' in voller Auflösung vor. Die übrigen sind Platzhalter oder wurden vor der Umstellung hochgeladen – die bitte beim Fotografen anfragen.'
           : 'Of ' . count($photos) . ' pictures, ' . count($withOriginal) . ' are available in full resolution. The rest are placeholders or were uploaded before the changeover – please ask the photographer for those.' ?>
       </p>
+    <?php endif; ?>
+
+    <?php if ($cover !== null) : ?>
+      <div class="mt-6 flex items-center gap-4 border-l-2 border-gold pl-5">
+        <img src="<?= e($cover['url']) ?>" alt="" class="h-20 w-16 object-cover">
+        <div>
+          <div class="text-[0.6rem] uppercase tracking-[0.2em] text-muted"><?= $de ? 'Titelbild' : 'Cover photo' ?></div>
+          <div class="mt-1 text-[0.9rem] text-ink"><?= $de ? 'Nr.' : 'No.' ?> <?= (int) $cover['nr'] ?> — <?= e($cover['name']) ?></div>
+        </div>
+      </div>
     <?php endif; ?>
 
     <?php if ((string) ($selection['note'] ?? '') !== '') : ?>

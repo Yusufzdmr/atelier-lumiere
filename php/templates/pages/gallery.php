@@ -10,6 +10,7 @@
  * @var list<array{thumb:string,full:string,upload:bool}> $photos
  * @var array<string,mixed>|null $selection
  * @var bool $preferencesFilled
+ * @var bool $readOnly
  * @var string $dateLong
  * @var string $csrf
  */
@@ -22,11 +23,15 @@ use Atelier\View;
 $couple = (string) ($gallery['couple'] ?? '');
 $code = (string) ($gallery['code'] ?? '');
 $picks = array_map('intval', (array) ($selection['picks'] ?? []));
+$cover = $selection['cover'] ?? null;
 $videoUrl = (string) ($gallery['videoUrl'] ?? '');
+$readOnly = $readOnly ?? false;
 ?>
 <div class="pb-40" data-gallery data-code="<?= e($code) ?>" data-csrf="<?= e($csrf) ?>"
      data-endpoint="<?= e(I18n::path('/galerie/' . $code . '/auswahl', $locale)) ?>"
-     data-picks="<?= e(implode(',', $picks)) ?>">
+     data-picks="<?= e(implode(',', $picks)) ?>"
+     data-cover="<?= $cover === null ? '' : (int) $cover ?>"
+     <?= $readOnly ? 'data-readonly' : '' ?>>
 
   <div class="mx-auto max-w-7xl px-5 pt-32 sm:px-8 sm:pt-40">
     <div class="flex flex-wrap items-start justify-between gap-4">
@@ -48,10 +53,18 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
         'code'              => $code,
         'active'            => 'photos',
         'preferencesFilled' => $preferencesFilled ?? false,
-        'demo'              => $demo ?? false,
+        'demo'              => ($demo ?? false) || $readOnly,
     ]) ?>
 
-    <p class="mt-6 max-w-xl border-l-2 border-gold pl-4 text-sm leading-relaxed text-muted"><?= e(I18n::t('gallery.selectHint')) ?></p>
+    <?php if ($readOnly) : ?>
+      <p class="mt-6 max-w-xl border-l-2 border-gold pl-4 text-sm leading-relaxed text-muted">
+        <?= $locale === 'de'
+          ? 'Ihr seht hier die Bilder des Paares – ohne Herz, das bleibt den beiden vorbehalten.'
+          : "You're seeing the couple's photos here – without the heart, that stays with the two of them." ?>
+      </p>
+    <?php else : ?>
+      <p class="mt-6 max-w-xl border-l-2 border-gold pl-4 text-sm leading-relaxed text-muted"><?= e(I18n::t('gallery.selectHint')) ?></p>
+    <?php endif; ?>
 
     <?php if ($videoUrl !== '' && Video::isSupported($videoUrl)) : ?>
       <div class="mt-10 max-w-3xl">
@@ -72,48 +85,58 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
                  class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
           </button>
 
-          <button type="button" data-pick="<?= $i ?>"
-                  aria-pressed="<?= in_array($i, $picks, true) ? 'true' : 'false' ?>"
-                  class="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-cream/85 text-lg transition-colors hover:bg-cream">
-            <span data-heart>♥</span>
-          </button>
+          <?php if (!$readOnly) : ?>
+            <button type="button" data-pick="<?= $i ?>"
+                    aria-pressed="<?= in_array($i, $picks, true) ? 'true' : 'false' ?>"
+                    class="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-cream/85 text-lg transition-colors hover:bg-cream">
+              <span data-heart>♥</span>
+            </button>
+            <button type="button" data-cover-pick="<?= $i ?>"
+                    aria-pressed="<?= $cover === $i ? 'true' : 'false' ?>"
+                    title="<?= $locale === 'de' ? 'Als Titelbild setzen' : 'Set as cover photo' ?>"
+                    class="absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-cream/85 text-base transition-colors hover:bg-cream">
+              <span data-star>★</span>
+            </button>
+          <?php endif; ?>
         </div>
       <?php endforeach; ?>
     </div>
   </div>
 
-  <?php /* Leiste am unteren Rand: Zähler, Nachricht, Absenden */ ?>
-  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-sand-deep bg-cream/95 backdrop-blur-md">
-    <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
-      <div class="text-[0.8rem] text-ink">
-        <strong data-count><?= count($picks) ?></strong> <?= e(I18n::t('gallery.selected')) ?>
+  <?php /* Leiste am unteren Rand: Zähler, Nachricht, Absenden – nicht für Gäste */ ?>
+  <?php if (!$readOnly) : ?>
+    <div class="fixed inset-x-0 bottom-0 z-40 border-t border-sand-deep bg-cream/95 backdrop-blur-md">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-5 py-4 sm:px-8">
+        <div class="text-[0.8rem] text-ink">
+          <strong data-count><?= count($picks) ?></strong> <?= e(I18n::t('gallery.selected')) ?>
+        </div>
+
+        <input type="text" data-note maxlength="800" value="<?= e((string) ($selection['note'] ?? '')) ?>"
+               placeholder="<?= $locale === 'de' ? 'Nachricht an uns (optional)' : 'A note to us (optional)' ?>"
+               class="min-w-[12rem] flex-1 border-b border-sand-deep bg-transparent px-0 py-2 text-[0.9rem] text-ink outline-none focus:border-gold">
+
+        <?php if (empty($demo)) : ?>
+          <button type="button" data-send
+                  class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold disabled:opacity-50">
+            <?= e(I18n::t('gallery.send')) ?>
+          </button>
+        <?php else : ?>
+          <?php /* In der Beispielgalerie darf jeder klicken – abgeschickt wird nichts. */ ?>
+          <span class="text-[0.78rem] text-muted">
+            <?= $locale === 'de'
+              ? 'Beispielgalerie – hier wird nichts abgeschickt.'
+              : 'Example gallery – nothing is sent from here.' ?>
+          </span>
+          <a href="<?= e(\Atelier\I18n::path('/kontakt', $locale)) ?>"
+             class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
+            <?= $locale === 'de' ? 'Termin anfragen' : 'Get in touch' ?>
+          </a>
+        <?php endif; ?>
+
+        <span data-status class="text-[0.78rem] text-gold"></span>
       </div>
-
-      <input type="text" data-note maxlength="800" value="<?= e((string) ($selection['note'] ?? '')) ?>"
-             placeholder="<?= $locale === 'de' ? 'Nachricht an uns (optional)' : 'A note to us (optional)' ?>"
-             class="min-w-[12rem] flex-1 border-b border-sand-deep bg-transparent px-0 py-2 text-[0.9rem] text-ink outline-none focus:border-gold">
-
-      <?php if (empty($demo)) : ?>
-        <button type="button" data-send
-                class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold disabled:opacity-50">
-          <?= e(I18n::t('gallery.send')) ?>
-        </button>
-      <?php else : ?>
-        <?php /* In der Beispielgalerie darf jeder klicken – abgeschickt wird nichts. */ ?>
-        <span class="text-[0.78rem] text-muted">
-          <?= $locale === 'de'
-            ? 'Beispielgalerie – hier wird nichts abgeschickt.'
-            : 'Example gallery – nothing is sent from here.' ?>
-        </span>
-        <a href="<?= e(\Atelier\I18n::path('/kontakt', $locale)) ?>"
-           class="bg-ink px-7 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
-          <?= $locale === 'de' ? 'Termin anfragen' : 'Get in touch' ?>
-        </a>
-      <?php endif; ?>
-
-      <span data-status class="text-[0.78rem] text-gold"></span>
     </div>
-  </div>
+  <?php endif; ?>
 
   <?php /* Lightbox */ ?>
   <div data-lightbox class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/95 p-4">
@@ -123,7 +146,10 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
     <button type="button" data-next class="absolute right-4 text-3xl text-cream/60 hover:text-cream" aria-label="<?= e(I18n::t('gallery.next')) ?>">›</button>
     <div class="absolute bottom-6 flex items-center gap-5 text-[0.72rem] uppercase tracking-[0.18em] text-cream/70">
       <span data-position></span>
-      <button type="button" data-lightbox-pick class="text-cream hover:text-gold">♥</button>
+      <?php if (!$readOnly) : ?>
+        <button type="button" data-lightbox-pick class="text-cream hover:text-gold">♥</button>
+        <button type="button" data-lightbox-cover class="text-cream hover:text-gold">★</button>
+      <?php endif; ?>
       <a data-download href="" download class="hover:text-gold"><?= e(I18n::t('gallery.download')) ?></a>
     </div>
   </div>

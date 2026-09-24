@@ -53,6 +53,7 @@ final class SelectionController
             'gallery'   => $gallery,
             'selection' => $selection,
             'photos'    => $photos,
+            'cover'     => Galleries::coverPhoto($gallery, $selection),
             'token'     => $token,
             'dateLong'  => Dates::long((string) ($gallery['date'] ?? '')),
         ]);
