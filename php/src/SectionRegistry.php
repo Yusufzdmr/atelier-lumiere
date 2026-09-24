@@ -625,8 +625,8 @@ final class SectionRegistry
                 'credit' => [
                     'type'    => 'bool',
                     'default' => false,
-                    'label'   => ['de' => 'Hinweis auf Atelier Lumière',
-                                  'tr' => 'Altta Atelier Lumière yönlendirmesi'],
+                    'label'   => ['de' => 'Hinweis auf Han Studio',
+                                  'tr' => 'Altta Han Studio yönlendirmesi'],
                 ],
             ],
             'inputs' => [

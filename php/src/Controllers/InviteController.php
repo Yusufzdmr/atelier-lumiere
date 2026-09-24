@@ -273,7 +273,7 @@ final class InviteController
                 'Einladungen weitergeben – sie gehört euch.',
                 '',
                 'Herzliche Grüße',
-                'Atelier Lumière',
+                'Han Studio',
             ]
             : [
                 'Your invitation is ready.',
@@ -289,7 +289,7 @@ final class InviteController
                 'with the invitations – it belongs to you.',
                 '',
                 'Warm regards',
-                'Atelier Lumière',
+                'Han Studio',
             ];
 
         return Mail::send(

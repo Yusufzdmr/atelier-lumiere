@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const l: Locale = isLocale(locale) ? locale : "de";
   const title =
     l === "de"
-      ? "Hochzeitsfotograf Stuttgart | Foto & Video | Atelier Lumière"
-      : "Stuttgart Düğün Fotoğrafçısı | Foto & Video | Atelier Lumière";
+      ? "Hochzeitsfotograf Stuttgart | Foto & Video | Han Studio"
+      : "Stuttgart Düğün Fotoğrafçısı | Foto & Video | Han Studio";
   const description =
     l === "de"
       ? "Hochzeitsfotograf & Videograf in Stuttgart und Umgebung. Dokumentarische Reportagen, Hochzeitsfilm, private Kundengalerie und digitale Einladung."

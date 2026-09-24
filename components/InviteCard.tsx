@@ -442,7 +442,7 @@ export default function InviteCard({
         </article>
 
         <div className="mt-8 text-center text-[0.58rem] uppercase tracking-[0.26em]" style={{ color: th.soft }}>
-          Atelier Lumière · {t.title}
+          Han Studio · {t.title}
         </div>
       </div>
 

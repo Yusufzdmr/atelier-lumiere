@@ -16,7 +16,7 @@ export default async function Footer({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-1">
-            <div className="font-display text-2xl font-light tracking-[0.16em]">ATELIER LUMIÈRE</div>
+            <div className="font-display text-2xl font-light tracking-[0.16em]">HAN STUDIO</div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-cream/60">{t.footer.tagline}</p>
             <div className="mt-6 flex gap-4 text-[0.7rem] uppercase tracking-[0.2em] text-cream/60">
               <a href={c.instagram} className="hover:text-gold" rel="noopener noreferrer" target="_blank">

@@ -50,7 +50,7 @@ $navLinks = [
   <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
     <div class="grid gap-12 md:grid-cols-3">
       <div class="md:col-span-1">
-        <div class="font-display text-2xl font-light tracking-[0.16em]">ATELIER LUMIÈRE</div>
+        <div class="font-display text-2xl font-light tracking-[0.16em]">HAN STUDIO</div>
         <p class="mt-4 max-w-xs text-sm leading-relaxed text-cream/60"><?= e(I18n::t('footer.tagline')) ?></p>
         <div class="mt-6 flex gap-4 text-[0.7rem] uppercase tracking-[0.2em] text-cream/60">
           <a href="<?= e((string) ($c['instagram'] ?? '#')) ?>" class="hover:text-gold" rel="noopener noreferrer" target="_blank">Instagram</a>
@@ -95,7 +95,7 @@ $navLinks = [
     </div>
 
     <div class="mt-14 flex flex-col gap-3 border-t border-cream/10 pt-7 text-xs text-cream/40 sm:flex-row sm:items-center sm:justify-between">
-      <div>© <?= date('Y') ?> Atelier Lumière Hochzeitsfotografie. <?= e(I18n::t('footer.rights')) ?></div>
+      <div>© <?= date('Y') ?> Han Studio Hochzeitsfotografie. <?= e(I18n::t('footer.rights')) ?></div>
       <div><?= e(I18n::t('footer.demo')) ?></div>
     </div>
   </div>

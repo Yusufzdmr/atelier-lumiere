@@ -87,7 +87,7 @@ export async function createOrder(opts: {
       payment_source: {
         paypal: {
           experience_context: {
-            brand_name: "Atelier Lumière",
+            brand_name: "Han Studio",
             locale: "de-DE",
             user_action: "PAY_NOW",
             return_url: opts.returnUrl,

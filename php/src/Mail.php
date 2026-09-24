@@ -27,7 +27,7 @@ final class Mail
         }
 
         $headers = [
-            'From: Atelier Lumière <' . $from . '>',
+            'From: Han Studio <' . $from . '>',
             'Content-Type: text/plain; charset=UTF-8',
             'MIME-Version: 1.0',
         ];

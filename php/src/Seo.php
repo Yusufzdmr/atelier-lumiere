@@ -36,7 +36,7 @@ final class Seo
         // verschwinden – der Einladungsassistent kam ohne sein invite.js auf
         // die Seite, und damit tat dort kein einziger Knopf mehr etwas.
         return array_merge($fallback, [
-            'title'       => $title !== '' ? $title : (string) ($fallback['title'] ?? 'Atelier Lumière'),
+            'title'       => $title !== '' ? $title : (string) ($fallback['title'] ?? 'Han Studio'),
             'description' => $description !== '' ? $description : (string) ($fallback['description'] ?? ''),
             'image'       => $image !== '' ? $image : (string) ($fallback['image'] ?? $default),
             'noindex'     => (bool) ($entry['noindex'] ?? $fallback['noindex'] ?? false),
@@ -104,8 +104,8 @@ final class Seo
              */
             '@type'       => 'PhotographyBusiness',
             '@id'         => $url . '/#business',
-            'name'        => 'Atelier Lumière',
-            'legalName'   => 'Atelier Lumière Hochzeitsfotografie',
+            'name'        => 'Han Studio',
+            'legalName'   => 'Han Studio Hochzeitsfotografie',
             'url'         => $url . I18n::path(''),
             'telephone'   => $c['phone'] ?? '',
             'email'       => $c['email'] ?? '',

@@ -236,17 +236,25 @@ body:has([data-standalone="invite"]) footer { display: none !important; }
 #site-header.is-solid::before { opacity: 0; }
 
 /* Über dem Bild hell, im Balken wieder dunkel. */
-#site-header:not(.is-solid) .hdr-name,
 #site-header:not(.is-solid) .hdr-link { color: #FBF6EE; }
 #site-header:not(.is-solid) .hdr-sub { color: rgba(251, 246, 238, .9); }
+
+/* Das Logo ist jetzt eine Rastergrafik statt Schrift, kann also keine Farbe
+   annehmen. Zwei Fassungen (dunkle Tinte / helle Kreide) liegen übereinander,
+   und dieselbe Bedingung blendet zwischen ihnen um statt die Farbe zu drehen. */
+#site-header.is-solid .hdr-logo-dark { opacity: 1; }
+#site-header.is-solid .hdr-logo-light { opacity: 0; }
+#site-header:not(.is-solid) .hdr-logo-dark { opacity: 0; }
+#site-header:not(.is-solid) .hdr-logo-light { opacity: 1; }
 
 /*
  * Ein Schleier allein reicht bei duenner heller Schrift nicht: er dunkelt das
  * ganze Bild, um zwei Zeilen zu retten. Der Schatten wirkt nur dort, wo die
  * Schrift steht, und traegt den Rest.
  */
-#site-header:not(.is-solid) .hdr-name,
+#site-header:not(.is-solid) .hdr-logo-light,
 #site-header:not(.is-solid) .hdr-sub { text-shadow: 0 1px 3px rgba(22, 18, 14, .6); }
+#site-header:not(.is-solid) .hdr-logo-light { filter: drop-shadow(0 1px 3px rgba(22, 18, 14, .6)); }
 #site-header:not(.is-solid) .hdr-cta { color: #FBF6EE; border-color: rgba(251, 246, 238, .7); }
 #site-header:not(.is-solid) .hdr-cta:hover { background: #FBF6EE; color: #221C16; }
 #site-header:not(.is-solid) .hdr-bar { background: rgba(251, 246, 238, .4); }

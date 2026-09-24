@@ -9,7 +9,7 @@ export default function AdminLogin({ locale }: { locale: Locale }) {
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-sm flex-col justify-center px-5">
-      <div className="eyebrow">Atelier Lumière</div>
+      <div className="eyebrow">Han Studio</div>
       <h1 className="headline mt-3 text-3xl">{locale === "de" ? "Admin-Bereich" : "Yönetim paneli"}</h1>
       <p className="mt-3 text-sm text-muted">
         {locale === "de"

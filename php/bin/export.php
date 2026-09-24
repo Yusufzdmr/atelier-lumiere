@@ -41,7 +41,7 @@ $quote = static function (array $data): string {
     return "'" . str_replace(["\\", "'"], ["\\\\", "\\'"], Db::encode($data)) . "'";
 };
 
-$sql = "-- Atelier Lumière – Inhalte für den Livegang\n"
+$sql = "-- Han Studio – Inhalte für den Livegang\n"
     . '-- Erzeugt am ' . date('Y-m-d H:i') . "\n"
     . "--\n"
     . "-- Reihenfolge im KAS:\n"

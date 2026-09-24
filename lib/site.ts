@@ -1,6 +1,6 @@
 export const site = {
-  name: "Atelier Lumière",
-  legalName: "Atelier Lumière Hochzeitsfotografie",
+  name: "Han Studio",
+  legalName: "Han Studio Hochzeitsfotografie",
   tagline: "Hochzeitsfotografie & Film",
   claim: "Hochzeitsfotograf & Videograf in Stuttgart",
   url:
@@ -14,7 +14,7 @@ export const site = {
   phone: "+49 711 12345678",
   phoneHuman: "+49 711 123 456 78",
   whatsapp: "4971112345678",
-  email: "hallo@atelier-lumiere.de",
+  email: "hallo@han-studio.de",
   street: "Königstraße 27",
   zip: "70173",
   city: "Stuttgart",

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -61,9 +62,14 @@ export default function Header({ locale }: { locale: Locale }) {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
           <Link href={p("")} className="group flex flex-col leading-none" aria-label={site.name}>
-            <span className="font-display whitespace-nowrap text-xl font-light tracking-[0.14em] text-ink sm:text-2xl">
-              ATELIER LUMIÈRE
-            </span>
+            <Image
+              src="/logo.png"
+              alt={site.name}
+              width={984}
+              height={303}
+              priority
+              className="h-9 w-auto sm:h-11"
+            />
             <span className="mt-1 hidden text-[0.6rem] uppercase tracking-[0.32em] text-muted xl:block">
               Hochzeitsfotografie · Stuttgart
             </span>

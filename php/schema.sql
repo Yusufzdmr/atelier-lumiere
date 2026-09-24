@@ -1,4 +1,4 @@
--- Atelier Lumière – MariaDB-Schema (ALL-INKL)
+-- Han Studio – MariaDB-Schema (ALL-INKL)
 --
 -- Bewusst dieselbe Struktur wie in der Next.js-Fassung: die Inhalte liegen als
 -- JSON-Dokument, nicht in dutzenden Spalten. Damit lassen sich die bestehenden

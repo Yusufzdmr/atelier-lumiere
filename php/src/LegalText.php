@@ -67,7 +67,7 @@ final class LegalText
         $c = Content::get('contact');
 
         return [
-            'legalName' => 'Atelier Lumière Hochzeitsfotografie',
+            'legalName' => 'Han Studio Hochzeitsfotografie',
             'owner'     => 'Julian Roth',
             'street'    => (string) ($c['street'] ?? ''),
             'zip'       => (string) ($c['zip'] ?? ''),

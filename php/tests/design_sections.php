@@ -1518,7 +1518,7 @@ $fussDoc = DesignSections::complete(sec_doc([
 $fussHtml = DesignSections::html($fussDoc, [], 'de', '2026-01-01');
 
 assert_contains($fussHtml, 'd-sec-credit', 'Schluss: der Hinweis wird gedruckt');
-assert_contains($fussHtml, 'Atelier Lumière', 'Schluss: und nennt das Haus');
+assert_contains($fussHtml, 'Han Studio', 'Schluss: und nennt das Haus');
 // "/de" und nicht "/de/": das ist die Adresse, die auch Seo.php und
 // PageController als kanonische Startseite fuehren. Zwei Schreibweisen
 // fuer dieselbe Seite waeren zwei Adressen fuer Google.

@@ -42,8 +42,8 @@ return [
     'admin_key' => 'bitte-aendern',
 
     // Absender der Benachrichtigungen (Kontaktformular, RSVP)
-    'mail_from' => 'website@atelier-lumiere.de',
-    'mail_to'   => 'hallo@atelier-lumiere.de',
+    'mail_from' => 'website@han-studio.de',
+    'mail_to'   => 'hallo@han-studio.de',
 
     // Ordner für hochgeladene Bilder, relativ zu public/
     'upload_dir' => 'uploads',

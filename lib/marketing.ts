@@ -69,8 +69,8 @@ export const seoPages: PageDef[] = [
     path: "/",
     label: { de: "Startseite", tr: "Ana sayfa" },
     title: {
-      de: "Hochzeitsfotograf Stuttgart – Foto & Video | Atelier Lumière",
-      tr: "Stuttgart Düğün Fotoğrafçısı – Foto & Video | Atelier Lumière",
+      de: "Hochzeitsfotograf Stuttgart – Foto & Video | Han Studio",
+      tr: "Stuttgart Düğün Fotoğrafçısı – Foto & Video | Han Studio",
     },
     description: {
       de: "Dokumentarische Hochzeitsfotografie und Hochzeitsfilm in Stuttgart, Ludwigsburg, Esslingen und Umgebung. Private Kundengalerie mit Album-Auswahl und digitale Hochzeitseinladung inklusive.",
@@ -183,8 +183,8 @@ export const seoPages: PageDef[] = [
       tr: "Dijital düğün davetiyesi oluştur – RSVP ve geri sayımlı",
     },
     description: {
-      de: "Eigene Einladungsseite in drei Minuten: Countdown, Google-Maps-Route, WhatsApp-Versand und Zusagen. Für Hochzeitspaare von Atelier Lumière kostenlos.",
-      tr: "Üç dakikada kendi davetiye sayfanız: geri sayım, Google Maps yol tarifi, WhatsApp paylaşımı ve katılım bildirimi. Atelier Lumière çiftlerine ücretsiz.",
+      de: "Eigene Einladungsseite in drei Minuten: Countdown, Google-Maps-Route, WhatsApp-Versand und Zusagen. Für Hochzeitspaare von Han Studio kostenlos.",
+      tr: "Üç dakikada kendi davetiye sayfanız: geri sayım, Google Maps yol tarifi, WhatsApp paylaşımı ve katılım bildirimi. Han Studio çiftlerine ücretsiz.",
     },
   },
   {

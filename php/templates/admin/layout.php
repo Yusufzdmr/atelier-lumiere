@@ -57,7 +57,7 @@ $overviewTab = static function () use ($locale, $current, $link): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title><?= e((string) ($meta['title'] ?? 'Admin')) ?> | Atelier Lumière</title>
+  <title><?= e((string) ($meta['title'] ?? 'Admin')) ?> | Han Studio</title>
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/style.css?v=<?= e((string) @filemtime(__DIR__ . '/../../public/assets/style.css')) ?>">
 </head>
@@ -69,7 +69,7 @@ $overviewTab = static function () use ($locale, $current, $link): string {
   <header class="sticky top-0 z-30 border-b border-sand-deep bg-cream/95 backdrop-blur">
     <div class="mx-auto flex max-w-[92rem] flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
       <div class="flex items-baseline gap-4">
-        <span class="font-display text-lg font-light text-ink">Atelier Lumière</span>
+        <span class="font-display text-lg font-light text-ink">Han Studio</span>
         <span class="hidden text-[0.62rem] uppercase tracking-[0.2em] text-muted sm:inline">
           <?= $de ? 'Verwaltung' : 'Yönetim' ?>
         </span>

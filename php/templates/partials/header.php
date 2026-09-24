@@ -80,8 +80,11 @@ $fest = !empty($fest);
           ? 'is-solid bg-cream/95 backdrop-blur-md border-b border-sand-deep/40 py-3'
           : 'bg-transparent py-6' ?>">
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-    <a href="<?= e($p('')) ?>" class="group flex flex-col leading-none" aria-label="Atelier Lumière">
-      <span class="hdr-name font-display whitespace-nowrap text-xl font-light tracking-[0.14em] text-ink transition-colors sm:text-2xl">ATELIER LUMIÈRE</span>
+    <a href="<?= e($p('')) ?>" class="group flex flex-col leading-none" aria-label="Han Studio">
+      <span class="relative block h-9 sm:h-11" style="aspect-ratio: 984 / 303;">
+        <img src="/assets/logo.png" alt="Han Studio" class="hdr-logo hdr-logo-dark absolute inset-0 h-full w-full object-contain transition-opacity duration-500">
+        <img src="/assets/logo-light.png" alt="" aria-hidden="true" class="hdr-logo hdr-logo-light absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-500">
+      </span>
       <span class="hdr-sub mt-1 hidden text-[0.6rem] uppercase tracking-[0.32em] text-muted transition-colors xl:block"><?= $locale === 'de' ? 'Hochzeitsfotografie' : 'Wedding photography' ?> · <?= e((string) (\Atelier\Content::get('contact')['city'] ?? '')) ?></span>
     </a>
 

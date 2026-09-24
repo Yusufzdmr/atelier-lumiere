@@ -49,7 +49,7 @@ export default async function AdminLayout({
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-sand-deep pb-5">
           <div>
-            <div className="eyebrow">Atelier Lumière</div>
+            <div className="eyebrow">Han Studio</div>
             <h1 className="font-display mt-1 text-2xl font-light text-ink">
               {l === "de" ? "Verwaltung" : "Yönetim"}
             </h1>
