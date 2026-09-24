@@ -344,6 +344,19 @@ final class Galleries
         return $now > $seen;
     }
 
+    /**
+     * Bir galeri "hazır" sayılır ⇔ seçim var ve en az bir kare seçilmiş.
+     *
+     * 2. madde (albüm modeli, kargo adresi vb.) eklenene kadar tek ölçüt
+     * bu — mevcut ZIP indirme akışının zaten kullandığı ölçütle aynı.
+     *
+     * @param array<string,mixed>|null $selection
+     */
+    public static function isReady(?array $selection): bool
+    {
+        return $selection !== null && (array) ($selection['picks'] ?? []) !== [];
+    }
+
     /* ------------------------------ Schreiben ----------------------------- */
 
     /** @param array<string,mixed> $gallery */
