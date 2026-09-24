@@ -41,6 +41,15 @@ return [
      */
     'admin_key' => 'bitte-aendern',
 
+    /*
+     * Zugang für die Albumcu-Anmeldung (/albumcu) – ein gemeinsamer Zugang
+     * für den Albumhersteller, kein eigenes Benutzerkonto pro Firma.
+     * Gleiche Regel wie beim admin_key: Klartext funktioniert, ein Hash
+     * (password_hash) ist sicherer.
+     */
+    'albumist_user' => 'albumcu',
+    'albumist_key'  => 'bitte-aendern',
+
     // Absender der Benachrichtigungen (Kontaktformular, RSVP)
     'mail_from' => 'website@han-studio.de',
     'mail_to'   => 'hallo@han-studio.de',
