@@ -500,7 +500,10 @@ Beklenen: `No syntax errors detected`
 - [ ] **Step 3: Rotaları bağla**
 
 `php/public/index.php` içinde `use Atelier\Controllers\SelectionController;`
-satırını (satır 22) şununla değiştir:
+satırının (satır 22) **hemen altına** ekle — mevcut satırı SİLME, sadece
+yanına ekle (eski `/auswahl/*` rotaları bu görevde hâlâ o sınıfı kullanıyor;
+importu şimdi kaldırırsan o rotalar Task 5'e kadar kırık kalır — Task 5
+ikisini birlikte kaldırıyor):
 
 ```php
 use Atelier\Controllers\AlbumistController;
@@ -820,7 +823,7 @@ rm src/Controllers/SelectionController.php
 rm templates/pages/selection.php
 ```
 
-- [ ] **Step 2: `public/index.php`'den eski rotaları kaldır**
+- [ ] **Step 2: `public/index.php`'den eski rotaları ve importu kaldır**
 
 Şu iki satırı (ve üstündeki açıklama yorumunu) sil:
 
@@ -833,6 +836,11 @@ $router->get('/{locale}/auswahl/{token}', $page_(static fn (array $p) => (new Se
 
 (Bu satırlar Task 3'te eklenen `/albumcu` rotalarının **üstünde**, dosyanın
 başlarında duruyor — `$page_`, `$admin_` tanımlarının hemen altında.)
+
+Ayrıca `use Atelier\Controllers\SelectionController;` satırını (dosyanın
+başında, `use Atelier\Controllers\AlbumistController;` satırının hemen
+üstünde — Task 3'te bilerek silinmemişti, bu artık kullanılmayan son
+referanstı) sil.
 
 - [ ] **Step 3: Sözdizimini doğrula**
 
