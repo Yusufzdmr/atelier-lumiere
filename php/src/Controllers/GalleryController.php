@@ -7,6 +7,7 @@ use Atelier\Content;
 use Atelier\Dates;
 use Atelier\Galleries;
 use Atelier\I18n;
+use Atelier\OgImage;
 use Atelier\Security;
 use Atelier\Seo;
 use Atelier\View;
@@ -70,10 +71,10 @@ final class GalleryController
             View::page('pages/gallery-login', [
                 'locale' => I18n::locale(),
                 'path'   => I18n::path('/galerie/' . $code),
-                'meta'   => [
+                'meta'   => array_merge([
                     'title'   => (string) ($gallery['couple'] ?? ''),
                     'noindex' => true,
-                ],
+                ], $this->shareMeta($gallery)),
                 'error'      => ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' ? 'wrong' : '',
                 'presetCode' => $code,
                 'couple'     => (string) ($gallery['couple'] ?? ''),
@@ -88,11 +89,11 @@ final class GalleryController
         View::page('pages/gallery', [
             'locale' => I18n::locale(),
             'path'   => I18n::path('/galerie/' . $code),
-            'meta'   => [
+            'meta'   => array_merge([
                 'title'   => (string) ($gallery['couple'] ?? ''),
                 'noindex' => true,
                 'scripts' => ['/assets/gallery.js'],
-            ],
+            ], $this->shareMeta($gallery)),
             'gallery'            => $gallery,
             'photos'             => $photos,
             'selection'          => $selection,
@@ -345,5 +346,33 @@ final class GalleryController
     {
         Security::session();
         return !empty($_SESSION['gallery'][$code]);
+    }
+
+    /**
+     * Vorschau fürs Teilen (WhatsApp & Co.) – gilt für die Anmeldeseite
+     * genauso wie für die Galerie selbst: wer einen Link teilt, hat sich
+     * noch nicht angemeldet, also holt der Crawler immer die Login-Seite.
+     *
+     * @param array<string,mixed> $gallery
+     * @return array<string,mixed>
+     */
+    private function shareMeta(array $gallery): array
+    {
+        $facts = array_filter([
+            (string) ($gallery['venue'] ?? ''),
+            Dates::long((string) ($gallery['date'] ?? '')),
+        ], static fn (string $v): bool => $v !== '');
+
+        $code = (string) ($gallery['code'] ?? '');
+        $photos = Galleries::photos($gallery);
+        $source = (string) ($photos[0]['full'] ?? '');
+        $image = $source === '' ? '' : OgImage::forDocument($code, $source, '#faf7f2', '#dccebc');
+
+        return [
+            'description' => implode(' · ', $facts),
+            'image'       => $image,
+            'imageWidth'  => OgImage::WIDTH,
+            'imageHeight' => OgImage::HEIGHT,
+        ];
     }
 }
