@@ -52,6 +52,8 @@ final class Admin
 
         // Die Kundenakte ist die Galerie: wer eine anlegt, legt eine Galerie an.
         ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler', 'pinned' => true],
+        // Stile und Fragen des zweiten Galerie-Reiters – für alle Kunden gleich.
+        ['href' => '/galeri-tercihleri', 'group' => 'galerie', 'de' => 'Stile & Fragebogen', 'tr' => 'Stiller & anket'],
 
         ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler', 'pinned' => true],
         // Themen sind die Designs der Einladungskarte, nicht der Website.

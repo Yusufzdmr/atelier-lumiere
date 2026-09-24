@@ -6,6 +6,9 @@
  * @var array<string,mixed> $customer
  * @var array<string,mixed>|null $gallery
  * @var array<string,mixed>|null $selection
+ * @var array<string,mixed>|null $preferences
+ * @var list<array<string,mixed>> $styles
+ * @var list<array<string,mixed>> $questions
  * @var list<array{thumb:string,full:string,upload:bool}> $photos
  * @var list<array{slug:string,at:string,couple:string,rsvps:int,exists:bool}> $usedFor
  * @var string $csrf
@@ -170,6 +173,42 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
               <?php endif; ?>
             </div>
           <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($preferences !== null) : ?>
+        <div class="border border-gold/50 bg-sand/30 p-5">
+          <div class="text-[0.62rem] uppercase tracking-[0.18em] text-gold">
+            <?= $de ? 'Vorlieben des Paares' : 'Çiftin tercihleri' ?>
+          </div>
+          <p class="mt-2 text-[0.9rem] text-muted">
+            <?= e(Dates::short((string) ($preferences['at'] ?? ''))) ?>
+          </p>
+
+          <?php
+          $prefStyle = $preferences['style'] ?? null;
+          $prefStyleItem = $prefStyle === null ? null : ($styles[(int) $prefStyle] ?? null);
+          ?>
+          <?php if ($prefStyleItem !== null) : ?>
+            <p class="mt-3 border-t border-sand-deep pt-3 text-[0.85rem] text-ink">
+              Stil: <strong><?= e(I18n::pick($prefStyleItem['name'] ?? null, 'de')) ?></strong>
+            </p>
+          <?php elseif ($prefStyle !== null) : ?>
+            <p class="mt-3 border-t border-sand-deep pt-3 text-[0.82rem] italic text-muted">
+              <?= $de ? '(gewählter Stil wurde inzwischen gelöscht)' : '(seçilen stil daha sonra silinmiş)' ?>
+            </p>
+          <?php endif; ?>
+
+          <?php $prefAnswers = (array) ($preferences['answers'] ?? []); ?>
+          <?php foreach ($questions as $qi => $question) : ?>
+            <?php $answer = (string) ($prefAnswers[$qi] ?? ''); ?>
+            <?php if ($answer !== '') : ?>
+              <div class="mt-3 border-t border-sand-deep pt-3">
+                <div class="text-[0.72rem] text-muted"><?= e(I18n::pick($question['question'] ?? null, 'de')) ?></div>
+                <p class="mt-1 text-[0.85rem] leading-relaxed text-ink"><?= e($answer) ?></p>
+              </div>
+            <?php endif; ?>
+          <?php endforeach; ?>
         </div>
       <?php endif; ?>
 

@@ -3,8 +3,8 @@
  * Kundenliste mit dem Formular zum Anlegen.
  *
  * @var string $locale
- * @var list<array{customer:array<string,mixed>,photos:int,selection:array<string,mixed>|null}> $active
- * @var list<array{customer:array<string,mixed>,photos:int,selection:array<string,mixed>|null}> $archived
+ * @var list<array{customer:array<string,mixed>,photos:int,selection:array<string,mixed>|null,preferences:array<string,mixed>|null}> $active
+ * @var list<array{customer:array<string,mixed>,photos:int,selection:array<string,mixed>|null,preferences:array<string,mixed>|null}> $archived
  * @var array<string,mixed> $campaign
  * @var string $error
  * @var string $csrf
@@ -58,6 +58,11 @@ $row = static function (array $entry) use ($de, $locale): string {
     if ($entry['selection'] !== null) {
         $html .= '<span class="border border-gold px-2 py-1 text-gold">'
             . ($de ? 'Auswahl liegt vor' : 'Seçim geldi') . '</span>';
+    }
+
+    if ($entry['preferences'] !== null) {
+        $html .= '<span class="border border-gold px-2 py-1 text-gold">'
+            . ($de ? 'Vorlieben liegen vor' : 'Tercihler geldi') . '</span>';
     }
 
     return $html . '</div></a>';

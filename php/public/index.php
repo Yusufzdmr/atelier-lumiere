@@ -160,6 +160,7 @@ $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryCon
 $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
 $router->post('/{locale}/galerie/{code}/auswahl', $page_(static fn (array $p) => (new GalleryController())->saveSelection()));
 $router->get('/{locale}/galerie/beispiel', $page_(static fn (array $p) => (new GalleryController())->demo()));
+$router->any('/{locale}/galerie/{code}/tercihler', $page_(static fn (array $p) => (new GalleryController())->preferences($p)));
 $router->any('/{locale}/galerie/{code}', $page_(static fn (array $p) => (new GalleryController())->show($p)));
 
 $router->any('/{locale}/admin', $admin_(static fn (array $p) => (new AdminController($p['locale']))->overview()));
@@ -177,6 +178,7 @@ $router->any('/{locale}/admin/staedte', $admin_(static fn (array $p) => (new Lis
 $router->any('/{locale}/admin/locations', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->venues()));
 $router->any('/{locale}/admin/portfolio', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->stories()));
 $router->any('/{locale}/admin/ratgeber', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->posts()));
+$router->any('/{locale}/admin/galeri-tercihleri', $admin_(static fn (array $p) => (new ListAdminController($p['locale']))->galleryPreferences()));
 $router->any('/{locale}/admin/kunden', $admin_(static fn (array $p) => (new CustomerAdminController($p['locale']))->index()));
 $router->any('/{locale}/admin/kunden/{code}', $admin_(static fn (array $p) => (new CustomerAdminController($p['locale']))->show($p)));
 $router->any('/{locale}/admin/einladungen', $admin_(static fn (array $p) => (new InviteAdminController($p['locale']))->index()));

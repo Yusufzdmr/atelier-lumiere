@@ -93,12 +93,109 @@ final class GalleryController
                 'noindex' => true,
                 'scripts' => ['/assets/gallery.js'],
             ],
-            'gallery'   => $gallery,
-            'photos'    => $photos,
-            'selection' => $selection,
-            'dateLong'  => Dates::long((string) ($gallery['date'] ?? '')),
-            'csrf'      => Security::csrf(),
+            'gallery'            => $gallery,
+            'photos'             => $photos,
+            'selection'          => $selection,
+            'preferencesFilled'  => Galleries::preferences($code) !== null,
+            'dateLong'           => Dates::long((string) ($gallery['date'] ?? '')),
+            'csrf'               => Security::csrf(),
         ]);
+    }
+
+    /**
+     * Zweiter Reiter der Galerie: Bearbeitungsstil und Fragebogen.
+     *
+     * Anmeldung läuft wie bei show() über die Sitzung. Anders als dort ist
+     * ein POST hier nie ein Anmeldeversuch, sobald man schon angemeldet ist –
+     * die beiden Formulare landen also nie in der falschen Verzweigung.
+     *
+     * @param array<string,string> $params
+     */
+    public function preferences(array $params): void
+    {
+        $code = Galleries::normalize($params['code'] ?? '');
+        $gallery = Galleries::find($code);
+
+        if ($gallery === null) {
+            (new PageController())->notFound(I18n::locale());
+            return;
+        }
+
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+        if (!$this->isAuthorized($code)) {
+            $error = '';
+            if ($method === 'POST') {
+                $target = $this->login();
+                if ($target !== null) {
+                    header('Location: ' . $target, true, 303);
+                    exit;
+                }
+                $error = 'wrong';
+            }
+
+            View::page('pages/gallery-login', [
+                'locale' => I18n::locale(),
+                'path'   => I18n::path('/galerie/' . $code . '/tercihler'),
+                'meta'   => [
+                    'title'   => (string) ($gallery['couple'] ?? ''),
+                    'noindex' => true,
+                ],
+                'error'      => $error,
+                'presetCode' => $code,
+                'couple'     => (string) ($gallery['couple'] ?? ''),
+                'csrf'       => Security::csrf(),
+            ]);
+            return;
+        }
+
+        if ($method === 'POST') {
+            $this->savePreferences($code, $gallery);
+            header('Location: ' . I18n::path('/galerie/' . $code . '/tercihler') . '?gespeichert=1', true, 303);
+            exit;
+        }
+
+        $preferences = Galleries::preferences($code);
+
+        View::page('pages/gallery-preferences', [
+            'locale' => I18n::locale(),
+            'path'   => I18n::path('/galerie/' . $code . '/tercihler'),
+            'meta'   => [
+                'title'   => (string) ($gallery['couple'] ?? ''),
+                'noindex' => true,
+            ],
+            'gallery'           => $gallery,
+            'preferences'       => $preferences,
+            'preferencesFilled' => $preferences !== null,
+            'styles'            => Content::list('editingStyles'),
+            'questions'         => Content::list('galleryQuestions'),
+            'saved'             => isset($_GET['gespeichert']),
+            'csrf'              => Security::csrf(),
+        ]);
+    }
+
+    /** @param array<string,mixed> $gallery */
+    private function savePreferences(string $code, array $gallery): void
+    {
+        if (!Security::checkCsrf($_POST['csrf'] ?? null)) {
+            return;
+        }
+
+        $styles = Content::list('editingStyles');
+        $style = Security::clean($_POST['style'] ?? '', 4);
+        $styleIndex = $style === '' ? null : (int) $style;
+        if ($styleIndex !== null && !isset($styles[$styleIndex])) {
+            $styleIndex = null;
+        }
+
+        $answers = [];
+        foreach (Content::list('galleryQuestions') as $i => $question) {
+            $raw = $_POST['answer'][$i] ?? '';
+            $max = ($question['type'] ?? 'text') === 'choice' ? 200 : 2000;
+            $answers[$i] = Security::clean($raw, $max);
+        }
+
+        Galleries::savePreferences($code, (string) ($gallery['couple'] ?? ''), $styleIndex, $answers);
     }
 
     /**

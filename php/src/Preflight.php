@@ -114,7 +114,7 @@ final class Preflight
 
     private static function tables(bool $de): array
     {
-        $needed = ['site_content', 'integrations', 'customers', 'galleries', 'selections',
+        $needed = ['site_content', 'integrations', 'customers', 'galleries', 'selections', 'gallery_preferences',
                    'invitations', 'invite_guests', 'invite_drafts', 'rsvps', 'leads', 'payments', 'throttle'];
 
         try {

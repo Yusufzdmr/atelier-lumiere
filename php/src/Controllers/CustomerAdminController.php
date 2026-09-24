@@ -80,6 +80,10 @@ final class CustomerAdminController
         foreach (\Atelier\Db::jsonList('SELECT data FROM selections') as $selection) {
             $selections[(string) ($selection['code'] ?? '')] = $selection;
         }
+        $preferences = [];
+        foreach (\Atelier\Db::jsonList('SELECT data FROM gallery_preferences') as $preference) {
+            $preferences[(string) ($preference['code'] ?? '')] = $preference;
+        }
 
         $rows = [];
         foreach ($customers as $customer) {
@@ -88,9 +92,10 @@ final class CustomerAdminController
             $selection = $selections[$code] ?? null;
 
             $rows[] = [
-                'customer'  => $customer,
-                'photos'    => count((array) ($gallery['uploads'] ?? [])) + count((array) ($gallery['seeds'] ?? [])),
-                'selection' => $selection,
+                'customer'    => $customer,
+                'photos'      => count((array) ($gallery['uploads'] ?? [])) + count((array) ($gallery['seeds'] ?? [])),
+                'selection'   => $selection,
+                'preferences' => $preferences[$code] ?? null,
             ];
         }
 
@@ -123,6 +128,7 @@ final class CustomerAdminController
 
         $gallery = Galleries::find($code);
         $selection = Galleries::selection($code);
+        $preferences = Galleries::preferences($code);
 
         // Panele bakıldı: bekleyen iş listesinden düşer. Paar sonradan
         // kare eklerse (picks sayısı artar) tekrar "yeni" sayılır.
@@ -132,6 +138,10 @@ final class CustomerAdminController
             // eski "yeni" işareti göstermesin.
             $selection['seenAt'] = date('c');
             $selection['seenPickCount'] = count((array) ($selection['picks'] ?? []));
+        }
+        if ($preferences !== null && Galleries::isPreferencesUnseen($preferences)) {
+            Galleries::markPreferencesSeen($code);
+            $preferences['seenAt'] = date('c');
         }
 
         // Nur die Einladungen, die mit dem Gutschein dieses Kunden entstanden.
@@ -151,11 +161,14 @@ final class CustomerAdminController
         }
 
         $this->render('admin/customer', [
-            'customer'  => $customer,
-            'gallery'   => $gallery,
-            'selection' => $selection,
-            'photos'    => $gallery === null ? [] : Galleries::photos($gallery),
-            'usedFor'   => $usedFor,
+            'customer'    => $customer,
+            'gallery'     => $gallery,
+            'selection'   => $selection,
+            'preferences' => $preferences,
+            'styles'      => Content::list('editingStyles'),
+            'questions'   => Content::list('galleryQuestions'),
+            'photos'      => $gallery === null ? [] : Galleries::photos($gallery),
+            'usedFor'     => $usedFor,
         ], '/kunden/' . $code);
     }
 

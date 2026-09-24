@@ -9,6 +9,7 @@
  * @var array<string,mixed> $gallery
  * @var list<array{thumb:string,full:string,upload:bool}> $photos
  * @var array<string,mixed>|null $selection
+ * @var bool $preferencesFilled
  * @var string $dateLong
  * @var string $csrf
  */
@@ -16,6 +17,7 @@
 use function Atelier\e;
 use Atelier\I18n;
 use Atelier\Video;
+use Atelier\View;
 
 $couple = (string) ($gallery['couple'] ?? '');
 $code = (string) ($gallery['code'] ?? '');
@@ -40,6 +42,14 @@ $videoUrl = (string) ($gallery['videoUrl'] ?? '');
         <?= $locale === 'de' ? 'Abmelden' : 'Sign out' ?>
       </a>
     </div>
+
+    <?= View::partial('partials/gallery-tabs', [
+        'locale'            => $locale,
+        'code'              => $code,
+        'active'            => 'photos',
+        'preferencesFilled' => $preferencesFilled ?? false,
+        'demo'              => $demo ?? false,
+    ]) ?>
 
     <p class="mt-6 max-w-xl border-l-2 border-gold pl-4 text-sm leading-relaxed text-muted"><?= e(I18n::t('gallery.selectHint')) ?></p>
 

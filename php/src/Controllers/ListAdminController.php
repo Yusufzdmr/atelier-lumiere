@@ -674,6 +674,129 @@ final class ListAdminController
             : 'Çiftlerin talep göndermeden önce okuduğu yazılar. Ziyaretçi getirir, şehir ve mekân sayfalarına bağlanır.', [$spec]);
     }
 
+    /* --------------------------- Galerie-Tercihler --------------------------- */
+
+    /**
+     * Zweiter Reiter der Kundengalerie: die vier Bearbeitungsstile zur Wahl
+     * und der Fragebogen zu Aufnahme und Schnitt. Für alle Galerien gleich –
+     * die Antworten selbst liegen je Kunde in der Kundenakte.
+     */
+    public function galleryPreferences(): void
+    {
+        $de = $this->de();
+
+        $styles = [
+            'key'     => 'editingStyles',
+            'label'   => $de ? 'Bearbeitungsstile' : 'Düzenleme stilleri',
+            'intro'   => $de
+                ? 'Erscheinen als vier Karten im zweiten Reiter der Galerie – Name, Beschreibung und ein Beispielbild.'
+                : 'Galerinin ikinci sekmesinde dört kart olarak görünür — ad, açıklama ve bir örnek görsel.',
+            'heading' => fn (array $item): string => $this->pick($item, 'name', $de ? 'Stil' : 'Stil'),
+            'note'    => fn (array $item): string => $this->pick($item, 'description', ''),
+            'view'    => fn (array $item): string => '',
+            'delete'  => [
+                'label'   => $de ? 'Diesen Stil löschen' : 'Bu stili sil',
+                'confirm' => $de ? 'Diesen Stil wirklich löschen?' : 'Bu stil silinsin mi?',
+            ],
+            'photos' => fn (array $item): array => [
+                'hint' => $de
+                    ? 'Ein Beispielbild reicht. Mehrere hochgeladen, zeigt die Galerie nur das erste (Stern setzt, welches).'
+                    : 'Tek bir örnek görsel yeterli. Birden fazla yüklenirse galeri yalnızca ilkini gösterir (yıldız hangisi olduğunu belirler).',
+                'list' => $this->photoList($item),
+            ],
+            'sections' => fn (int $i): array => [[
+                'fields' => [
+                    ['path' => "editingStyles.$i.name.de", 'label' => $de ? 'Name (DE)' : 'Ad (DE)'],
+                    ['path' => "editingStyles.$i.name.en", 'label' => $de ? 'Name (EN)' : 'Ad (EN)'],
+                    ['path' => "editingStyles.$i.description.de", 'label' => $de ? 'Beschreibung (DE)' : 'Açıklama (DE)', 'type' => 'area', 'rows' => 3, 'wide' => true],
+                    ['path' => "editingStyles.$i.description.en", 'label' => $de ? 'Beschreibung (EN)' : 'Açıklama (EN)', 'type' => 'area', 'rows' => 3, 'wide' => true],
+                ],
+            ]],
+            'add' => [
+                'title'  => $de ? 'Neuer Stil' : 'Yeni stil',
+                'button' => $de ? 'Stil anlegen' : 'Stil oluştur',
+                'fields' => [
+                    ['path' => 'name_de', 'label' => $de ? 'Name (DE)' : 'Ad (DE)'],
+                    ['path' => 'name_en', 'label' => $de ? 'Name (EN)' : 'Ad (EN)'],
+                ],
+                'make' => function (): ?array {
+                    $nameDe = Security::clean($_POST['name_de'] ?? '', 80);
+                    $nameEn = Security::clean($_POST['name_en'] ?? '', 80);
+                    if ($nameDe === '' && $nameEn === '') {
+                        return null;
+                    }
+
+                    return [
+                        'name'        => ['de' => $nameDe ?: $nameEn, 'en' => $nameEn ?: $nameDe],
+                        'description' => ['de' => '', 'en' => ''],
+                        'uploads'     => [],
+                    ];
+                },
+            ],
+        ];
+
+        $questions = [
+            'key'     => 'galleryQuestions',
+            'label'   => $de ? 'Fragebogen' : 'Anket',
+            'intro'   => $de
+                ? 'Fragen zu Aufnahme und Schnitt, die das Paar im zweiten Reiter der Galerie beantwortet.'
+                : 'Çekim ve kurguya dair, çiftin galerinin ikinci sekmesinde yanıtladığı sorular.',
+            'heading' => fn (array $item): string => $this->pick($item, 'question', $de ? 'Frage' : 'Soru'),
+            'note'    => fn (array $item): string => ($item['type'] ?? 'text') === 'choice'
+                ? ($de ? 'Auswahl' : 'Çoktan seçmeli')
+                : ($de ? 'Freitext' : 'Serbest metin'),
+            'view'    => fn (array $item): string => '',
+            'delete'  => [
+                'label'   => $de ? 'Diese Frage löschen' : 'Bu soruyu sil',
+                'confirm' => $de ? 'Diese Frage wirklich löschen?' : 'Bu soru silinsin mi?',
+            ],
+            'sections' => fn (int $i): array => [[
+                'fields' => [
+                    ['path' => "galleryQuestions.$i.question.de", 'label' => $de ? 'Frage (DE)' : 'Soru (DE)'],
+                    ['path' => "galleryQuestions.$i.question.en", 'label' => $de ? 'Frage (EN)' : 'Soru (EN)'],
+                    [
+                        'path' => "galleryQuestions.$i.type", 'label' => $de ? 'Typ' : 'Tip', 'type' => 'select',
+                        'options' => ['text' => $de ? 'Freitext' : 'Serbest metin', 'choice' => $de ? 'Auswahl' : 'Çoktan seçmeli'],
+                    ],
+                    [
+                        'path' => "galleryQuestions.$i.choices.de", 'label' => $de ? 'Antwortmöglichkeiten (DE) – eine Zeile je Option' : 'Seçenekler (DE) – her satıra bir seçenek',
+                        'type' => 'lines', 'rows' => 4, 'wide' => true,
+                        'hint' => $de ? 'Nur gebraucht, wenn Typ „Auswahl" ist.' : 'Yalnızca tip „Çoktan seçmeli" ise kullanılır.',
+                    ],
+                    [
+                        'path' => "galleryQuestions.$i.choices.en", 'label' => $de ? 'Antwortmöglichkeiten (EN)' : 'Seçenekler (EN)',
+                        'type' => 'lines', 'rows' => 4, 'wide' => true,
+                    ],
+                ],
+            ]],
+            'add' => [
+                'title'  => $de ? 'Neue Frage' : 'Yeni soru',
+                'button' => $de ? 'Frage anlegen' : 'Soru oluştur',
+                'fields' => [
+                    ['path' => 'question_de', 'label' => $de ? 'Frage (DE)' : 'Soru (DE)'],
+                    ['path' => 'question_en', 'label' => $de ? 'Frage (EN)' : 'Soru (EN)'],
+                ],
+                'make' => function (): ?array {
+                    $questionDe = Security::clean($_POST['question_de'] ?? '', 200);
+                    $questionEn = Security::clean($_POST['question_en'] ?? '', 200);
+                    if ($questionDe === '' && $questionEn === '') {
+                        return null;
+                    }
+
+                    return [
+                        'question' => ['de' => $questionDe ?: $questionEn, 'en' => $questionEn ?: $questionDe],
+                        'type'     => 'text',
+                        'choices'  => ['de' => [], 'en' => []],
+                    ];
+                },
+            ],
+        ];
+
+        $this->handle('/galeri-tercihleri', $de ? 'Stile & Fragebogen' : 'Stiller & anket', $de
+            ? 'Beides zusammen ergibt den zweiten Reiter der Kundengalerie: Stilwahl und Fragebogen, für alle Paare gleich.'
+            : 'İkisi birlikte müşteri galerisinin ikinci sekmesini oluşturur: stil seçimi ve anket, tüm çiftler için ortak.', [$styles, $questions]);
+    }
+
     /* --------------------------------- Gerüst -------------------------------- */
 
     /**

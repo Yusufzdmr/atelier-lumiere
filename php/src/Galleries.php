@@ -159,6 +159,68 @@ final class Galleries
         return null;
     }
 
+    /* --------------------------- Tercihler ------------------------------- */
+
+    /**
+     * Bearbeitungsstil und Fragebogen des Paares.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function preferences(string $code): ?array
+    {
+        return Db::json('SELECT data FROM gallery_preferences WHERE code = ?', [self::normalize($code)]);
+    }
+
+    /**
+     * Stil und Antworten speichern – neue Einsendung ersetzt die alte, genau
+     * wie bei der Albumauswahl: das Paar darf seine Angaben jederzeit ändern.
+     *
+     * @param array<int|string,string> $answers Fragenindex => Antwort
+     */
+    public static function savePreferences(string $code, string $couple, ?int $style, array $answers): void
+    {
+        $preferences = [
+            'code'    => self::normalize($code),
+            'couple'  => $couple,
+            'style'   => $style,
+            'answers' => $answers,
+            'at'      => date('c'),
+        ];
+
+        Db::run(
+            'INSERT INTO gallery_preferences (code, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), at = CURRENT_TIMESTAMP',
+            [$preferences['code'], Db::encode($preferences)]
+        );
+
+        self::notifyPreferences($preferences);
+    }
+
+    /** Panel hat die Tercihler gesehen — fällt aus der Liste der offenen Dinge. */
+    public static function markPreferencesSeen(string $code): void
+    {
+        $preferences = self::preferences($code);
+        if ($preferences === null) {
+            return;
+        }
+
+        $preferences['seenAt'] = date('c');
+
+        Db::run(
+            'UPDATE gallery_preferences SET data = ? WHERE code = ?',
+            [Db::encode($preferences), self::normalize($code)]
+        );
+    }
+
+    /**
+     * Ungesehen oder seit dem letzten Sehen erneut abgeschickt?
+     *
+     * @param array<string,mixed> $preferences
+     */
+    public static function isPreferencesUnseen(array $preferences): bool
+    {
+        return (string) ($preferences['at'] ?? '') > (string) ($preferences['seenAt'] ?? '');
+    }
+
     /* ------------------------------ Auswahl ------------------------------ */
 
     /** @return array<string,mixed>|null */
@@ -328,5 +390,34 @@ final class Galleries
         }
 
         Mail::toStudio('Albumauswahl: ' . (string) $selection['couple'], $body);
+    }
+
+    /** @param array<string,mixed> $preferences */
+    private static function notifyPreferences(array $preferences): void
+    {
+        $style = $preferences['style'] ?? null;
+        $styleItem = $style === null ? null : (Content::list('editingStyles')[(int) $style] ?? null);
+        $styleName = $styleItem === null ? '' : I18n::pick($styleItem['name'] ?? null, 'de');
+
+        $body = [
+            'Galerie: ' . $preferences['code'],
+            'Paar:    ' . $preferences['couple'],
+            'Stil:    ' . ($styleName !== '' ? $styleName : '(nicht gewählt)'),
+        ];
+
+        $questions = Content::list('galleryQuestions');
+        foreach ((array) ($preferences['answers'] ?? []) as $index => $answer) {
+            $question = $questions[(int) $index] ?? null;
+            $label = $question === null ? ('Frage ' . $index) : I18n::pick($question['question'] ?? null, 'de');
+            $answerText = is_array($answer) ? implode(', ', array_map('strval', $answer)) : (string) $answer;
+            if ($answerText === '') {
+                continue;
+            }
+            $body[] = '';
+            $body[] = $label . ':';
+            $body[] = $answerText;
+        }
+
+        Mail::toStudio('Galerie-Vorlieben: ' . (string) $preferences['couple'], $body);
     }
 }
