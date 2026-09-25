@@ -470,6 +470,26 @@ final class InvitationsV2
         Db::run('DELETE FROM invite_drafts WHERE token = ?', [$token]);
     }
 
+    /**
+     * Yarım kalan taslakların listesi — panelin "Liegengebliebene
+     * Entwürfe" bölümü için. `invite_drafts` tablosu v1 ile paylaşılıyordu
+     * (bkz. saveDraft()'un yorumu); v1 gittiği için burada sadece
+     * fassung=2 olanlar filtreleniyor — eski bir v1 taslağı varsa (artık
+     * hiçbir rotanın açamayacağı), listede görünmesin.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function drafts(): array
+    {
+        $out = [];
+        foreach (Db::jsonList('SELECT data FROM invite_drafts ORDER BY updated_at DESC LIMIT 200') as $draft) {
+            if ((int) ($draft['fassung'] ?? 1) === 2) {
+                $out[] = $draft;
+            }
+        }
+        return $out;
+    }
+
     /* ----------------------- Nachtraegliches Bearbeiten ---------------------- */
 
     /**

@@ -4,22 +4,18 @@ declare(strict_types=1);
 namespace Atelier\Controllers;
 
 use Atelier\Admin;
-use Atelier\Config;
-use Atelier\Customers;
-use Atelier\Db;
-use Atelier\Guests;
 use Atelier\I18n;
-use Atelier\Invitations;
 use Atelier\InvitationsV2;
 use Atelier\Security;
-use Atelier\Themes;
 use Atelier\View;
 
 /**
- * Der Einladungsreiter: was erstellt wurde, wer zugesagt hat, was liegen blieb.
+ * Der Einladungsreiter: was mit dem neuen Assistenten erstellt wurde.
  *
- * Bezahlt oder mit Gutschein – beides steht hier nebeneinander, weil beim
- * Nachfragen genau das die Frage ist.
+ * Bis 2026-09-25 stand hier zusaetzlich die erste Fassung (Invitations.php)
+ * mit Zusagen, persoenlichen Gastlinks und Gutscheinen. Sie ist raus — der
+ * neue Assistent hat noch keine Zusagen und keine Gutscheine (Phase D),
+ * deshalb ist diese Seite bis dahin kürzer als sie war.
  */
 final class InviteAdminController
 {
@@ -36,10 +32,8 @@ final class InviteAdminController
             Admin::checkCsrfOrFail();
 
             match (Security::clean($_POST['was'] ?? '', 20)) {
-                'loeschen'         => Invitations::delete(Security::clean($_POST['slug'] ?? '', 96)),
-                'entwurf-loeschen' => Invitations::deleteDraft(Security::clean($_POST['token'] ?? '', 64)),
                 /*
-                 * Eine Einladung der zweiten Fassung an- oder abschalten.
+                 * Eine Einladung an- oder abschalten.
                  *
                  * Kein Loeschen daneben: eine verschickte Adresse loescht man
                  * nicht, man schaltet sie ab. Wer sie loescht, gibt sie zur
@@ -50,76 +44,11 @@ final class InviteAdminController
                     Security::clean($_POST['slug'] ?? '', 96),
                     Security::clean($_POST['zustand'] ?? '', 16)
                 ),
-                'gast-loeschen'    => Guests::delete(
-                    Security::clean($_POST['slug'] ?? '', 96),
-                    Security::clean($_POST['token'] ?? '', 96)
-                ),
+                'entwurf-loeschen' => InvitationsV2::deleteDraft(Security::clean($_POST['token'] ?? '', 64)),
                 default            => null,
             };
 
             Admin::back($this->locale, self::TAB);
-        }
-
-        // Zusagen einmal holen und nach Einladung sortieren – sonst wäre es
-        // eine Abfrage je Zeile.
-        $rsvpsBySlug = [];
-        foreach (Invitations::rsvps() as $rsvp) {
-            $rsvpsBySlug[(string) ($rsvp['slug'] ?? '')][] = $rsvp;
-        }
-
-        // Welcher Gutschein gehört zu welcher Einladung?
-        $customerBySlug = [];
-        foreach (Customers::all() as $customer) {
-            foreach ($customer['coupon']['usedFor'] as $use) {
-                $customerBySlug[(string) ($use['slug'] ?? '')] = $customer;
-            }
-        }
-
-        $themes = [];
-        foreach (Themes::all() as $theme) {
-            $themes[(string) $theme['id']] = (string) $theme['name'];
-        }
-
-        $rows = [];
-        foreach (Invitations::all() as $invitation) {
-            $slug = (string) ($invitation['slug'] ?? '');
-            $rsvps = $rsvpsBySlug[$slug] ?? [];
-            $customer = $customerBySlug[$slug] ?? null;
-
-            // „Kommt“ zählt Personen, nicht Antworten: eine Zusage kann vier
-            // Gäste mitbringen, und danach wird die Tischordnung gemacht.
-            $guests = 0;
-            $yes = 0;
-            $no = 0;
-            foreach ($rsvps as $rsvp) {
-                if (empty($rsvp['coming'])) {
-                    $no++;
-                    continue;
-                }
-                $yes++;
-                $guests += max(1, (int) ($rsvp['count'] ?? 1));
-            }
-
-            // Persönlich adressierte Fassungen – nicht zu verwechseln mit den
-            // Personen aus den Zusagen oben.
-            $personal = [];
-            foreach (Guests::all($slug) as $guest) {
-                $personal[] = $guest + ['url' => Guests::url($slug, (string) $guest['token'], (string) ($invitation['locale'] ?? $this->locale))];
-            }
-
-            $rows[] = [
-                'invitation' => $invitation,
-                'personal'   => $personal,
-                'manage'     => Invitations::manageUrl($invitation, (string) ($invitation['locale'] ?? $this->locale)),
-                'slug'       => $slug,
-                'url'        => Config::url() . I18n::sitePath('/einladung/' . $slug, (string) ($invitation['locale'] ?? $this->locale)),
-                'theme'      => $themes[(string) ($invitation['theme'] ?? '')] ?? (string) ($invitation['theme'] ?? ''),
-                'rsvps'      => $rsvps,
-                'yes'        => $yes,
-                'no'         => $no,
-                'guests'     => $guests,
-                'customer'   => $customer,
-            ];
         }
 
         View::page('admin/invitations', [
@@ -129,12 +58,8 @@ final class InviteAdminController
             'current' => self::TAB,
             'meta'    => ['title' => 'Admin', 'noindex' => true],
             'csrf'    => Security::csrf(),
-            'rows'    => $rows,
-            'drafts'  => Invitations::drafts(),
-            // Die zweite Fassung stand bisher in KEINER Liste des Panels: es
-            // gab sie, aber man sah sie nur, wenn man ihre Adresse kannte.
             'v2'      => InvitationsV2::all(),
-            'total'   => (int) (Db::one('SELECT COUNT(*) AS n FROM rsvps')['n'] ?? 0),
+            'drafts'  => InvitationsV2::drafts(),
         ]);
     }
 }
