@@ -121,6 +121,18 @@ zaten hep boş kalacaktı. `templates/admin/customer.php`'deki karşılık
 gelen render bloğu da kalkar. Kupon alanlarının kendisi (`saveCoupon`,
 `resetCoupon`, rastgele kupon üretimi) dokunulmadan kalır.
 
+**`AdminController::overview()` + `templates/admin/overview.php`** —
+genel bakışın üst sayaç kutularından "Einladungen"/"Davetiyeler"
+`count($invitations)` ile v1'in `invitations` tablosunu sayıyor (satır
+42, `Db::jsonList('SELECT data FROM invitations ...')`). v1 kalkınca bu
+tablo kalıcı olarak boş kalır ama gerçekte 10 v2 davetiyesi var — sayaç
+yanlış 0 gösterir. `$invitations` değişkeni `InvitationsV2::all()`'a
+(veya hafif bir `COUNT` sorgusuna) çevrilir, sayaç kutusu ve
+`Admin::pendingWork()`'e giden parametre buna göre güncellenir.
+"Zusagen"/"Katılım bildirimleri" sayacı (`rsvps` tablosu) dokunulmuyor —
+v2'nin henüz RSVP'si yok (§ Kapsam dışı, "Phase D"), 0 göstermesi
+zaten doğru.
+
 ## 5. Site genel navigasyonu
 
 `templates/partials/header.php` ve `templates/partials/footer.php`:
