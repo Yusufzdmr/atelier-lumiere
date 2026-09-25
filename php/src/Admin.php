@@ -24,22 +24,31 @@ final class Admin
      * Einladung testen wollte, suchte an drei Stellen. Website, Galerie und
      * Einladung sind die Teile, die man einzeln in Betrieb nimmt.
      *
+     * "Website" allein wuchs auf zwoelf Reiter und wurde selbst zur Wand
+     * (2026-09-25) – innerhalb DESSELBEN Teils aber zwei sichtbar
+     * verschiedene Sachen: Seiten, die ein Besucher sieht (Leistungen,
+     * Preise, Staedte, Locations, Portfolio, Ratgeber, Ueber mich), und
+     * Website-Einstellungen, die keine eigene Seite sind (Kontakttexte,
+     * Bilder, Seitentexte, Rechtstexte, SEO). Deshalb eine vierte
+     * Randgruppe statt eines fuenften Betriebsteils.
+     *
      * @var array<string,array{de:string,tr:string}>
      */
     public const GROUPS = [
-        'website'   => ['de' => 'Website', 'tr' => 'Site'],
-        'galerie'   => ['de' => 'Galerie', 'tr' => 'Galeri'],
-        'einladung' => ['de' => 'Einladung', 'tr' => 'Davetiye'],
-        'technik'   => ['de' => 'System', 'tr' => 'Sistem'],
+        'website'      => ['de' => 'Seiten', 'tr' => 'Sayfalar'],
+        'website-einstellungen' => ['de' => 'Website-Einstellungen', 'tr' => 'Site ayarları'],
+        'galerie'      => ['de' => 'Galerie', 'tr' => 'Galeri'],
+        'einladung'    => ['de' => 'Einladung', 'tr' => 'Davetiye'],
+        'technik'      => ['de' => 'System', 'tr' => 'Sistem'],
     ];
 
     /** Die Reiter des Adminbereichs, in dieser Reihenfolge. */
     public const TABS = [
         ['href' => '', 'group' => '', 'de' => 'Übersicht', 'tr' => 'Genel bakış'],
 
-        ['href' => '/inhalte', 'group' => 'website', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim', 'pinned' => true],
-        ['href' => '/bilder', 'group' => 'website', 'de' => 'Bilder', 'tr' => 'Görseller', 'pinned' => true],
-        ['href' => '/texte', 'group' => 'website', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
+        ['href' => '/inhalte', 'group' => 'website-einstellungen', 'de' => 'Texte & Kontakt', 'tr' => 'Metinler & iletişim', 'pinned' => true],
+        ['href' => '/bilder', 'group' => 'website-einstellungen', 'de' => 'Bilder', 'tr' => 'Görseller', 'pinned' => true],
+        ['href' => '/texte', 'group' => 'website-einstellungen', 'de' => 'Seitentexte', 'tr' => 'Sayfa metinleri'],
         ['href' => '/leistungen', 'group' => 'website', 'de' => 'Leistungen & Ablauf', 'tr' => 'Hizmetler & süreç'],
         ['href' => '/pakete', 'group' => 'website', 'de' => 'Preise & Pakete', 'tr' => 'Fiyatlar & paketler'],
         ['href' => '/staedte', 'group' => 'website', 'de' => 'Städte', 'tr' => 'Şehirler'],
@@ -47,8 +56,8 @@ final class Admin
         ['href' => '/portfolio', 'group' => 'website', 'de' => 'Portfolio', 'tr' => 'Portfolyo', 'pinned' => true],
         ['href' => '/ratgeber', 'group' => 'website', 'de' => 'Ratgeber', 'tr' => 'Rehber', 'pinned' => true],
         ['href' => '/ueber-mich', 'group' => 'website', 'de' => 'Über mich & Stimmen', 'tr' => 'Hakkımda & yorumlar'],
-        ['href' => '/rechtliches', 'group' => 'website', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
-        ['href' => '/seo', 'group' => 'website', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
+        ['href' => '/rechtliches', 'group' => 'website-einstellungen', 'de' => 'Rechtstexte', 'tr' => 'Yasal metinler'],
+        ['href' => '/seo', 'group' => 'website-einstellungen', 'de' => 'SEO & Meta', 'tr' => 'SEO & meta'],
 
         // Die Kundenakte ist die Galerie: wer eine anlegt, legt eine Galerie an.
         ['href' => '/kunden', 'group' => 'galerie', 'de' => 'Kunden & Galerien', 'tr' => 'Müşteriler & galeriler', 'pinned' => true],
