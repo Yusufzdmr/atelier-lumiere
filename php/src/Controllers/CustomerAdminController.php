@@ -9,7 +9,6 @@ use Atelier\Customers;
 use Atelier\Galleries;
 use Atelier\I18n;
 use Atelier\Images;
-use Atelier\Invitations;
 use Atelier\Media;
 use Atelier\Security;
 use Atelier\View;
@@ -144,22 +143,6 @@ final class CustomerAdminController
             $preferences['seenAt'] = date('c');
         }
 
-        // Nur die Einladungen, die mit dem Gutschein dieses Kunden entstanden.
-        $usedFor = [];
-        foreach ($customer['coupon']['usedFor'] as $use) {
-            $slug = (string) ($use['slug'] ?? '');
-            $invitation = Invitations::find($slug);
-            $usedFor[] = [
-                'slug'    => $slug,
-                'at'      => (string) ($use['at'] ?? ''),
-                'couple'  => $invitation === null
-                    ? ''
-                    : trim((string) ($invitation['bride'] ?? '') . ' & ' . (string) ($invitation['groom'] ?? ''), ' &'),
-                'rsvps'   => count(Invitations::rsvps($slug)),
-                'exists'  => $invitation !== null,
-            ];
-        }
-
         $this->render('admin/customer', [
             'customer'    => $customer,
             'gallery'     => $gallery,
@@ -168,7 +151,6 @@ final class CustomerAdminController
             'styles'      => Content::list('editingStyles'),
             'questions'   => Content::list('galleryQuestions'),
             'photos'      => $gallery === null ? [] : Galleries::photos($gallery),
-            'usedFor'     => $usedFor,
         ], '/kunden/' . $code);
     }
 

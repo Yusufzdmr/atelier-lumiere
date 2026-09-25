@@ -10,7 +10,6 @@
  * @var list<array<string,mixed>> $styles
  * @var list<array<string,mixed>> $questions
  * @var list<array{thumb:string,full:string,upload:bool}> $photos
- * @var list<array{slug:string,at:string,couple:string,rsvps:int,exists:bool}> $usedFor
  * @var string $csrf
  */
 
@@ -301,27 +300,6 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
           <input id="c-cexp" type="date" name="couponExpires" value="<?= e((string) $coupon['expires']) ?>" class="<?= $input ?>">
         </div>
 
-        <?php if ($usedFor !== []) : ?>
-          <div class="mt-5 border-t border-sand-deep pt-4">
-            <div class="text-[0.62rem] uppercase tracking-[0.18em] text-muted"><?= $de ? 'Eingelöst' : 'Kullanıldı' ?></div>
-            <ul class="mt-2 space-y-1.5">
-              <?php foreach ($usedFor as $use) : ?>
-                <li class="text-[0.78rem]">
-                  <a href="<?= e(I18n::sitePath('/einladung/' . $use['slug'], $locale)) ?>" target="_blank" rel="noopener"
-                     class="text-gold underline-offset-4 hover:underline">/<?= e($use['slug']) ?></a>
-                  <span class="ml-2 text-muted">
-                    <?= e(Dates::short($use['at'])) ?><?php
-                      if ($use['couple'] !== '') { echo ' · ' . e($use['couple']); }
-                      if ($use['rsvps'] > 0) { echo ' · ' . $use['rsvps'] . ' RSVP'; }
-                      if (!$use['exists']) { echo ' · ' . ($de ? 'gelöscht' : 'silinmiş'); }
-                    ?>
-                  </span>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          </div>
-        <?php endif; ?>
-
         <div class="mt-6 flex flex-wrap gap-3">
           <button name="was" value="gutschein"
                   class="bg-ink px-6 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-cream transition-colors hover:bg-gold">
@@ -332,7 +310,7 @@ $hidden = '<input type="hidden" name="csrf" value="' . e($csrf) . '">';
                   class="border border-sand-deep px-5 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-muted transition-colors hover:border-gold hover:text-gold">
             <?= $de ? 'Neuer Code' : 'Yeni kod' ?>
           </button>
-          <?php if ($usedFor !== []) : ?>
+          <?php if ($coupon['usedFor'] !== []) : ?>
             <button name="was" value="gutschein-frei"
                     data-confirm="<?= $de ? 'Gutschein wieder freigeben?' : 'Kupon yeniden açılsın mı?' ?>"
                     class="px-3 py-3 text-[0.66rem] uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-gold hover:underline">
