@@ -14,7 +14,7 @@ $de = $locale === 'de';
 ?>
 <div class="mx-auto max-w-3xl px-5 py-14 sm:py-20">
   <div class="flex items-center justify-between">
-    <h1 class="font-display text-3xl font-light text-ink sm:text-4xl"><?= $de ? 'Hazır Galerien' : 'Hazır galeriler' ?></h1>
+    <h1 class="font-display text-3xl font-light text-ink sm:text-4xl"><?= $de ? 'Bereite Galerien' : 'Hazır galeriler' ?></h1>
     <a href="<?= e(I18n::path('/albumcu/abmelden', $locale)) ?>"
        class="text-[0.66rem] uppercase tracking-[0.18em] text-muted underline-offset-4 hover:text-ink hover:underline">
       <?= $de ? 'Abmelden' : 'Çıkış yap' ?>

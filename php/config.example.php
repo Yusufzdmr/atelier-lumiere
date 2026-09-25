@@ -48,7 +48,7 @@ return [
      * (password_hash) ist sicherer.
      */
     'albumist_user' => 'albumcu',
-    'albumist_key'  => 'bitte-aendern',
+    'albumist_key'  => '',
 
     // Absender der Benachrichtigungen (Kontaktformular, RSVP)
     'mail_from' => 'website@han-studio.de',

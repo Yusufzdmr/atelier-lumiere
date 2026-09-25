@@ -194,8 +194,8 @@ $router->any('/{locale}/admin/integrationen', $admin_(static fn (array $p) => (n
 // galeri kodu gibi okunur (bkz. /galerie/abmelden'in aynı sırası).
 $router->any('/{locale}/albumcu', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->index()));
 $router->get('/{locale}/albumcu/abmelden', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->logout()));
-$router->get('/{locale}/albumcu/{code}/zip', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->zip($p)));
-$router->get('/{locale}/albumcu/{code}', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->show($p)));
+$router->any('/{locale}/albumcu/{code}/zip', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->zip($p)));
+$router->any('/{locale}/albumcu/{code}', $admin_(static fn (array $p) => (new AlbumistController($p['locale']))->show($p)));
 
 $router->get('/{locale}/impressum', $page_(static fn (array $p) => $page->legal('impressum')));
 $router->get('/{locale}/datenschutz', $page_(static fn (array $p) => $page->legal('datenschutz')));
