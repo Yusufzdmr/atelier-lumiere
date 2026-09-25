@@ -6,7 +6,7 @@
  * @var list<array<string,mixed>> $leads
  * @var list<array<string,mixed>> $selections
  * @var list<array<string,mixed>> $galleries
- * @var list<array<string,mixed>> $invitations
+ * @var int $invitationCount
  * @var list<array<string,mixed>> $rsvps
  * @var list<array<string,mixed>> $customers
  * @var list<array{kind:string,message:string,href:string,severity:string}> $pending
@@ -26,7 +26,7 @@ $tiles = [
     [$de ? 'Kunden' : 'Müşteriler', count($customers), $p('/admin/kunden')],
     [$de ? 'Galerien' : 'Galeriler', count($galleries), $p('/admin/kunden')],
     [$de ? 'Albumauswahlen' : 'Albüm seçimleri', count($selections), '#auswahlen'],
-    [$de ? 'Einladungen' : 'Davetiyeler', count($invitations), $p('/admin/einladungen')],
+    [$de ? 'Einladungen' : 'Davetiyeler', $invitationCount, $p('/admin/einladungen')],
     [$de ? 'Zusagen' : 'Katılım bildirimleri', count($rsvps), $p('/admin/einladungen')],
 ];
 

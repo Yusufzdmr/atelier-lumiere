@@ -10,6 +10,7 @@ use Atelier\Galleries;
 use Atelier\I18n;
 use Atelier\Images;
 use Atelier\Integrations;
+use Atelier\InvitationsV2;
 use Atelier\Leads;
 use Atelier\Paypal;
 use Atelier\Places;
@@ -39,7 +40,11 @@ final class AdminController
     {
         $galleries = Galleries::all();
         $selections = Db::jsonList('SELECT data FROM selections ORDER BY at DESC');
-        $invitations = Db::jsonList('SELECT data FROM invitations ORDER BY created_at DESC');
+        // v1'in invitations tablosu 2026-09-25'te kaldırıldı — sayaç artık
+        // v2'yi sayıyor. pendingWork()'e boş liste geçiyoruz: v2'nin henüz
+        // ödeme kavramı yok (Phase D), "ödenmemiş davetiye" uyarısı bu
+        // yüzden anlamsız — boş liste onu sessizce hiç üretmiyor.
+        $invitationCount = count(InvitationsV2::all());
         $rsvps = Db::jsonList('SELECT data FROM rsvps ORDER BY at DESC');
         $customers = Db::jsonList('SELECT data FROM customers ORDER BY created_at DESC');
         $leads = Leads::all(30);
@@ -48,7 +53,7 @@ final class AdminController
             $this->locale,
             $leads,
             $selections,
-            $invitations,
+            [],
             $customers,
             $galleries
         );
@@ -57,7 +62,7 @@ final class AdminController
             'leads'       => $leads,
             'selections'  => $selections,
             'galleries'   => $galleries,
-            'invitations' => $invitations,
+            'invitationCount' => $invitationCount,
             'rsvps'       => $rsvps,
             'customers'   => $customers,
             'pending'     => $pending,
