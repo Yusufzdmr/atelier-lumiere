@@ -67,20 +67,28 @@ final class Galleries
      * Bildliste in der Reihenfolge, auf die sich die Auswahl bezieht.
      *
      * @param array<string,mixed> $gallery
-     * @return list<array{thumb:string,full:string,upload:bool}>
+     * @return list<array{thumb:string,full:string,original:?string,upload:bool}>
      */
     public static function photos(array $gallery): array
     {
         $photos = [];
 
         foreach ((array) ($gallery['uploads'] ?? []) as $src) {
-            $photos[] = ['thumb' => (string) $src, 'full' => (string) $src, 'upload' => true];
+            $photos[] = [
+                'thumb'    => (string) $src,
+                'full'     => (string) $src,
+                // Fürs Herunterladen im Browser: die Galerie zeigt 1600 px,
+                // wer sein eigenes Bild speichert, soll das Original bekommen.
+                'original' => Media::originalUrl((string) $src),
+                'upload'   => true,
+            ];
         }
         foreach ((array) ($gallery['seeds'] ?? []) as $seed) {
             $photos[] = [
-                'thumb'  => Images::img((string) $seed, 700, 900),
-                'full'   => Images::img((string) $seed, 1400, 1800),
-                'upload' => false,
+                'thumb'    => Images::img((string) $seed, 700, 900),
+                'full'     => Images::img((string) $seed, 1400, 1800),
+                'original' => null,
+                'upload'   => false,
             ];
         }
 

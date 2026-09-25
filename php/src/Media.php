@@ -90,6 +90,38 @@ final class Media
     }
 
     /**
+     * Dateiname für die Ablage: möglichst der ursprüngliche, damit der
+     * Fotograf seine eigenen Dateien wiedererkennt – „6100b2262e0736c4.jpg“
+     * sagt niemandem etwas, „IMG-Hochzeit-042.jpg“ schon.
+     *
+     * Auf den Namen selbst ist trotzdem kein Verlass: nur unbedenkliche
+     * Zeichen bleiben übrig, alles andere (Leerzeichen, Umlaute, Emoji,
+     * Pfadteile) wird zu einem Bindestrich. Bleibt nichts übrig, oder
+     * kollidiert der Name mit einer schon abgelegten Datei im selben
+     * Ordner, springt ein Zähler oder – im Notfall – der alte Zufallsname
+     * ein.
+     */
+    private static function safeStem(string $originalName, string $folder): string
+    {
+        $base = pathinfo($originalName, PATHINFO_FILENAME);
+        $clean = preg_replace('/[^A-Za-z0-9_-]+/', '-', $base) ?? '';
+        $clean = trim($clean, '-');
+        $clean = mb_substr($clean, 0, 80);
+
+        if ($clean === '') {
+            return bin2hex(random_bytes(8));
+        }
+
+        $dir = self::dir($folder);
+        $stem = $clean;
+        for ($i = 2; is_file($dir . '/' . $stem . '.jpg'); $i++) {
+            $stem = $clean . '-' . $i;
+        }
+
+        return $stem;
+    }
+
+    /**
      * Datei aus $_FILES übernehmen: prüfen, verkleinern, speichern.
      *
      * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int} $file
@@ -144,7 +176,7 @@ final class Media
             $image = $resized;
         }
 
-        $stem = bin2hex(random_bytes(8));
+        $stem = self::safeStem((string) ($file['name'] ?? ''), $folder);
         $name = $stem . '.jpg';
         $relative = trim($folder, '/') . '/' . $name;
         $target = self::dir($folder) . '/' . $name;
@@ -200,12 +232,14 @@ final class Media
     }
 
     /**
-     * Zu einem verkleinerten Bild das Original finden.
+     * Zu einem verkleinerten Bild das Original finden – als Pfad relativ zum
+     * Upload-Ordner, ohne dass originalPath()/originalUrl() dieselbe Suche
+     * zweimal schreiben.
      *
-     * @return string|null Pfad auf der Platte, oder null wenn es keines gibt
-     *                     (Bilder von vor dieser Änderung, oder Platzhalter)
+     * @return string|null null wenn es keines gibt (Bilder von vor dieser
+     *                      Änderung, oder Platzhalter)
      */
-    public static function originalPath(string $url): ?string
+    private static function originalRelative(string $url): ?string
     {
         $prefix = '/' . trim(Config::str('upload_dir', 'uploads'), '/') . '/';
         if (!str_starts_with($url, $prefix)) {
@@ -219,15 +253,38 @@ final class Media
 
         $folder = dirname($relative);
         $stem = pathinfo($relative, PATHINFO_FILENAME);
-        $base = self::dir() . '/' . $folder . '/' . self::ORIGINALS . '/' . $stem;
+        $base = trim($folder, '/') . '/' . self::ORIGINALS . '/' . $stem;
 
         foreach (['jpg', 'png', 'webp', 'gif'] as $extension) {
-            if (is_file($base . '.' . $extension)) {
+            if (is_file(self::dir() . '/' . $base . '.' . $extension)) {
                 return $base . '.' . $extension;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Zu einem verkleinerten Bild das Original finden – als Plattenpfad,
+     * für ZipArchive und andere Serverseitige Dateizugriffe (Albumcu-ZIP).
+     */
+    public static function originalPath(string $url): ?string
+    {
+        $relative = self::originalRelative($url);
+        return $relative === null ? null : self::dir() . '/' . $relative;
+    }
+
+    /**
+     * Zu einem verkleinerten Bild das Original finden – als öffentliche
+     * Adresse, zum direkten Herunterladen im Browser (das Paar selbst,
+     * nicht nur der Albumhersteller). Die Galerie zeigt 1600 Pixel, aber
+     * wer sein eigenes Bild herunterlädt, soll nicht schlechter wegkommen
+     * als der Drucker.
+     */
+    public static function originalUrl(string $url): ?string
+    {
+        $relative = self::originalRelative($url);
+        return $relative === null ? null : self::url($relative);
     }
 
     /**

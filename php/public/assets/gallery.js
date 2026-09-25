@@ -79,6 +79,18 @@
       if (star) star.style.color = active ? "#B08D57" : "#7A6F65";
     });
     if (counter) counter.textContent = String(picks.length);
+
+    // Lightbox-Herz/Stern: dieselbe Farbe wie im Raster, für das gerade
+    // geöffnete Bild. Ohne das blieb der Klick unsichtbar – die Auswahl
+    // griff, aber niemand sah es, bevor die Lightbox wieder zu war.
+    if (pickButton) {
+      var lightboxPicked = current !== null && picks.indexOf(current) !== -1;
+      pickButton.style.color = lightboxPicked ? "#B08D57" : "";
+    }
+    if (coverButton) {
+      var lightboxCover = current !== null && cover === current;
+      coverButton.style.color = lightboxCover ? "#B08D57" : "";
+    }
   }
 
   function toggle(index) {
@@ -124,12 +136,17 @@
     current = index;
     var thumb = thumbs[index];
     var full = thumb ? thumb.getAttribute("data-full") : "";
+    var original = thumb ? thumb.getAttribute("data-original") : "";
     boxImage.src = full || "";
-    if (download) download.href = full || "";
+    // Angezeigt wird die kleine Fassung (schnell im Browser), heruntergeladen
+    // wird das Original, wenn es eines gibt – sonst faellt es auf die
+    // angezeigte Fassung zurueck (Platzhalter, alte Uploads ohne Original).
+    if (download) download.href = original || full || "";
     if (position) position.textContent = index + 1 + " " + text.of + " " + thumbs.length;
     box.classList.remove("hidden");
     box.classList.add("flex");
     document.body.style.overflow = "hidden";
+    paint();
   }
 
   function close() {

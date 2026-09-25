@@ -79,6 +79,7 @@ $readOnly = $readOnly ?? false;
         <?php $ratio = $i % 5 === 0 ? '3/4' : ($i % 3 === 0 ? '4/5' : '1/1'); ?>
         <div class="group relative mb-3 break-inside-avoid sm:mb-4">
           <button type="button" data-photo="<?= $i ?>" data-full="<?= e($photo['full']) ?>"
+                  data-original="<?= e($photo['original'] ?? '') ?>"
                   class="relative block w-full overflow-hidden bg-sand" style="aspect-ratio: <?= e($ratio) ?>"
                   aria-label="<?= e($couple . ' ' . ($i + 1)) ?>">
             <img src="<?= e($photo['thumb']) ?>" alt="<?= e($couple . ' ' . ($i + 1)) ?>" loading="lazy" decoding="async"
