@@ -56,6 +56,15 @@ devamı), yoksa ayrı bir üçüncü sekme mi olacak?
 
 ## 3 · Albümcü — ayrı kalıcı giriş
 
+**Yapıldı (2026-09-25).** Spec: `docs/superpowers/specs/2026-09-25-albumcu-girisi-design.md`,
+plan: `docs/superpowers/plans/2026-09-25-albumcu-girisi.md`. `/albumcu`:
+tek ortak hesap (`config.php`'de `albumist_user`/`albumist_key`), sadece
+"hazır" (en az 1 kare seçilmiş) galerileri listeler, ZIP indirme. Eski
+link akışı (`SelectionController`, `/auswahl/*`, `shareCreate/shareFind`,
+admin'deki "Link erzeugen") tamamen kaldırıldı. "Hazır" tanımı şimdilik
+sadece fotoğraf seçimine dayanıyor — 2. madde (albüm modeli, kargo adresi)
+eklenince genişletilecek. Commit `276f001`..`2195d0e`.
+
 **Netleşti (2026-09-25):** mevcut sistem zaten var —
 `Galleries::shareCreate/shareFind` + `SelectionController` (`/auswahl/{token}`,
 `/auswahl/{token}/zip`): admin müşteri kartından "Link erzeugen" ile süreli
