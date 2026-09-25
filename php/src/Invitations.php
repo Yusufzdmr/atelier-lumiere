@@ -9,8 +9,9 @@ namespace Atelier;
  * War einmal Teil der ersten Einladungsfassung (siehe Git-Historie,
  * 2026-09-25 vor diesem Commit) – inzwischen an Stellen im Kundenbereich
  * verwendet, die mit Einladungen nichts zu tun haben: Kundencode,
- * Gastlinks, Listensortierung, OG-Bild. Deshalb bleibt die Klasse, auch
- * ohne die Einladung, die ihr den Namen gab.
+ * Listensortierung, OG-Bild. Ausserdem baut InvitationsV2::slug() (die
+ * URLs aller lebenden Einladungen) direkt darauf auf. Deshalb bleibt die
+ * Klasse, auch ohne die Einladung, die ihr den Namen gab.
  */
 final class Invitations
 {

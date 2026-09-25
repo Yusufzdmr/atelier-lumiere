@@ -41,9 +41,8 @@ final class AdminController
         $galleries = Galleries::all();
         $selections = Db::jsonList('SELECT data FROM selections ORDER BY at DESC');
         // v1'in invitations tablosu 2026-09-25'te kaldırıldı — sayaç artık
-        // v2'yi sayıyor. pendingWork()'e boş liste geçiyoruz: v2'nin henüz
-        // ödeme kavramı yok (Phase D), "ödenmemiş davetiye" uyarısı bu
-        // yüzden anlamsız — boş liste onu sessizce hiç üretmiyor.
+        // v2'yi sayıyor. pendingWork()'ün "ödenmemiş davetiye" uyarısı aynı
+        // tarihte kaldırıldı: v2'nin henüz ödeme kavramı yok (Phase D).
         $invitationCount = count(InvitationsV2::all());
         $rsvps = Db::jsonList('SELECT data FROM rsvps ORDER BY at DESC');
         $customers = Db::jsonList('SELECT data FROM customers ORDER BY created_at DESC');
@@ -53,7 +52,6 @@ final class AdminController
             $this->locale,
             $leads,
             $selections,
-            [],
             $customers,
             $galleries
         );

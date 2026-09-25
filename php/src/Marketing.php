@@ -25,7 +25,6 @@ final class Marketing
             ['key' => 'ratgeber', 'path' => '/ratgeber', 'label' => ['de' => 'Ratgeber (Übersicht)', 'tr' => 'Rehber (liste)']],
             ['key' => 'ueber-mich', 'path' => '/ueber-mich', 'label' => ['de' => 'Über mich', 'tr' => 'Hakkımda']],
             ['key' => 'kontakt', 'path' => '/kontakt', 'label' => ['de' => 'Kontakt', 'tr' => 'İletişim']],
-            ['key' => 'einladung', 'path' => '/einladung', 'label' => ['de' => 'Digitale Einladung', 'tr' => 'Dijital davetiye']],
             ['key' => 'galerie', 'path' => '/galerie', 'label' => ['de' => 'Kundengalerie (Login)', 'tr' => 'Müşteri galerisi (giriş)']],
             ['key' => 'impressum', 'path' => '/impressum', 'label' => ['de' => 'Impressum', 'tr' => 'Impressum']],
             ['key' => 'datenschutz', 'path' => '/datenschutz', 'label' => ['de' => 'Datenschutz', 'tr' => 'Gizlilik']],

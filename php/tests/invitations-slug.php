@@ -5,9 +5,10 @@ declare(strict_types=1);
 use Atelier\Invitations;
 
 /*
- * Invitations::slug() davetiyeyle ilgisiz dört yerde de kullanılıyor
- * (müşteri kodu, misafir linki, admin liste sıralaması, OG görsel) —
- * bu yüzden Invitations.php küçülürken davranışı değişmemeli.
+ * Invitations::slug() üç yerde davetiyeyle ilgisiz kullanılıyor (müşteri
+ * kodu, admin liste sıralaması, OG görsel), bir yerde de InvitationsV2::
+ * slug() üzerinden tüm canlı davetiyelerin URL'ini kuruyor — bu yüzden
+ * Invitations.php küçülürken davranışı değişmemeli.
  */
 
 assert_same('ayse-mehmet', Invitations::slug('Ayşe & Mehmet'), 'slug: Türkçe karakter ve boşluk');

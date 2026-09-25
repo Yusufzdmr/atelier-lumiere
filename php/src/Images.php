@@ -124,7 +124,7 @@ final class Images
             }
             return 'ceremony';
         }
-        if (in_array($seed, ['lumiere-tool-gallery', 'lumiere-tool-invite', 'invite-hero', 'prices-hero'], true)) {
+        if (in_array($seed, ['lumiere-tool-gallery', 'lumiere-tool-invite', 'prices-hero'], true)) {
             return 'details';
         }
         if ($seed === 'gallery-hero') {
@@ -198,10 +198,6 @@ final class Images
         // Bölgeler
         'regions-index'     => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'regions'],
         'venues-index'      => ['de' => 'Locations, Kopfbild',    'tr' => 'Mekânlar, üst görsel',  'group' => 'regions'],
-        // Tasarımlar
-        'designs-hero'      => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'designs'],
-        // Davetiye
-        'invite-hero'       => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'invite'],
         // İletişim
         'contact-hero'      => ['de' => 'Kopfbild',               'tr' => 'Üst görsel',            'group' => 'contact'],
         // Galeri girişi
@@ -223,8 +219,6 @@ final class Images
         'portfolio' => ['de' => 'Portfolio',     'tr' => 'Portfolyo',   'path' => '/portfolio'],
         'blog'      => ['de' => 'Ratgeber',      'tr' => 'Rehber',      'path' => '/ratgeber'],
         'regions'   => ['de' => 'Regionen',      'tr' => 'Bölgeler',    'path' => '/regionen'],
-        'designs'   => ['de' => 'Designs',       'tr' => 'Tasarımlar',  'path' => '/designs'],
-        'invite'    => ['de' => 'Einladung',     'tr' => 'Davetiye',    'path' => '/einladung'],
         'contact'   => ['de' => 'Kontakt',       'tr' => 'İletişim',    'path' => '/kontakt'],
         'gallery'   => ['de' => 'Galerie-Login', 'tr' => 'Galeri girişi','path' => '/galerie'],
     ];

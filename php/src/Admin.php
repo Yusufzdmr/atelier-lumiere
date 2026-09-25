@@ -58,7 +58,8 @@ final class Admin
         ['href' => '/einladungen', 'group' => 'einladung', 'de' => 'Einladungen', 'tr' => 'Davetiyeler', 'pinned' => true],
         // Themen sind die Designs der Einladungskarte, nicht der Website.
         ['href' => '/themen', 'group' => 'einladung', 'de' => 'Farbvorlagen', 'tr' => 'Renk Şablonları'],
-        // Die zweite Fassung liegt daneben, nicht darin: verglichen wird noch.
+        // Die zweite Fassung hat gewonnen und heisst seit 2026-09-25 nur noch
+        // "Designs" - kein Vergleich mehr, keine erste Fassung mehr daneben.
         ['href' => '/designs', 'group' => 'einladung', 'de' => 'Designs', 'tr' => 'Tasarımlar'],
 
         ['href' => '/integrationen', 'group' => 'technik', 'de' => 'Integrationen', 'tr' => 'Entegrasyonlar'],
@@ -78,10 +79,6 @@ final class Admin
             'de' => '%d Anfrage(n) älter als 48 Stunden ohne Antwort',
             'tr' => '%d talep 48 saatten uzun cevapsız',
         ],
-        'invitation_unpaid' => [
-            'de' => '%d Einladung(en) seit über 7 Tagen unbezahlt',
-            'tr' => '%d davetiye 7 günden uzun ödenmemiş',
-        ],
         'selection_new' => [
             'de' => '%d neue Albumauswahl(en) noch nicht angesehen',
             'tr' => '%d yeni albüm seçimi henüz görülmedi',
@@ -95,12 +92,11 @@ final class Admin
     /**
      * Bekleyen iş satırları — overview şablonu için.
      *
-     * Ekstra DB round-trip yok: overview() zaten leads/selections/invitations/
-     * customers dizilerini yükledi, aynı verilerden filtreliyoruz.
+     * Ekstra DB round-trip yok: overview() zaten leads/selections/customers
+     * dizilerini yükledi, aynı verilerden filtreliyoruz.
      *
      * @param list<array<string,mixed>> $leads
      * @param list<array<string,mixed>> $selections
-     * @param list<array<string,mixed>> $invitations
      * @param list<array<string,mixed>> $customers
      * @param list<array<string,mixed>> $galleries
      * @return list<array{kind:string,message:string,href:string,severity:string}>
@@ -109,7 +105,6 @@ final class Admin
         string $locale,
         array $leads,
         array $selections,
-        array $invitations,
         array $customers,
         array $galleries
     ): array {
@@ -132,25 +127,6 @@ final class Admin
                 'kind'     => 'lead_stale',
                 'message'  => sprintf($label('lead_stale'), $stale),
                 'href'     => '#anfragen',
-                'severity' => 'warn',
-            ];
-        }
-
-        // Ödenmemiş davetiyeler (7 günden eski)
-        // createdAt ISO 8601 (date('c')) formatında saklanıyor — aynı formatta karşılaştır.
-        $limit7d = date('c', strtotime('-7 days'));
-        $unpaid = 0;
-        foreach ($invitations as $inv) {
-            $created = (string) ($inv['createdAt'] ?? '');
-            if (empty($inv['paid']) && $created !== '' && $created < $limit7d) {
-                $unpaid++;
-            }
-        }
-        if ($unpaid > 0) {
-            $out[] = [
-                'kind'     => 'invitation_unpaid',
-                'message'  => sprintf($label('invitation_unpaid'), $unpaid),
-                'href'     => I18n::path('/admin/einladungen', $locale),
                 'severity' => 'warn',
             ];
         }
