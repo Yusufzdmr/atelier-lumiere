@@ -15,7 +15,6 @@ use Atelier\Controllers\DesignAdminController;
 use Atelier\Controllers\DesignController;
 use Atelier\Controllers\GalleryController;
 use Atelier\Controllers\InviteAdminController;
-use Atelier\Controllers\InviteController;
 use Atelier\Controllers\InviteV2Controller;
 use Atelier\Controllers\ListAdminController;
 use Atelier\Controllers\PageController;
@@ -94,13 +93,6 @@ $router->get('/{locale}/ratgeber/{slug}', $page_(static fn (array $p) => $page->
 $router->get('/{locale}/ueber-mich', $page_(static fn (array $p) => $page->about()));
 $router->any('/{locale}/kontakt', $page_(static fn (array $p) => $page->contact()));
 
-// Das Schaufenster steht bewusst NICHT unter /einladung/: dort greift das
-// Muster {slug}, und ein Paar, das seine Einladung "designs" nennt, haette
-// entweder die eigene Karte oder diese Seite unerreichbar gemacht.
-$router->get('/{locale}/designs', $page_(static fn (array $p) => (new InviteController())->designs()));
-$router->get('/{locale}/designs/{thema}', $page_(static fn (array $p) => (new InviteController())->designPreview($p)));
-
-// Zweite Fassung der Einladung – laeuft neben der ersten, bis verglichen ist.
 $router->get('/{locale}/v2/designs', $page_(static fn (array $p) => (new DesignController())->index()));
 $router->get('/{locale}/v2/designs/{slug}', $page_(static fn (array $p) => (new DesignController())->preview($p)));
 
@@ -141,15 +133,6 @@ $router->get('/{locale}/v2/einladung/{slug}/{key}', $page_(static fn (array $p) 
 // (DesignSections druckt ein Formular ohne action). Ein eigener Endpunkt
 // muesste erst wieder herausfinden, zu welcher Einladung er gehoert.
 $router->any('/{locale}/v2/einladung/{slug}', $page_(static fn (array $p) => (new InviteV2Controller())->show($p)));
-
-$router->any('/{locale}/einladung', $page_(static fn (array $p) => (new InviteController())->wizard()));
-$router->get('/{locale}/einladung/{slug}/zahlung', $page_(static fn (array $p) => (new InviteController())->payment($p)));
-$router->any('/{locale}/einladung/{slug}/verwalten', $page_(static fn (array $p) => (new InviteController())->manage($p)));
-$router->any('/{locale}/einladung/{slug}', $page_(static fn (array $p) => (new InviteController())->show($p)));
-// Persoenlich adressierte Fassung. Steht bewusst NACH "zahlung" und
-// "verwalten": das Muster wuerde sie sonst schlucken.
-$router->any('/{locale}/einladung/{slug}/{gast}', $page_(static fn (array $p) => (new InviteController())->show($p)));
-$router->post('/api/kupon', static fn (array $p) => (new InviteController())->checkCoupon());
 
 $router->any('/{locale}/galerie', $page_(static fn (array $p) => (new GalleryController())->index()));
 $router->get('/{locale}/galerie/abmelden', $page_(static fn (array $p) => (new GalleryController())->logout()));
