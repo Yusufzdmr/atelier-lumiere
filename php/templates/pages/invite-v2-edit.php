@@ -111,7 +111,7 @@ if ($darfDesign) {
 }
 
 ?>
-<?= Ui::pageHero('invite2-edit-hero', $t('editTitle'), I18n::t('nav.invitation2'), $t('editLead')) ?>
+<?= Ui::pageHero('invite2-edit-hero', $t('editTitle'), I18n::t('nav.invitation'), $t('editLead')) ?>
 
 <?= Ui::sectionOpen() ?>
 

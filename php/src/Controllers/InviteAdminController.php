@@ -14,8 +14,9 @@ use Atelier\View;
  *
  * Bis 2026-09-25 stand hier zusaetzlich die erste Fassung (Invitations.php)
  * mit Zusagen, persoenlichen Gastlinks und Gutscheinen. Sie ist raus — der
- * neue Assistent hat noch keine Zusagen und keine Gutscheine (Phase D),
- * deshalb ist diese Seite bis dahin kürzer als sie war.
+ * neue Assistent hat eigene Zusagen (InvitationsV2::rsvps()), diese Seite
+ * zeigt sie nur (noch) nicht pro Einladung. Gutscheine fehlen weiterhin
+ * (Phase D).
  */
 final class InviteAdminController
 {

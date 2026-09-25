@@ -162,7 +162,7 @@ $values = array_slice((array) ($about['values'] ?? []), 0, 4);
     <?php
     $tools = [
         ['lumiere-tool-gallery', 'home.toolGalleryTitle', 'home.toolGalleryText', 'home.toolGalleryCta', '/galerie', 0],
-        ['lumiere-tool-invite', 'home.toolInviteTitle', 'home.toolInviteText', 'home.toolInviteCta', '/einladung', 120],
+        ['lumiere-tool-invite', 'home.toolInviteTitle', 'home.toolInviteText', 'home.toolInviteCta', '/v2/designs', 120],
     ];
     foreach ($tools as [$seed, $titleKey, $textKey, $ctaKey, $href, $delay]) :
     ?>

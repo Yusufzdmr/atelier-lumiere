@@ -97,7 +97,7 @@ $fieldTitles = [
 
 $inputTypes = ['date' => 'date', 'time' => 'time'];
 ?>
-<?= Ui::pageHero('invite2-hero', $t('wizardTitle'), I18n::t('nav.invitation2'), $t('wizardLead')) ?>
+<?= Ui::pageHero('invite2-hero', $t('wizardTitle'), I18n::t('nav.invitation'), $t('wizardLead')) ?>
 
 <?= Ui::sectionOpen() ?>
 
